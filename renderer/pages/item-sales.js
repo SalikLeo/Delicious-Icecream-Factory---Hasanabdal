@@ -173,7 +173,7 @@ window.ItemSales = {
                <button onclick="ItemSales.changeMonthStep(-1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Month">
                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
                </button>
-               <select id="item-stats-month-select" onchange="ItemSales.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+               <select id="item-stats-month-select" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                  <option value="1">January</option>
                  <option value="2">February</option>
                  <option value="3">March</option>

@@ -355,11 +355,11 @@ const MasterDB = {
                 </div>
 
                 <div id="sales-stat-date-wrap" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
-                  <input type="date" id="sales-stat-date" onchange="MasterDB.loadSalesData()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                  <input type="date" id="sales-stat-date" onchange="MasterDB.loadSalesData()" oninput="MasterDB.loadSalesData()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                 </div>
 
                 <div id="sales-stat-month-wrap" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
-                  <input type="month" id="sales-stat-month" onchange="MasterDB.loadSalesData()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                  <input type="month" id="sales-stat-month" onchange="MasterDB.loadSalesData()" oninput="MasterDB.loadSalesData()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                 </div>
 
                 <button onclick="MasterDB.closeSalesStats()" class="p-2 text-slate-400 hover:text-slate-600 ml-2 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>

@@ -207,15 +207,16 @@ window.Reports = {
                 ${this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date')}
               </label>
               ${this.periodType === 'annual' ? `
-                <select onchange="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                <select id="rpt-cars-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
                   ${this.getAvailableYears().map(y => `
                     <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
                   `).join('')}
                 </select>
               ` : `
-                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
+                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" id="rpt-cars-date-input"
                        value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
                        onchange="Reports.onDateChange(this.value)"
+                       oninput="Reports.onDateChange(this.value)"
                        class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
               `}
             </div>
@@ -228,6 +229,14 @@ window.Reports = {
         </button>
       </div>
 
+      <div id="rpt-cars-body" class="flex-1 flex flex-col gap-4">
+        ${this.renderCarsBody(filtered, totalDeliveredCartons, totalSales, totalCashReceived, totalRemainingKhata, carInventoryHtml)}
+      </div>
+    `;
+  },
+
+  renderCarsBody(filtered, totalDeliveredCartons, totalSales, totalCashReceived, totalRemainingKhata, carInventoryHtml) {
+    return `
       ${carInventoryHtml}
 
       <!-- Summary KPI Cards -->
@@ -310,6 +319,61 @@ window.Reports = {
     `;
   },
 
+  async updateCarsBody() {
+    const el = document.getElementById('rpt-cars-body');
+    if (!el) return;
+    const allDeliveries = this.deliveries || [];
+    let filtered = allDeliveries;
+    if (this.selectedCarId) {
+      filtered = filtered.filter(d => String(d.car_id) === String(this.selectedCarId));
+    }
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filtered = filtered.filter(d => d.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filtered = filtered.filter(d => d.date && d.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filtered = filtered.filter(d => d.date && d.date.startsWith(y));
+    }
+
+    let totalDeliveredCartons = 0;
+    let totalSales = 0;
+    let totalCashReceived = 0;
+    let totalRemainingKhata = 0;
+
+    filtered.forEach(d => {
+      totalDeliveredCartons += (d.total_cartons_delivered || 0);
+      totalSales += (d.total_amount || 0);
+      totalCashReceived += (d.received_amount || 0);
+      totalRemainingKhata += (d.remaining_balance || 0);
+    });
+
+    let carInventoryHtml = '';
+    if (this.selectedCarId) {
+      const inv = await window.api.getCarInventory(this.selectedCarId) || [];
+      const loaded = inv.filter(i => (i.cartons_loaded || 0) > 0);
+      carInventoryHtml = `
+        <div class="bg-blue-50/60 p-3 rounded-2xl border border-blue-100 mb-4 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+            <span class="font-black text-slate-800">Current Stock Loaded Inside This Car:</span>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            ${loaded.length > 0 ? loaded.map(i => `
+              <span class="px-2.5 py-1 bg-white border border-blue-200 rounded-lg font-bold text-blue-900 text-[11px] shadow-2xs">
+                ${i.carton_name}: <strong class="text-blue-700">${i.cartons_loaded} ctns</strong>
+              </span>
+            `).join('') : '<span class="text-slate-400 font-bold">No stock loaded inside car right now.</span>'}
+          </div>
+        </div>
+      `;
+    }
+
+    el.innerHTML = this.renderCarsBody(filtered, totalDeliveredCartons, totalSales, totalCashReceived, totalRemainingKhata, carInventoryHtml);
+    if (window.lucide) lucide.createIcons({ root: el });
+  },
+
   getAvailableYears() {
     const curYear = new Date().getFullYear();
     const years = new Set([curYear, curYear - 1, curYear + 1]);
@@ -328,8 +392,15 @@ window.Reports = {
   },
 
   onDateChange(val) {
+    if (!val) return;
     this.selectedDate = val;
-    this.loadTabContent();
+    if (this.currentTab === 'cars') {
+      this.updateCarsBody();
+    } else if (this.currentTab === 'finance') {
+      this.updateFinanceBody();
+    } else {
+      this.loadTabContent();
+    }
   },
 
   setPeriod(period) {
@@ -557,6 +628,8 @@ window.Reports = {
   async renderFinanceReport(container) {
     const deliveries = await window.api.getShopDeliveries() || [];
     const expenses = await window.api.getExpenses() || [];
+    this.financeDeliveries = deliveries;
+    this.expenses = expenses;
 
     // Filter by period
     let filtDeliv = deliveries;
@@ -569,10 +642,6 @@ window.Reports = {
       const ym = this.selectedDate.slice(0, 7);
       filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(ym));
       filtExp = filtExp.filter(e => e.date && e.date.startsWith(ym));
-    } else if (this.periodType === 'annual' && this.selectedDate) {
-      const y = this.selectedDate.slice(0, 4);
-      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
-      filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
     } else if (this.periodType === 'annual' && this.selectedDate) {
       const y = this.selectedDate.slice(0, 4);
       filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
@@ -628,15 +697,16 @@ window.Reports = {
                 ${this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date')}
               </label>
               ${this.periodType === 'annual' ? `
-                <select onchange="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                <select id="rpt-finance-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
                   ${this.getAvailableYears().map(y => `
                     <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
                   `).join('')}
                 </select>
               ` : `
-                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
+                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" id="rpt-finance-date-input"
                        value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
                        onchange="Reports.onDateChange(this.value)"
+                       oninput="Reports.onDateChange(this.value)"
                        class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
               `}
             </div>
@@ -649,6 +719,14 @@ window.Reports = {
         </button>
       </div>
 
+      <div id="rpt-finance-body" class="flex-1 flex flex-col gap-4">
+        ${this.renderFinanceBody(totalSales, totalCashReceived, estCogs, totalExpenses, netProfit, filtExp)}
+      </div>
+    `;
+  },
+
+  renderFinanceBody(totalSales, totalCashReceived, estCogs, totalExpenses, netProfit, filtExp) {
+    return `
       <!-- Financial Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
@@ -717,6 +795,48 @@ window.Reports = {
         </div>
       </div>
     `;
+  },
+
+  updateFinanceBody() {
+    const el = document.getElementById('rpt-finance-body');
+    if (!el) return;
+    const deliveries = this.financeDeliveries || this.deliveries || [];
+    const expenses = this.expenses || [];
+
+    let filtDeliv = deliveries;
+    let filtExp = expenses;
+
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filtDeliv = filtDeliv.filter(d => d.date === this.selectedDate);
+      filtExp = filtExp.filter(e => e.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(ym));
+      filtExp = filtExp.filter(e => e.date && e.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
+      filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
+    }
+
+    let totalSales = 0;
+    let totalCashReceived = 0;
+    filtDeliv.forEach(d => {
+      totalSales += (d.total_amount || 0);
+      totalCashReceived += (d.received_amount || 0);
+    });
+
+    let totalExpenses = 0;
+    filtExp.forEach(e => {
+      totalExpenses += (e.amount || 0);
+    });
+
+    const estCogs = Math.round(totalSales * 0.70);
+    const grossProfit = totalSales - estCogs;
+    const netProfit = grossProfit - totalExpenses;
+
+    el.innerHTML = this.renderFinanceBody(totalSales, totalCashReceived, estCogs, totalExpenses, netProfit, filtExp);
+    if (window.lucide) lucide.createIcons({ root: el });
   },
 
   // -------------------------------------------------------------

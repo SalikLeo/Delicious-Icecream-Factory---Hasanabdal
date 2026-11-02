@@ -123,7 +123,7 @@ window.Proposals = {
 
             <!-- Date Picker for Day/Month -->
             <div id="prop-date-picker-wrap">
-              <input type="date" id="prop-date-input" value="${this.selectedDate}" onchange="Proposals.onDateChange(this.value)"
+              <input type="date" id="prop-date-input" value="${this.selectedDate}" onchange="Proposals.onDateChange(this.value)" oninput="Proposals.onDateChange(this.value)"
                      class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">
             </div>
           </div>
@@ -203,6 +203,7 @@ window.Proposals = {
   },
 
   onDateChange(val) {
+    if (!val) return;
     this.selectedDate = val;
     this.applyFilters();
   },
@@ -234,15 +235,15 @@ window.Proposals = {
     const wrap = document.getElementById('prop-date-picker-wrap');
     if (wrap) {
       if (period === 'day') {
-        wrap.innerHTML = `<input type="date" id="prop-date-input" value="${this.selectedDate}" onchange="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">`;
+        wrap.innerHTML = `<input type="date" id="prop-date-input" value="${this.selectedDate}" onchange="Proposals.onDateChange(this.value)" oninput="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">`;
       } else if (period === 'month') {
         const ym = this.selectedDate ? this.selectedDate.slice(0, 7) : new Date().toISOString().slice(0, 7);
-        wrap.innerHTML = `<input type="month" id="prop-date-input" value="${ym}" onchange="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">`;
+        wrap.innerHTML = `<input type="month" id="prop-date-input" value="${ym}" onchange="Proposals.onDateChange(this.value)" oninput="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">`;
       } else if (period === 'year') {
         const years = this.getAvailableYears();
         const selY = this.selectedDate ? this.selectedDate.slice(0, 4) : String(new Date().getFullYear());
         wrap.innerHTML = `
-          <select id="prop-date-input" onchange="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none cursor-pointer">
+          <select id="prop-date-input" onchange="Proposals.onDateChange(this.value)" oninput="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none cursor-pointer">
             ${years.map(y => `<option value="${y}" ${String(selY) === String(y) ? 'selected' : ''}>${y}</option>`).join('')}
           </select>
         `;

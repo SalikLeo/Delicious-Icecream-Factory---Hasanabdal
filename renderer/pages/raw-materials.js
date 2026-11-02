@@ -142,7 +142,7 @@ window.RawMaterials = {
             ${this.periodType !== 'all' ? `
               <div id="rm-date-picker-wrap" class="shrink-0">
                 ${this.periodType === 'year' ? `
-                  <select id="rm-date-input" onchange="RawMaterials.onDateChange(this.value)"
+                  <select id="rm-date-input" onchange="RawMaterials.onDateChange(this.value)" oninput="RawMaterials.onDateChange(this.value)"
                           class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer">
                     ${this.getAvailableYears().map(y => `
                       <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
@@ -152,6 +152,7 @@ window.RawMaterials = {
                   <input type="${this.periodType === 'month' ? 'month' : 'date'}" id="rm-date-input" 
                          value="${this.periodType === 'month' ? this.selectedDate.slice(0, 7) : this.selectedDate}" 
                          onchange="RawMaterials.onDateChange(this.value)"
+                         oninput="RawMaterials.onDateChange(this.value)"
                          class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer">
                 `}
               </div>
@@ -160,37 +161,13 @@ window.RawMaterials = {
         </div>
 
         <!-- Period Stats Bar (Shown for Daily, Monthly & Annual) -->
-        ${(() => {
-          if (this.periodType === 'all') return '';
-          const stats = this.getPeriodStats();
-          const periodLabel = this.periodType === 'day' 
-            ? `Today (${this.selectedDate})` 
-            : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(0, 7)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
-          const badgeText = this.periodType === 'day' 
-            ? 'Daily Stats' 
-            : (this.periodType === 'month' ? 'Monthly Stats' : 'Annual Stats');
-          return `
-            <div class="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div class="flex items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-lg bg-emerald-700 text-white font-black text-[10px] uppercase tracking-wider">
-                  ${badgeText}
-                </span>
-                <span class="font-bold text-slate-700">
-                  Period: <span class="font-mono font-black text-slate-900">${periodLabel}</span>
-                </span>
-              </div>
-              <div class="flex items-center gap-4 flex-wrap font-bold text-slate-600">
-                <div>Movements: <span class="font-black text-slate-900 font-mono">${stats.totalMovements}</span></div>
-                <div>Purchased: <span class="font-black text-emerald-700 font-mono">+${stats.totalAdded} units</span> (${stats.purchasesCount} orders)</div>
-                <div>Factory Consumed: <span class="font-black text-rose-700 font-mono">-${stats.totalConsumed} units</span> (${stats.productionCount} batches)</div>
-              </div>
-            </div>
-          `;
-        })()}
+        <div id="rm-stats-container">
+          ${this.renderStatsBar()}
+        </div>
 
         <!-- Content Area -->
-        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
-          ${this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderLogsTable()}
+        <div id="rm-content-area" class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+          ${this.renderContentArea()}
         </div>
 
       </div>
@@ -202,14 +179,67 @@ window.RawMaterials = {
     if (window.lucide) lucide.createIcons({ root: this.container });
   },
 
+  renderStatsBar() {
+    if (this.periodType === 'all') return '';
+    const stats = this.getPeriodStats();
+    const periodLabel = this.periodType === 'day' 
+      ? `Today (${this.selectedDate})` 
+      : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(0, 7)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
+    const badgeText = this.periodType === 'day' 
+      ? 'Daily Stats' 
+      : (this.periodType === 'month' ? 'Monthly Stats' : 'Annual Stats');
+    return `
+      <div class="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-lg bg-emerald-700 text-white font-black text-[10px] uppercase tracking-wider">
+            ${badgeText}
+          </span>
+          <span class="font-bold text-slate-700">
+            Period: <span class="font-mono font-black text-slate-900">${periodLabel}</span>
+          </span>
+        </div>
+        <div class="flex items-center gap-4 flex-wrap font-bold text-slate-600">
+          <div>Movements: <span class="font-black text-slate-900 font-mono">${stats.totalMovements}</span></div>
+          <div>Purchased: <span class="font-black text-emerald-700 font-mono">+${stats.totalAdded} units</span> (${stats.purchasesCount} orders)</div>
+          <div>Factory Consumed: <span class="font-black text-rose-700 font-mono">-${stats.totalConsumed} units</span> (${stats.productionCount} batches)</div>
+        </div>
+      </div>
+    `;
+  },
+
+  renderContentArea() {
+    let filtered = this.materials || [];
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(m =>
+        (m.name || '').toLowerCase().includes(q) ||
+        (m.category || '').toLowerCase().includes(q)
+      );
+    }
+    return this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderLogsTable();
+  },
+
+  updateContentArea() {
+    const statsContainer = document.getElementById('rm-stats-container');
+    if (statsContainer) {
+      statsContainer.innerHTML = this.renderStatsBar();
+    }
+    const contentArea = document.getElementById('rm-content-area');
+    if (contentArea) {
+      contentArea.innerHTML = this.renderContentArea();
+      if (window.lucide) lucide.createIcons({ root: contentArea });
+    }
+  },
+
   setPeriod(period) {
     this.periodType = period;
     this.renderUI();
   },
 
   onDateChange(val) {
+    if (!val) return;
     this.selectedDate = val;
-    this.renderUI();
+    this.updateContentArea();
   },
 
   getAvailableYears() {
@@ -396,7 +426,7 @@ window.RawMaterials = {
 
   onSearch(query) {
     this.searchQuery = query;
-    this.renderUI();
+    this.updateContentArea();
   },
 
   openAddModal() {

@@ -111,7 +111,7 @@ const Expenses = {
                <button onclick="Expenses.changeMonthStep(-1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Month">
                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
                </button>
-               <select id="exp-stats-month-select" onchange="Expenses.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+               <select id="exp-stats-month-select" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                  <option value="1">January</option>
                  <option value="2">February</option>
                  <option value="3">March</option>
@@ -125,7 +125,7 @@ const Expenses = {
                  <option value="11">November</option>
                  <option value="12">December</option>
                </select>
-               <select id="exp-stats-month-year-select" onchange="Expenses.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+               <select id="exp-stats-month-year-select" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                </select>
                <button onclick="Expenses.changeMonthStep(1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Month">
                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
@@ -135,7 +135,7 @@ const Expenses = {
 
             <!-- Annual controls -->
             <div id="exp-annual-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
-               <select id="exp-stats-year-picker" onchange="Expenses.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+               <select id="exp-stats-year-picker" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                </select>
             </div>
 

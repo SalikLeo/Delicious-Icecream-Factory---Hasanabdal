@@ -154,7 +154,7 @@ window.CartonPacking = {
             ${this.periodType !== 'all' ? `
               <div id="pck-date-picker-wrap" class="shrink-0">
                 ${this.periodType === 'year' ? `
-                  <select id="pck-date-input" onchange="CartonPacking.onDateChange(this.value)"
+                  <select id="pck-date-input" onchange="CartonPacking.onDateChange(this.value)" oninput="CartonPacking.onDateChange(this.value)"
                           class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-500 cursor-pointer">
                     ${this.getAvailableYears().map(y => `
                       <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
@@ -164,6 +164,7 @@ window.CartonPacking = {
                   <input type="${this.periodType === 'month' ? 'month' : 'date'}" id="pck-date-input" 
                          value="${this.periodType === 'month' ? this.selectedDate.slice(0, 7) : this.selectedDate}" 
                          onchange="CartonPacking.onDateChange(this.value)"
+                         oninput="CartonPacking.onDateChange(this.value)"
                          class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-500 cursor-pointer">
                 `}
               </div>
@@ -172,38 +173,13 @@ window.CartonPacking = {
         </div>
 
         <!-- Period Packing Stats Bar -->
-        ${(() => {
-          if (this.periodType === 'all') return '';
-          const stats = this.getPeriodStats();
-          const periodLabel = this.periodType === 'day' 
-            ? `Today (${this.selectedDate})` 
-            : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(0, 7)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
-          const badgeText = this.periodType === 'day' 
-            ? 'Daily Packing' 
-            : (this.periodType === 'month' ? 'Monthly Packing' : 'Annual Packing');
-          return `
-            <div class="bg-purple-50/70 border border-purple-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div class="flex items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-lg bg-purple-700 text-white font-black text-[10px] uppercase tracking-wider">
-                  ${badgeText}
-                </span>
-                <span class="font-bold text-slate-700">
-                  Period: <span class="font-mono font-black text-slate-900">${periodLabel}</span>
-                </span>
-              </div>
-              <div class="flex items-center gap-4 flex-wrap font-bold text-slate-600">
-                <div>Packing Batches: <span class="font-black text-slate-900 font-mono">${stats.totalBatches} batches</span></div>
-                <div>Cartons Packed: <span class="font-black text-purple-800 font-mono">+${stats.totalCartonsPacked.toLocaleString()} ctns</span></div>
-                <div>Pcs Consumed: <span class="font-black text-rose-700 font-mono">-${stats.totalPiecesConsumed.toLocaleString()} pcs</span></div>
-                <div>Sale Value: <span class="font-black text-emerald-700 font-mono">Rs. ${Math.round(stats.totalSaleValue).toLocaleString()}</span></div>
-              </div>
-            </div>
-          `;
-        })()}
+        <div id="pck-stats-container">
+          ${this.renderStatsBar()}
+        </div>
 
         <!-- Content Area -->
-        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
-          ${this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderBatchesTable()}
+        <div id="pck-content-area" class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+          ${this.renderContentArea()}
         </div>
 
       </div>
@@ -215,14 +191,65 @@ window.CartonPacking = {
     if (window.lucide) lucide.createIcons({ root: this.container });
   },
 
+  renderStatsBar() {
+    if (this.periodType === 'all') return '';
+    const stats = this.getPeriodStats();
+    const periodLabel = this.periodType === 'day' 
+      ? `Today (${this.selectedDate})` 
+      : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(0, 7)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
+    const badgeText = this.periodType === 'day' 
+      ? 'Daily Packing' 
+      : (this.periodType === 'month' ? 'Monthly Packing' : 'Annual Packing');
+    return `
+      <div class="bg-purple-50/70 border border-purple-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-lg bg-purple-700 text-white font-black text-[10px] uppercase tracking-wider">
+            ${badgeText}
+          </span>
+          <span class="font-bold text-slate-700">
+            Period: <span class="font-mono font-black text-slate-900">${periodLabel}</span>
+          </span>
+        </div>
+        <div class="flex items-center gap-4 flex-wrap font-bold text-slate-600">
+          <div>Packing Batches: <span class="font-black text-slate-900 font-mono">${stats.totalBatches} batches</span></div>
+          <div>Cartons Packed: <span class="font-black text-purple-800 font-mono">+${stats.totalCartonsPacked.toLocaleString()} ctns</span></div>
+          <div>Pcs Consumed: <span class="font-black text-rose-700 font-mono">-${stats.totalPiecesConsumed.toLocaleString()} pcs</span></div>
+          <div>Sale Value: <span class="font-black text-emerald-700 font-mono">Rs. ${Math.round(stats.totalSaleValue).toLocaleString()}</span></div>
+        </div>
+      </div>
+    `;
+  },
+
+  renderContentArea() {
+    const filtered = (this.cartons || []).filter(c => {
+      if (!this.searchQuery) return true;
+      const q = this.searchQuery.toLowerCase();
+      return (c.carton_name || '').toLowerCase().includes(q) || (c.item_name || '').toLowerCase().includes(q);
+    });
+    return this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderBatchesTable();
+  },
+
+  updateContentArea() {
+    const statsContainer = document.getElementById('pck-stats-container');
+    if (statsContainer) {
+      statsContainer.innerHTML = this.renderStatsBar();
+    }
+    const contentArea = document.getElementById('pck-content-area');
+    if (contentArea) {
+      contentArea.innerHTML = this.renderContentArea();
+      if (window.lucide) lucide.createIcons({ root: contentArea });
+    }
+  },
+
   setPeriod(period) {
     this.periodType = period;
     this.renderUI();
   },
 
   onDateChange(val) {
+    if (!val) return;
     this.selectedDate = val;
-    this.renderUI();
+    this.updateContentArea();
   },
 
   getAvailableYears() {
@@ -427,7 +454,7 @@ window.CartonPacking = {
 
   onSearch(q) {
     this.searchQuery = q;
-    this.renderUI();
+    this.updateContentArea();
   },
 
   openPackModal(defaultCartonId = null) {

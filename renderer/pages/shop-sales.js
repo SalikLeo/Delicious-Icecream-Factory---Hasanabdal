@@ -301,40 +301,34 @@ window.ShopSales = {
         <!-- Bottom: Financial Settlement & Big Print Action -->
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pb-6">
           
-          <!-- Notes & Payment Method (7 cols) -->
-          <div class="md:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <h4 class="text-xs font-black uppercase text-slate-500 tracking-wider">Payment Method &amp; Delivery Notes</h4>
-            
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="ShopSales.setPaymentMethod('Cash')"
-                      class="flex-1 py-2.5 rounded-xl font-black text-xs transition-all border cursor-pointer ${this.paymentMethod === 'Cash' ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                💵 Cash Payment
-              </button>
-              <button type="button" onclick="ShopSales.setPaymentMethod('Online')"
-                      class="flex-1 py-2.5 rounded-xl font-black text-xs transition-all border cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                💳 Online / Bank / JazzCash
-              </button>
-              <button type="button" onclick="ShopSales.setPaymentMethod('Credit')"
-                      class="flex-1 py-2.5 rounded-xl font-black text-xs transition-all border cursor-pointer ${this.paymentMethod === 'Credit' ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                📒 Pure Khata / Credit
-              </button>
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Invoice Remarks / Special Instructions</label>
-              <textarea id="ss-notes" rows="2" placeholder="e.g. Returned 2 cartons kept in car for next shop. Cash collected by driver Ali..."
-                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-400"></textarea>
+          <!-- Payment Method & Delivery Summary (7 cols) -->
+          <div class="md:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-500 tracking-wider">Payment Method</h4>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5">Payment mode received from shop</p>
+              </div>
+              <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+                <button type="button" id="ss-pm-cash" onclick="ShopSales.setPaymentMethod('Cash')"
+                        class="px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                  💵 Cash
+                </button>
+                <button type="button" id="ss-pm-online" onclick="ShopSales.setPaymentMethod('Online')"
+                        class="px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                  💳 Online
+                </button>
+              </div>
             </div>
 
             <!-- Delivery Summary Pills -->
-            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-              <div class="p-2.5 bg-slate-50 rounded-xl">
-                <span class="text-slate-400 block text-[10px] font-black uppercase">Delivered Cartons:</span>
-                <span class="font-black text-emerald-700 text-sm tabular-nums">${totalDeliveredCartons} cartons</span>
+            <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+              <div class="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                <span class="text-slate-400 block text-[10px] font-black uppercase tracking-wider">Delivered Cartons:</span>
+                <span class="font-black text-emerald-700 text-base tabular-nums">${totalDeliveredCartons} cartons</span>
               </div>
-              <div class="p-2.5 bg-slate-50 rounded-xl">
-                <span class="text-slate-400 block text-[10px] font-black uppercase">Returned Cartons:</span>
-                <span class="font-black text-rose-600 text-sm tabular-nums">${totalReturnedCartons} cartons</span>
+              <div class="p-3 bg-rose-50/50 border border-rose-100 rounded-xl">
+                <span class="text-slate-400 block text-[10px] font-black uppercase tracking-wider">Returned Cartons:</span>
+                <span class="font-black text-rose-600 text-base tabular-nums">${totalReturnedCartons} cartons</span>
               </div>
             </div>
           </div>
@@ -504,10 +498,17 @@ window.ShopSales = {
 
   setPaymentMethod(pm) {
     this.paymentMethod = pm;
-    if (pm === 'Credit') {
-      this.receivedAmount = 0;
+    const btnCash = document.getElementById('ss-pm-cash');
+    const btnOnline = document.getElementById('ss-pm-online');
+    if (btnCash && btnOnline) {
+      if (pm === 'Cash') {
+        btnCash.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-slate-900 text-white shadow-xs';
+        btnOnline.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-900';
+      } else {
+        btnCash.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-900';
+        btnOnline.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-slate-900 text-white shadow-xs';
+      }
     }
-    this.renderUI();
   },
 
   resetForm() {

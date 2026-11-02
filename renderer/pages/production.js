@@ -172,7 +172,7 @@ window.Production = {
 
         <!-- Content Area -->
         <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
-          ${this.activeTab === 'catalog' ? this.renderCatalogGrid(filtered) : this.renderBatchesTable()}
+          ${this.activeTab === 'catalog' ? this.renderCatalogTable(filtered) : this.renderBatchesTable()}
         </div>
 
       </div>
@@ -226,6 +226,10 @@ window.Production = {
   },
 
   renderCatalogGrid(items) {
+    return this.renderCatalogTable(items);
+  },
+
+  renderCatalogTable(items) {
     if (items.length === 0) {
       return `
         <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
@@ -237,69 +241,82 @@ window.Production = {
     }
 
     return `
-      <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto flex-1">
-        ${items.map(it => {
-          const pieces = it.current_single_stock || 0;
-          const cost = it.unit_cost || 0;
-          const retail = it.retail_piece_price || 0;
-          const totalCostVal = Math.round(pieces * cost);
+      <div class="overflow-x-auto flex-1">
+        <table class="w-full text-left text-xs border-collapse border border-slate-200">
+          <thead>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-3 px-4 border-r border-slate-200">Item / Flavor</th>
+              <th class="py-3 px-4 text-center border-r border-slate-200">Pack Spec</th>
+              <th class="py-3 px-4 text-right border-r border-slate-200">Available Pool Stock</th>
+              <th class="py-3 px-4 text-right border-r border-slate-200">Making Cost</th>
+              <th class="py-3 px-4 text-right border-r border-slate-200">Retail MRP</th>
+              <th class="py-3 px-4 text-right border-r border-slate-200">Total Pool Cost</th>
+              <th class="py-3 px-4 text-center border-r border-slate-200">Status</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+            ${items.map(it => {
+              const pieces = it.current_single_stock || 0;
+              const cost = it.unit_cost || 0;
+              const retail = it.retail_piece_price || 0;
+              const totalCostVal = Math.round(pieces * cost);
 
-          return `
-            <div class="bg-gradient-to-b from-slate-50/70 to-white rounded-2xl border border-slate-200 p-5 shadow-2xs flex flex-col justify-between hover:border-cyan-300 hover:shadow-md transition-all group">
-              <div>
-                <div class="flex items-start justify-between gap-3 mb-2">
-                  <div>
-                    <h3 class="font-black text-base text-slate-900 group-hover:text-cyan-700 transition-colors">${it.name}</h3>
-                    <p class="text-xs text-slate-500 font-medium">${it.flavor || 'Standard Flavor'}</p>
-                  </div>
-                  <span class="px-2.5 py-1 rounded-xl bg-cyan-100/70 text-cyan-800 font-mono text-[10px] font-black border border-cyan-200">
-                    ${it.default_pcs_per_carton || 20} pcs/ctn
-                  </span>
-                </div>
-
-                <!-- Stock Pool Display -->
-                <div class="my-4 p-3.5 bg-slate-100/80 rounded-xl border border-slate-200/80 flex items-center justify-between">
-                  <div>
-                    <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider block">Available in Production Pool</span>
-                    <span class="text-2xl font-black ${pieces > 0 ? 'text-cyan-700' : 'text-slate-400'} tabular-nums">
+              return `
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-3 px-4 border-r border-slate-200">
+                    <div class="font-black text-slate-900 text-sm">${it.name}</div>
+                    <div class="text-[11px] text-slate-500 font-medium">${it.flavor || 'Standard Flavor'}</div>
+                  </td>
+                  <td class="py-3 px-4 text-center border-r border-slate-200">
+                    <span class="px-2.5 py-0.5 rounded-md bg-cyan-50 text-cyan-800 font-mono text-[10px] font-black border border-cyan-200 whitespace-nowrap">
+                      ${it.default_pcs_per_carton || 20} pcs/ctn
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-right border-r border-slate-200">
+                    <span class="text-base font-black ${pieces > 0 ? 'text-cyan-700' : 'text-slate-400'} tabular-nums">
                       ${pieces.toLocaleString()}
                     </span>
-                    <span class="text-xs font-bold text-slate-500 ml-1">pieces</span>
-                  </div>
-                  <div class="text-right">
-                    <span class="text-[10px] font-bold text-slate-400 block">Total Pool Cost</span>
-                    <span class="text-xs font-black text-slate-700 tabular-nums">Rs. ${totalCostVal.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                <!-- Cost & Retail Prices -->
-                <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100 mb-4">
-                  <div class="bg-white p-2 rounded-lg border border-slate-200/70">
-                    <span class="text-[10px] font-bold text-slate-400 block uppercase">Making Cost</span>
-                    <span class="font-black text-slate-800 tabular-nums">Rs. ${cost} <span class="text-[10px] font-normal text-slate-400">/ pc</span></span>
-                  </div>
-                  <div class="bg-white p-2 rounded-lg border border-slate-200/70">
-                    <span class="text-[10px] font-bold text-slate-400 block uppercase">Retail MRP</span>
-                    <span class="font-black text-emerald-700 tabular-nums">Rs. ${retail} <span class="text-[10px] font-normal text-slate-400">/ pc</span></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
-                <button onclick="Production.openProductionModal(${it.id})" class="flex-1 py-2 px-3 bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                  <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> Produce Pcs
-                </button>
-                <button onclick="app.navigate('carton-packing')" title="Pack into Cartons (Stage 3)" class="py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1 cursor-pointer">
-                  <i data-lucide="package" class="w-3.5 h-3.5"></i> Pack
-                </button>
-                <button onclick="Production.openItemModal(${it.id})" title="Edit Item" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all cursor-pointer">
-                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
-            </div>
-          `;
-        }).join('')}
+                    <span class="text-xs font-normal text-slate-400">pcs</span>
+                  </td>
+                  <td class="py-3 px-4 text-right font-mono font-bold text-slate-700 tabular-nums border-r border-slate-200">
+                    Rs. ${cost}
+                    <span class="text-[10px] font-normal text-slate-400">/ pc</span>
+                  </td>
+                  <td class="py-3 px-4 text-right font-mono font-black text-emerald-700 tabular-nums border-r border-slate-200">
+                    Rs. ${retail}
+                    <span class="text-[10px] font-normal text-slate-400">/ pc</span>
+                  </td>
+                  <td class="py-3 px-4 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">
+                    Rs. ${totalCostVal.toLocaleString()}
+                  </td>
+                  <td class="py-3 px-4 text-center border-r border-slate-200">
+                    ${pieces > 0 
+                      ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-50 text-cyan-800 font-bold text-[10px] border border-cyan-200"><span class="w-1.5 h-1.5 rounded-full bg-cyan-600"></span> Ready to Pack</span>`
+                      : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px] border border-slate-200">Empty Pool</span>`
+                    }
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button onclick="Production.openProductionModal(${it.id})" class="px-2.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 font-black text-[11px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer" title="Produce Loose Pieces">
+                        <i data-lucide="play" class="w-3 h-3 fill-current"></i> Produce Pcs
+                      </button>
+                      <button onclick="app.navigate('carton-packing')" class="px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-purple-200/60" title="Pack into Cartons (Stage 3)">
+                        <i data-lucide="package" class="w-3.5 h-3.5"></i> Pack
+                      </button>
+                      <button onclick="Production.openItemModal(${it.id})" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer" title="Edit Item">
+                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button onclick="Production.deleteItem(${it.id})" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer" title="Delete Item">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
       </div>
     `;
   },
@@ -662,6 +679,31 @@ window.Production = {
       await this.loadData();
     } else {
       app.showAlert({ title: 'Production Error', message: res.error || 'Failed to complete production run.' });
+    }
+  },
+
+  async deleteItem(id) {
+    const it = this.items.find(x => x.id === id);
+    if (!it) return;
+    const ok = await new Promise(resolve => {
+      app.showConfirm({
+        title: 'Delete Item?',
+        message: `Are you sure you want to delete "${it.name}"? This item definition will be permanently removed.`,
+        confirmText: 'Delete Item',
+        confirmColor: 'red',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false)
+      });
+    });
+
+    if (ok) {
+      const res = await window.api.deleteIcecreamItem(id);
+      if (res && res.success) {
+        app.showToast('Item deleted successfully.', 'success');
+        await this.loadData();
+      } else {
+        app.showAlert({ title: 'Error', message: res.error || 'Failed to delete item.' });
+      }
     }
   },
 

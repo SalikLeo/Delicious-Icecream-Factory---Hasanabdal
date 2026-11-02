@@ -4,6 +4,8 @@ window.RawMaterials = {
   logs: [],
   activeTab: 'inventory', // 'inventory' | 'purchase' | 'logs'
   searchQuery: '',
+  sortField: 'name', // 'name' | 'category' | 'unit' | 'stock' | 'cost' | 'value' | 'status' for inventory; 'date' | 'material' | 'action' | 'qty' | 'stock_after' for logs
+  sortOrder: 'asc', // 'asc' | 'desc'
   periodType: 'day', // 'day' | 'month' | 'all'
   selectedDate: new Date().toISOString().slice(0, 10),
 
@@ -109,13 +111,42 @@ window.RawMaterials = {
             </button>
           </div>
 
-          <!-- Controls: Search + Time Filters -->
+          <!-- Controls: Search + Sort + Time Filters -->
           <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
             <!-- Search -->
-            <div class="relative w-full sm:w-52">
+            <div class="relative w-full sm:w-56">
               <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" placeholder="Search raw material..." value="${this.searchQuery}" oninput="RawMaterials.onSearch(this.value)"
-                     class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-400">
+              <input type="text" id="rm-search" placeholder="${this.activeTab === 'inventory' ? 'Search material, category...' : 'Search logs, material, action...'}"
+                     value="${this.searchQuery}" oninput="RawMaterials.onSearch(this.value)"
+                     class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-400">
+              <button type="button" id="rm-search-clear" onclick="RawMaterials.clearSearch()" title="Clear search"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <select id="rm-sort-select" onchange="RawMaterials.onSortSelect(this.value)"
+                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:bg-white focus:border-emerald-400 cursor-pointer">
+                ${this.activeTab === 'inventory' ? `
+                  <option value="name_asc" ${this.sortField==='name'&&this.sortOrder==='asc'?'selected':''}>Name (A-Z)</option>
+                  <option value="name_desc" ${this.sortField==='name'&&this.sortOrder==='desc'?'selected':''}>Name (Z-A)</option>
+                  <option value="stock_desc" ${this.sortField==='stock'&&this.sortOrder==='desc'?'selected':''}>Highest Stock</option>
+                  <option value="stock_asc" ${this.sortField==='stock'&&this.sortOrder==='asc'?'selected':''}>Lowest Stock</option>
+                  <option value="value_desc" ${this.sortField==='value'&&this.sortOrder==='desc'?'selected':''}>Highest Stock Value</option>
+                  <option value="cost_desc" ${this.sortField==='cost'&&this.sortOrder==='desc'?'selected':''}>Highest Cost Price</option>
+                  <option value="category_asc" ${this.sortField==='category'&&this.sortOrder==='asc'?'selected':''}>Category (A-Z)</option>
+                  <option value="status_desc" ${this.sortField==='status'&&this.sortOrder==='desc'?'selected':''}>Low Stock First</option>
+                ` : `
+                  <option value="date_desc" ${this.sortField==='date'&&this.sortOrder==='desc'?'selected':''}>Newest First</option>
+                  <option value="date_asc" ${this.sortField==='date'&&this.sortOrder==='asc'?'selected':''}>Oldest First</option>
+                  <option value="material_asc" ${this.sortField==='material'&&this.sortOrder==='asc'?'selected':''}>Material (A-Z)</option>
+                  <option value="qty_desc" ${this.sortField==='qty'&&this.sortOrder==='desc'?'selected':''}>Highest Quantity</option>
+                  <option value="stock_after_desc" ${this.sortField==='stock_after'&&this.sortOrder==='desc'?'selected':''}>Highest Stock Left</option>
+                  <option value="action_asc" ${this.sortField==='action'&&this.sortOrder==='asc'?'selected':''}>Action (A-Z)</option>
+                `}
+              </select>
             </div>
 
             <!-- Period Switcher: Daily | Monthly | Annual | All -->
@@ -208,15 +239,42 @@ window.RawMaterials = {
   },
 
   renderContentArea() {
-    let filtered = this.materials || [];
+    let filtered = [...(this.materials || [])];
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
       filtered = filtered.filter(m =>
         (m.name || '').toLowerCase().includes(q) ||
-        (m.category || '').toLowerCase().includes(q)
+        (m.category || '').toLowerCase().includes(q) ||
+        (m.unit || '').toLowerCase().includes(q) ||
+        (m.notes || '').toLowerCase().includes(q)
       );
     }
-    return this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderLogsTable();
+
+    if (this.activeTab === 'inventory') {
+      const sf = this.sortField;
+      const so = this.sortOrder === 'desc' ? -1 : 1;
+      filtered.sort((a, b) => {
+        if (sf === 'name') return so * (a.name || '').localeCompare(b.name || '');
+        if (sf === 'category') return so * (a.category || '').localeCompare(b.category || '');
+        if (sf === 'unit') return so * (a.unit || '').localeCompare(b.unit || '');
+        if (sf === 'stock') return so * ((a.current_stock || 0) - (b.current_stock || 0));
+        if (sf === 'cost') return so * ((a.cost_price || 0) - (b.cost_price || 0));
+        if (sf === 'value') {
+          const valA = (a.current_stock || 0) * (a.cost_price || 0);
+          const valB = (b.current_stock || 0) * (b.cost_price || 0);
+          return so * (valA - valB);
+        }
+        if (sf === 'status') {
+          const lowA = (a.current_stock <= (a.min_stock_alert || 0)) ? 1 : 0;
+          const lowB = (b.current_stock <= (b.min_stock_alert || 0)) ? 1 : 0;
+          return so * (lowA - lowB);
+        }
+        return so * (a.name || '').localeCompare(b.name || '');
+      });
+      return this.renderInventoryTable(filtered);
+    } else {
+      return this.renderLogsTable();
+    }
   },
 
   updateContentArea() {
@@ -255,7 +313,7 @@ window.RawMaterials = {
   },
 
   getFilteredLogs() {
-    let list = this.logs || [];
+    let list = [...(this.logs || [])];
     if (this.periodType === 'day' && this.selectedDate) {
       list = list.filter(l => l.date === this.selectedDate);
     } else if (this.periodType === 'month' && this.selectedDate) {
@@ -274,6 +332,27 @@ window.RawMaterials = {
         (l.notes || '').toLowerCase().includes(q)
       );
     }
+
+    if (this.activeTab === 'logs') {
+      const sf = this.sortField;
+      const so = this.sortOrder === 'desc' ? -1 : 1;
+      list.sort((a, b) => {
+        if (sf === 'date') {
+          const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+          const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+          return so * (dA - dB);
+        }
+        if (sf === 'material') return so * (a.material_name || '').localeCompare(b.material_name || '');
+        if (sf === 'action') return so * (a.action || '').localeCompare(b.action || '');
+        if (sf === 'qty') return so * (Math.abs(a.qty_change || 0) - Math.abs(b.qty_change || 0));
+        if (sf === 'stock_before') return so * ((a.stock_before || 0) - (b.stock_before || 0));
+        if (sf === 'stock_after') return so * ((a.stock_after || 0) - (b.stock_after || 0));
+        const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+        const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+        return (dB - dA);
+      });
+    }
+
     return list;
   },
 
@@ -292,6 +371,68 @@ window.RawMaterials = {
     };
   },
 
+  toggleSort(field) {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortOrder = ['stock', 'cost', 'value', 'date', 'qty', 'stock_before', 'stock_after'].includes(field) ? 'desc' : 'asc';
+    }
+    const sel = document.getElementById('rm-sort-select');
+    if (sel) sel.value = `${this.sortField}_${this.sortOrder}`;
+    this.updateContentArea();
+  },
+
+  onSortSelect(val) {
+    if (!val) return;
+    const parts = val.split('_');
+    const order = parts.pop();
+    const field = parts.join('_');
+    this.sortField = field;
+    this.sortOrder = order || 'asc';
+    this.updateContentArea();
+  },
+
+  getSortIcon(field) {
+    if (this.sortField !== field) {
+      return `<i data-lucide="arrow-up-down" class="w-3 h-3 text-slate-300 ml-1 inline-block"></i>`;
+    }
+    return this.sortOrder === 'asc'
+      ? `<i data-lucide="arrow-up" class="w-3 h-3 text-emerald-600 ml-1 inline-block"></i>`
+      : `<i data-lucide="arrow-down" class="w-3 h-3 text-emerald-600 ml-1 inline-block"></i>`;
+  },
+
+  clearSearch() {
+    this.searchQuery = '';
+    const inp = document.getElementById('rm-search');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    const clr = document.getElementById('rm-search-clear');
+    if (clr) clr.classList.add('hidden');
+    this.updateContentArea();
+  },
+
+  onSearch(query) {
+    this.searchQuery = query;
+    const clr = document.getElementById('rm-search-clear');
+    if (clr) clr.classList.toggle('hidden', !query);
+    this.updateContentArea();
+  },
+
+  switchTab(tab) {
+    this.activeTab = tab;
+    if (tab === 'inventory') {
+      this.sortField = 'name';
+      this.sortOrder = 'asc';
+    } else {
+      this.sortField = 'date';
+      this.sortOrder = 'desc';
+    }
+    this.renderUI();
+  },
+
   renderInventoryTable(items) {
     if (items.length === 0) {
       return `
@@ -308,13 +449,48 @@ window.RawMaterials = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-3 border-r border-slate-200">Material Name</th>
-              <th class="py-2 px-3 border-r border-slate-200">Category</th>
-              <th class="py-2 px-3 border-r border-slate-200">Unit</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Current Stock (Left Behind)</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Total Stock Value</th>
-              <th class="py-2 px-3 text-center border-r border-slate-200">Status</th>
+              <th onclick="RawMaterials.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Material Name</span>
+                  ${this.getSortIcon('name')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('category')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Category</span>
+                  ${this.getSortIcon('category')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('unit')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Unit</span>
+                  ${this.getSortIcon('unit')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('stock')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Current Stock</span>
+                  ${this.getSortIcon('stock')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Cost Price / Unit</span>
+                  ${this.getSortIcon('cost')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('value')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Total Stock Value</span>
+                  ${this.getSortIcon('value')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('status')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-center gap-1">
+                  <span>Status</span>
+                  ${this.getSortIcon('status')}
+                </div>
+              </th>
               <th class="py-2 px-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -363,70 +539,6 @@ window.RawMaterials = {
         </table>
       </div>
     `;
-  },
-
-  renderLogsTable() {
-    const logs = this.getFilteredLogs();
-    if (logs.length === 0) {
-      return `
-        <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
-          <i data-lucide="history" class="w-12 h-12 mb-3 text-slate-300"></i>
-          <h4 class="text-sm font-black text-slate-600">No stock movement logs yet</h4>
-          <p class="text-xs text-slate-400 mt-1">Purchases and production usage deductions will appear here automatically.</p>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="overflow-x-auto flex-1">
-        <table class="w-full text-left text-xs border-collapse border border-slate-200">
-          <thead>
-            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
-              <th class="py-2 px-3 border-r border-slate-200">Action</th>
-              <th class="py-2 px-3 border-r border-slate-200">Material</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Change (+ / -)</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Stock Before</th>
-              <th class="py-2 px-3 text-right font-black text-slate-800 border-r border-slate-200">Stock Left Behind</th>
-              <th class="py-2 px-3">Details / Notes</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${logs.map(log => {
-              const isAdd = (log.qty_change || 0) > 0;
-              return `
-                <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-1.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(log.date, log.created_at)}</td>
-                  <td class="py-1.5 px-3 border-r border-slate-200">
-                    ${log.action === 'PURCHASE' 
-                      ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px]">PURCHASE</span>`
-                      : `<span class="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-800 font-black text-[10px]">PRODUCTION</span>`
-                    }
-                  </td>
-                  <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${log.material_name}</td>
-                  <td class="py-1.5 px-3 text-right font-black tabular-nums border-r border-slate-200 ${isAdd ? 'text-emerald-600' : 'text-rose-600'}">
-                    ${isAdd ? '+' : ''}${log.qty_change}
-                  </td>
-                  <td class="py-1.5 px-3 text-right font-mono text-slate-400 tabular-nums border-r border-slate-200">${log.stock_before}</td>
-                  <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">${log.stock_after}</td>
-                  <td class="py-1.5 px-3 text-slate-500 text-[11px]">${log.notes || ''}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  },
-
-  switchTab(tab) {
-    this.activeTab = tab;
-    this.renderUI();
-  },
-
-  onSearch(query) {
-    this.searchQuery = query;
-    this.updateContentArea();
   },
 
   openAddModal() {

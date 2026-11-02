@@ -6,6 +6,9 @@ window.CarLoading = {
   activeTab: 'cars', // 'cars' | 'dispatch' | 'history'
   dispatchItems: {}, // { carton_id: qty_to_load }
   dispatches: [],
+  searchQuery: '',
+  sortField: 'car_number', // 'car_number' | 'driver_name' | 'loaded_cartons' | 'deliveries' for cars; 'date' | 'dispatch_no' | 'car_number' | 'driver_name' | 'total_cartons' for history
+  sortOrder: 'asc', // 'asc' | 'desc'
 
   async render(container) {
     this.container = container;
@@ -94,9 +97,9 @@ window.CarLoading = {
           </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <!-- Navigation Tabs & Search & Sort -->
+        <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
             <button onclick="CarLoading.switchTab('cars')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'cars' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Delivery Cars &amp; Loaded Stock
             </button>
@@ -107,10 +110,48 @@ window.CarLoading = {
               Loading History &amp; Gate Passes
             </button>
           </div>
+
+          ${this.activeTab !== 'dispatch' ? `
+            <!-- Controls: Search + Sort -->
+            <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
+              <!-- Search -->
+              <div class="relative w-full sm:w-56">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="cld-search" placeholder="${this.activeTab === 'cars' ? 'Search vehicle, driver, plate...' : 'Search dispatch #, vehicle, driver...'}"
+                       value="${this.searchQuery}" oninput="CarLoading.onSearch(this.value)"
+                       class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-400">
+                <button type="button" id="cld-search-clear" onclick="CarLoading.clearSearch()" title="Clear search"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <!-- Sort Dropdown -->
+              <div class="flex items-center gap-1.5 shrink-0">
+                <select id="cld-sort-select" onchange="CarLoading.onSortSelect(this.value)"
+                        class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:bg-white focus:border-blue-400 cursor-pointer">
+                  ${this.activeTab === 'cars' ? `
+                    <option value="car_number_asc" ${this.sortField==='car_number'&&this.sortOrder==='asc'?'selected':''}>Vehicle / Plate (A-Z)</option>
+                    <option value="car_number_desc" ${this.sortField==='car_number'&&this.sortOrder==='desc'?'selected':''}>Vehicle / Plate (Z-A)</option>
+                    <option value="driver_name_asc" ${this.sortField==='driver_name'&&this.sortOrder==='asc'?'selected':''}>Driver Name (A-Z)</option>
+                    <option value="loaded_cartons_desc" ${this.sortField==='loaded_cartons'&&this.sortOrder==='desc'?'selected':''}>Most Cartons Loaded</option>
+                    <option value="deliveries_desc" ${this.sortField==='deliveries'&&this.sortOrder==='desc'?'selected':''}>Most Deliveries Done</option>
+                  ` : `
+                    <option value="date_desc" ${this.sortField==='date'&&this.sortOrder==='desc'?'selected':''}>Newest First</option>
+                    <option value="date_asc" ${this.sortField==='date'&&this.sortOrder==='asc'?'selected':''}>Oldest First</option>
+                    <option value="total_cartons_desc" ${this.sortField==='total_cartons'&&this.sortOrder==='desc'?'selected':''}>Most Cartons Loaded</option>
+                    <option value="car_number_asc" ${this.sortField==='car_number'&&this.sortOrder==='asc'?'selected':''}>Vehicle (A-Z)</option>
+                    <option value="driver_name_asc" ${this.sortField==='driver_name'&&this.sortOrder==='asc'?'selected':''}>Driver (A-Z)</option>
+                    <option value="dispatch_no_asc" ${this.sortField==='dispatch_no'&&this.sortOrder==='asc'?'selected':''}>Dispatch # (A-Z)</option>
+                  `}
+                </select>
+              </div>
+            </div>
+          ` : ''}
         </div>
 
         <!-- Content Area -->
-        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+        <div id="cld-content-area" class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
           ${this.renderActiveTabContent()}
         </div>
 
@@ -169,6 +210,69 @@ window.CarLoading = {
     };
   },
 
+  toggleSort(field) {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortOrder = ['loaded_cartons', 'deliveries', 'total_cartons', 'date'].includes(field) ? 'desc' : 'asc';
+    }
+    const sel = document.getElementById('cld-sort-select');
+    if (sel) sel.value = `${this.sortField}_${this.sortOrder}`;
+    this.renderActiveTabContentInPlace();
+  },
+
+  onSortSelect(val) {
+    if (!val) return;
+    const parts = val.split('_');
+    const order = parts.pop();
+    const field = parts.join('_');
+    this.sortField = field;
+    this.sortOrder = order || 'asc';
+    this.renderActiveTabContentInPlace();
+  },
+
+  getSortIcon(field) {
+    if (this.sortField !== field) {
+      return `<i data-lucide="arrow-up-down" class="w-3 h-3 text-slate-300 ml-1 inline-block"></i>`;
+    }
+    return this.sortOrder === 'asc'
+      ? `<i data-lucide="arrow-up" class="w-3 h-3 text-blue-600 ml-1 inline-block"></i>`
+      : `<i data-lucide="arrow-down" class="w-3 h-3 text-blue-600 ml-1 inline-block"></i>`;
+  },
+
+  clearSearch() {
+    this.searchQuery = '';
+    const inp = document.getElementById('cld-search');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    const clr = document.getElementById('cld-search-clear');
+    if (clr) clr.classList.add('hidden');
+    this.renderActiveTabContentInPlace();
+  },
+
+  onSearch(q) {
+    this.searchQuery = q;
+    const clr = document.getElementById('cld-search-clear');
+    if (clr) clr.classList.toggle('hidden', !q);
+    this.renderActiveTabContentInPlace();
+  },
+
+  renderActiveTabContentInPlace() {
+    const area = document.getElementById('cld-content-area');
+    if (area) {
+      area.innerHTML = this.renderActiveTabContent();
+      if (window.lucide) lucide.createIcons({ root: area });
+      if (this.activeTab === 'cars') {
+        this.loadSelectedCarInventory();
+      }
+    } else {
+      this.renderUI();
+    }
+  },
+
   renderCarsView() {
     if (this.cars.length === 0) {
       return `
@@ -180,7 +284,28 @@ window.CarLoading = {
       `;
     }
 
-    const activeCar = this.cars.find(c => c.id === this.selectedCarId) || this.cars[0];
+    let filteredCars = [...this.cars];
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      filteredCars = filteredCars.filter(c =>
+        (c.car_number || '').toLowerCase().includes(q) ||
+        (c.driver_name || '').toLowerCase().includes(q) ||
+        (c.phone || '').toLowerCase().includes(q) ||
+        (c.area || '').toLowerCase().includes(q)
+      );
+    }
+
+    const sf = this.sortField;
+    const so = this.sortOrder === 'desc' ? -1 : 1;
+    filteredCars.sort((a, b) => {
+      if (sf === 'car_number') return so * (a.car_number || '').localeCompare(b.car_number || '');
+      if (sf === 'driver_name') return so * (a.driver_name || '').localeCompare(b.driver_name || '');
+      if (sf === 'loaded_cartons') return so * ((a.total_loaded_cartons || 0) - (b.total_loaded_cartons || 0));
+      if (sf === 'deliveries') return so * ((a.total_deliveries_count || 0) - (b.total_deliveries_count || 0));
+      return so * (a.car_number || '').localeCompare(b.car_number || '');
+    });
+
+    const activeCar = filteredCars.find(c => c.id === this.selectedCarId) || filteredCars[0] || this.cars[0];
 
     return `
       <div class="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-200 overflow-hidden">
@@ -189,10 +314,15 @@ window.CarLoading = {
         <div class="w-full md:w-5/12 p-4 overflow-y-auto space-y-3 custom-scrollbar bg-slate-50/50">
           <div class="flex items-center justify-between pb-2 border-b border-slate-200/80">
             <span class="text-xs font-black uppercase text-slate-500 tracking-wider">Select Vehicle</span>
-            <span class="text-[11px] font-bold text-slate-400">${this.cars.length} cars</span>
+            <span class="text-[11px] font-bold text-slate-400">${filteredCars.length} cars</span>
           </div>
 
-          ${this.cars.map(c => {
+          ${filteredCars.length === 0 ? `
+            <div class="p-8 text-center text-slate-400">
+              <p class="text-xs font-bold text-slate-500">No vehicles match "${this.searchQuery}"</p>
+              <button onclick="CarLoading.clearSearch()" class="text-[11px] text-blue-600 font-bold mt-1.5 underline cursor-pointer">Clear Search</button>
+            </div>
+          ` : filteredCars.map(c => {
             const isSelected = c.id === activeCar.id;
             const loaded = c.total_loaded_cartons || 0;
 
@@ -246,6 +376,28 @@ window.CarLoading = {
     await this.loadSelectedCarInventory();
   },
 
+  carInvSortField: 'carton_name',
+  carInvSortOrder: 'asc',
+
+  toggleCarInvSort(field) {
+    if (this.carInvSortField === field) {
+      this.carInvSortOrder = this.carInvSortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.carInvSortField = field;
+      this.carInvSortOrder = ['cartons_loaded', 'loaded_value', 'carton_sale_price'].includes(field) ? 'desc' : 'asc';
+    }
+    this.loadSelectedCarInventory();
+  },
+
+  getCarInvSortIcon(field) {
+    if (this.carInvSortField !== field) {
+      return `<i data-lucide="arrow-up-down" class="w-3 h-3 text-slate-300 ml-1 inline-block"></i>`;
+    }
+    return this.carInvSortOrder === 'asc'
+      ? `<i data-lucide="arrow-up" class="w-3 h-3 text-blue-600 ml-1 inline-block"></i>`
+      : `<i data-lucide="arrow-down" class="w-3 h-3 text-blue-600 ml-1 inline-block"></i>`;
+  },
+
   async loadSelectedCarInventory() {
     const target = document.getElementById('car-inventory-breakdown');
     if (!target) return;
@@ -254,9 +406,20 @@ window.CarLoading = {
     if (!car) return;
 
     const inv = await window.api.getCarInventory(car.id) || [];
-    const loadedItems = inv.filter(it => (it.cartons_loaded || 0) > 0);
+    let loadedItems = inv.filter(it => (it.cartons_loaded || 0) > 0);
     const totalCartons = loadedItems.reduce((sum, it) => sum + it.cartons_loaded, 0);
     const totalLoadedValue = loadedItems.reduce((sum, it) => sum + (it.loaded_value || 0), 0);
+
+    const csf = this.carInvSortField || 'carton_name';
+    const cso = this.carInvSortOrder === 'desc' ? -1 : 1;
+    loadedItems.sort((a, b) => {
+      if (csf === 'carton_name') return cso * (a.carton_name || '').localeCompare(b.carton_name || '');
+      if (csf === 'pieces_per_carton') return cso * ((a.pieces_per_carton || 0) - (b.pieces_per_carton || 0));
+      if (csf === 'cartons_loaded') return cso * ((a.cartons_loaded || 0) - (b.cartons_loaded || 0));
+      if (csf === 'carton_sale_price') return cso * ((a.carton_sale_price || 0) - (b.carton_sale_price || 0));
+      if (csf === 'loaded_value') return cso * ((a.loaded_value || 0) - (b.loaded_value || 0));
+      return cso * (a.carton_name || '').localeCompare(b.carton_name || '');
+    });
 
     target.innerHTML = `
       <div class="flex items-start justify-between pb-4 border-b border-slate-200">
@@ -300,11 +463,36 @@ window.CarLoading = {
           <table class="w-full text-left text-xs border-collapse border border-slate-200">
             <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500">
               <tr>
-                <th class="py-2 px-3 border-r border-slate-200">Item / Flavor</th>
-                <th class="py-2 px-3 text-center border-r border-slate-200">Spec</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Loaded Qty</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Rate</th>
-                <th class="py-2 px-3 text-right">Total Value</th>
+                <th onclick="CarLoading.toggleCarInvSort('carton_name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                  <div class="flex items-center justify-between gap-1">
+                    <span>Item / Flavor</span>
+                    ${this.getCarInvSortIcon('carton_name')}
+                  </div>
+                </th>
+                <th onclick="CarLoading.toggleCarInvSort('pieces_per_carton')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                  <div class="flex items-center justify-center gap-1">
+                    <span>Spec</span>
+                    ${this.getCarInvSortIcon('pieces_per_carton')}
+                  </div>
+                </th>
+                <th onclick="CarLoading.toggleCarInvSort('cartons_loaded')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>Loaded Qty</span>
+                    ${this.getCarInvSortIcon('cartons_loaded')}
+                  </div>
+                </th>
+                <th onclick="CarLoading.toggleCarInvSort('carton_sale_price')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>Rate</span>
+                    ${this.getCarInvSortIcon('carton_sale_price')}
+                  </div>
+                </th>
+                <th onclick="CarLoading.toggleCarInvSort('loaded_value')" class="py-2 px-3 text-right cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>Total Value</span>
+                    ${this.getCarInvSortIcon('loaded_value')}
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -541,12 +729,41 @@ window.CarLoading = {
   },
 
   renderHistoryView() {
-    if (this.dispatches.length === 0) {
+    let list = [...this.dispatches];
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(d =>
+        (d.dispatch_no || '').toLowerCase().includes(q) ||
+        (d.car_number || '').toLowerCase().includes(q) ||
+        (d.driver_name || '').toLowerCase().includes(q) ||
+        (d.notes || '').toLowerCase().includes(q)
+      );
+    }
+
+    const sf = this.sortField;
+    const so = this.sortOrder === 'desc' ? -1 : 1;
+    list.sort((a, b) => {
+      if (sf === 'date') {
+        const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+        const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+        return so * (dA - dB);
+      }
+      if (sf === 'dispatch_no') return so * (a.dispatch_no || '').localeCompare(b.dispatch_no || '');
+      if (sf === 'car_number') return so * (a.car_number || '').localeCompare(b.car_number || '');
+      if (sf === 'driver_name') return so * (a.driver_name || '').localeCompare(b.driver_name || '');
+      if (sf === 'total_cartons') return so * ((a.total_cartons || 0) - (b.total_cartons || 0));
+      const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+      const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+      return (dB - dA);
+    });
+
+    if (list.length === 0) {
       return `
         <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
           <i data-lucide="history" class="w-12 h-12 mb-3 text-slate-300"></i>
-          <h4 class="text-sm font-black text-slate-600">No dispatches logged yet</h4>
-          <p class="text-xs text-slate-400 mt-1">Car loading operations will be recorded here.</p>
+          <h4 class="text-sm font-black text-slate-600">${this.searchQuery ? 'No matching dispatches found' : 'No dispatches logged yet'}</h4>
+          <p class="text-xs text-slate-400 mt-1">${this.searchQuery ? `No records matched "${this.searchQuery}"` : 'Car loading operations will be recorded here.'}</p>
+          ${this.searchQuery ? `<button onclick="CarLoading.clearSearch()" class="text-xs text-blue-600 font-bold mt-2 underline cursor-pointer">Clear Search</button>` : ''}
         </div>
       `;
     }
@@ -556,17 +773,42 @@ window.CarLoading = {
         <table class="w-full text-left text-xs">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-3 border-r border-slate-200">Dispatch #</th>
-              <th class="py-2 px-3 border-r border-slate-200">Date</th>
-              <th class="py-2 px-3 border-r border-slate-200">Vehicle</th>
-              <th class="py-2 px-3 border-r border-slate-200">Driver</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Total Cartons Loaded</th>
+              <th onclick="CarLoading.toggleSort('dispatch_no')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Dispatch #</span>
+                  ${this.getSortIcon('dispatch_no')}
+                </div>
+              </th>
+              <th onclick="CarLoading.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px] cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Date</span>
+                  ${this.getSortIcon('date')}
+                </div>
+              </th>
+              <th onclick="CarLoading.toggleSort('car_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Vehicle</span>
+                  ${this.getSortIcon('car_number')}
+                </div>
+              </th>
+              <th onclick="CarLoading.toggleSort('driver_name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Driver</span>
+                  ${this.getSortIcon('driver_name')}
+                </div>
+              </th>
+              <th onclick="CarLoading.toggleSort('total_cartons')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Total Cartons Loaded</span>
+                  ${this.getSortIcon('total_cartons')}
+                </div>
+              </th>
               <th class="py-2 px-3 border-r border-slate-200">Notes</th>
               <th class="py-2 px-3 text-center">Gate Pass</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${this.dispatches.map(d => `
+            ${list.map(d => `
               <tr class="hover:bg-slate-50/60 transition-colors">
                 <td class="py-1.5 px-3 font-mono font-bold text-blue-800 text-xs border-r border-slate-200 whitespace-nowrap">${d.dispatch_no}</td>
                 <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
@@ -589,6 +831,13 @@ window.CarLoading = {
 
   switchTab(tab) {
     this.activeTab = tab;
+    if (tab === 'cars') {
+      this.sortField = 'car_number';
+      this.sortOrder = 'asc';
+    } else if (tab === 'history') {
+      this.sortField = 'date';
+      this.sortOrder = 'desc';
+    }
     this.renderUI();
     if (tab === 'cars') {
       this.loadSelectedCarInventory();

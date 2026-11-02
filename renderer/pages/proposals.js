@@ -11,6 +11,8 @@ window.Proposals = {
   selectedMonth: '',
   selectedYear: new Date().getFullYear(),
   searchQuery: '',
+  sortField: 'date', // 'date' | 'invoice' | 'car_driver' | 'shop' | 'cartons' | 'total' | 'received' | 'balance' | 'method'
+  sortOrder: 'desc', // 'asc' | 'desc'
 
   async render(container) {
     this.container = container;
@@ -82,7 +84,28 @@ window.Proposals = {
               <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input type="text" id="prop-search" oninput="Proposals.onSearchChange(this.value)"
                      placeholder="Search by Invoice #, Shop, Driver, Vehicle..."
+                     value="${this.searchQuery}"
                      class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-400">
+              <button type="button" id="prop-search-clear" onclick="Proposals.clearSearch()" title="Clear search"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div>
+              <select id="prop-sort-select" onchange="Proposals.onSortSelect(this.value)"
+                      class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none hover:bg-white focus:border-amber-400 cursor-pointer">
+                <option value="date_desc" ${this.sortField==='date'&&this.sortOrder==='desc'?'selected':''}>Date (Newest First)</option>
+                <option value="date_asc" ${this.sortField==='date'&&this.sortOrder==='asc'?'selected':''}>Date (Oldest First)</option>
+                <option value="total_desc" ${this.sortField==='total'&&this.sortOrder==='desc'?'selected':''}>Total Amount (High-Low)</option>
+                <option value="total_asc" ${this.sortField==='total'&&this.sortOrder==='asc'?'selected':''}>Total Amount (Low-High)</option>
+                <option value="cartons_desc" ${this.sortField==='cartons'&&this.sortOrder==='desc'?'selected':''}>Cartons (High-Low)</option>
+                <option value="received_desc" ${this.sortField==='received'&&this.sortOrder==='desc'?'selected':''}>Cash Received (High-Low)</option>
+                <option value="balance_desc" ${this.sortField==='balance'&&this.sortOrder==='desc'?'selected':''}>Khata Remaining (High-Low)</option>
+                <option value="shop_asc" ${this.sortField==='shop'&&this.sortOrder==='asc'?'selected':''}>Shop Name (A-Z)</option>
+                <option value="invoice_desc" ${this.sortField==='invoice'&&this.sortOrder==='desc'?'selected':''}>Invoice # (Newest)</option>
+              </select>
             </div>
 
             <!-- Vehicle Filter -->
@@ -133,17 +156,62 @@ window.Proposals = {
         <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col min-h-0">
           <div class="overflow-x-auto flex-1">
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
-              <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
+              <thead id="prop-table-head" class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
-                  <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap">Date</th>
-                  <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
-                  <th class="py-2 px-3 border-r border-slate-200">Car &amp; Driver</th>
-                  <th class="py-2 px-3 border-r border-slate-200">Shop / Customer</th>
-                  <th class="py-2 px-2 text-center border-r border-slate-200">Cartons</th>
-                  <th class="py-2 px-3 text-right border-r border-slate-200">Total (Rs.)</th>
-                  <th class="py-2 px-3 text-right border-r border-slate-200">Cash Received</th>
-                  <th class="py-2 px-3 text-right border-r border-slate-200">Khata Remaining</th>
-                  <th class="py-2 px-2 text-center border-r border-slate-200">Method</th>
+                  <th onclick="Proposals.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-between gap-1">
+                      <span>Date</span>
+                      ${this.getSortIcon('date')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('invoice')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-between gap-1">
+                      <span>Invoice #</span>
+                      ${this.getSortIcon('invoice')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('car_driver')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-between gap-1">
+                      <span>Car &amp; Driver</span>
+                      ${this.getSortIcon('car_driver')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('shop')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-between gap-1">
+                      <span>Shop / Customer</span>
+                      ${this.getSortIcon('shop')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('cartons')" class="py-2 px-2 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-center gap-1">
+                      <span>Cartons</span>
+                      ${this.getSortIcon('cartons')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('total')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-end gap-1">
+                      <span>Total (Rs.)</span>
+                      ${this.getSortIcon('total')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('received')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-end gap-1">
+                      <span>Cash Received</span>
+                      ${this.getSortIcon('received')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('balance')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-end gap-1">
+                      <span>Khata Remaining</span>
+                      ${this.getSortIcon('balance')}
+                    </div>
+                  </th>
+                  <th onclick="Proposals.toggleSort('method')" class="py-2 px-2 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+                    <div class="flex items-center justify-center gap-1">
+                      <span>Method</span>
+                      ${this.getSortIcon('method')}
+                    </div>
+                  </th>
                   <th class="py-2 px-3 text-center">Actions</th>
                 </tr>
               </thead>
@@ -187,9 +255,119 @@ window.Proposals = {
     }
   },
 
+  clearSearch() {
+    this.searchQuery = '';
+    const inp = document.getElementById('prop-search');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    const clr = document.getElementById('prop-search-clear');
+    if (clr) clr.classList.add('hidden');
+    this.applyFilters();
+  },
+
   onSearchChange(val) {
     this.searchQuery = val.toLowerCase().trim();
+    const clr = document.getElementById('prop-search-clear');
+    if (clr) clr.classList.toggle('hidden', !this.searchQuery);
     this.applyFilters();
+  },
+
+  toggleSort(field) {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortOrder = ['cartons', 'total', 'received', 'balance', 'date', 'invoice'].includes(field) ? 'desc' : 'asc';
+    }
+    const sel = document.getElementById('prop-sort-select');
+    if (sel) sel.value = `${this.sortField}_${this.sortOrder}`;
+    this.applyFilters();
+  },
+
+  onSortSelect(val) {
+    if (!val) return;
+    const parts = val.split('_');
+    const order = parts.pop();
+    const field = parts.join('_');
+    this.sortField = field;
+    this.sortOrder = order || 'asc';
+    this.applyFilters();
+  },
+
+  getSortIcon(field) {
+    if (this.sortField !== field) {
+      return `<i data-lucide="arrow-up-down" class="w-3 h-3 text-slate-300 ml-1 inline-block"></i>`;
+    }
+    return this.sortOrder === 'asc'
+      ? `<i data-lucide="arrow-up" class="w-3 h-3 text-amber-600 ml-1 inline-block"></i>`
+      : `<i data-lucide="arrow-down" class="w-3 h-3 text-amber-600 ml-1 inline-block"></i>`;
+  },
+
+  renderTableHead() {
+    const thead = document.getElementById('prop-table-head');
+    if (!thead) return;
+    thead.innerHTML = `
+      <tr>
+        <th onclick="Proposals.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-between gap-1">
+            <span>Date</span>
+            ${this.getSortIcon('date')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('invoice')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-between gap-1">
+            <span>Invoice #</span>
+            ${this.getSortIcon('invoice')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('car_driver')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-between gap-1">
+            <span>Car &amp; Driver</span>
+            ${this.getSortIcon('car_driver')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('shop')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-between gap-1">
+            <span>Shop / Customer</span>
+            ${this.getSortIcon('shop')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('cartons')" class="py-2 px-2 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-center gap-1">
+            <span>Cartons</span>
+            ${this.getSortIcon('cartons')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('total')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-end gap-1">
+            <span>Total (Rs.)</span>
+            ${this.getSortIcon('total')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('received')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-end gap-1">
+            <span>Cash Received</span>
+            ${this.getSortIcon('received')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('balance')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-end gap-1">
+            <span>Khata Remaining</span>
+            ${this.getSortIcon('balance')}
+          </div>
+        </th>
+        <th onclick="Proposals.toggleSort('method')" class="py-2 px-2 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
+          <div class="flex items-center justify-center gap-1">
+            <span>Method</span>
+            ${this.getSortIcon('method')}
+          </div>
+        </th>
+        <th class="py-2 px-3 text-center">Actions</th>
+      </tr>
+    `;
+    if (window.lucide) lucide.createIcons({ root: thead });
   },
 
   onCarChange(val) {
@@ -286,12 +464,34 @@ window.Proposals = {
         const shop = (d.shop_name || '').toLowerCase();
         const driver = (d.driver_name || '').toLowerCase();
         const car = (d.car_number || '').toLowerCase();
-        return inv.includes(this.searchQuery) || shop.includes(this.searchQuery) || driver.includes(this.searchQuery) || car.includes(this.searchQuery);
+        const method = (d.payment_method || '').toLowerCase();
+        return inv.includes(this.searchQuery) || shop.includes(this.searchQuery) || driver.includes(this.searchQuery) || car.includes(this.searchQuery) || method.includes(this.searchQuery);
       });
     }
 
+    // Sort list
+    const sf = this.sortField;
+    const so = this.sortOrder === 'desc' ? -1 : 1;
+    list = [...list].sort((a, b) => {
+      if (sf === 'date') {
+        const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+        const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+        return so * (dA - dB);
+      }
+      if (sf === 'invoice') return so * (a.invoice_no || '').localeCompare(b.invoice_no || '');
+      if (sf === 'car_driver') return so * ((a.car_number || '') + (a.driver_name || '')).localeCompare((b.car_number || '') + (b.driver_name || ''));
+      if (sf === 'shop') return so * (a.shop_name || '').localeCompare(b.shop_name || '');
+      if (sf === 'cartons') return so * ((a.total_cartons_delivered || 0) - (b.total_cartons_delivered || 0));
+      if (sf === 'total') return so * ((a.total_amount || 0) - (b.total_amount || 0));
+      if (sf === 'received') return so * ((a.received_amount || 0) - (b.received_amount || 0));
+      if (sf === 'balance') return so * ((a.remaining_balance || 0) - (b.remaining_balance || 0));
+      if (sf === 'method') return so * (a.payment_method || '').localeCompare(b.payment_method || '');
+      return (new Date(b.date || b.created_at || 0).getTime() || 0) - (new Date(a.date || a.created_at || 0).getTime() || 0);
+    });
+
     this.filteredDeliveries = list;
     this.updateStats();
+    this.renderTableHead();
     this.renderTable();
   },
 

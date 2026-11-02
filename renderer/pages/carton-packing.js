@@ -5,6 +5,8 @@ window.CartonPacking = {
   batches: [],
   activeTab: 'inventory', // 'inventory' | 'batches'
   searchQuery: '',
+  sortField: 'name', // 'name' | 'spec' | 'stock' | 'loaded' | 'cost' | 'price' | 'value' | 'pool_pcs' for inventory; 'packing_number' | 'date' | 'item_name' | 'cartons_packed' | 'pieces_per_carton' | 'total_pieces_consumed' | 'carton_cost' | 'total_cost' | 'carton_sale_price' for batches
+  sortOrder: 'asc', // 'asc' | 'desc'
   periodType: 'day', // 'day' | 'month' | 'all'
   selectedDate: new Date().toISOString().slice(0, 10),
 
@@ -121,13 +123,42 @@ window.CartonPacking = {
             </button>
           </div>
 
-          <!-- Controls: Search + Time Filters -->
+          <!-- Controls: Search + Sort + Time Filters -->
           <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
             <!-- Search -->
-            <div class="relative w-full sm:w-52">
+            <div class="relative w-full sm:w-56">
               <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" placeholder="Search carton item..." value="${this.searchQuery}" oninput="CartonPacking.onSearch(this.value)"
-                     class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-400">
+              <input type="text" id="pck-search" placeholder="${this.activeTab === 'inventory' ? 'Search carton, flavor...' : 'Search packing #, carton name...'}"
+                     value="${this.searchQuery}" oninput="CartonPacking.onSearch(this.value)"
+                     class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-400">
+              <button type="button" id="pck-search-clear" onclick="CartonPacking.clearSearch()" title="Clear search"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <select id="pck-sort-select" onchange="CartonPacking.onSortSelect(this.value)"
+                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:bg-white focus:border-purple-400 cursor-pointer">
+                ${this.activeTab === 'inventory' ? `
+                  <option value="name_asc" ${this.sortField==='name'&&this.sortOrder==='asc'?'selected':''}>Carton Name (A-Z)</option>
+                  <option value="name_desc" ${this.sortField==='name'&&this.sortOrder==='desc'?'selected':''}>Carton Name (Z-A)</option>
+                  <option value="stock_desc" ${this.sortField==='stock'&&this.sortOrder==='desc'?'selected':''}>Highest Warehouse Stock</option>
+                  <option value="stock_asc" ${this.sortField==='stock'&&this.sortOrder==='asc'?'selected':''}>Lowest Warehouse Stock</option>
+                  <option value="loaded_desc" ${this.sortField==='loaded'&&this.sortOrder==='desc'?'selected':''}>Most Loaded in Cars</option>
+                  <option value="value_desc" ${this.sortField==='value'&&this.sortOrder==='desc'?'selected':''}>Highest Stock Value</option>
+                  <option value="price_desc" ${this.sortField==='price'&&this.sortOrder==='desc'?'selected':''}>Highest Sale Price</option>
+                  <option value="pool_pcs_desc" ${this.sortField==='pool_pcs'&&this.sortOrder==='desc'?'selected':''}>Most Loose Pcs in Pool</option>
+                ` : `
+                  <option value="date_desc" ${this.sortField==='date'&&this.sortOrder==='desc'?'selected':''}>Newest First</option>
+                  <option value="date_asc" ${this.sortField==='date'&&this.sortOrder==='asc'?'selected':''}>Oldest First</option>
+                  <option value="item_name_asc" ${this.sortField==='item_name'&&this.sortOrder==='asc'?'selected':''}>Item Packed (A-Z)</option>
+                  <option value="cartons_packed_desc" ${this.sortField==='cartons_packed'&&this.sortOrder==='desc'?'selected':''}>Most Cartons Packed</option>
+                  <option value="total_cost_desc" ${this.sortField==='total_cost'&&this.sortOrder==='desc'?'selected':''}>Highest Batch Cost</option>
+                  <option value="packing_number_asc" ${this.sortField==='packing_number'&&this.sortOrder==='asc'?'selected':''}>Packing # (A-Z)</option>
+                `}
+              </select>
             </div>
 
             <!-- Period Switcher: Daily | Monthly | Annual | All -->
@@ -221,12 +252,34 @@ window.CartonPacking = {
   },
 
   renderContentArea() {
-    const filtered = (this.cartons || []).filter(c => {
-      if (!this.searchQuery) return true;
-      const q = this.searchQuery.toLowerCase();
+    const q = (this.searchQuery || '').toLowerCase();
+    let filtered = (this.cartons || []).filter(c => {
+      if (!q) return true;
       return (c.carton_name || '').toLowerCase().includes(q) || (c.item_name || '').toLowerCase().includes(q);
     });
-    return this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderBatchesTable();
+
+    if (this.activeTab === 'inventory') {
+      const sf = this.sortField;
+      const so = this.sortOrder === 'desc' ? -1 : 1;
+      filtered.sort((a, b) => {
+        if (sf === 'name') return so * (a.carton_name || '').localeCompare(b.carton_name || '');
+        if (sf === 'spec') return so * ((a.pieces_per_carton || 0) - (b.pieces_per_carton || 0));
+        if (sf === 'stock') return so * ((a.factory_carton_stock || 0) - (b.factory_carton_stock || 0));
+        if (sf === 'loaded') return so * ((a.total_loaded_in_cars || 0) - (b.total_loaded_in_cars || 0));
+        if (sf === 'cost') return so * ((a.carton_cost || 0) - (b.carton_cost || 0));
+        if (sf === 'price') return so * ((a.carton_sale_price || 0) - (b.carton_sale_price || 0));
+        if (sf === 'value') {
+          const valA = (a.factory_carton_stock || 0) * (a.carton_sale_price || 0);
+          const valB = (b.factory_carton_stock || 0) * (b.carton_sale_price || 0);
+          return so * (valA - valB);
+        }
+        if (sf === 'pool_pcs') return so * ((a.available_single_pieces || 0) - (b.available_single_pieces || 0));
+        return so * (a.carton_name || '').localeCompare(b.carton_name || '');
+      });
+      return this.renderInventoryTable(filtered);
+    } else {
+      return this.renderBatchesTable();
+    }
   },
 
   updateContentArea() {
@@ -265,7 +318,7 @@ window.CartonPacking = {
   },
 
   getFilteredBatches() {
-    let list = this.batches || [];
+    let list = [...(this.batches || [])];
     if (this.periodType === 'day' && this.selectedDate) {
       list = list.filter(b => b.date === this.selectedDate);
     } else if (this.periodType === 'month' && this.selectedDate) {
@@ -283,6 +336,30 @@ window.CartonPacking = {
         (b.carton_name || '').toLowerCase().includes(q)
       );
     }
+
+    if (this.activeTab === 'batches') {
+      const sf = this.sortField;
+      const so = this.sortOrder === 'desc' ? -1 : 1;
+      list.sort((a, b) => {
+        if (sf === 'date') {
+          const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+          const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+          return so * (dA - dB);
+        }
+        if (sf === 'packing_number') return so * (a.packing_number || '').localeCompare(b.packing_number || '');
+        if (sf === 'item_name') return so * (a.item_name || '').localeCompare(b.item_name || '');
+        if (sf === 'cartons_packed') return so * ((a.cartons_packed || 0) - (b.cartons_packed || 0));
+        if (sf === 'pieces_per_carton') return so * ((a.pieces_per_carton || 0) - (b.pieces_per_carton || 0));
+        if (sf === 'total_pieces_consumed') return so * ((a.total_pieces_consumed || 0) - (b.total_pieces_consumed || 0));
+        if (sf === 'carton_cost') return so * ((a.carton_cost || 0) - (b.carton_cost || 0));
+        if (sf === 'total_cost') return so * ((a.total_cost || 0) - (b.total_cost || 0));
+        if (sf === 'carton_sale_price') return so * ((a.carton_sale_price || 0) - (b.carton_sale_price || 0));
+        const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+        const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+        return (dB - dA);
+      });
+    }
+
     return list;
   },
 
@@ -301,6 +378,68 @@ window.CartonPacking = {
     };
   },
 
+  toggleSort(field) {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortOrder = ['stock', 'loaded', 'cost', 'price', 'value', 'pool_pcs', 'cartons_packed', 'total_pieces_consumed', 'total_cost', 'date'].includes(field) ? 'desc' : 'asc';
+    }
+    const sel = document.getElementById('pck-sort-select');
+    if (sel) sel.value = `${this.sortField}_${this.sortOrder}`;
+    this.updateContentArea();
+  },
+
+  onSortSelect(val) {
+    if (!val) return;
+    const parts = val.split('_');
+    const order = parts.pop();
+    const field = parts.join('_');
+    this.sortField = field;
+    this.sortOrder = order || 'asc';
+    this.updateContentArea();
+  },
+
+  getSortIcon(field) {
+    if (this.sortField !== field) {
+      return `<i data-lucide="arrow-up-down" class="w-3 h-3 text-slate-300 ml-1 inline-block"></i>`;
+    }
+    return this.sortOrder === 'asc'
+      ? `<i data-lucide="arrow-up" class="w-3 h-3 text-purple-600 ml-1 inline-block"></i>`
+      : `<i data-lucide="arrow-down" class="w-3 h-3 text-purple-600 ml-1 inline-block"></i>`;
+  },
+
+  clearSearch() {
+    this.searchQuery = '';
+    const inp = document.getElementById('pck-search');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    const clr = document.getElementById('pck-search-clear');
+    if (clr) clr.classList.add('hidden');
+    this.updateContentArea();
+  },
+
+  onSearch(q) {
+    this.searchQuery = q;
+    const clr = document.getElementById('pck-search-clear');
+    if (clr) clr.classList.toggle('hidden', !q);
+    this.updateContentArea();
+  },
+
+  switchTab(tab) {
+    this.activeTab = tab;
+    if (tab === 'inventory') {
+      this.sortField = 'name';
+      this.sortOrder = 'asc';
+    } else {
+      this.sortField = 'date';
+      this.sortOrder = 'desc';
+    }
+    this.renderUI();
+  },
+
   renderInventoryTable(cartons) {
     if (cartons.length === 0) {
       return `
@@ -317,14 +456,54 @@ window.CartonPacking = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-3 border-r border-slate-200">Carton Item</th>
-              <th class="py-2 px-3 text-center border-r border-slate-200">Packing Spec</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Factory Warehouse Stock</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Loaded in Cars</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Carton Cost</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Carton Sale Price</th>
-              <th class="py-2 px-3 text-right font-black text-slate-800 border-r border-slate-200">Warehouse Value</th>
-              <th class="py-2 px-3 text-center border-r border-slate-200">Loose Pcs in Pool</th>
+              <th onclick="CartonPacking.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Carton Item</span>
+                  ${this.getSortIcon('name')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('spec')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-center gap-1">
+                  <span>Packing Spec</span>
+                  ${this.getSortIcon('spec')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('stock')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Factory Warehouse Stock</span>
+                  ${this.getSortIcon('stock')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('loaded')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Loaded in Cars</span>
+                  ${this.getSortIcon('loaded')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Carton Cost</span>
+                  ${this.getSortIcon('cost')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('price')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Carton Sale Price</span>
+                  ${this.getSortIcon('price')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('value')" class="py-2 px-3 text-right font-black text-slate-800 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Warehouse Value</span>
+                  ${this.getSortIcon('value')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('pool_pcs')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-center gap-1">
+                  <span>Loose Pcs in Pool</span>
+                  ${this.getSortIcon('pool_pcs')}
+                </div>
+              </th>
               <th class="py-2 px-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -408,15 +587,60 @@ window.CartonPacking = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-3 border-r border-slate-200">Packing #</th>
-              <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
-              <th class="py-2 px-3 border-r border-slate-200">Item Packed</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Cartons Packed</th>
-              <th class="py-2 px-3 text-center border-r border-slate-200">Spec</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Single Pcs Consumed</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Carton Cost</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Total Cost</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Sale Price</th>
+              <th onclick="CartonPacking.toggleSort('packing_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Packing #</span>
+                  ${this.getSortIcon('packing_number')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px] cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Date</span>
+                  ${this.getSortIcon('date')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('item_name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Item Packed</span>
+                  ${this.getSortIcon('item_name')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('cartons_packed')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Cartons Packed</span>
+                  ${this.getSortIcon('cartons_packed')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('pieces_per_carton')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-center gap-1">
+                  <span>Spec</span>
+                  ${this.getSortIcon('pieces_per_carton')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('total_pieces_consumed')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Single Pcs Consumed</span>
+                  ${this.getSortIcon('total_pieces_consumed')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('carton_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Carton Cost</span>
+                  ${this.getSortIcon('carton_cost')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('total_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Total Cost</span>
+                  ${this.getSortIcon('total_cost')}
+                </div>
+              </th>
+              <th onclick="CartonPacking.toggleSort('carton_sale_price')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Sale Price</span>
+                  ${this.getSortIcon('carton_sale_price')}
+                </div>
+              </th>
               <th class="py-2 px-3 text-right">Action</th>
             </tr>
           </thead>

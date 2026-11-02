@@ -5,6 +5,8 @@ window.Production = {
   batches: [],
   activeTab: 'catalog', // 'catalog' | 'batches'
   searchQuery: '',
+  sortField: 'name', // 'name' | 'spec' | 'stock' | 'cost' | 'retail' | 'total_cost' | 'status' for catalog; 'batch_number' | 'date' | 'item_name' | 'produced_pieces' | 'unit_cost' | 'total_cost' for batches
+  sortOrder: 'asc', // 'asc' | 'desc'
   periodType: 'day', // 'day' | 'month' | 'all'
   selectedDate: new Date().toISOString().slice(0, 10),
 
@@ -109,13 +111,42 @@ window.Production = {
             </button>
           </div>
 
-          <!-- Controls: Search + Time Filters -->
+          <!-- Controls: Search + Sort + Time Filters -->
           <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
             <!-- Search -->
-            <div class="relative w-full sm:w-52">
+            <div class="relative w-full sm:w-56">
               <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" placeholder="Search item or batch..." value="${this.searchQuery}" oninput="Production.onSearch(this.value)"
-                     class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-cyan-400">
+              <input type="text" id="prd-search" placeholder="${this.activeTab === 'catalog' ? 'Search flavor, item name...' : 'Search batch #, item, ingredient...'}"
+                     value="${this.searchQuery}" oninput="Production.onSearch(this.value)"
+                     class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-cyan-400">
+              <button type="button" id="prd-search-clear" onclick="Production.clearSearch()" title="Clear search"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <select id="prd-sort-select" onchange="Production.onSortSelect(this.value)"
+                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:bg-white focus:border-cyan-400 cursor-pointer">
+                ${this.activeTab === 'catalog' ? `
+                  <option value="name_asc" ${this.sortField==='name'&&this.sortOrder==='asc'?'selected':''}>Item Name (A-Z)</option>
+                  <option value="name_desc" ${this.sortField==='name'&&this.sortOrder==='desc'?'selected':''}>Item Name (Z-A)</option>
+                  <option value="stock_desc" ${this.sortField==='stock'&&this.sortOrder==='desc'?'selected':''}>Highest Pool Stock</option>
+                  <option value="stock_asc" ${this.sortField==='stock'&&this.sortOrder==='asc'?'selected':''}>Lowest Pool Stock</option>
+                  <option value="cost_desc" ${this.sortField==='cost'&&this.sortOrder==='desc'?'selected':''}>Highest Making Cost</option>
+                  <option value="retail_desc" ${this.sortField==='retail'&&this.sortOrder==='desc'?'selected':''}>Highest Retail MRP</option>
+                  <option value="total_cost_desc" ${this.sortField==='total_cost'&&this.sortOrder==='desc'?'selected':''}>Highest Total Pool Cost</option>
+                  <option value="status_desc" ${this.sortField==='status'&&this.sortOrder==='desc'?'selected':''}>Ready to Pack First</option>
+                ` : `
+                  <option value="date_desc" ${this.sortField==='date'&&this.sortOrder==='desc'?'selected':''}>Newest First</option>
+                  <option value="date_asc" ${this.sortField==='date'&&this.sortOrder==='asc'?'selected':''}>Oldest First</option>
+                  <option value="item_name_asc" ${this.sortField==='item_name'&&this.sortOrder==='asc'?'selected':''}>Item Produced (A-Z)</option>
+                  <option value="produced_pieces_desc" ${this.sortField==='produced_pieces'&&this.sortOrder==='desc'?'selected':''}>Highest Produced Quantity</option>
+                  <option value="total_cost_desc" ${this.sortField==='total_cost'&&this.sortOrder==='desc'?'selected':''}>Highest Total Batch Cost</option>
+                  <option value="batch_number_asc" ${this.sortField==='batch_number'&&this.sortOrder==='asc'?'selected':''}>Batch # (A-Z)</option>
+                `}
+              </select>
             </div>
 
             <!-- Period Switcher: Daily | Monthly | Annual | All -->
@@ -209,11 +240,36 @@ window.Production = {
 
   renderContentArea() {
     const q = (this.searchQuery || '').toLowerCase();
-    const filtered = (this.items || []).filter(it => {
+    let filtered = (this.items || []).filter(it => {
       if (!q) return true;
       return (it.name || '').toLowerCase().includes(q) || (it.flavor || '').toLowerCase().includes(q);
     });
-    return this.activeTab === 'catalog' ? this.renderCatalogTable(filtered) : this.renderBatchesTable();
+
+    if (this.activeTab === 'catalog') {
+      const sf = this.sortField;
+      const so = this.sortOrder === 'desc' ? -1 : 1;
+      filtered.sort((a, b) => {
+        if (sf === 'name') return so * (a.name || '').localeCompare(b.name || '');
+        if (sf === 'spec') return so * ((a.default_pcs_per_carton || 0) - (b.default_pcs_per_carton || 0));
+        if (sf === 'stock') return so * ((a.current_single_stock || 0) - (b.current_single_stock || 0));
+        if (sf === 'cost') return so * ((a.unit_cost || 0) - (b.unit_cost || 0));
+        if (sf === 'retail') return so * ((a.retail_piece_price || 0) - (b.retail_piece_price || 0));
+        if (sf === 'total_cost') {
+          const cA = (a.current_single_stock || 0) * (a.unit_cost || 0);
+          const cB = (b.current_single_stock || 0) * (b.unit_cost || 0);
+          return so * (cA - cB);
+        }
+        if (sf === 'status') {
+          const sA = (a.current_single_stock || 0) > 0 ? 1 : 0;
+          const sB = (b.current_single_stock || 0) > 0 ? 1 : 0;
+          return so * (sA - sB);
+        }
+        return so * (a.name || '').localeCompare(b.name || '');
+      });
+      return this.renderCatalogTable(filtered);
+    } else {
+      return this.renderBatchesTable();
+    }
   },
 
   updateContentArea() {
@@ -252,7 +308,7 @@ window.Production = {
   },
 
   getFilteredBatches() {
-    let list = this.batches || [];
+    let list = [...(this.batches || [])];
     if (this.periodType === 'day' && this.selectedDate) {
       list = list.filter(b => b.date === this.selectedDate);
     } else if (this.periodType === 'month' && this.selectedDate) {
@@ -270,6 +326,27 @@ window.Production = {
         (b.raw_materials_summary || '').toLowerCase().includes(q)
       );
     }
+
+    if (this.activeTab === 'batches') {
+      const sf = this.sortField;
+      const so = this.sortOrder === 'desc' ? -1 : 1;
+      list.sort((a, b) => {
+        if (sf === 'date') {
+          const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+          const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+          return so * (dA - dB);
+        }
+        if (sf === 'batch_number') return so * (a.batch_number || '').localeCompare(b.batch_number || '');
+        if (sf === 'item_name') return so * (a.item_name || '').localeCompare(b.item_name || '');
+        if (sf === 'produced_pieces') return so * ((a.produced_pieces || 0) - (b.produced_pieces || 0));
+        if (sf === 'unit_cost') return so * ((a.unit_cost || 0) - (b.unit_cost || 0));
+        if (sf === 'total_cost') return so * ((a.total_cost || 0) - (b.total_cost || 0));
+        const dA = new Date(a.date || a.created_at || 0).getTime() || 0;
+        const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
+        return (dB - dA);
+      });
+    }
+
     return list;
   },
 
@@ -283,6 +360,68 @@ window.Production = {
       totalPiecesProduced,
       totalCost
     };
+  },
+
+  toggleSort(field) {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortOrder = ['stock', 'cost', 'retail', 'total_cost', 'produced_pieces', 'unit_cost', 'date'].includes(field) ? 'desc' : 'asc';
+    }
+    const sel = document.getElementById('prd-sort-select');
+    if (sel) sel.value = `${this.sortField}_${this.sortOrder}`;
+    this.updateContentArea();
+  },
+
+  onSortSelect(val) {
+    if (!val) return;
+    const parts = val.split('_');
+    const order = parts.pop();
+    const field = parts.join('_');
+    this.sortField = field;
+    this.sortOrder = order || 'asc';
+    this.updateContentArea();
+  },
+
+  getSortIcon(field) {
+    if (this.sortField !== field) {
+      return `<i data-lucide="arrow-up-down" class="w-3 h-3 text-slate-300 ml-1 inline-block"></i>`;
+    }
+    return this.sortOrder === 'asc'
+      ? `<i data-lucide="arrow-up" class="w-3 h-3 text-cyan-600 ml-1 inline-block"></i>`
+      : `<i data-lucide="arrow-down" class="w-3 h-3 text-cyan-600 ml-1 inline-block"></i>`;
+  },
+
+  clearSearch() {
+    this.searchQuery = '';
+    const inp = document.getElementById('prd-search');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    const clr = document.getElementById('prd-search-clear');
+    if (clr) clr.classList.add('hidden');
+    this.updateContentArea();
+  },
+
+  onSearch(q) {
+    this.searchQuery = q;
+    const clr = document.getElementById('prd-search-clear');
+    if (clr) clr.classList.toggle('hidden', !q);
+    this.updateContentArea();
+  },
+
+  switchTab(tab) {
+    this.activeTab = tab;
+    if (tab === 'catalog') {
+      this.sortField = 'name';
+      this.sortOrder = 'asc';
+    } else {
+      this.sortField = 'date';
+      this.sortOrder = 'desc';
+    }
+    this.renderUI();
   },
 
   renderCatalogGrid(items) {
@@ -305,13 +444,48 @@ window.Production = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-3 border-r border-slate-200">Item / Flavor</th>
-              <th class="py-2 px-3 text-center border-r border-slate-200">Pack Spec</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Available Pool Stock</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Making Cost</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Retail MRP</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Total Pool Cost</th>
-              <th class="py-2 px-3 text-center border-r border-slate-200">Status</th>
+              <th onclick="Production.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Item / Flavor</span>
+                  ${this.getSortIcon('name')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('spec')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-center gap-1">
+                  <span>Pack Spec</span>
+                  ${this.getSortIcon('spec')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('stock')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Available Pool Stock</span>
+                  ${this.getSortIcon('stock')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Making Cost</span>
+                  ${this.getSortIcon('cost')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('retail')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Retail MRP</span>
+                  ${this.getSortIcon('retail')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('total_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Total Pool Cost</span>
+                  ${this.getSortIcon('total_cost')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('status')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-center gap-1">
+                  <span>Status</span>
+                  ${this.getSortIcon('status')}
+                </div>
+              </th>
               <th class="py-2 px-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -398,12 +572,42 @@ window.Production = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-3 border-r border-slate-200">Batch #</th>
-              <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
-              <th class="py-2 px-3 border-r border-slate-200">Item Produced</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Quantity Produced</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Unit Cost</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Total Batch Cost</th>
+              <th onclick="Production.toggleSort('batch_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Batch #</span>
+                  ${this.getSortIcon('batch_number')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px] cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Date</span>
+                  ${this.getSortIcon('date')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('item_name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Item Produced</span>
+                  ${this.getSortIcon('item_name')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('produced_pieces')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Quantity Produced</span>
+                  ${this.getSortIcon('produced_pieces')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('unit_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Unit Cost</span>
+                  ${this.getSortIcon('unit_cost')}
+                </div>
+              </th>
+              <th onclick="Production.toggleSort('total_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Total Batch Cost</span>
+                  ${this.getSortIcon('total_cost')}
+                </div>
+              </th>
               <th class="py-2 px-3 border-r border-slate-200">Raw Materials Used</th>
               <th class="py-2 px-3 text-right">Action</th>
             </tr>
@@ -431,16 +635,6 @@ window.Production = {
         </table>
       </div>
     `;
-  },
-
-  switchTab(tab) {
-    this.activeTab = tab;
-    this.renderUI();
-  },
-
-  onSearch(q) {
-    this.searchQuery = q;
-    this.updateContentArea();
   },
 
   openProductionModal(defaultItemId = null) {

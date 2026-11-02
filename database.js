@@ -4,11 +4,8 @@ const fs = require('fs');
 const { app } = require('electron');
 
 let db;
-let currentBranch = 'b1';
-const branchDbs = {};
-
-function getDbPathForBranch(branchId = 'b1') {
-  const filename = branchId === 'b2' ? 'ishaq_jadoon_b2.db' : 'ishaq_jadoon.db';
+function getDbPath() {
+  const filename = 'ishaq_jadoon.db';
   if (app && typeof app.getPath === 'function') {
     return path.join(app.getPath('userData'), filename);
   }
@@ -18,119 +15,20 @@ function getDbPathForBranch(branchId = 'b1') {
   return path.join(dir, filename);
 }
 
-function initBranch(branchId = 'b1') {
-  if (branchDbs[branchId]) {
-    return branchDbs[branchId];
-  }
-  const dbPath = getDbPathForBranch(branchId);
-  const instance = new Database(dbPath);
-  instance.pragma('journal_mode = WAL');
-  instance.pragma('synchronous = NORMAL');
-  instance.pragma('temp_store = MEMORY');
-  instance.pragma('cache_size = -64000');
-  
-  branchDbs[branchId] = instance;
-  
-  const prevDb = db;
-  db = instance;
-  createTables();
-  seedInitialData(branchId);
-  db = prevDb || instance;
-  
-  return instance;
+function getDbPathForBranch() {
+  return getDbPath();
 }
 
 function init(customPath = null) {
-  if (customPath) {
-    db = new Database(customPath);
-    db.pragma('journal_mode = WAL');
-    db.pragma('synchronous = NORMAL');
-    db.pragma('temp_store = MEMORY');
-    db.pragma('cache_size = -64000');
-    branchDbs['b1'] = db;
-    currentBranch = 'b1';
-    createTables();
-    seedInitialData('b1');
-    return;
-  }
-
-  currentBranch = 'b1';
-  db = initBranch('b1');
-}
-
-function switchBranch(branchId = 'b1') {
-  if (branchId !== 'b1' && branchId !== 'b2') branchId = 'b1';
-  currentBranch = branchId;
-  db = initBranch(branchId);
-  return { success: true, branch: currentBranch, dbPath: getDbPathForBranch(currentBranch) };
-}
-
-function getCurrentBranch() {
-  return currentBranch;
-}
-
-function copyCatalogFromBranch(fromBranch = 'b1', toBranch = 'b2') {
-  const sourceDb = initBranch(fromBranch);
-  const targetDb = initBranch(toBranch);
-  
-  let totalCopied = 0;
-  
-  const tx = targetDb.transaction(() => {
-    // 1. Copy category labels
-    const sourceCatLabels = sourceDb.prepare('SELECT slug, label FROM category_labels').all();
-    const insertCatStmt = targetDb.prepare('INSERT OR IGNORE INTO category_labels (slug, label) VALUES (?, ?)');
-    sourceCatLabels.forEach(c => insertCatStmt.run(c.slug, c.label));
-    
-    // 2. Copy units
-    const sourceUnits = sourceDb.prepare('SELECT name FROM product_units').all();
-    const insertUnitStmt = targetDb.prepare('INSERT OR IGNORE INTO product_units (name) VALUES (?)');
-    sourceUnits.forEach(u => insertUnitStmt.run(u.name));
-    
-    // 3. Copy products for all categories
-    sourceCatLabels.forEach(cat => {
-      try {
-        const sourceProducts = sourceDb.prepare(`SELECT * FROM products_${cat.slug}`).all();
-        if (!sourceProducts || sourceProducts.length === 0) return;
-        
-        const insertStmt = targetDb.prepare(`
-          INSERT INTO products_${cat.slug} (
-            item_name, description, current_stock, unit, cost_price, retail_price, 
-            wholesale_cost_price, wholesale_price, company_id, barcode
-          ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        
-        const existingNames = new Set(targetDb.prepare(`SELECT LOWER(TRIM(COALESCE(item_name, ''))) as n FROM products_${cat.slug}`).all().map(r => r.n));
-        const existingBarcodes = new Set(targetDb.prepare(`SELECT LOWER(TRIM(COALESCE(barcode, ''))) as b FROM products_${cat.slug} WHERE barcode IS NOT NULL`).all().map(r => r.b));
-        
-        sourceProducts.forEach(p => {
-          const nameClean = (p.item_name || '').trim().toLowerCase();
-          const bcClean = (p.barcode || '').trim().toLowerCase();
-          if (nameClean && existingNames.has(nameClean)) return;
-          if (bcClean && existingBarcodes.has(bcClean)) return;
-          
-          insertStmt.run(
-            p.item_name,
-            p.description || '',
-            p.unit || 'pcs',
-            p.cost_price || 0,
-            p.retail_price || 0,
-            p.wholesale_cost_price || 0,
-            p.wholesale_price || 0,
-            p.company_id || null,
-            p.barcode || null
-          );
-          if (nameClean) existingNames.add(nameClean);
-          if (bcClean) existingBarcodes.add(bcClean);
-          totalCopied++;
-        });
-      } catch (err) {
-        console.warn(`Error copying category ${cat.slug}:`, err);
-      }
-    });
-  });
-  
-  tx();
-  return { success: true, count: totalCopied };
+  const dbPath = customPath || getDbPath();
+  db = new Database(dbPath);
+  db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
+  db.pragma('temp_store = MEMORY');
+  db.pragma('cache_size = -64000');
+  createTables();
+  seedInitialData();
+  return db;
 }
 
 function createTables() {
@@ -483,18 +381,16 @@ function createTables() {
   createIcecreamFactoryTables();
 }
 
-function seedInitialData(branchId = 'b1') {
+function seedInitialData() {
   try {
-    const isB2 = branchId === 'b2';
-    const defaultCompanyName = 'Ice Cream Factory';
+    const defaultCompanyName = 'Delicious Ice Cream Factory - Hasanabdal';
 
     // Ensure default company settings
     const existingCompany = db.prepare("SELECT value FROM settings WHERE key = 'company_name'").get();
     if (!existingCompany || !existingCompany.value || existingCompany.value === 'Ultimate Marketing' || existingCompany.value === 'Ishaq Jadoon Traders' || existingCompany.value.toLowerCase().includes('baba') || existingCompany.value.toLowerCase().includes('waziristan') || /\(Branch \d+\)/i.test(existingCompany.value)) {
       db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_name', ?)").run(defaultCompanyName);
     }
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('branch_id', ?)").run(branchId);
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('branch_name', ?)").run(isB2 ? 'Branch 2' : 'Branch 1');
+    db.prepare("DELETE FROM settings WHERE key IN ('branch_id', 'branch_name')").run();
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('address', ?)").run('Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt');
     
     // Check phone
@@ -577,7 +473,7 @@ function seedInitialData(branchId = 'b1') {
     productUnits.forEach(u => unitStmt.run(u));
 
     // Seed default Ice Cream Factory data
-    seedIcecreamFactoryData(branchId);
+    seedIcecreamFactoryData();
   } catch (e) {
     console.error("Failed to seed initial data:", e);
   }
@@ -1840,16 +1736,12 @@ function deleteUnit(id) {
   } catch(e) { return { error: e.message }; }
 }
 
-function getDbPath() {
-  return getDbPathForBranch(currentBranch);
-}
+
 
 function close() {
-  Object.values(branchDbs).forEach(database => {
-    try {
-      if (database && database.open) database.close();
-    } catch(e) {}
-  });
+  try {
+    if (db && db.open) db.close();
+  } catch(e) {}
 }
 
 
@@ -2284,7 +2176,7 @@ function createIcecreamFactoryTables() {
   } catch (e) {}
 }
 
-function seedIcecreamFactoryData(branchId = 'b1') {
+function seedIcecreamFactoryData() {
   try {
     // 1. Raw Materials seed
     const rawCount = db.prepare('SELECT COUNT(*) as c FROM raw_materials').get().c;
@@ -3492,8 +3384,7 @@ module.exports = {
   saveShopDelivery, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
 
   init, getDbPath, getDbPathForBranch, close, backupDatabase, clearAllData,
-  switchBranch, getCurrentBranch, copyCatalogFromBranch,
-  addProductStock, getRateHistory, deleteRateHistory, getAllRatesList, markProposalPaid,
+    addProductStock, getRateHistory, deleteRateHistory, getAllRatesList, markProposalPaid,
   getSettings, saveSettings,
   getProducts, addProduct, updateProduct, deleteProduct, findProductByName, findProductByBarcode, changeProductCategory,
   getCategoryLabels, updateCategoryLabel, searchAllProducts, getCategoryStats, addCategory, deleteCategory,

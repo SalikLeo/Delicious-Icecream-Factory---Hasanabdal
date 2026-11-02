@@ -14,35 +14,6 @@ const MasterDB = {
   _lastSalesData: [],
   units: [], // Dynamically loaded
 
-  async cloneFromBranch1() {
-    const ok = await new Promise(resolve => {
-      app.showConfirm({
-        title: 'Import Catalog from Branch 1?',
-        message: 'This will copy all product items, categories, barcodes, and retail prices from Branch 1 into Branch 2 with initial stock set to 0. Continue?',
-        confirmText: 'Import Items',
-        confirmColor: 'amber',
-        onConfirm: () => resolve(true),
-        onCancel: () => resolve(false)
-      });
-    });
-    if (!ok) return;
-
-    app.showLoading();
-    try {
-      if (window.api && window.api.copyCatalogFromBranch) {
-        const res = await window.api.copyCatalogFromBranch('b1', 'b2');
-        app.showToast(`Imported ${res.count || 0} items from Branch 1!`, 'success');
-        const panel = document.getElementById('tab-panel-master-db') || document.querySelector('#main-content .tab-page-panel');
-        if (panel) await this.render(panel);
-      }
-    } catch (e) {
-      console.error('Clone error:', e);
-      app.showAlert({ title: 'Import Failed', message: e.message });
-    } finally {
-      app.hideLoading();
-    }
-  },
-
   getCategoryLabel(slug) {
     if (!slug) return 'General Items';
     const s = String(slug).toLowerCase().trim();
@@ -147,12 +118,6 @@ const MasterDB = {
               <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i>
               <span>Categories</span>
             </button>
-            ${app.activeBranch === 'b2' ? `
-            <button onclick="MasterDB.cloneFromBranch1()" class="h-10 px-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 border border-slate-700 cursor-pointer" title="Import item names, categories, and barcodes from Branch 1 with stock set to 0">
-              <i data-lucide="copy" class="w-4 h-4 text-amber-400"></i>
-              <span>Copy from B1</span>
-            </button>
-            ` : ''}
             <button onclick="MasterDB.openForm()" class="h-10 px-4 bg-accent hover:bg-amber-500 text-slate-950 font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 border border-amber-400/50 cursor-pointer">
               <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
               <span>Add Item</span>

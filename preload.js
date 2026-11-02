@@ -1,11 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-  // Multi-Branch Management
-  getActiveBranch: () => ipcRenderer.invoke('get-active-branch'),
-  switchBranch: (branchId) => ipcRenderer.invoke('switch-branch', branchId),
-  copyCatalogFromBranch: (fromBranch, toBranch) => ipcRenderer.invoke('copy-catalog-from-branch', fromBranch, toBranch),
-
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (data) => ipcRenderer.invoke('save-settings', data),

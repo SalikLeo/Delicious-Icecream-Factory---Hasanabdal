@@ -1,124 +1,5 @@
 const app = {
   currentPage: null,
-  activeBranch: 'b1',
-
-  async switchBranch(branchId) {
-    if (branchId !== 'b1' && branchId !== 'b2') branchId = 'b1';
-    if (this.activeBranch === branchId) return;
-
-    if (this.currentPage === 'proposal-form' && window.SalesForm && SalesForm.cart && SalesForm.cart.length > 0) {
-      const ok = await new Promise(resolve => {
-        this.showConfirm({
-          title: 'Switch Branch?',
-          message: 'You have active items in your cart. Switching branches will reset the current sale bill. Continue?',
-          confirmText: 'Switch Branch',
-          confirmColor: 'amber',
-          onConfirm: () => resolve(true),
-          onCancel: () => resolve(false)
-        });
-      });
-      if (!ok) return;
-    }
-
-    this.showLoading();
-    try {
-      this.activeBranch = branchId;
-      if (window.api && window.api.switchBranch) {
-        await window.api.switchBranch(branchId);
-      }
-
-      this.updateBranchUI();
-
-      // Clear cached tab-panel DOM containers so new branch content renders cleanly
-      const mainContent = document.getElementById('main-content');
-      if (mainContent) {
-        mainContent.innerHTML = '';
-      }
-
-      // Reset in-memory cached state across modules
-      if (window.SalesForm) {
-        SalesForm.cart = [];
-        SalesForm.availableItems = [];
-        SalesForm.customers = [];
-        SalesForm.editingSaleId = null;
-      }
-      if (window.MasterDB) {
-        MasterDB.products = [];
-        MasterDB.allProducts = [];
-        MasterDB.filteredProducts = [];
-      }
-      if (window.Proposals) {
-        Proposals.proposals = [];
-      }
-      if (window.Customers) {
-        Customers.customers = [];
-      }
-      if (window.Expenses) {
-        Expenses.expenses = [];
-      }
-      if (window.RateList) {
-        RateList.items = [];
-      }
-      if (window.Dashboard) {
-        Dashboard.stats = null;
-      }
-
-      await this.loadSettings();
-      this.updateSaleModeUI();
-
-      const targetPage = this.currentPage || 'proposal-form';
-      await this.navigate(targetPage, { force: true, reset: true });
-    } catch (e) {
-      console.error('Failed to switch branch:', e);
-      this.showAlert({ title: 'Branch Error', message: 'Could not switch branch: ' + e.message });
-    } finally {
-      this.hideLoading();
-    }
-  },
-
-  updateBranchUI() {
-    const isB1 = this.activeBranch !== 'b2';
-    const b1Btn = document.getElementById('branch-btn-b1');
-    const b2Btn = document.getElementById('branch-btn-b2');
-
-    if (b1Btn && b2Btn) {
-      if (isB1) {
-        b1Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-sm cursor-pointer';
-        b1Btn.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span><span>B1</span>';
-        b1Btn.title = 'Branch 1 (Active)';
-
-        b2Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 cursor-pointer';
-        b2Btn.innerHTML = '<span>B2</span>';
-        b2Btn.title = 'Switch to Branch 2';
-      } else {
-        b2Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-sm cursor-pointer';
-        b2Btn.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span><span>B2</span>';
-        b2Btn.title = 'Branch 2 (Active)';
-
-        b1Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 cursor-pointer';
-        b1Btn.innerHTML = '<span>B1</span>';
-        b1Btn.title = 'Switch to Branch 1';
-      }
-    }
-
-    const badge = document.getElementById('header-branch-badge');
-    if (badge) {
-      badge.textContent = isB1 ? 'BRANCH 1' : 'BRANCH 2';
-      badge.className = isB1 
-        ? 'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-        : 'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30';
-    }
-
-    const title = document.getElementById('sidebar-title');
-    if (title) {
-      const compName = this.settings?.company_name || 'Ice Cream Factory';
-      if (isB1) {
-        title.textContent = compName.includes('(Branch 1)') ? compName : (compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 1)');
-      } else {
-        title.textContent = compName.includes('(Branch 2)') ? compName : (compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 2)');
-      }
-    }
-  },
   modalTimeout: null,
   isStockUnlocked: false,
   unlockedTabs: {},
@@ -151,16 +32,6 @@ const app = {
         this.togglePriceChecker();
       });
     }
-
-    // Multi-branch sync on init
-    let savedBranch = 'b1';
-    try {
-      if (window.api && window.api.getActiveBranch) {
-        savedBranch = (await window.api.getActiveBranch()) || 'b1';
-      }
-    } catch(e) {}
-    this.activeBranch = savedBranch;
-    this.updateBranchUI();
 
     this.navigate('dashboard');
   },
@@ -360,16 +231,9 @@ const app = {
     }
 
     if (settings.company_name) {
-      const isB1 = this.activeBranch !== 'b2';
-      let compName = settings.company_name;
-      if (isB1 && !compName.includes('(Branch 1)')) {
-        compName = compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 1)';
-      } else if (!isB1 && !compName.includes('(Branch 2)')) {
-        compName = compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 2)';
-      }
-      title.textContent = compName;
+      title.textContent = settings.company_name.replace(/\s*\(Branch \d+\)/i, '').trim();
     } else {
-      title.textContent = this.activeBranch === 'b2' ? 'Ice Cream Factory (Branch 2)' : 'Ice Cream Factory (Branch 1)';
+      title.textContent = 'Delicious Ice Cream Factory';
     }
   },
 
@@ -1699,9 +1563,9 @@ const app = {
     if (!storeTitle) {
       try {
         const settings = await window.api.getSettings();
-        storeTitle = (settings?.company_name || 'ISHAQ JADOON TRADERS').replace(/\s*\(Branch \d+\)/i, '').trim();
+        storeTitle = (settings?.company_name || 'Delicious Ice Cream Factory').replace(/\s*\(Branch \d+\)/i, '').trim();
       } catch (e) {
-        storeTitle = 'ISHAQ JADOON TRADERS';
+        storeTitle = 'Delicious Ice Cream Factory';
       }
     }
 

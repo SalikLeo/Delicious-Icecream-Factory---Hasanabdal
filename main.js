@@ -103,11 +103,6 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Multi-Branch IPC
-ipcMain.handle('get-active-branch', () => (db.getCurrentBranch ? db.getCurrentBranch() : 'b1'));
-ipcMain.handle('switch-branch', (event, branchId) => (db.switchBranch ? db.switchBranch(branchId) : { success: true }));
-ipcMain.handle('copy-catalog-from-branch', (event, fromBranch, toBranch) => (db.copyCatalogFromBranch ? db.copyCatalogFromBranch(fromBranch, toBranch) : { success: false }));
-
 // Settings IPC
 ipcMain.handle('get-settings', () => db.getSettings());
 ipcMain.handle('save-settings', (event, data) => db.saveSettings(data));
@@ -292,8 +287,7 @@ async function performAutoBackup() {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-    const branchTag = (db.getCurrentBranch ? db.getCurrentBranch().toUpperCase() : 'B1');
-    const fileName = `IshaqJadoonTraders_${branchTag}-AutoBackup-${datetimeStr}.db`;
+    const fileName = `IceCreamFactory-AutoBackup-${datetimeStr}.db`;
     const destPath = path.join(targetDir, fileName);
 
     console.log(`[AutoBackup] Backing up database to: ${destPath}`);
@@ -360,10 +354,9 @@ ipcMain.handle('backup-data', async () => {
   const pad = (n) => String(n).padStart(2, '0');
   const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   
-  const branchTag = (db.getCurrentBranch ? db.getCurrentBranch().toUpperCase() : 'B1');
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Backup Database',
-    defaultPath: `IshaqJadoonTraders_${branchTag}-${datetimeStr}.db`,
+    defaultPath: `IceCreamFactory-Backup-${datetimeStr}.db`,
     filters: [{ name: 'SQLite Database', extensions: ['db'] }]
   });
 

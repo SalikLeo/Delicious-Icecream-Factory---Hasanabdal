@@ -197,6 +197,50 @@ window.CartonPacking = {
     if (window.lucide) lucide.createIcons({ root: this.container });
   },
 
+  setPeriod(period) {
+    this.periodType = period;
+    this.renderUI();
+  },
+
+  onDateChange(val) {
+    this.selectedDate = val;
+    this.renderUI();
+  },
+
+  getFilteredBatches() {
+    let list = this.batches || [];
+    if (this.periodType === 'day' && this.selectedDate) {
+      list = list.filter(b => b.date === this.selectedDate);
+    } else if (this.periodType === 'month' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      list = list.filter(b => b.date && b.date.startsWith(ym));
+    }
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(b =>
+        (b.packing_number || '').toLowerCase().includes(q) ||
+        (b.item_name || '').toLowerCase().includes(q) ||
+        (b.carton_name || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  },
+
+  getPeriodStats() {
+    const list = this.getFilteredBatches();
+    const totalBatches = list.length;
+    const totalCartonsPacked = list.reduce((sum, b) => sum + (b.cartons_packed || 0), 0);
+    const totalPiecesConsumed = list.reduce((sum, b) => sum + (b.total_pieces_consumed || 0), 0);
+    const totalSaleValue = list.reduce((sum, b) => sum + ((b.cartons_packed || 0) * (b.carton_sale_price || 0)), 0);
+
+    return {
+      totalBatches,
+      totalCartonsPacked,
+      totalPiecesConsumed,
+      totalSaleValue
+    };
+  },
+
   renderInventoryTable(cartons) {
     if (cartons.length === 0) {
       return `

@@ -257,30 +257,30 @@ window.ShopSales = {
 
                       <!-- Ordered Cartons -->
                       <td class="py-2.5 px-2 text-center border-r border-slate-200">
-                        <input type="number" min="0" value="${it.ordered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'ordered', this.value)"
+                        <input type="number" min="0" id="ss-ordered-${idx}" value="${it.ordered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'ordered', this.value)"
                                class="w-24 px-2 py-1.5 text-center font-black text-sm bg-slate-50 border border-slate-300 rounded-xl outline-none tabular-nums focus:bg-white focus:border-amber-400 shadow-2xs">
                       </td>
 
                       <!-- Delivered Cartons -->
                       <td class="py-2.5 px-2 text-center bg-emerald-50/30 border-r border-slate-200">
-                        <input type="number" min="0" value="${it.delivered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'delivered', this.value)"
+                        <input type="number" min="0" id="ss-delivered-${idx}" value="${it.delivered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'delivered', this.value)"
                                class="w-24 px-2 py-1.5 text-center font-black text-sm text-emerald-800 bg-emerald-50 border-2 border-emerald-400 rounded-xl outline-none tabular-nums focus:bg-white focus:border-emerald-600 shadow-2xs">
                       </td>
 
                       <!-- Returned Cartons -->
                       <td class="py-2.5 px-2 text-center bg-rose-50/30 border-r border-slate-200">
-                        <input type="number" min="0" value="${it.returned_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'returned', this.value)"
+                        <input type="number" min="0" id="ss-returned-${idx}" value="${it.returned_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'returned', this.value)"
                                class="w-24 px-2 py-1.5 text-center font-black text-sm text-rose-700 bg-rose-50 border border-rose-300 rounded-xl outline-none tabular-nums focus:bg-white focus:border-rose-500 shadow-2xs">
                       </td>
 
                       <!-- Return Destination Option (Keep in Car vs Factory Stock) -->
                       <td class="py-2.5 px-3 text-center border-r border-slate-200">
                         <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-black">
-                          <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'car')"
+                          <button type="button" id="ss-retdest-car-${idx}" onclick="ShopSales.setReturnDestination(${idx}, 'car')"
                                   class="px-3 py-1 rounded-lg transition-all cursor-pointer ${it.return_destination === 'car' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
                             🔘 Keep in Car
                           </button>
-                          <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'stock')"
+                          <button type="button" id="ss-retdest-stock-${idx}" onclick="ShopSales.setReturnDestination(${idx}, 'stock')"
                                   class="px-3 py-1 rounded-lg transition-all cursor-pointer ${it.return_destination === 'stock' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
                             ⚪ Return to Stock
                           </button>
@@ -289,12 +289,12 @@ window.ShopSales = {
 
                       <!-- Carton Price -->
                       <td class="py-2.5 px-2 text-right border-r border-slate-200">
-                        <input type="number" step="any" min="0" value="${it.carton_price}" oninput="ShopSales.onRowPriceChange(${idx}, this.value)"
+                        <input type="number" step="any" min="0" id="ss-price-${idx}" value="${it.carton_price}" oninput="ShopSales.onRowPriceChange(${idx}, this.value)"
                                class="w-28 px-2.5 py-1.5 text-right font-black text-xs bg-slate-50 border border-slate-300 rounded-xl outline-none tabular-nums focus:bg-white focus:border-amber-400 shadow-2xs">
                       </td>
 
                       <!-- Line Total -->
-                      <td class="py-2.5 px-3 text-right font-black text-slate-900 text-sm tabular-nums border-r border-slate-200">
+                      <td class="py-2.5 px-3 text-right font-black text-slate-900 text-sm tabular-nums border-r border-slate-200" id="ss-row-total-${idx}">
                         Rs. ${Math.round(it.line_total || 0).toLocaleString()}
                       </td>
 
@@ -312,99 +312,81 @@ window.ShopSales = {
           </div>
         </div>
 
-        <!-- Bottom: Financial Settlement & Big Print Action -->
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pb-6">
+        <!-- Bottom: Streamlined Horizontal Settlement Bar -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 text-white p-4 rounded-2xl shadow-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 mb-6">
           
-          <!-- Payment Method & Delivery Summary (7 cols) -->
-          <div class="md:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <h4 class="text-xs font-black uppercase text-slate-500 tracking-wider">Payment Method</h4>
-                <p class="text-[11px] text-slate-400 font-medium mt-0.5">Payment mode received from shop</p>
-              </div>
-              <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-                <button type="button" id="ss-pm-cash" onclick="ShopSales.setPaymentMethod('Cash')"
-                        class="px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
-                  💵 Cash
-                </button>
-                <button type="button" id="ss-pm-online" onclick="ShopSales.setPaymentMethod('Online')"
-                        class="px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
-                  💳 Online
-                </button>
-              </div>
-            </div>
-
-            <!-- Delivery Summary Pills -->
-            <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-              <div class="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
-                <span class="text-slate-400 block text-[10px] font-black uppercase tracking-wider">Delivered Cartons:</span>
-                <span class="font-black text-emerald-700 text-base tabular-nums">${totalDeliveredCartons} cartons</span>
-              </div>
-              <div class="p-3 bg-rose-50/50 border border-rose-100 rounded-xl">
-                <span class="text-slate-400 block text-[10px] font-black uppercase tracking-wider">Returned Cartons:</span>
-                <span class="font-black text-rose-600 text-base tabular-nums">${totalReturnedCartons} cartons</span>
-              </div>
+          <!-- Method Toggle -->
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Method:</span>
+            <div class="inline-flex p-1 bg-slate-800 rounded-xl border border-slate-700">
+              <button type="button" id="ss-pm-cash" onclick="ShopSales.setPaymentMethod('Cash')"
+                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'}">
+                💵 Cash
+              </button>
+              <button type="button" id="ss-pm-online" onclick="ShopSales.setPaymentMethod('Online')"
+                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'}">
+                💳 Online
+              </button>
             </div>
           </div>
 
-          <!-- Total Due & Settlement Card (5 cols) -->
-          <div class="md:col-span-5 bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between">
-            <div class="space-y-3">
-              <div class="flex justify-between items-center text-xs text-slate-300">
-                <span>Subtotal (${totalDeliveredCartons} Cartons):</span>
-                <span class="font-black text-white tabular-nums">Rs. ${Math.round(subtotal).toLocaleString()}</span>
-              </div>
+          <!-- Horizontal Figures -->
+          <div class="flex flex-wrap items-center gap-5 sm:gap-6">
+            
+            <!-- Subtotal -->
+            <div class="text-left shrink-0">
+              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
+                Subtotal <span id="ss-subtotal-ctns" class="text-slate-500 font-bold">(${totalDeliveredCartons} ctns)</span>
+              </span>
+              <span id="ss-subtotal-val" class="text-sm font-black text-slate-200 tabular-nums">Rs. ${Math.round(subtotal).toLocaleString()}</span>
+            </div>
 
-              <div class="flex justify-between items-center text-xs text-slate-300">
-                <span>Special Discount (Rs.):</span>
-                <input type="number" min="0" step="any" value="${this.discount}" oninput="ShopSales.onDiscountChange(this.value)"
-                       class="w-24 px-2 py-1 text-right bg-slate-800 border border-slate-700 rounded-lg text-white font-bold outline-none tabular-nums text-xs">
-              </div>
-
-              <div class="flex justify-between items-center pt-2 border-t border-slate-800 text-sm font-black">
-                <span class="text-amber-400 uppercase tracking-wider">Net Bill Total:</span>
-                <span class="text-xl text-amber-400 tabular-nums">Rs. ${Math.round(totalAmount).toLocaleString()}</span>
-              </div>
-
-              <div class="pt-2 border-t border-slate-800/80">
-                <div class="flex justify-between items-center mb-1">
-                  <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider">Received Amount (Rs.)</label>
-                  <span class="text-[10px] font-bold ${this.receivedAmount > totalAmount ? 'text-rose-400 font-black' : 'text-slate-400'}">Max: Rs. ${Math.round(totalAmount).toLocaleString()}</span>
-                </div>
-                <div class="relative">
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black ${this.receivedAmount > totalAmount ? 'text-rose-400' : 'text-slate-400'}">Rs.</span>
-                  <input type="number" min="0" max="${totalAmount}" step="any" value="${this.receivedAmount}" oninput="ShopSales.onReceivedChange(this.value)" placeholder="0"
-                         class="w-full pl-9 pr-3 py-2 bg-slate-800 border-2 ${this.receivedAmount > totalAmount ? 'border-rose-500 text-rose-300 focus:ring-2 focus:ring-rose-500' : 'border-emerald-500 text-emerald-400'} rounded-xl text-xl font-black outline-none tabular-nums focus:bg-slate-750">
-                </div>
-                ${this.receivedAmount > totalAmount ? `
-                  <p class="text-[11px] font-bold text-rose-400 mt-1">Received amount cannot exceed net bill total (Rs. ${Math.round(totalAmount).toLocaleString()}).</p>
-                ` : ''}
-              </div>
-
-              <div class="p-3 bg-slate-800/80 rounded-xl space-y-1 text-xs">
-                <div class="flex justify-between text-slate-300">
-                  <span>Current Bill Balance:</span>
-                  <span class="font-black text-rose-400 tabular-nums">Rs. ${Math.round(remainingBill).toLocaleString()}</span>
-                </div>
-                <div class="flex justify-between text-slate-400 text-[11px]">
-                  <span>Previous Khata:</span>
-                  <span class="font-bold tabular-nums">Rs. ${Math.round(previousBalance).toLocaleString()}</span>
-                </div>
-                <div class="flex justify-between text-white font-black pt-1 border-t border-slate-700 text-sm">
-                  <span>Total Shop Balance:</span>
-                  <span class="text-rose-400 tabular-nums">Rs. ${Math.round(netShopBalance).toLocaleString()}</span>
-                </div>
+            <!-- Discount -->
+            <div class="text-left shrink-0">
+              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">Discount</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <span class="text-xs font-bold text-slate-400">Rs.</span>
+                <input type="number" min="0" step="any" id="ss-discount-input" value="${this.discount}" oninput="ShopSales.onDiscountChange(this.value)"
+                       class="w-20 px-2 py-1 text-right bg-slate-800 border border-slate-700 rounded-lg text-white font-bold outline-none tabular-nums text-xs focus:border-amber-400">
               </div>
             </div>
 
-            <!-- Big Action Button -->
-            <button type="button" onclick="ShopSales.submitSaleAndPrint()"
-                    ${this.receivedAmount > totalAmount ? 'disabled' : ''}
-                    class="mt-4 w-full py-3.5 px-5 ${this.receivedAmount > totalAmount ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60' : 'bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-[0.99] text-slate-950 shadow-xl shadow-amber-500/20 cursor-pointer'} font-black text-sm rounded-2xl flex items-center justify-center gap-2 transition-all">
-              <i data-lucide="printer" class="w-5 h-5"></i>
-              <span>Complete Sale &amp; Print Bill</span>
-            </button>
+            <!-- Net Total -->
+            <div class="text-left shrink-0 px-3 py-1 bg-slate-800/80 rounded-xl border border-slate-700/80">
+              <span class="text-[10px] font-black uppercase text-amber-400 block tracking-wider">Net Total</span>
+              <span id="ss-net-total-val" class="text-lg font-black text-amber-400 tabular-nums">Rs. ${Math.round(totalAmount).toLocaleString()}</span>
+            </div>
+
+            <!-- Received Input -->
+            <div class="text-left shrink-0">
+              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">Received</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <span class="text-xs font-bold text-slate-400">Rs.</span>
+                <input type="number" min="0" max="${totalAmount}" step="any" id="ss-received-input" value="${this.receivedAmount}" oninput="ShopSales.onReceivedChange(this.value)" placeholder="0"
+                       class="w-24 px-2.5 py-1 text-right font-black text-sm bg-slate-800 border-2 ${this.receivedAmount > totalAmount ? 'border-rose-500 text-rose-300' : 'border-emerald-500 text-emerald-400'} rounded-lg outline-none tabular-nums focus:bg-slate-750">
+              </div>
+            </div>
+
+            <!-- Remaining Bill Balance -->
+            <div class="text-left shrink-0">
+              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">Bill Balance</span>
+              <div class="flex items-baseline gap-1 mt-0.5">
+                <span id="ss-rem-balance-val" class="text-sm font-black tabular-nums ${remainingBill > 0 ? 'text-rose-400' : 'text-emerald-400'}">
+                  Rs. ${Math.round(remainingBill).toLocaleString()}
+                </span>
+                <span id="ss-total-shop-balance-val" class="text-[10px] font-bold text-slate-400">${previousBalance > 0 ? `(Total: Rs. ${Math.round(netShopBalance).toLocaleString()})` : ''}</span>
+              </div>
+            </div>
+
           </div>
+
+          <!-- Complete Sale Button -->
+          <button type="button" id="ss-submit-btn" onclick="ShopSales.submitSaleAndPrint()"
+                  ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'disabled' : ''}
+                  class="px-6 py-2.5 ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60' : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Complete Sale &amp; Print Bill</span>
+          </button>
 
         </div>
 
@@ -451,24 +433,41 @@ window.ShopSales = {
     const val = Number(value) || 0;
     if (field === 'ordered') {
       item.ordered_cartons = val;
-      // Auto-compute returned if delivered is set
       item.returned_cartons = Math.max(0, val - item.delivered_cartons);
+      const retInp = document.getElementById(`ss-returned-${index}`);
+      if (retInp) retInp.value = item.returned_cartons;
     } else if (field === 'delivered') {
       item.delivered_cartons = val;
       item.returned_cartons = Math.max(0, item.ordered_cartons - val);
+      const retInp = document.getElementById(`ss-returned-${index}`);
+      if (retInp) retInp.value = item.returned_cartons;
     } else if (field === 'returned') {
       item.returned_cartons = val;
       item.delivered_cartons = Math.max(0, item.ordered_cartons - val);
+      const delInp = document.getElementById(`ss-delivered-${index}`);
+      if (delInp) delInp.value = item.delivered_cartons;
     }
 
     item.line_total = item.delivered_cartons * item.carton_price;
-    this.renderUI();
+    const totEl = document.getElementById(`ss-row-total-${index}`);
+    if (totEl) totEl.textContent = `Rs. ${Math.round(item.line_total).toLocaleString()}`;
+    this.updateFinancialSummary();
   },
 
   setReturnDestination(index, destination) {
     if (this.items[index]) {
       this.items[index].return_destination = destination;
-      this.renderUI();
+      const btnCar = document.getElementById(`ss-retdest-car-${index}`);
+      const btnStock = document.getElementById(`ss-retdest-stock-${index}`);
+      if (btnCar && btnStock) {
+        if (destination === 'car') {
+          btnCar.className = 'px-3 py-1 rounded-lg transition-all cursor-pointer bg-blue-600 text-white shadow-xs';
+          btnStock.className = 'px-3 py-1 rounded-lg transition-all cursor-pointer text-slate-600 hover:text-slate-900';
+        } else {
+          btnCar.className = 'px-3 py-1 rounded-lg transition-all cursor-pointer text-slate-600 hover:text-slate-900';
+          btnStock.className = 'px-3 py-1 rounded-lg transition-all cursor-pointer bg-purple-600 text-white shadow-xs';
+        }
+      }
     }
   },
 
@@ -476,7 +475,9 @@ window.ShopSales = {
     if (this.items[index]) {
       this.items[index].carton_price = Number(value) || 0;
       this.items[index].line_total = this.items[index].delivered_cartons * this.items[index].carton_price;
-      this.renderUI();
+      const totEl = document.getElementById(`ss-row-total-${index}`);
+      if (totEl) totEl.textContent = `Rs. ${Math.round(this.items[index].line_total).toLocaleString()}`;
+      this.updateFinancialSummary();
     }
   },
 
@@ -498,12 +499,12 @@ window.ShopSales = {
 
   onDiscountChange(val) {
     this.discount = Number(val) || 0;
-    this.renderUI();
+    this.updateFinancialSummary();
   },
 
   onReceivedChange(val) {
     this.receivedAmount = Number(val) || 0;
-    this.renderUI();
+    this.updateFinancialSummary();
   },
 
   setPaymentMethod(pm) {
@@ -512,11 +513,70 @@ window.ShopSales = {
     const btnOnline = document.getElementById('ss-pm-online');
     if (btnCash && btnOnline) {
       if (pm === 'Cash') {
-        btnCash.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-slate-900 text-white shadow-xs';
-        btnOnline.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-900';
+        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-950 shadow-xs';
+        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-400 hover:text-white';
       } else {
-        btnCash.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-900';
-        btnOnline.className = 'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-slate-900 text-white shadow-xs';
+        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-400 hover:text-white';
+        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-950 shadow-xs';
+      }
+    }
+  },
+
+  updateFinancialSummary() {
+    let subtotal = 0;
+    let totalDeliveredCartons = 0;
+    this.items.forEach(it => {
+      subtotal += (Number(it.line_total) || 0);
+      totalDeliveredCartons += (Number(it.delivered_cartons) || 0);
+    });
+
+    const netTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+    const remainingBill = Math.max(0, netTotal - (Number(this.receivedAmount) || 0));
+    const activeShop = this.shops.find(s => s.id === this.selectedShopId);
+    const previousBalance = Number(activeShop?.amount) || 0;
+    const netShopBalance = previousBalance + remainingBill;
+
+    const subtotalEl = document.getElementById('ss-subtotal-val');
+    if (subtotalEl) subtotalEl.textContent = `Rs. ${Math.round(subtotal).toLocaleString()}`;
+    const ctnCountEl = document.getElementById('ss-subtotal-ctns');
+    if (ctnCountEl) ctnCountEl.textContent = `(${totalDeliveredCartons} ctns)`;
+
+    const netEl = document.getElementById('ss-net-total-val');
+    if (netEl) netEl.textContent = `Rs. ${Math.round(netTotal).toLocaleString()}`;
+
+    const remEl = document.getElementById('ss-rem-balance-val');
+    if (remEl) {
+      remEl.textContent = `Rs. ${Math.round(remainingBill).toLocaleString()}`;
+      remEl.className = `text-sm font-black tabular-nums ${remainingBill > 0 ? 'text-rose-400' : 'text-emerald-400'}`;
+    }
+
+    const shopBalEl = document.getElementById('ss-total-shop-balance-val');
+    if (shopBalEl) {
+      shopBalEl.textContent = previousBalance > 0 ? `(Total: Rs. ${Math.round(netShopBalance).toLocaleString()})` : '';
+    }
+
+    const recvInput = document.getElementById('ss-received-input');
+    const isOver = this.receivedAmount > netTotal;
+    if (recvInput) {
+      recvInput.max = netTotal;
+      if (isOver) {
+        recvInput.classList.add('border-rose-500', 'text-rose-300');
+        recvInput.classList.remove('border-emerald-500', 'text-emerald-400');
+      } else {
+        recvInput.classList.remove('border-rose-500', 'text-rose-300');
+        recvInput.classList.add('border-emerald-500', 'text-emerald-400');
+      }
+    }
+
+    const submitBtn = document.getElementById('ss-submit-btn');
+    const hasItems = this.items.length > 0;
+    if (submitBtn) {
+      if (!hasItems || isOver) {
+        submitBtn.disabled = true;
+        submitBtn.className = 'px-6 py-2.5 bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.className = 'px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md cursor-pointer active:scale-95 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
       }
     }
   },

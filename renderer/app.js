@@ -1635,40 +1635,55 @@ const app = {
     // Populate printers list
     await this.refreshPrintersList();
 
-    // Cache products list for quick search
-    if (window.SalesForm && window.SalesForm.availableItems && window.SalesForm.availableItems.length > 0) {
-      this.barcodeStickerState.allProducts = window.SalesForm.availableItems;
-    } else {
-      try {
-        this.barcodeStickerState.allProducts = (await window.api.searchAllProducts('')) || [];
-      } catch (e) {
-        this.barcodeStickerState.allProducts = [];
-      }
+    // Load packed cartons as products for stickers
+    try {
+      const cartons = (await window.api.getPackedCartons()) || [];
+      this.barcodeStickerState.allProducts = cartons.map(c => ({
+        id: c.id,
+        item_name: c.carton_name,
+        carton_name: c.carton_name,
+        barcode: c.barcode || '',
+        retail_price: c.carton_sale_price || 0,
+        sale_price: c.carton_sale_price || 0,
+        cost_price: c.carton_cost_price || 0,
+        current_stock: c.factory_carton_stock || 0,
+        category_label: `${c.pieces_per_carton} pcs/ctn`,
+        pieces_per_carton: c.pieces_per_carton,
+        is_carton: true,
+        base_item_name: c.base_item_name || c.item_name
+      }));
+    } catch (e) {
+      console.warn('Failed to load packed cartons for sticker printing:', e);
+      this.barcodeStickerState.allProducts = [];
     }
 
     // Determine target active item
     let targetItem = null;
     if (itemOrId && typeof itemOrId === 'object') {
-      targetItem = itemOrId;
+      targetItem = this.barcodeStickerState.allProducts.find(p => p.id === itemOrId.id) || itemOrId;
     } else if (itemOrId) {
       const numId = Number(itemOrId);
-      targetItem = this.barcodeStickerState.allProducts.find(p => p.id === numId && (!optionalCategory || p.slug === optionalCategory || p.category_slug === optionalCategory)) ||
-                   this.barcodeStickerState.allProducts.find(p => p.id === numId);
+      targetItem = this.barcodeStickerState.allProducts.find(p => p.id === numId);
     }
 
     if (!targetItem) {
       targetItem = this.barcodeStickerState.allProducts[0] || {
         id: 0,
-        item_name: 'Sample Item',
-        barcode: '123456789012',
-        retail_price: 100,
-        category_label: 'Biscuits',
-        current_stock: 10
+        item_name: 'Ice Cream Carton',
+        barcode: '890000000001',
+        retail_price: 250,
+        category_label: '20 pcs/ctn',
+        current_stock: 10,
+        is_carton: true
       };
     }
 
-    if (targetItem) {
-      targetItem.category_label = this.getCategoryDisplayName(targetItem);
+    // Populate Carton Selector dropdown
+    const cartonSel = document.getElementById('bsm-carton-select');
+    if (cartonSel) {
+      cartonSel.innerHTML = this.barcodeStickerState.allProducts.map(p =>
+        `<option value="${p.id}" ${p.id === targetItem.id ? 'selected' : ''}>${p.item_name} (Rate: Rs. ${p.retail_price}${p.barcode ? ' | #' + p.barcode : ' | No Barcode'})</option>`
+      ).join('');
     }
 
     this.setActiveStickerItem(targetItem);
@@ -1686,6 +1701,14 @@ const app = {
     if (window.lucide) lucide.createIcons();
   },
 
+  onStickerCartonChange(val) {
+    const numId = Number(val);
+    const found = this.barcodeStickerState.allProducts.find(p => p.id === numId);
+    if (found) {
+      this.setActiveStickerItem(found);
+    }
+  },
+
   closeBarcodeStickerModal() {
     const modal = document.getElementById('barcode-sticker-modal');
     if (modal) {
@@ -1695,34 +1718,12 @@ const app = {
   },
 
   getCategoryDisplayName(itemOrSlug) {
-    if (!itemOrSlug) return 'General Items';
-    let slug = '';
-    let label = '';
-    if (typeof itemOrSlug === 'string') {
-      slug = itemOrSlug.toLowerCase().trim();
-    } else {
-      slug = (itemOrSlug.slug || itemOrSlug.category_slug || itemOrSlug.category || '').toLowerCase().trim();
-      label = (itemOrSlug.category_label || itemOrSlug.category_name || '').trim();
+    if (!itemOrSlug) return 'Sellable Carton';
+    if (typeof itemOrSlug === 'object') {
+      if (itemOrSlug.category_label) return itemOrSlug.category_label;
+      if (itemOrSlug.pieces_per_carton) return `${itemOrSlug.pieces_per_carton} pcs/ctn`;
     }
-    const legacyMap = {
-      panels: 'Biscuits',
-      inverters: 'Cold Drinks',
-      structures: 'Jellies & Candies',
-      cables: 'Snacks & Chips',
-      breakers: 'Chocolates',
-      batteries: 'Dairy & Groceries',
-      misc: 'Juices & Beverages',
-      others: 'General Items'
-    };
-    const solarKeywords = ['panels', 'solar panels', 'inverters', 'solar inverters', 'structures', 'cables', 'breakers', 'batteries', 'solar', 'accessories', 'misc', 'others'];
-    
-    if (label && !solarKeywords.includes(label.toLowerCase())) {
-      return label;
-    }
-    if (slug && legacyMap[slug]) {
-      return legacyMap[slug];
-    }
-    return label || 'General Items';
+    return 'Sellable Carton';
   },
 
   setActiveStickerItem(item) {
@@ -1736,16 +1737,17 @@ const app = {
     const stockDisplay = document.getElementById('bsm-item-stock-display');
     const genBtn = document.getElementById('bsm-gen-barcode-btn');
     const matchStockBtn = document.getElementById('bsm-match-stock-btn');
+    const cartonSel = document.getElementById('bsm-carton-select');
 
-    const catName = this.getCategoryDisplayName(item);
+    const catName = item.category_label || (item.pieces_per_carton ? `${item.pieces_per_carton} pcs/ctn` : 'Carton');
     const price = Number(item.retail_price || item.sale_price || 0);
     const stock = Number(item.current_stock || 0);
     const hasBarcode = Boolean(item.barcode && String(item.barcode).trim());
 
-    if (nameEl) nameEl.textContent = item.item_name || 'Unnamed Item';
+    if (nameEl) nameEl.textContent = item.item_name || 'Carton Product';
     if (catEl) catEl.textContent = catName;
     if (priceDisplay) priceDisplay.textContent = 'Price: Rs. ' + price.toLocaleString();
-    if (stockDisplay) stockDisplay.textContent = 'Stock: ' + stock;
+    if (stockDisplay) stockDisplay.textContent = 'Stock: ' + stock + ' ctns';
 
     if (bcDisplay) {
       if (hasBarcode) {
@@ -1764,6 +1766,10 @@ const app = {
       matchStockBtn.textContent = 'Match Stock (' + stock + ')';
     }
 
+    if (cartonSel && String(cartonSel.value) !== String(item.id)) {
+      cartonSel.value = item.id;
+    }
+
     this.updateStickerPreview();
   },
 
@@ -1771,15 +1777,33 @@ const app = {
     const item = this.barcodeStickerState.activeItem;
     if (!item || !item.id) return;
 
-    // Generate random 12-digit code
-    const randCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    // Generate unique 12-digit barcode: 890000000000 + id
+    const randCode = String(890000000000 + Number(item.id));
     item.barcode = randCode;
 
     try {
-      const slug = item.slug || item.category_slug || (this.barcodeStickerState.allProducts[0]?.slug) || 'biscuits';
-      if (window.api && window.api.saveProduct) {
-        await window.api.saveProduct(slug, { ...item, barcode: randCode });
-        this.showToast('Generated barcode #' + randCode + ' for "' + item.item_name + '"', 'success');
+      const fullCarton = await window.api.getPackedCarton(item.id);
+      if (fullCarton) {
+        fullCarton.barcode = randCode;
+        await window.api.savePackedCarton(fullCarton);
+      }
+      this.showToast(`Generated barcode #${randCode} for "${item.item_name}"`, 'success');
+
+      // Update cached item
+      const cached = this.barcodeStickerState.allProducts.find(p => p.id === item.id);
+      if (cached) cached.barcode = randCode;
+
+      // Update dropdown options
+      const cartonSel = document.getElementById('bsm-carton-select');
+      if (cartonSel) {
+        cartonSel.innerHTML = this.barcodeStickerState.allProducts.map(p =>
+          `<option value="${p.id}" ${p.id === item.id ? 'selected' : ''}>${p.item_name} (Rate: Rs. ${p.retail_price}${p.barcode ? ' | #' + p.barcode : ' | No Barcode'})</option>`
+        ).join('');
+      }
+
+      // If Carton Packing page is open, refresh it
+      if (window.CartonPacking && typeof window.CartonPacking.loadData === 'function') {
+        window.CartonPacking.loadData();
       }
     } catch (e) {
       console.warn('Failed to save generated barcode to DB:', e);

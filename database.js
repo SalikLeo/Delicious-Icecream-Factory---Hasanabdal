@@ -2214,7 +2214,7 @@ function seedIcecreamFactoryData() {
     const cartonCount = db.prepare('SELECT COUNT(*) as c FROM packed_cartons').get().c;
     if (cartonCount === 0) {
       const items = db.prepare('SELECT id, name, unit_cost, default_pcs_per_carton FROM icecream_items').all();
-      const insertCarton = db.prepare('INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      const insertCarton = db.prepare('INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
       
       const cartonSpecs = {
         'Chocbar': { pcs: 20, sale: 250, wholesale: 240, stock: 15 },
@@ -2227,8 +2227,23 @@ function seedIcecreamFactoryData() {
       items.forEach(item => {
         const spec = cartonSpecs[item.name] || { pcs: item.default_pcs_per_carton || 20, sale: 250, wholesale: 240, stock: 5 };
         const cost = (item.unit_cost || 10) * spec.pcs;
-        insertCarton.run(item.id, item.name, `${item.name} Carton (${spec.pcs} Pcs)`, spec.pcs, cost, spec.sale, spec.wholesale, spec.stock);
+        const autoBarcode = String(890000000000 + Number(item.id));
+        insertCarton.run(item.id, item.name, `${item.name} Carton (${spec.pcs} Pcs)`, spec.pcs, cost, spec.sale, spec.wholesale, spec.stock, autoBarcode);
       });
+    }
+
+    // Ensure all packed cartons have a unique 12-digit barcode for thermal sticker printing & scanning
+    try {
+      const unbarcoded = db.prepare("SELECT id FROM packed_cartons WHERE barcode IS NULL OR TRIM(barcode) = ''").all();
+      if (unbarcoded && unbarcoded.length > 0) {
+        const updateBc = db.prepare("UPDATE packed_cartons SET barcode = ? WHERE id = ?");
+        unbarcoded.forEach(c => {
+          const autoCode = String(890000000000 + Number(c.id));
+          updateBc.run(autoCode, c.id);
+        });
+      }
+    } catch (e) {
+      console.warn('Packed cartons barcode backfill check:', e);
     }
 
     // 4. Cars seed
@@ -2614,6 +2629,20 @@ function getPackedCartons() {
 
 function getPackedCarton(id) {
   return db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(id);
+}
+
+function findCartonByBarcode(barcode) {
+  if (!barcode) return null;
+  const clean = String(barcode).trim().toLowerCase();
+  if (!clean) return null;
+  return db.prepare(`
+    SELECT pc.*,
+           ii.name as base_item_name,
+           ii.current_single_stock as available_single_pieces
+    FROM packed_cartons pc
+    JOIN icecream_items ii ON ii.id = pc.item_id
+    WHERE LOWER(TRIM(COALESCE(pc.barcode, ''))) = ?
+  `).get(clean);
 }
 
 function savePackedCarton(data) {
@@ -3388,7 +3417,7 @@ module.exports = {
   // Stage 2: Single Items Production
   getIcecreamItems, getIcecreamItem, saveIcecreamItem, deleteIcecreamItem, runProductionBatch, getProductionBatches, deleteProductionBatch,
   // Stage 3: Packed Cartons
-  getPackedCartons, getPackedCarton, savePackedCarton, deletePackedCarton, runCartonPacking, getPackingBatches, deletePackingBatch,
+  getPackedCartons, getPackedCarton, findCartonByBarcode, savePackedCarton, deletePackedCarton, runCartonPacking, getPackingBatches, deletePackingBatch,
   // Stage 4: Cars & Delivery Loading
   getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, getCarLoadingBatches, getCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns

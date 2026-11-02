@@ -110,6 +110,7 @@ contextBridge.exposeInMainWorld('api', {
   // Stage 3: Carton Packing (Sellable Inventory)
   getPackedCartons: () => ipcRenderer.invoke('get-packed-cartons'),
   getPackedCarton: (id) => ipcRenderer.invoke('get-packed-carton', id),
+  findCartonByBarcode: (barcode) => ipcRenderer.invoke('find-carton-by-barcode', barcode),
   savePackedCarton: (data) => ipcRenderer.invoke('save-packed-carton', data),
   deletePackedCarton: (id) => ipcRenderer.invoke('delete-packed-carton', id),
   runCartonPacking: (data) => ipcRenderer.invoke('run-carton-packing', data),

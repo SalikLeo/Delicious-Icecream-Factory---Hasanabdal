@@ -13,6 +13,7 @@ window.ShopSales = {
 
   async render(container, args = {}) {
     this.container = container;
+    this.initScannerListener();
     await this.loadData(args);
   },
 
@@ -37,6 +38,117 @@ window.ShopSales = {
         this.container.innerHTML = `<div class="p-6 text-red-500 font-bold">Error loading shop deliveries: ${e.message}</div>`;
       }
     }
+  },
+
+  initScannerListener() {
+    if (this._scannerBound) return;
+    this._scannerBound = true;
+    this._scanBuffer = '';
+    this._lastScanTime = 0;
+    this._isScanning = false;
+
+    this._boundKeydown = (e) => {
+      // Only process when currently on shop-sales page
+      if (app.currentPage !== 'shop-sales') return;
+
+      const now = performance.now();
+      const diff = now - this._lastScanTime;
+      this._lastScanTime = now;
+
+      // Burst detection: scanner enters keystrokes rapidly (< 55ms)
+      if (diff > 120) {
+        this._scanBuffer = '';
+        this._isScanning = false;
+      } else if (diff < 55 && this._scanBuffer.length >= 2) {
+        this._isScanning = true;
+      }
+
+      if (e.key === 'Enter') {
+        if (this._scanBuffer.length >= 3) {
+          const scannedCode = this._scanBuffer.trim();
+          this._scanBuffer = '';
+          this._isScanning = false;
+          const handled = this.handleBarcodeScan(scannedCode);
+          if (handled) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        }
+        this._scanBuffer = '';
+        this._isScanning = false;
+      } else if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (this._isScanning) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this._scanBuffer += e.key;
+      }
+    };
+
+    document.addEventListener('keydown', this._boundKeydown, true);
+  },
+
+  handleManualBarcodeScan(val) {
+    if (!val) return;
+    this.handleBarcodeScan(val.trim());
+  },
+
+  handleBarcodeScan(rawBarcode) {
+    if (!rawBarcode) return false;
+    const barcode = String(rawBarcode).trim().toLowerCase();
+    if (!barcode) return false;
+
+    // Look up carton by barcode or partial name
+    let carton = this.cartons.find(c => String(c.barcode || '').trim().toLowerCase() === barcode);
+    if (!carton) {
+      carton = this.cartons.find(c => (c.carton_name || '').toLowerCase().includes(barcode));
+    }
+
+    if (!carton) {
+      app.playBeep('warning');
+      app.showToast(`No carton found matching barcode: "${rawBarcode}"`, 'warning');
+      return false;
+    }
+
+    // Add or increment in this.items
+    const existing = this.items.find(x => x.carton_id === carton.id);
+    if (existing) {
+      existing.delivered_cartons = (Number(existing.delivered_cartons) || 0) + 1;
+      if (existing.delivered_cartons > (Number(existing.ordered_cartons) || 0)) {
+        existing.ordered_cartons = existing.delivered_cartons;
+      }
+      this.updateLineTotal(this.items.indexOf(existing));
+      this.renderUI();
+      app.playBeep('success');
+      app.showToast(`Scanned: ${carton.carton_name} (+1 ctn, Total: ${existing.delivered_cartons})`, 'success');
+    } else {
+      const price = carton.carton_sale_price || 0;
+      this.items.push({
+        carton_id: carton.id,
+        carton_name: carton.carton_name,
+        pieces_per_carton: carton.pieces_per_carton || 20,
+        ordered_cartons: 1,
+        delivered_cartons: 1,
+        returned_cartons: 0,
+        return_destination: 'car',
+        carton_price: price,
+        line_total: 1 * price
+      });
+      this.renderUI();
+      app.playBeep('success');
+      app.showToast(`Scanned: ${carton.carton_name} (1 ctn added)`, 'success');
+    }
+
+    setTimeout(() => {
+      const scanInput = document.getElementById('ss-barcode-scan-input');
+      if (scanInput) {
+        scanInput.value = '';
+        scanInput.focus();
+      }
+    }, 60);
+
+    return true;
   },
 
   addItemRow(defaultCartonId = null) {
@@ -198,14 +310,30 @@ window.ShopSales = {
 
         <!-- Middle: Delivery Items & Returns Table -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
-          <div class="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div class="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
             <div>
               <h3 class="font-black text-sm text-slate-900">Delivery Cartons &amp; Returns Breakdown</h3>
               <p class="text-[11px] text-slate-500 font-medium">Specify ordered cartons, actual cartons delivered, and choose what happens to returned cartons.</p>
             </div>
-            <button type="button" onclick="ShopSales.addNewRow()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> ${this.items.length === 0 ? '+ Add First Item' : '+ Add Another Item'}
-            </button>
+            <div class="flex items-center gap-2.5 flex-1 max-w-lg justify-end w-full">
+              <!-- Barcode Scanner Input -->
+              <div class="relative flex-1 min-w-[240px]">
+                <i data-lucide="scan-barcode" class="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="ss-barcode-scan-input"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault(); ShopSales.handleManualBarcodeScan(this.value); this.value='';}"
+                       placeholder="Scan carton barcode or enter code..."
+                       class="w-full pl-10 pr-28 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-400 shadow-2xs">
+                <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
+                  <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shadow-2xs select-none">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Scanner Ready
+                  </span>
+                </div>
+              </div>
+
+              <button type="button" onclick="ShopSales.addNewRow()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> ${this.items.length === 0 ? '+ Add First Item' : '+ Add Item'}
+              </button>
+            </div>
           </div>
 
           <div class="overflow-x-auto min-h-[160px]">
@@ -247,7 +375,7 @@ window.ShopSales = {
                               const isAlreadyAdded = otherSelectedCartons.has(c.id);
                               return `
                                 <option value="${c.id}" ${isCurrent ? 'selected' : ''} ${isAlreadyAdded ? 'disabled' : ''}>
-                                  ${c.carton_name} ${isAlreadyAdded ? '(Already Added)' : `(Rate: Rs. ${c.carton_sale_price})`}
+                                  ${c.carton_name} ${isAlreadyAdded ? '(Already Added)' : `(Rate: Rs. ${c.carton_sale_price}${c.barcode ? ' | #' + c.barcode : ''})`}
                                 </option>
                               `;
                             }).join('');

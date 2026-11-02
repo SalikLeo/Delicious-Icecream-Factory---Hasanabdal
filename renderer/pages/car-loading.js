@@ -12,6 +12,7 @@ window.CarLoading = {
 
   async render(container) {
     this.container = container;
+    this.initScannerListener();
     await this.loadData();
   },
 
@@ -31,6 +32,104 @@ window.CarLoading = {
       if (this.container) {
         this.container.innerHTML = `<div class="p-6 text-red-500 font-bold">Error loading cars: ${e.message}</div>`;
       }
+    }
+  },
+
+  initScannerListener() {
+    if (this._scannerBound) return;
+    this._scannerBound = true;
+    this._scanBuffer = '';
+    this._lastScanTime = 0;
+    this._isScanning = false;
+
+    this._boundKeydown = (e) => {
+      // Only process when currently on car-loading page
+      if (app.currentPage !== 'car-loading') return;
+
+      const now = performance.now();
+      const diff = now - this._lastScanTime;
+      this._lastScanTime = now;
+
+      // Burst detection: scanner enters keystrokes rapidly (< 55ms)
+      if (diff > 120) {
+        this._scanBuffer = '';
+        this._isScanning = false;
+      } else if (diff < 55 && this._scanBuffer.length >= 2) {
+        this._isScanning = true;
+      }
+
+      if (e.key === 'Enter') {
+        if (this._scanBuffer.length >= 3) {
+          const scannedCode = this._scanBuffer.trim();
+          this._scanBuffer = '';
+          this._isScanning = false;
+          const handled = this.handleBarcodeScan(scannedCode);
+          if (handled) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        }
+        this._scanBuffer = '';
+        this._isScanning = false;
+      } else if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (this._isScanning) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this._scanBuffer += e.key;
+      }
+    };
+
+    document.addEventListener('keydown', this._boundKeydown, true);
+  },
+
+  handleManualBarcodeScan(val) {
+    if (!val) return;
+    this.handleBarcodeScan(val.trim());
+  },
+
+  handleBarcodeScan(rawBarcode) {
+    if (!rawBarcode) return false;
+    const barcode = String(rawBarcode).trim().toLowerCase();
+    if (!barcode) return false;
+
+    // Look up carton by barcode or carton_name
+    let carton = (this.cartons || []).find(c => String(c.barcode || '').trim().toLowerCase() === barcode);
+    if (!carton) {
+      carton = (this.cartons || []).find(c => (c.carton_name || '').toLowerCase().includes(barcode));
+    }
+
+    if (!carton) {
+      app.playBeep('warning');
+      app.showToast(`No carton found matching barcode: "${rawBarcode}"`, 'warning');
+      return false;
+    }
+
+    // If not currently on dispatch tab, switch to it automatically
+    if (this.activeTab !== 'dispatch') {
+      this.switchTab('dispatch');
+    }
+
+    const input = document.querySelector(`.dsp-qty-input[data-carton-id="${carton.id}"]`);
+    if (input) {
+      const cur = Number(input.value) || 0;
+      const warehouse = Number(input.dataset.warehouse) || 0;
+      if (cur < warehouse) {
+        input.value = cur + 1;
+        this.onLoadQtyChange(input);
+        app.playBeep('success');
+        app.showToast(`Scanned: ${carton.carton_name} (+1 ctn, To load: ${input.value})`, 'success');
+        return true;
+      } else {
+        app.playBeep('warning');
+        app.showToast(`Cannot load more ${carton.carton_name}. Warehouse stock limit (${warehouse} ctns) reached.`, 'warning');
+        return false;
+      }
+    } else {
+      app.playBeep('warning');
+      app.showToast(`Carton "${carton.carton_name}" not available in current loading list.`, 'warning');
+      return false;
     }
   },
 
@@ -543,14 +642,24 @@ window.CarLoading = {
 
           <!-- Table of Carton Products to Load -->
           <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs bg-white">
-            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
                 <h4 class="font-black text-sm text-slate-900">Select Cartons to Load</h4>
-                <p class="text-[11px] text-slate-400 font-medium">Enter quantity to load for each product</p>
+                <p class="text-[11px] text-slate-400 font-medium">Scan carton barcode or enter quantity to load</p>
               </div>
-              <div class="text-right">
-                <span class="text-xs font-bold text-slate-500">Dispatch Date:</span>
-                <input type="date" id="dsp-date" value="${new Date().toISOString().split('T')[0]}" class="ml-1 px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 outline-none">
+              <div class="flex items-center gap-3 flex-wrap">
+                <!-- Barcode scan input -->
+                <div class="relative min-w-[200px]">
+                  <i data-lucide="scan-barcode" class="w-3.5 h-3.5 text-blue-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" id="dsp-barcode-scan"
+                         onkeydown="if(event.key==='Enter'){event.preventDefault(); CarLoading.handleBarcodeScan(this.value); this.value='';}"
+                         placeholder="Scan carton barcode..."
+                         class="pl-8 pr-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-blue-500 shadow-2xs">
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-slate-500">Dispatch Date:</span>
+                  <input type="date" id="dsp-date" value="${new Date().toISOString().split('T')[0]}" class="ml-1 px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 outline-none">
+                </div>
               </div>
             </div>
 

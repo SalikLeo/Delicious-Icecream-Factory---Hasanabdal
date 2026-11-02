@@ -57,6 +57,9 @@ window.CartonPacking = {
             <p class="text-xs text-slate-300 font-medium">Pack loose pieces into sellable cartons (e.g. 5 cartons of 20 pcs = 100 pcs consumed @ Rs. 200/carton cost, set sale price).</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="app.openBarcodeStickerModal(null, 'carton')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer" title="Print Barcode Stickers (Speed-X SP-650UL / 4Barcode)">
+              <i data-lucide="barcode" class="w-4 h-4"></i> Barcode Stickers
+            </button>
             <button onclick="CartonPacking.openPackModal()" class="px-5 py-2.5 bg-purple-500 hover:bg-purple-400 active:scale-95 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
               <i data-lucide="package-plus" class="w-4 h-4"></i> Pack Cartons Now
             </button>
@@ -518,7 +521,10 @@ window.CartonPacking = {
                 <tr class="hover:bg-slate-50/60 transition-colors">
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="font-black text-slate-900 text-xs">${c.carton_name}</div>
-                    <div class="text-[10px] text-slate-400 leading-tight">Base: ${c.base_item_name}</div>
+                    <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span class="text-[10px] text-slate-400 leading-tight">Base: ${c.base_item_name}</span>
+                      ${c.barcode ? `<span class="px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300 font-mono text-[9px] font-black" title="Barcode: ${c.barcode}">#${c.barcode}</span>` : '<span class="text-[9px] text-slate-400 italic">No barcode</span>'}
+                    </div>
                   </td>
                   <td class="py-1.5 px-3 text-center border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 font-mono text-[10px] font-black border border-purple-200 whitespace-nowrap">
@@ -553,6 +559,9 @@ window.CartonPacking = {
                   </td>
                   <td class="py-1.5 px-3 text-right">
                     <div class="flex items-center justify-end gap-1">
+                      <button onclick="app.openBarcodeStickerModal(${c.id}, 'carton')" class="px-2 py-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-[10px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer" title="Print Barcode Stickers">
+                        <i data-lucide="barcode" class="w-3 h-3"></i> Sticker
+                      </button>
                       <button onclick="CartonPacking.openPackModal(${c.id})" class="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:scale-95 text-white font-black text-[10px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
                         <i data-lucide="package" class="w-3 h-3"></i> Pack
                       </button>
@@ -897,6 +906,17 @@ window.CartonPacking = {
               <input type="text" id="cfg-name" required value="${c.carton_name || ''}" placeholder="e.g. Chocbar Carton (20 Pcs)..."
                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500">
             </div>
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 flex items-center justify-between">
+                <span>Carton Barcode</span>
+                <button type="button" onclick="CartonPacking.generateConfigBarcode()" class="text-[10px] text-purple-600 hover:text-purple-700 font-bold cursor-pointer">+ Auto Generate</button>
+              </label>
+              <div class="relative">
+                <input type="text" id="cfg-barcode" value="${c.barcode || ''}" placeholder="Scan barcode with scanner or click generate..."
+                       class="w-full pl-3.5 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500">
+                <i data-lucide="scan-barcode" class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              </div>
+            </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Pieces Per Carton *</label>
@@ -986,6 +1006,15 @@ window.CartonPacking = {
     }
   },
 
+  generateConfigBarcode() {
+    const inp = document.getElementById('cfg-barcode');
+    if (inp) {
+      const code = String(890000000000 + Math.floor(Math.random() * 9000000000));
+      inp.value = code;
+      inp.focus();
+    }
+  },
+
   async handleCartonConfigSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('cfg-id').value;
@@ -996,7 +1025,8 @@ window.CartonPacking = {
       pieces_per_carton: Number(document.getElementById('cfg-pcs').value) || 20,
       factory_carton_stock: Number(document.getElementById('cfg-stock').value) || 0,
       carton_cost_price: Number(document.getElementById('cfg-cost').value) || 0,
-      carton_sale_price: Number(document.getElementById('cfg-sale').value) || 0
+      carton_sale_price: Number(document.getElementById('cfg-sale').value) || 0,
+      barcode: (document.getElementById('cfg-barcode')?.value || '').trim()
     };
 
     const res = await window.api.savePackedCarton(data);

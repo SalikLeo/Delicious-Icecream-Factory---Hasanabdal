@@ -679,6 +679,17 @@
       <div class="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-12 gap-4 custom-scrollbar bg-slate-50/60">
         <!-- Left: Configuration & Controls (6 cols) -->
         <div class="md:col-span-6 flex flex-col gap-3">
+          <!-- 0. Choose Carton Product -->
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+            <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 flex items-center justify-between">
+              <span>Choose Carton Product</span>
+              <span class="text-[10px] text-purple-600 font-bold">Ready-to-Sell Inventory</span>
+            </label>
+            <select id="bsm-carton-select" onchange="app.onStickerCartonChange(this.value)"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-amber-400 cursor-pointer">
+            </select>
+          </div>
+
           <!-- 1. Selected Item Details Banner -->
           <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
             <div id="bsm-active-item-card" class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl flex items-center justify-between gap-3">
@@ -716,6 +727,18 @@
               </div>
               <span class="text-xs font-bold text-slate-500">copies to print</span>
             </div>
+          </div>
+
+          <!-- 3. Target Printer Selector -->
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+            <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 flex items-center justify-between">
+              <span>Target Sticker Printer</span>
+              <span class="text-[10px] text-amber-600 font-bold">Speed-X / 4Barcode Thermal</span>
+            </label>
+            <select id="bsm-printer-select"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400 cursor-pointer">
+              <option value="">-- Detect Printers --</option>
+            </select>
           </div>
 
           <!-- 3. Sticker Elements -->

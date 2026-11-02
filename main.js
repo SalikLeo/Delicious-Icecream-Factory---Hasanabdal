@@ -198,6 +198,7 @@ ipcMain.handle('delete-production-batch', (event, id) => db.deleteProductionBatc
 // Stage 3: Packed Cartons (Sellable Inventory)
 ipcMain.handle('get-packed-cartons', () => db.getPackedCartons());
 ipcMain.handle('get-packed-carton', (event, id) => db.getPackedCarton(id));
+ipcMain.handle('find-carton-by-barcode', (event, barcode) => db.findCartonByBarcode(barcode));
 ipcMain.handle('save-packed-carton', (event, data) => db.savePackedCarton(data));
 ipcMain.handle('delete-packed-carton', (event, id) => db.deletePackedCarton(id));
 ipcMain.handle('run-carton-packing', (event, data) => db.runCartonPacking(data));

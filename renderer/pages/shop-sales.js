@@ -45,7 +45,8 @@ window.ShopSales = {
   },
 
   addItemRow(defaultCartonId = null) {
-    const cId = defaultCartonId || (this.cartons[0]?.id || null);
+    const selectedCartonIds = new Set(this.items.map(it => it.carton_id));
+    const cId = defaultCartonId || (this.cartons.find(c => !selectedCartonIds.has(c.id))?.id || this.cartons[0]?.id || null);
     const carton = this.cartons.find(c => c.id === cId);
     this.items.push({
       carton_id: cId,
@@ -226,11 +227,18 @@ window.ShopSales = {
                     <td class="py-2.5 px-3 border-r border-slate-200">
                       <select onchange="ShopSales.onItemProductChange(${idx}, this.value)"
                               class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-amber-400">
-                        ${this.cartons.map(c => `
-                          <option value="${c.id}" ${c.id === it.carton_id ? 'selected' : ''}>
-                            ${c.carton_name} (Rate: Rs. ${c.carton_sale_price})
-                          </option>
-                        `).join('')}
+                        ${(() => {
+                          const otherSelectedCartons = new Set(this.items.filter((_, i) => i !== idx).map(x => x.carton_id));
+                          return this.cartons.map(c => {
+                            const isCurrent = c.id === it.carton_id;
+                            const isAlreadyAdded = otherSelectedCartons.has(c.id);
+                            return `
+                              <option value="${c.id}" ${isCurrent ? 'selected' : ''} ${isAlreadyAdded ? 'disabled' : ''}>
+                                ${c.carton_name} ${isAlreadyAdded ? '(Already Added)' : `(Rate: Rs. ${c.carton_sale_price})`}
+                              </option>
+                            `;
+                          }).join('');
+                        })()}
                       </select>
                     </td>
 
@@ -458,7 +466,13 @@ window.ShopSales = {
   },
 
   addNewRow() {
-    this.addItemRow();
+    const selectedCartonIds = new Set(this.items.map(it => it.carton_id));
+    const availableCarton = this.cartons.find(c => !selectedCartonIds.has(c.id));
+    if (!availableCarton) {
+      app.showToast('All available carton products have already been added.', 'info');
+      return;
+    }
+    this.addItemRow(availableCarton.id);
     this.renderUI();
   },
 
@@ -589,6 +603,15 @@ window.ShopSales = {
     if (validItems.length === 0) {
       app.showAlert({ title: 'Zero Quantities', message: 'Delivered cartons must be greater than zero.' });
       return;
+    }
+
+    const seenCartonIds = new Set();
+    for (const it of validItems) {
+      if (seenCartonIds.has(it.carton_id)) {
+        app.showAlert({ title: 'Duplicate Item', message: 'The same carton product cannot be selected multiple times in one delivery.' });
+        return;
+      }
+      seenCartonIds.add(it.carton_id);
     }
 
     const payload = {

@@ -446,7 +446,7 @@ window.Production = {
                   <label class="text-[11px] font-black uppercase text-slate-700 tracking-wider block">Deduct Raw Materials Consumed</label>
                   <span class="text-[10px] text-slate-400">Stock will be automatically deducted from Raw Materials inventory</span>
                 </div>
-                <button type="button" onclick="Production.addMaterialDeductionRow()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
+                <button type="button" id="pr-add-mat-btn" onclick="Production.addMaterialDeductionRow()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
                   <i data-lucide="plus" class="w-3.5 h-3.5"></i> + Add Material
                 </button>
               </div>
@@ -520,26 +520,92 @@ window.Production = {
     const list = document.getElementById('pr-materials-list');
     if (!list) return;
 
+    // Check if all available materials are already in use
+    const currentSelects = Array.from(list.querySelectorAll('.pr-mat-select'));
+    const currentSelected = new Set(currentSelects.map(s => String(s.value)).filter(v => v && v !== ''));
+    if (this.rawMaterials.length > 0 && currentSelected.size >= this.rawMaterials.length) {
+      app.showToast('All raw materials have already been added.', 'info');
+      return;
+    }
+
     const rowId = 'mat-row-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     const div = document.createElement('div');
     div.id = rowId;
     div.className = 'flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl';
     div.innerHTML = `
-      <select class="flex-2 pr-mat-select px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none">
+      <select onchange="Production.updateMaterialDropdowns()" class="flex-2 pr-mat-select px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-cyan-500">
         <option value="">-- Select Material to Deduct --</option>
         ${this.rawMaterials.map(m => `
           <option value="${m.id}">${m.name} (Stock: ${m.current_stock} ${m.unit})</option>
         `).join('')}
       </select>
       <div class="flex items-center gap-1 flex-1">
-        <input type="number" step="any" min="0" placeholder="Qty used" class="w-full pr-mat-qty px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none tabular-nums">
+        <input type="number" step="any" min="0" placeholder="Qty used" class="w-full pr-mat-qty px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none tabular-nums focus:border-cyan-500">
       </div>
-      <button type="button" onclick="document.getElementById('${rowId}').remove()" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Remove row">
+      <button type="button" onclick="Production.removeMaterialRow('${rowId}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Remove row">
         <i data-lucide="x" class="w-3.5 h-3.5"></i>
       </button>
     `;
     list.appendChild(div);
     if (window.lucide) lucide.createIcons({ root: div });
+
+    // Automatically pick the first unselected material
+    const newSelect = div.querySelector('.pr-mat-select');
+    if (newSelect) {
+      const firstAvailable = this.rawMaterials.find(m => !currentSelected.has(String(m.id)));
+      if (firstAvailable) {
+        newSelect.value = firstAvailable.id;
+      }
+    }
+
+    this.updateMaterialDropdowns();
+  },
+
+  removeMaterialRow(rowId) {
+    const el = document.getElementById(rowId);
+    if (el) el.remove();
+    this.updateMaterialDropdowns();
+  },
+
+  updateMaterialDropdowns() {
+    const list = document.getElementById('pr-materials-list');
+    if (!list) return;
+
+    const selects = Array.from(list.querySelectorAll('.pr-mat-select'));
+    const selectedIds = new Set(selects.map(s => String(s.value)).filter(v => v && v !== ''));
+
+    selects.forEach(select => {
+      const currentVal = String(select.value || '');
+      Array.from(select.options).forEach(opt => {
+        if (!opt.value) return; // Keep placeholder enabled
+        const isCurrent = String(opt.value) === currentVal;
+        const isAlreadyAdded = !isCurrent && selectedIds.has(String(opt.value));
+        const mat = this.rawMaterials.find(m => String(m.id) === String(opt.value));
+        const baseLabel = mat ? `${mat.name} (Stock: ${mat.current_stock} ${mat.unit})` : opt.value;
+
+        if (isAlreadyAdded) {
+          opt.disabled = true;
+          opt.textContent = `${mat ? mat.name : opt.value} (Already added)`;
+        } else {
+          opt.disabled = false;
+          opt.textContent = baseLabel;
+        }
+      });
+    });
+
+    // Update "+ Add Material" button enabled state
+    const addBtn = document.getElementById('pr-add-mat-btn');
+    if (addBtn) {
+      const allSelected = selects.length >= this.rawMaterials.length && this.rawMaterials.length > 0;
+      addBtn.disabled = allSelected;
+      if (allSelected) {
+        addBtn.classList.add('opacity-40', 'cursor-not-allowed');
+        addBtn.title = 'All available raw materials are already added';
+      } else {
+        addBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+        addBtn.title = 'Add another raw material';
+      }
+    }
   },
 
   openItemModal(id = null) {
@@ -650,18 +716,24 @@ window.Production = {
       return;
     }
 
-    // Collect materials
+    // Collect materials & prevent duplicates
     const materials = [];
+    const seenMatIds = new Set();
     const matRows = document.querySelectorAll('#pr-materials-list > div');
-    matRows.forEach(row => {
+    for (const row of matRows) {
       const select = row.querySelector('.pr-mat-select');
       const qtyInput = row.querySelector('.pr-mat-qty');
       const matId = Number(select?.value);
       const qty = Number(qtyInput?.value);
       if (matId && qty > 0) {
+        if (seenMatIds.has(matId)) {
+          app.showAlert({ title: 'Duplicate Material', message: 'The same raw material cannot be deducted multiple times in one batch.' });
+          return;
+        }
+        seenMatIds.add(matId);
         materials.push({ material_id: matId, qty_used: qty });
       }
-    });
+    }
 
     const data = {
       item_id: itemId,

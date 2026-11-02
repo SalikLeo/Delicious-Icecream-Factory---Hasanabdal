@@ -183,8 +183,8 @@ window.RawMaterials = {
     if (this.periodType === 'all') return '';
     const stats = this.getPeriodStats();
     const periodLabel = this.periodType === 'day' 
-      ? `Today (${this.selectedDate})` 
-      : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(0, 7)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
+      ? `Today (${app.formatDateOnly(this.selectedDate)})` 
+      : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(5, 7)}/${this.selectedDate.slice(0, 4)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
     const badgeText = this.periodType === 'day' 
       ? 'Daily Stats' 
       : (this.periodType === 'month' ? 'Monthly Stats' : 'Annual Stats');

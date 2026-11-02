@@ -2875,7 +2875,7 @@ const MasterDB = {
     const { itemName, category } = this.activeRateHistoryItem;
     const logs = this.currentRateLogs;
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateStr = app.formatDateOnly(now);
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const html = `
@@ -3168,7 +3168,7 @@ const MasterDB = {
 
     const items = this.rateListItems;
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateStr = app.formatDateOnly(now);
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const html = `

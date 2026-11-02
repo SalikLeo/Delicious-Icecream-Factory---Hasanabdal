@@ -2500,7 +2500,7 @@ window.SalesForm = {
     }
 
     const invoiceDate = data.date ? new Date(data.date) : new Date();
-    const formattedDate = `${invoiceDate.getDate()}/${invoiceDate.getMonth() + 1}/${invoiceDate.getFullYear()}`;
+    const formattedDate = app.formatDateOnly(invoiceDate);
     const invoiceTime = invoiceDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const rawCustomerName = (data.customer_name || data.shop_name || '').trim();
     const isWalkIn = !rawCustomerName || 

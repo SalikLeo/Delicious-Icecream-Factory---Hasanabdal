@@ -195,8 +195,8 @@ window.CartonPacking = {
     if (this.periodType === 'all') return '';
     const stats = this.getPeriodStats();
     const periodLabel = this.periodType === 'day' 
-      ? `Today (${this.selectedDate})` 
-      : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(0, 7)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
+      ? `Today (${app.formatDateOnly(this.selectedDate)})` 
+      : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(5, 7)}/${this.selectedDate.slice(0, 4)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
     const badgeText = this.periodType === 'day' 
       ? 'Daily Packing' 
       : (this.periodType === 'month' ? 'Monthly Packing' : 'Annual Packing');

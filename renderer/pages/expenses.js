@@ -619,7 +619,7 @@ const Expenses = {
     
     let period = 'All Expenses';
     if (this.currentPeriodType === 'day') {
-      period = `Daily (${selDate || 'Today'})`;
+      period = `Daily (${selDate ? app.formatDateOnly(selDate) : 'Today'})`;
     } else if (this.currentPeriodType === 'month') {
       const m = parseInt(document.getElementById('exp-stats-month-select')?.value) || 1;
       const y = parseInt(document.getElementById('exp-stats-month-year-select')?.value) || new Date().getFullYear();

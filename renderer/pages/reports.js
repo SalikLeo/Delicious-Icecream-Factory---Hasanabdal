@@ -386,6 +386,21 @@ window.Reports = {
     return Array.from(years).sort((a, b) => b - a);
   },
 
+  formatPeriodDate(val) {
+    if (!val || this.periodType === 'all') return 'All Time';
+    if (this.periodType === 'daily') return app.formatDateOnly(val);
+    if (this.periodType === 'monthly') {
+      const ym = String(val).slice(0, 7);
+      if (ym.includes('-')) {
+        const [y, m] = ym.split('-');
+        return `${m}/${y}`;
+      }
+      return ym;
+    }
+    if (this.periodType === 'annual') return String(val).slice(0, 4);
+    return val;
+  },
+
   onCarChange(val) {
     this.selectedCarId = val;
     this.loadTabContent();
@@ -894,7 +909,7 @@ window.Reports = {
             <div><strong>Driver Phone:</strong> ${car?.phone || 'N/A'}</div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.selectedDate || 'All Time'})</div>
+            <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
             <div><strong>Printed On:</strong> ${app.formatDateTime(new Date())}</div>
           </div>
         </div>
@@ -1158,7 +1173,7 @@ window.Reports = {
 
         <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
-            <div><strong>Financial Period:</strong> ${this.periodType.toUpperCase()} (${this.selectedDate || 'All Time'})</div>
+            <div><strong>Financial Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
             <div><strong>Currency:</strong> Pakistani Rupee (PKR)</div>
           </div>
           <div style="text-align: right;">

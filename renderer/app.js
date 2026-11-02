@@ -895,9 +895,24 @@ const app = {
         const year = dateStr.getFullYear();
         const month = String(dateStr.getMonth() + 1).padStart(2, '0');
         const day = String(dateStr.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return `${day}/${month}/${year}`;
       }
-      return String(dateStr).split('T')[0].split(' ')[0];
+      let raw = String(dateStr).trim().split('T')[0].split(' ')[0];
+      if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(raw)) {
+        const parts = raw.split(/[-/]/);
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(raw)) {
+        return raw.replace(/-/g, '/');
+      }
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${day}/${month}/${year}`;
+      }
+      return raw;
     } catch {
       return dateStr;
     }
@@ -916,7 +931,7 @@ const app = {
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        return `${year}-${month}-${day} ${time}`;
+        return `${day}/${month}/${year} ${time}`;
       }
 
       let timePart = '';
@@ -939,7 +954,7 @@ const app = {
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            datePart = `${year}-${month}-${day}`;
+            datePart = `${day}/${month}/${year}`;
           }
         }
       }
@@ -954,6 +969,14 @@ const app = {
       } else if (datePart && datePart.includes('T')) {
         const parts = datePart.split('T');
         datePart = parts[0];
+      }
+
+      // Convert datePart to DD/MM/YYYY if YYYY-MM-DD or YYYY/MM/DD
+      if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(datePart)) {
+        const parts = datePart.split(/[-/]/);
+        datePart = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      } else if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(datePart)) {
+        datePart = datePart.replace(/-/g, '/');
       }
 
       if (timePart) {

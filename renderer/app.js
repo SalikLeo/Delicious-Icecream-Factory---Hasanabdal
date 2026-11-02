@@ -888,44 +888,80 @@ const app = {
     return parseInt(boxes) || 0;
   },
 
-  formatDate(dateStr) {
+  formatDateOnly(dateStr) {
     if (!dateStr) return '';
     try {
-      const d = new Date(dateStr);
-      if (isNaN(d)) return dateStr;
-      return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+      if (dateStr instanceof Date) {
+        const year = dateStr.getFullYear();
+        const month = String(dateStr.getMonth() + 1).padStart(2, '0');
+        const day = String(dateStr.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      return String(dateStr).split('T')[0].split(' ')[0];
     } catch {
       return dateStr;
     }
   },
 
-  formatDateTime(dateStr) {
-    if (!dateStr) return '';
+  formatDate(dateStr, createdAtStr) {
+    return this.formatDateTime(dateStr, createdAtStr);
+  },
+
+  formatDateTime(dateStr, createdAtStr) {
+    if (!dateStr && !createdAtStr) return '';
     try {
-      let cleanStr = String(dateStr).trim();
-      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(cleanStr)) {
-        cleanStr = cleanStr.replace(' ', 'T');
+      if (dateStr instanceof Date) {
+        const d = dateStr;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return `${year}-${month}-${day} ${time}`;
       }
-      const d = new Date(cleanStr);
-      if (isNaN(d.getTime())) {
-        const match = cleanStr.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/);
-        if (match) {
-          const [, ymd, hh, mm] = match;
-          let hour = parseInt(hh, 10);
-          const ampm = hour >= 12 ? 'PM' : 'AM';
-          hour = hour % 12 || 12;
-          return `${ymd} ${hour}:${mm} ${ampm}`;
+
+      let timePart = '';
+      let datePart = dateStr ? String(dateStr).trim() : '';
+
+      // Determine where time should come from
+      const timeCandidate = createdAtStr || (datePart.includes(':') ? datePart : null);
+      if (timeCandidate) {
+        let clean = String(timeCandidate).trim();
+        // If it's a sqlite timestamp 'YYYY-MM-DD HH:MM:SS' without timezone, it's stored in UTC
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(clean)) {
+          clean = clean.replace(' ', 'T') + 'Z';
+        } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(clean)) {
+          clean = clean + 'Z';
         }
-        return dateStr;
+        const d = new Date(clean);
+        if (!isNaN(d.getTime())) {
+          timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          if (!datePart) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            datePart = `${year}-${month}-${day}`;
+          }
+        }
       }
-      
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      return `${year}-${month}-${day} ${time}`;
+
+      // If datePart has time embedded already, isolate the datePart
+      if (datePart && datePart.includes(' ')) {
+        const parts = datePart.split(' ');
+        datePart = parts[0];
+        if (!timePart && parts.length > 1) {
+          timePart = parts.slice(1).join(' ');
+        }
+      } else if (datePart && datePart.includes('T')) {
+        const parts = datePart.split('T');
+        datePart = parts[0];
+      }
+
+      if (timePart) {
+        return `${datePart} ${timePart}`;
+      }
+      return datePart;
     } catch {
-      return dateStr;
+      return dateStr || createdAtStr || '';
     }
   },
 

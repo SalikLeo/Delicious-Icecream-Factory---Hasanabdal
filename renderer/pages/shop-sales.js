@@ -694,7 +694,7 @@ window.ShopSales = {
         <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
           <div style="line-height: 1.45;">
             <div><strong>Invoice #:</strong> <span style="font-family: -apple-system, monospace; font-weight: 700;">${delivery.invoice_no}</span></div>
-            <div><strong>Date:</strong> ${delivery.date}</div>
+            <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(delivery.date, delivery.created_at)}</div>
             <div><strong>Vehicle:</strong> ${delivery.car_number || 'Direct Warehouse'}</div>
             <div><strong>Driver / Salesman:</strong> ${delivery.driver_name || 'N/A'}</div>
           </div>

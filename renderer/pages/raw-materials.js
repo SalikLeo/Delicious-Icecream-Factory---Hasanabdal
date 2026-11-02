@@ -333,7 +333,7 @@ window.RawMaterials = {
               const isAdd = (log.qty_change || 0) > 0;
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-2.5 px-4 font-mono text-[11px] text-slate-500">${log.date || ''}</td>
+                  <td class="py-2.5 px-4 font-mono text-[11px] text-slate-600 whitespace-nowrap">${app.formatDateTime(log.date, log.created_at)}</td>
                   <td class="py-2.5 px-4">
                     ${log.action === 'PURCHASE' 
                       ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px]">PURCHASE</span>`
@@ -640,7 +640,7 @@ window.RawMaterials = {
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
           <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
-          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Generated Date: ${date} | Total Raw Stock Value: Rs. ${Math.round(totalVal).toLocaleString()}</p>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Total Raw Stock Value: Rs. ${Math.round(totalVal).toLocaleString()}</p>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">

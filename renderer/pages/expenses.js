@@ -646,7 +646,7 @@ const Expenses = {
         <td style="padding: 2.5px 4px; text-align: left; vertical-align: top; border-right: 1px solid #000;">
           <div style="font-weight: 800; word-break: break-word; line-height: 1.2;">${e.description || e.category || 'Expense'}</div>
           <div style="font-size: 8px; color: #444; margin-top: 1px;">
-            ${app.formatDate(e.date)}${e.paid_by ? ` &bull; By: ${e.paid_by}` : ''}
+            ${app.formatDateTime(e.date, e.created_at)}${e.paid_by ? ` &bull; By: ${e.paid_by}` : ''}
           </div>
         </td>
         <td style="padding: 2.5px 3px; text-align: left; font-weight: 600; vertical-align: top; border-right: 1px solid #000;">
@@ -694,7 +694,7 @@ const Expenses = {
                 <td style="text-align:center;">${idx + 1}</td>
                 <td>
                   <div style="font-weight:700;">${e.description || e.category || 'Expense'}</div>
-                  <div style="font-size:10px; color:#64748b;">${app.formatDate(e.date)}${e.paid_by ? ` • By: ${e.paid_by}` : ''}</div>
+                  <div style="font-size:10px; color:#64748b;">${app.formatDateTime(e.date, e.created_at)}${e.paid_by ? ` • By: ${e.paid_by}` : ''}</div>
                 </td>
                 <td style="font-weight:600;">${e.category || 'General'}</td>
                 <td style="text-align:right; font-weight:800;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
@@ -764,7 +764,7 @@ const Expenses = {
     tbody.innerHTML = paginated.map((e, index) => `
       <tr class="hover:bg-slate-50 border-b border-slate-200 group transition-colors">
         <td class="px-2 py-1 border-r border-slate-200 text-center font-bold text-slate-400 tabular-nums text-xs">${startIdx + index + 1}</td>
-        <td class="px-4 py-1 border-r border-slate-200 font-bold text-slate-800 text-xs">${app.formatDate(e.date)}</td>
+        <td class="px-4 py-1 border-r border-slate-200 font-bold text-slate-800 text-xs whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
         <td class="px-4 py-1 border-r border-slate-200">
           <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wider">${e.category}</span>
         </td>

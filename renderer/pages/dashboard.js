@@ -44,7 +44,7 @@ window.Dashboard = {
           <div>
             <div class="flex items-center gap-2 mb-1.5">
               <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[10px] font-black uppercase tracking-wider">FACTORY HUB</span>
-              <span class="text-xs text-slate-400 font-mono font-bold">${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+              <span class="text-xs text-slate-300 font-mono font-bold">${app.formatDateTime(new Date())}</span>
             </div>
             <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">${company} Management</h2>
             <p class="text-xs text-slate-300 font-medium mt-1">Complete 5-stage production, packing, vehicle dispatch, and shop deliveries control center.</p>
@@ -245,7 +245,10 @@ window.Dashboard = {
                   <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
                     ${this.recentDeliveries.slice(0, 6).map(d => `
                       <tr class="hover:bg-slate-50">
-                        <td class="py-2 px-3 font-mono font-bold text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
+                        <td class="py-2 px-3 border-r border-slate-200">
+                          <div class="font-mono font-bold text-slate-900">${d.invoice_no}</div>
+                          <div class="text-[10px] text-slate-400 font-bold whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</div>
+                        </td>
                         <td class="py-2 px-3 font-black text-slate-900 border-r border-slate-200">${d.shop_name}</td>
                         <td class="py-2 px-3 text-slate-500 text-[11px] border-r border-slate-200">${d.car_number || 'Direct'}</td>
                         <td class="py-2 px-3 text-right font-black text-blue-700 tabular-nums border-r border-slate-200">${d.total_cartons_delivered || 0} ctns</td>

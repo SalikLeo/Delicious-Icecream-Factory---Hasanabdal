@@ -265,7 +265,7 @@ window.Reports = {
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${filtered.length > 0 ? filtered.map(d => `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-2 px-3 text-[11px] font-bold text-slate-500 border-r border-slate-200 whitespace-nowrap">${d.date}</td>
+                  <td class="py-2 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
                   <td class="py-2 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
                   <td class="py-2 px-3 text-slate-800 font-bold border-r border-slate-200">${d.car_number}<br><span class="text-[10px] text-slate-400">${d.driver_name || ''}</span></td>
                   <td class="py-2 px-3 font-bold text-slate-900 border-r border-slate-200">${d.shop_name}</td>
@@ -649,7 +649,7 @@ window.Reports = {
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${filtExp.length > 0 ? filtExp.map(e => `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-2 px-3 text-slate-500 font-bold border-r border-slate-200 whitespace-nowrap">${e.date}</td>
+                  <td class="py-2 px-3 text-slate-600 font-bold border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
                   <td class="py-2 px-3 font-black text-slate-800 border-r border-slate-200">${e.category}</td>
                   <td class="py-2 px-3 text-slate-600 border-r border-slate-200">${e.description || e.notes || 'Expense entry'}</td>
                   <td class="py-2 px-3 text-right font-black text-slate-900 tabular-nums">
@@ -739,7 +739,7 @@ window.Reports = {
           <tbody>
             ${filtered.map(d => `
               <tr>
-                <td>${d.date}</td>
+                <td style="white-space: nowrap;">${app.formatDateTime(d.date, d.created_at)}</td>
                 <td style="font-weight:700;">${d.invoice_no}</td>
                 <td>${d.shop_name}</td>
                 <td style="text-align:center; font-weight:800;">${d.total_cartons_delivered || 0}</td>

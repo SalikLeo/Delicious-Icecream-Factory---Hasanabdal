@@ -3222,7 +3222,7 @@ function getShopLedger(shopId) {
 
   // Deliveries (debit to shop account)
   const deliveries = db.prepare(`
-    SELECT sd.id, sd.invoice_no, sd.date, sd.total_amount, sd.received_amount, sd.remaining_balance,
+    SELECT sd.id, sd.invoice_no, sd.date, sd.created_at, sd.total_amount, sd.received_amount, sd.remaining_balance,
            sd.car_number, sd.driver_name, sd.payment_method, sd.notes,
            'delivery' as record_type,
            COALESCE((SELECT SUM(delivered_cartons) FROM shop_delivery_items WHERE delivery_id = sd.id), 0) as cartons_count
@@ -3232,7 +3232,7 @@ function getShopLedger(shopId) {
 
   // Cash Payments (credit to shop account)
   const payments = db.prepare(`
-    SELECT sp.id, sp.receipt_no as invoice_no, sp.date, 0 as total_amount, sp.amount as received_amount, 0 as remaining_balance,
+    SELECT sp.id, sp.receipt_no as invoice_no, sp.date, sp.created_at, 0 as total_amount, sp.amount as received_amount, 0 as remaining_balance,
            'Factory Office' as car_number, '' as driver_name, sp.payment_method, sp.notes,
            'payment' as record_type,
            0 as cartons_count

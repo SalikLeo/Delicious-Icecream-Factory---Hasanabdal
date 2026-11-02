@@ -483,7 +483,7 @@ window.Customers = {
               const isDelivery = e.record_type === 'delivery';
               return `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-2 px-3 text-[11px] font-bold text-slate-500 border-r border-slate-200 whitespace-nowrap">${e.date}</td>
+                  <td class="py-2 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
                   <td class="py-2 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${e.invoice_no}</td>
                   <td class="py-2 px-3 border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isDelivery ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}">
@@ -832,7 +832,7 @@ window.Customers = {
             <div><strong>Area / Address:</strong> ${shop.city || ''} ${shop.address || ''}</div>
           </div>
           <div style="text-align: right; line-height: 1.45;">
-            <div><strong>Statement Date:</strong> ${new Date().toLocaleDateString('en-GB')}</div>
+            <div><strong>Statement Date:</strong> ${app.formatDateTime(new Date())}</div>
             <div><strong>Total Transactions:</strong> ${entries.length} Records</div>
             <div style="font-size: 11px; font-weight: 900; color: #000; margin-top: 2px;">
               Outstanding Balance: Rs. ${Math.round(shop.amount || 0).toLocaleString()}
@@ -854,7 +854,7 @@ window.Customers = {
           <tbody>
             ${entries.map(e => `
               <tr>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${e.date}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000; white-space: nowrap;">${app.formatDateTime(e.date, e.created_at)}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 700; font-family: -apple-system, monospace; color: #000;">${e.invoice_no}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? `Delivery (${e.car_number || 'Van'})` : 'Cash Payment Received'}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? (e.cartons_count || 0) : '-'}</td>
@@ -928,7 +928,7 @@ window.Customers = {
             <div><strong>Received From:</strong> <span style="font-weight: 800;">${data.shop_name}</span></div>
           </div>
           <div style="text-align: right; line-height: 1.45;">
-            <div><strong>Payment Date:</strong> ${data.date}</div>
+            <div><strong>Payment Date &amp; Time:</strong> ${app.formatDateTime(data.date, data.created_at)}</div>
             <div><strong>Payment Mode:</strong> ${data.payment_method}</div>
           </div>
         </div>

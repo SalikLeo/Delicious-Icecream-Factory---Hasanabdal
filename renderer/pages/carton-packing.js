@@ -364,7 +364,7 @@ window.CartonPacking = {
             ${batches.map(b => `
               <tr class="hover:bg-slate-50/60 transition-colors">
                 <td class="py-3 px-4 font-mono font-bold text-purple-800 border-r border-slate-200">${b.packing_number}</td>
-                <td class="py-3 px-4 font-mono text-slate-500 text-[11px] whitespace-nowrap border-r border-slate-200">${b.date}</td>
+                <td class="py-3 px-4 font-mono text-slate-600 text-[11px] whitespace-nowrap border-r border-slate-200">${app.formatDateTime(b.date, b.created_at)}</td>
                 <td class="py-3 px-4 font-black text-slate-900 border-r border-slate-200">${b.item_name}</td>
                 <td class="py-3 px-4 text-right font-black text-purple-700 text-sm tabular-nums border-r border-slate-200">
                   +${b.cartons_packed} ctns
@@ -760,7 +760,7 @@ window.CartonPacking = {
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
           <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
-          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${date} | Warehouse Finished Stock &amp; Cars Loaded Stock</p>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Warehouse Finished Stock &amp; Cars Loaded Stock</p>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">

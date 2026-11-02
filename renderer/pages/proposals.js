@@ -320,7 +320,7 @@ window.Proposals = {
 
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
-          <td class="py-2.5 px-3 text-[11px] font-bold text-slate-500 border-r border-slate-200 whitespace-nowrap">${d.date}</td>
+          <td class="py-2.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
           <td class="py-2.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
           <td class="py-2.5 px-3 border-r border-slate-200">
             <div class="font-bold text-slate-800">${d.car_number}</div>

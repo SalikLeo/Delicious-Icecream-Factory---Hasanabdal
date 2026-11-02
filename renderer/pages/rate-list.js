@@ -142,28 +142,36 @@ const RateList = {
       const matchCat = this.selectedCategory === 'all' || item.slug === this.selectedCategory;
       const matchQuery = !q || 
         (item.item_name && item.item_name.toLowerCase().includes(q)) ||
-        (item.description && item.description.toLowerCase().includes(q));
+        (item.description && item.description.toLowerCase().includes(q)) ||
+        (item.barcode && item.barcode.toLowerCase().includes(q));
       return matchCat && matchQuery;
     });
 
     if (q) {
       this.filteredItems.sort((a, b) => {
+        const bcA = String(a.barcode || '').toLowerCase();
+        const bcB = String(b.barcode || '').toLowerCase();
+        if (bcA === q && bcB !== q) return -1;
+        if (bcB === q && bcA !== q) return 1;
+
         const nameA = String(a.item_name || '').toLowerCase();
         const nameB = String(b.item_name || '').toLowerCase();
         const descA = String(a.description || '').toLowerCase();
         const descB = String(b.description || '').toLowerCase();
 
-        const getScore = (name, desc) => {
+        const getScore = (name, desc, bc) => {
+          if (bc === q) return 0;
           if (name.startsWith(q)) return 1;
           const words = name.split(/[\s\-&/]+/);
           if (words.some(w => w.startsWith(q))) return 2;
           if (desc.startsWith(q)) return 3;
           if (desc.split(/[\s\-&/]+/).some(w => w.startsWith(q))) return 4;
-          return 5;
+          if (bc.includes(q)) return 5;
+          return 6;
         };
 
-        const scoreA = getScore(nameA, descA);
-        const scoreB = getScore(nameB, descB);
+        const scoreA = getScore(nameA, descA, bcA);
+        const scoreB = getScore(nameB, descB, bcB);
 
         if (scoreA !== scoreB) {
           return scoreA - scoreB;
@@ -206,14 +214,15 @@ const RateList = {
           class="ratelist-row cursor-pointer transition-all ${isSelected ? 'is-selected bg-amber-100/90 border-l-[5px] border-l-amber-600 font-black text-slate-950 ring-1 ring-inset ring-amber-300/80 shadow-xs' : 'hover:bg-slate-50/80'}">
           <td class="py-2.5 px-3 border-r border-slate-200">
             <div class="font-bold text-slate-800 truncate max-w-[180px]">${item.item_name}</div>
-            <div class="flex items-center gap-1.5 mt-0.5">
+            <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
               <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-100 text-slate-500">${item.category_label}</span>
               ${item.unit ? `<span class="text-[9px] font-bold text-slate-400">${item.unit}</span>` : ''}
             </div>
           </td>
           <td class="py-2.5 px-2 text-right border-r border-slate-200">
             <span class="px-2 py-0.5 rounded-full font-black text-[11px] ${isLowStock ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-slate-100 text-slate-700'}">
-              ${item.current_stock}
+              ${app.formatQty(item.current_stock)}
             </span>
           </td>
           <td class="py-2.5 px-2 text-right font-bold text-slate-600 border-r border-slate-200">
@@ -270,6 +279,10 @@ const RateList = {
         </div>
 
         <div class="flex items-center gap-2">
+          <button onclick="app.openBarcodeStickerModal(RateList.selectedItem)" class="h-8 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg flex items-center gap-1.5 shadow-xs transition-all cursor-pointer" title="Print Barcode Stickers (Speed-X SP-650UL)">
+            <i data-lucide="scan-barcode" class="w-3.5 h-3.5"></i>
+            <span>Print Sticker</span>
+          </button>
           <button onclick="RateList.printItemHistory()" class="h-8 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs transition-all cursor-pointer" title="Print Item Rate History">
             <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-500"></i>
             <span>Print Item Log</span>
@@ -401,7 +414,7 @@ const RateList = {
       return `
         <tr class="hover:bg-slate-50/60 transition-colors">
           <td class="py-2.5 px-3 font-semibold text-slate-600 whitespace-nowrap text-[11px] border-r border-slate-200">
-            ${log.created_at || 'Just now'}
+            ${app.formatDateTime(log.created_at) || 'Just now'}
           </td>
           <td class="py-2.5 px-2.5 whitespace-nowrap border-r border-slate-200">
             <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${sourceBadge}">
@@ -429,7 +442,7 @@ const RateList = {
             ${log.notes || '-'}
           </td>
           <td class="py-2.5 px-2 text-center whitespace-nowrap no-print">
-            <button onclick="RateList.deleteHistoryLog(${log.id})" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer" title="Delete Log Entry">
+            <button onclick="RateList.deleteHistoryLog(${log.id})" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer" title="Delete Log Entry">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
           </td>
@@ -678,7 +691,7 @@ const RateList = {
           <div>${i.item_name}</div>
           <div style="font-size: 7.5px; font-weight: normal; color: #333;">${i.category_label || ''}</div>
         </td>
-        <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; border-right: 1px solid #000;">${i.current_stock || 0}</td>
+        <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; border-right: 1px solid #000;">${app.formatQty(i.current_stock || 0)}</td>
         <td style="padding: 2.5px 3px; text-align: right; font-weight: 600; border-right: 1px solid #000;">${Number(i.cost_price || 0).toLocaleString()}</td>
         <td style="padding: 2.5px 4px; text-align: right; font-weight: 800;">${Number(i.retail_price || 0).toLocaleString()}</td>
       </tr>

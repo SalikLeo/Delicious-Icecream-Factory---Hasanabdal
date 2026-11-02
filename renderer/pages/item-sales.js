@@ -4,6 +4,9 @@ window.ItemSales = {
   sellers: [],
   currentPeriodType: 'day',
   currentSort: 'qty-desc',
+  currentPage: 1,
+  pageSize: 50,
+  currentFilteredGrouped: [],
   expandedItems: new Set(),
   selectedMethod: 'All',
   selectedSaleMode: 'All',
@@ -245,6 +248,7 @@ window.ItemSales = {
             <tbody id="item-sales-list-body" class="divide-y divide-slate-200 bg-white"></tbody>
           </table>
         </div>
+        <div id="item-sales-pagination-footer" class="shrink-0"></div>
       </div>
     `;
 
@@ -607,10 +611,16 @@ window.ItemSales = {
       }
     });
 
+    this.currentPage = 1;
     this.currentFilteredGrouped = groupedList;
     this.updateStats(groupedList);
     this.renderList(groupedList);
     this.updateClearPeriodButton();
+  },
+
+  changePage(page) {
+    this.currentPage = page;
+    this.renderList(this.currentFilteredGrouped || []);
   },
 
   updateStats(list) {
@@ -631,7 +641,7 @@ window.ItemSales = {
     const marginEl = document.getElementById('item-stat-margin');
     const productsEl = document.getElementById('item-stat-products');
 
-    if (qtyEl) qtyEl.textContent = totalQty.toLocaleString();
+    if (qtyEl) qtyEl.textContent = app.formatQty(totalQty);
     if (revEl) revEl.textContent = app.formatCurrency(totalRev);
     if (costEl) costEl.textContent = app.formatCurrency(totalCost);
     if (profitEl) profitEl.textContent = app.formatCurrency(totalProfit);
@@ -640,23 +650,37 @@ window.ItemSales = {
   },
 
   renderList(list) {
+    this.currentFilteredGrouped = list || [];
     const tbody = document.getElementById('item-sales-list-body');
+    const footer = document.getElementById('item-sales-pagination-footer');
     if (!tbody) return;
 
-    if (list.length === 0) {
+    if (!list || list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400 font-medium">No item sales recorded for this period.</td></tr>`;
+      if (footer) footer.innerHTML = '';
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
+    const total = list.length;
+    const totalPages = Math.ceil(total / this.pageSize);
+    if (this.currentPage > totalPages) this.currentPage = totalPages;
+    if (this.currentPage < 1) this.currentPage = 1;
+
+    const startIdx = (this.currentPage - 1) * this.pageSize;
+    const endIdx = Math.min(startIdx + this.pageSize, total);
+    const paginated = list.slice(startIdx, endIdx);
+
     let rowsHtml = '';
-    list.forEach((item, idx) => {
+    paginated.forEach((item, idx) => {
+      const rowNum = startIdx + idx + 1;
       const avgPrice = item.totalQty > 0 ? (item.totalRevenue / item.totalQty) : 0;
       const margin = item.totalRevenue > 0 ? ((item.totalProfit / item.totalRevenue) * 100).toFixed(1) : '0.0';
       const catLabel = this.categoryLabels[item.section] || item.section.toUpperCase();
 
       rowsHtml += `
         <tr class="hover:bg-slate-50 transition-colors group border-b border-slate-200">
-          <td class="px-2 py-2 text-center font-bold text-slate-400 tabular-nums border-r border-slate-200 text-xs">${idx + 1}</td>
+          <td class="px-2 py-2 text-center font-bold text-slate-400 tabular-nums border-r border-slate-200 text-xs">${rowNum}</td>
           <td class="px-4 py-2 border-r border-slate-200">
             <div class="font-bold text-slate-800 uppercase tracking-tight text-xs flex items-center gap-1.5 flex-wrap">
               <span>${item.description}</span>
@@ -666,7 +690,7 @@ window.ItemSales = {
           <td class="px-4 py-2 border-r border-slate-200 text-center font-bold text-slate-600 text-xs">${item.unit}</td>
           <td class="px-4 py-2 border-r border-slate-200 text-center">
             <span class="font-black text-slate-800 tabular-nums text-xs px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-200/80 rounded-lg inline-block">
-              ${item.totalQty.toLocaleString()}
+              ${app.formatQty(item.totalQty)}
             </span>
           </td>
           <td class="px-4 py-2 border-r border-slate-200 text-right font-bold text-slate-700 text-xs tabular-nums">
@@ -691,6 +715,38 @@ window.ItemSales = {
     });
 
     tbody.innerHTML = rowsHtml;
+
+    if (footer) {
+      if (total <= this.pageSize) {
+        footer.innerHTML = `
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs font-bold text-slate-500">
+            <span>Showing all <span class="font-black text-slate-800">${total}</span> item${total === 1 ? '' : 's'}</span>
+          </div>
+        `;
+      } else {
+        footer.innerHTML = `
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs font-bold text-slate-600 flex-wrap gap-2 select-none">
+            <div>
+              Showing <span class="font-black text-slate-900">${startIdx + 1}</span> - <span class="font-black text-slate-900">${endIdx}</span> of <span class="font-black text-slate-900">${total}</span> items
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" ${this.currentPage <= 1 ? 'disabled class="opacity-40 cursor-not-allowed"' : 'onclick="ItemSales.changePage(' + (this.currentPage - 1) + ')" class="cursor-pointer hover:bg-slate-200 active:scale-95"'} class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-slate-700 font-bold transition-all flex items-center gap-1">
+                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                <span>Prev</span>
+              </button>
+              <span class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-black">
+                Page ${this.currentPage} of ${totalPages}
+              </span>
+              <button type="button" ${this.currentPage >= totalPages ? 'disabled class="opacity-40 cursor-not-allowed"' : 'onclick="ItemSales.changePage(' + (this.currentPage + 1) + ')" class="cursor-pointer hover:bg-slate-200 active:scale-95"'} class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-slate-700 font-bold transition-all flex items-center gap-1">
+                <span>Next</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
     if (window.lucide) lucide.createIcons();
   },
 
@@ -785,15 +841,20 @@ window.ItemSales = {
         <tr>
           <td colspan="5" style="text-align: center; padding: 6px 0; font-style: italic; color: #444;">No items sold in this period</td>
         </tr>
-      ` : list.map((item, idx, arr) => `
+      ` : list.map((item, idx, arr) => {
+        let uStr = (item.unit && item.unit !== '-') ? item.unit.trim().toUpperCase() : '';
+        if (uStr === 'PCS' && Math.abs(Number(item.totalQty)) === 1) uStr = 'PC';
+        const unitSuffix = uStr ? ` ${uStr}` : '';
+        return `
         <tr style="border-bottom: ${idx === arr.length - 1 ? 'none' : '1px solid #000'}; font-size: 9.5px;">
           <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${idx + 1}</td>
           <td style="padding: 2.5px 4px; text-align: left; font-weight: 800; word-break: break-word; line-height: 1.2; border-right: 1px solid #000;">${item.description} (${this.categoryLabels[item.section] || item.section.toUpperCase()})</td>
-          <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${item.totalQty}</td>
+          <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(item.totalQty)}${unitSuffix}</td>
           <td style="padding: 2.5px 3px; text-align: right; font-weight: 600; white-space: nowrap; border-right: 1px solid #000;">${app.formatAmount(item.totalRevenue / (item.totalQty || 1))}</td>
           <td style="padding: 2.5px 4px; text-align: right; font-weight: 800; white-space: nowrap;">${app.formatAmount(item.totalRevenue)}</td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
 
       const html = `
         <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
@@ -841,7 +902,7 @@ window.ItemSales = {
           <div style="border-top: 1px dashed #000; padding-top: 4px; font-size: 11.5px; line-height: 1.45;">
             <div style="display: flex; justify-content: space-between;">
               <span>Total Units Sold:</span>
-              <span style="font-weight: 700;">${totalQty.toLocaleString()}</span>
+              <span style="font-weight: 700;">${app.formatQty(totalQty)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 3px 0; margin-top: 3px; font-size: 13.5px; font-weight: 900;">
               <span>TOTAL REVENUE:</span>
@@ -861,7 +922,7 @@ window.ItemSales = {
       const previewTitle = document.getElementById('preview-title');
       const previewSubtitle = document.getElementById('preview-subtitle');
       if (previewTitle) previewTitle.textContent = 'Item Sales Preview';
-      if (previewSubtitle) previewSubtitle.textContent = '80MM THERMAL RECEIPT • ITEM SALES';
+      if (previewSubtitle) previewSubtitle.textContent = '80MM THERMAL RECEIPT â€¢ ITEM SALES';
       if (previewPaper) previewPaper.innerHTML = html;
 
       const modal = document.getElementById('preview-modal');

@@ -14,12 +14,74 @@ const MasterDB = {
   _lastSalesData: [],
   units: [], // Dynamically loaded
 
+  async cloneFromBranch1() {
+    const ok = await new Promise(resolve => {
+      app.showConfirm({
+        title: 'Import Catalog from Branch 1?',
+        message: 'This will copy all product items, categories, barcodes, and retail prices from Branch 1 into Branch 2 with initial stock set to 0. Continue?',
+        confirmText: 'Import Items',
+        confirmColor: 'amber',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false)
+      });
+    });
+    if (!ok) return;
+
+    app.showLoading();
+    try {
+      if (window.api && window.api.copyCatalogFromBranch) {
+        const res = await window.api.copyCatalogFromBranch('b1', 'b2');
+        app.showToast(`Imported ${res.count || 0} items from Branch 1!`, 'success');
+        const panel = document.getElementById('tab-panel-master-db') || document.querySelector('#main-content .tab-page-panel');
+        if (panel) await this.render(panel);
+      }
+    } catch (e) {
+      console.error('Clone error:', e);
+      app.showAlert({ title: 'Import Failed', message: e.message });
+    } finally {
+      app.hideLoading();
+    }
+  },
+
+  getCategoryLabel(slug) {
+    if (!slug) return 'General Items';
+    const s = String(slug).toLowerCase().trim();
+    const legacyMap = {
+      panels: 'Biscuits',
+      inverters: 'Cold Drinks',
+      structures: 'Jellies & Candies',
+      cables: 'Snacks & Chips',
+      breakers: 'Chocolates',
+      batteries: 'Dairy & Groceries',
+      misc: 'Juices & Beverages',
+      others: 'General Items'
+    };
+    const solarKeywords = ['panels', 'solar panels', 'inverters', 'solar inverters', 'structures', 'cables', 'breakers', 'batteries', 'solar', 'accessories', 'misc', 'others'];
+    if (this.labels && this.labels[s]) {
+      const lbl = String(this.labels[s]).trim();
+      if (!solarKeywords.includes(lbl.toLowerCase())) {
+        return lbl;
+      }
+    }
+    if (legacyMap[s]) return legacyMap[s];
+    return (this.labels && this.labels[s]) || 'General Items';
+  },
+
   async render(container) {
     this.displayLimit = this.pageSize;
     // Sync units and categories from DB
-    this.settings = await window.api.getSettings();
-    this.units = await window.api.getUnits();
-    const stats = await window.api.getCategoryStats();
+    let stats = [];
+    try {
+      this.settings = await window.api.getSettings();
+      this.units = (await window.api.getUnits()) || [];
+      stats = (await window.api.getCategoryStats()) || [];
+    } catch (e) {
+      console.error("[MasterDB.render] Failed to load initial settings/stats:", e);
+      stats = [];
+    }
+    if (!Array.isArray(stats)) stats = [];
+    this.currentCategory = this.currentCategory || 'all';
+
     this.sectionMap = {
         panels: 'pnl', inverters: 'inv', structures: 'str', cables: 'cab',
         breakers: 'brk', batteries: 'bat', misc: 'msc', others: 'oth'
@@ -39,7 +101,7 @@ const MasterDB = {
         return { 
             id: s.slug, 
             label: s.label, 
-            count: s.count,
+            count: s.count || 0,
             fields: ['item_name']
         };
     });
@@ -71,6 +133,11 @@ const MasterDB = {
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
+            <button onclick="app.openBarcodeStickerModal()" class="h-10 px-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 border border-amber-400/50 cursor-pointer" title="Print Barcode Stickers (Speed-X SP-650UL)">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              <span>Print Stickers</span>
+            </button>
+            <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
             <button onclick="MasterDB.openSalesStats(true)" class="h-10 px-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 border border-slate-900 cursor-pointer">
               <i data-lucide="globe" class="w-4 h-4 text-amber-400"></i>
               <span>All Sales</span>
@@ -80,6 +147,12 @@ const MasterDB = {
               <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i>
               <span>Categories</span>
             </button>
+            ${app.activeBranch === 'b2' ? `
+            <button onclick="MasterDB.cloneFromBranch1()" class="h-10 px-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 border border-slate-700 cursor-pointer" title="Import item names, categories, and barcodes from Branch 1 with stock set to 0">
+              <i data-lucide="copy" class="w-4 h-4 text-amber-400"></i>
+              <span>Copy from B1</span>
+            </button>
+            ` : ''}
             <button onclick="MasterDB.openForm()" class="h-10 px-4 bg-accent hover:bg-amber-500 text-slate-950 font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 border border-amber-400/50 cursor-pointer">
               <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
               <span>Add Item</span>
@@ -142,17 +215,18 @@ const MasterDB = {
 
       <!-- Form Modal -->
       <div id="db-modal" onclick="if(event.target === this) MasterDB.closeForm()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print">
-        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-3xl w-full mx-4 transform transition-all scale-95 max-h-[92vh] overflow-y-auto custom-scrollbar" id="db-card">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-5xl w-full mx-4 transform transition-all scale-95 max-h-[92vh] overflow-y-auto custom-scrollbar" id="db-card">
           <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
             <h3 class="text-xl font-bold text-slate-800" id="db-modal-title">Add Item</h3>
             <button onclick="MasterDB.closeForm()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
-          <form id="db-form" onsubmit="MasterDB.saveForm(event)" class="space-y-4">
+          <form id="db-form" onkeydown="if(event.key === 'Enter' && event.target.tagName === 'INPUT') { event.preventDefault(); event.stopPropagation(); }" onsubmit="MasterDB.saveForm(event)" class="space-y-4">
             <input type="hidden" id="db-id">
             
+            <!-- Row 1: Item Name & Category -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div class="md:col-span-2">
-                <div id="db-dynamic-fields" class="space-y-4"></div>
+                <div id="db-dynamic-fields"></div>
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category *</label>
@@ -161,25 +235,59 @@ const MasterDB = {
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100">
+            <!-- Row 2: Barcode / SKU, Company / Supplier, Unit Type, Initial Stock -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
+              <div>
+                <div class="flex items-center justify-between mb-1 gap-1">
+                  <label class="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1 shrink-0">
+                    <i data-lucide="scan-barcode" class="w-3.5 h-3.5 text-amber-500"></i> Barcode
+                  </label>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" id="db-btn-generate" onclick="MasterDB.generateRandomBarcode()" class="text-[10px] text-amber-700 hover:text-amber-800 font-bold bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-200 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" title="Auto-generate a unique 12-digit barcode">Generate</button>
+                  </div>
+                </div>
+                <div class="relative">
+                  <input type="text" id="db-barcode" placeholder="Scan or enter code..." 
+                         oninput="MasterDB.onBarcodeChange(this.value)"
+                         onkeydown="MasterDB.onBarcodeKeyDown(event)"
+                         autocomplete="off"
+                         class="w-full border border-amber-300/80 bg-amber-50/20 rounded-lg p-2.5 font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-amber-400 text-sm pl-8 pr-3">
+                  <i data-lucide="barcode" class="w-4 h-4 text-amber-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                </div>
+                <div id="db-barcode-dup-warning" class="hidden text-[10px] font-bold text-rose-600 mt-1 flex items-center gap-1 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                  <i data-lucide="alert-circle" class="w-3 h-3 shrink-0 text-rose-600"></i>
+                  <span id="db-barcode-dup-text"></span>
+                </div>
+              </div>
+
               <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Company / Supplier <span class="text-[10px] text-slate-400 font-normal lowercase">(optional)</span></label>
                 <select id="db-company" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-accent focus:border-accent text-sm">
                   <option value="">-- None --</option>
                 </select>
               </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Initial Stock *</label>
-                <input type="number" id="db-stock" min="0" step="any" placeholder="0" required class="w-full border border-slate-300 rounded-lg p-2.5 font-black text-emerald-800 bg-emerald-50/40 border-emerald-300 focus:bg-white focus:ring-2 focus:ring-accent focus:border-accent tabular-nums text-center text-sm">
-              </div>
+
               <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Unit Type *</label>
                 <select id="db-unit" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-accent focus:border-accent text-sm">
                 </select>
               </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Initial Stock *</label>
+                <input type="number" id="db-stock" min="0" step="any" placeholder="0" required class="w-full border border-slate-300 rounded-lg p-2.5 font-black text-emerald-800 bg-emerald-50/40 border-emerald-300 focus:bg-white focus:ring-2 focus:ring-accent focus:border-accent tabular-nums text-center text-sm">
+              </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100">
+            <!-- Row 3: Prices & Profit -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-slate-100" id="db-prices-row">
+              <div id="db-last-purchase-container" class="hidden">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center justify-between">
+                  <span>Last Purchase</span>
+                  <span class="text-[10px] text-slate-400 font-bold lowercase tracking-normal">(uneditable)</span>
+                </label>
+                <input type="text" id="db-last-purchase" readonly tabindex="-1" placeholder="Rs. 0" title="Last purchase price (uneditable)" class="w-full border border-slate-200 bg-slate-100 rounded-lg p-2.5 font-black text-slate-800 text-sm outline-none cursor-not-allowed tabular-nums select-all">
+              </div>
               <div>
                 <label class="block text-xs font-bold text-red-600 uppercase mb-1">Cost Price (Rs.) *</label>
                 <input type="number" id="db-cost" min="0" step="any" required placeholder="0" oninput="MasterDB.updateFormProfits()" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-accent focus:border-accent">
@@ -724,8 +832,17 @@ const MasterDB = {
 
   async loadData() {
     // Update category counts in sidebar
-    const stats = await window.api.getCategoryStats();
+    let stats = [];
+    try {
+      stats = (await window.api.getCategoryStats()) || [];
+    } catch (e) {
+      console.warn("[MasterDB.loadData] getCategoryStats failed:", e);
+      stats = [];
+    }
+    if (!Array.isArray(stats)) stats = [];
+
     let totalAll = 0;
+    this.categories = this.categories || [];
     stats.forEach(s => {
       totalAll += (s.count || 0);
       const cat = this.categories.find(c => c.id === s.slug);
@@ -739,10 +856,19 @@ const MasterDB = {
     const countAllSpan = document.getElementById('count-all');
     if (countAllSpan) countAllSpan.textContent = totalAll;
 
-    this.allProducts = await window.api.getProducts(this.currentCategory);
-    this.companies = await window.api.getCompanies();
     try {
-      this.units = await window.api.getUnits();
+      this.allProducts = (await window.api.getProducts(this.currentCategory || 'all')) || [];
+    } catch (e) {
+      console.error("[MasterDB.loadData] getProducts failed:", e);
+      this.allProducts = [];
+    }
+    try {
+      this.companies = (await window.api.getCompanies()) || [];
+    } catch (e) {
+      this.companies = [];
+    }
+    try {
+      this.units = (await window.api.getUnits()) || [];
     } catch(e) {
       this.units = [];
     }
@@ -790,31 +916,40 @@ const MasterDB = {
         filtered = filtered.filter(p => {
             return String(p.item_name || '').toLowerCase().includes(query) ||
                    String(p.description || '').toLowerCase().includes(query) ||
-                   String(p.company_name || '').toLowerCase().includes(query);
+                   String(p.company_name || '').toLowerCase().includes(query) ||
+                   String(p.barcode || '').toLowerCase().includes(query);
         });
 
         // Priority sort by search relevance:
+        // 0. exact barcode match
         // 1. item_name starts with query (e.g. "Catry..." when typing "cat")
         // 2. any word in item_name starts with query
         // 3. description starts with query or word in description starts with query
         // 4. general substring match
         filtered.sort((a, b) => {
+          const bcA = String(a.barcode || '').toLowerCase();
+          const bcB = String(b.barcode || '').toLowerCase();
+          if (bcA === query && bcB !== query) return -1;
+          if (bcB === query && bcA !== query) return 1;
+
           const nameA = String(a.item_name || '').toLowerCase();
           const nameB = String(b.item_name || '').toLowerCase();
           const descA = String(a.description || '').toLowerCase();
           const descB = String(b.description || '').toLowerCase();
 
-          const getScore = (name, desc) => {
+          const getScore = (name, desc, bc) => {
+            if (bc === query) return 0;
             if (name.startsWith(query)) return 1;
             const words = name.split(/[\s\-&/]+/);
             if (words.some(w => w.startsWith(query))) return 2;
             if (desc.startsWith(query)) return 3;
             if (desc.split(/[\s\-&/]+/).some(w => w.startsWith(query))) return 4;
-            return 5;
+            if (bc.includes(query)) return 5;
+            return 6;
           };
 
-          const scoreA = getScore(nameA, descA);
-          const scoreB = getScore(nameB, descB);
+          const scoreA = getScore(nameA, descA, bcA);
+          const scoreB = getScore(nameB, descB, bcB);
 
           if (scoreA !== scoreB) {
             return scoreA - scoreB;
@@ -863,6 +998,7 @@ const MasterDB = {
 
     // Fast inlined SVG icons to prevent blocking lucide DOM scans on 1,000+ items
     const svgHistory = '<svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>';
+    const svgPrinter = '<svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>';
     const svgEdit = '<svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>';
     const svgTrash = '<svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>';
     const svgStarFav = '<svg class="w-4 h-4 pointer-events-none fill-current" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
@@ -879,8 +1015,8 @@ const MasterDB = {
       tbody.innerHTML = visibleList.map((p, index) => {
         const profit = (p.retail_price || 0) - (p.cost_price || 0);
         const totalBoxes = p.current_stock || 0;
-        const itemSlug = p.slug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'panels'));
-        const catLabel = this.labels[itemSlug] || itemSlug;
+        const itemSlug = p.slug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'biscuits'));
+        const catLabel = this.getCategoryLabel(itemSlug);
         const itemValue = (Number(p.current_stock) || 0) * (Number(p.cost_price) || 0);
 
         return `
@@ -893,6 +1029,7 @@ const MasterDB = {
                 <div class="flex flex-col">
                   <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="font-bold">${val}</span>
+                    ${p.barcode ? `<span class="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.2 rounded shadow-2xs" title="Barcode: ${p.barcode}"><svg class="w-2.5 h-2.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/></svg>${p.barcode}</span>` : ''}
                     ${isAll ? `<span class="text-[9px] font-black text-amber-800 bg-amber-100/90 border border-amber-200 px-1.5 py-0.2 rounded uppercase">${catLabel}</span>` : ''}
                   </div>
                   ${p.company_name ? `<span class="text-[9px] font-black text-blue-500 uppercase mt-0.5 tracking-widest">${p.company_name}</span>` : ''}
@@ -902,8 +1039,8 @@ const MasterDB = {
             return `<td class="px-4 py-1 font-medium text-slate-800 border-r border-slate-200 text-xs">${val}</td>`;
           }).join('')}
           <td class="px-3 py-1 text-center border-r border-slate-200 font-bold text-xs whitespace-nowrap">
-            <div class="inline-flex items-center gap-1.5 ${totalBoxes > 0 ? 'bg-amber-50/80 border border-amber-200 text-amber-950 font-black' : 'bg-rose-50 border border-rose-200 text-rose-700 font-bold'} px-2.5 py-0.5 rounded-lg shadow-sm" title="${totalBoxes} ${p.unit || 'pcs'} in stock">
-              <span>${totalBoxes}</span>
+            <div class="inline-flex items-center gap-1.5 ${totalBoxes > 0 ? 'bg-amber-50/80 border border-amber-200 text-amber-950 font-black' : 'bg-rose-50 border border-rose-200 text-rose-700 font-bold'} px-2.5 py-0.5 rounded-lg shadow-sm" title="${app.formatQty(totalBoxes)} ${p.unit || 'pcs'} in stock">
+              <span>${app.formatQty(totalBoxes)}</span>
               <span class="text-[10px] text-slate-500 font-bold uppercase">${p.unit || 'pcs'}</span>
             </div>
           </td>
@@ -918,6 +1055,9 @@ const MasterDB = {
               </button>
               <button onclick="MasterDB.toggleFavorite('${itemSlug}', ${p.id})" class="group/fav p-1.5 ${p.is_favorite ? 'text-amber-500 bg-amber-50' : 'text-slate-300 hover:text-amber-400 hover:bg-amber-50'} rounded-lg transition-all flex items-center justify-center cursor-pointer" title="Toggle Favorite">
                 ${p.is_favorite ? svgStarFav : svgStarUnfav}
+              </button>
+              <button onclick="MasterDB.printRowSticker(${p.id}, '${itemSlug}')" class="p-1.5 ${p.barcode ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' : 'text-slate-300 hover:text-amber-600 hover:bg-amber-50'} rounded-lg transition-all cursor-pointer" title="${p.barcode ? 'Print Barcode Sticker (Speed-X)' : 'No barcode assigned (Edit item to generate)'}">
+                ${svgPrinter}
               </button>
               <button onclick="MasterDB.openForm(${p.id}, '${itemSlug}')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all cursor-pointer" title="Edit Item">
                 ${svgEdit}
@@ -951,7 +1091,7 @@ const MasterDB = {
             </td>
             ${cat.fields.slice(1).map(() => '<td class="border-r border-slate-300 bg-slate-100"></td>').join('')}
             <td class="px-3 py-2 text-center border-r border-slate-300 font-black text-xs text-amber-950 bg-amber-100/90 whitespace-nowrap">
-              ${app.formatNumber(totalStock)}
+              ${app.formatQty(totalStock)}
             </td>
             <td class="px-3 py-2 text-right border-r border-slate-300 font-bold text-xs text-slate-400 bg-slate-100">-</td>
             <td class="px-3 py-2 text-right border-r border-slate-300 font-bold text-xs text-slate-400 bg-slate-100">-</td>
@@ -978,7 +1118,7 @@ const MasterDB = {
         <div class="flex items-center gap-2 flex-wrap">
           <span>Showing <span class="text-slate-900 font-black">${current}</span> of <span class="text-slate-900 font-black">${total}</span> items</span>
           <span class="text-slate-300 mx-1">|</span>
-          <span class="text-slate-600">Total Stock: <span class="text-amber-900 font-black">${app.formatNumber(totalStock)}</span></span>
+          <span class="text-slate-600">Total Stock: <span class="text-amber-900 font-black">${app.formatQty(totalStock)}</span></span>
           <span class="text-slate-300 mx-1">|</span>
           <span class="text-slate-600">Total Value: <span class="text-purple-900 font-black">Rs. ${app.formatNumber(Math.round(totalValue))}</span></span>
         </div>
@@ -1013,12 +1153,25 @@ const MasterDB = {
   },
 
   openForm(dataOrId = null, targetSlug = null) {
-    let data = dataOrId;
-    if (typeof dataOrId === 'number' || typeof dataOrId === 'string') {
-      data = (this.allProducts || []).find(p => p.id == dataOrId) || null;
-    }
-    const itemSlug = targetSlug || (data && data.slug) || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'panels'));
+    let data = (typeof dataOrId === 'object' && dataOrId !== null) ? dataOrId : null;
+    const itemSlug = targetSlug || (data && data.slug) || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'biscuits'));
     this._editingCatSlug = itemSlug;
+
+    if (!data && (typeof dataOrId === 'number' || typeof dataOrId === 'string')) {
+      const targetId = Number(dataOrId);
+      // Priority 1: Match by both ID and category slug (essential because each category table has independent IDs 1, 2, 3...)
+      if (itemSlug) {
+        data = (this.filteredProducts || []).find(p => p.id == targetId && String(p.slug || '').toLowerCase() === String(itemSlug || '').toLowerCase()) ||
+               (this.allProducts || []).find(p => p.id == targetId && String(p.slug || '').toLowerCase() === String(itemSlug || '').toLowerCase()) ||
+               (this.rateListItems || []).find(p => p.id == targetId && String(p.slug || '').toLowerCase() === String(itemSlug || '').toLowerCase()) || null;
+      }
+      // Priority 2: Fallback if category slug wasn't matched
+      if (!data) {
+        data = (this.filteredProducts || []).find(p => p.id == targetId) ||
+               (this.allProducts || []).find(p => p.id == targetId) ||
+               (this.rateListItems || []).find(p => p.id == targetId) || null;
+      }
+    }
     const cat = this.categories.find(c => c.id === itemSlug) || { label: 'Stock', fields: ['item_name'] };
     
     document.getElementById('db-modal-title').textContent = data ? `Edit ${cat.label} Item` : `Add Item (${cat.label})`;
@@ -1026,6 +1179,66 @@ const MasterDB = {
     document.getElementById('db-stock').value = data ? (data.current_stock ?? '') : '';
     document.getElementById('db-cost').value = data ? data.cost_price : '';
     document.getElementById('db-retail').value = data ? data.retail_price : '';
+
+    const barcodeInput = document.getElementById('db-barcode');
+    if (barcodeInput) {
+      barcodeInput.value = data ? (data.barcode || '') : '';
+      barcodeInput.classList.remove('border-rose-500', 'bg-rose-50/20');
+    }
+    const bcWarning = document.getElementById('db-barcode-dup-warning');
+    if (bcWarning) bcWarning.classList.add('hidden');
+
+    // Handle Last Purchase field (visible only when editing an item, uneditable)
+    const lpContainer = document.getElementById('db-last-purchase-container');
+    const lpInput = document.getElementById('db-last-purchase');
+    const pricesRow = document.getElementById('db-prices-row');
+
+    if (data) {
+      if (lpContainer) lpContainer.classList.remove('hidden');
+      if (pricesRow) {
+        pricesRow.classList.remove('md:grid-cols-3');
+        pricesRow.classList.add('grid-cols-2', 'md:grid-cols-4');
+      }
+
+      // Initial price from product data (last_purchase_price or fallback to cost_price)
+      const initialPrice = (data.last_purchase_price !== null && data.last_purchase_price !== undefined && Number(data.last_purchase_price) > 0)
+        ? Number(data.last_purchase_price)
+        : (Number(data.cost_price) || 0);
+
+      if (lpInput) {
+        lpInput.value = initialPrice > 0 ? `Rs. ${app.formatQty(initialPrice)}` : 'Rs. 0';
+        lpInput.title = `Recent Purchase Price: Rs. ${app.formatQty(initialPrice)}`;
+      }
+
+      // Asynchronously query latest rate history to guarantee freshest purchase rate
+      if (data.id && window.api && window.api.getRateHistory) {
+        window.api.getRateHistory(itemSlug, data.id).then(history => {
+          const purchases = (history || []).filter(h => Number(h.purchase_price) > 0);
+          if (purchases.length > 0) {
+            const recent = purchases[0];
+            const pPrice = Number(recent.purchase_price);
+            if (lpInput) {
+              lpInput.value = `Rs. ${app.formatQty(pPrice)}`;
+              const dateStr = recent.created_at ? ` on ${app.formatDate(recent.created_at)}` : '';
+              const srcStr = recent.source ? ` (${recent.source})` : '';
+              lpInput.title = `Last purchase${dateStr} at Rs. ${app.formatQty(pPrice)}${srcStr}`;
+            }
+          }
+        }).catch(err => {
+          console.warn('[openForm] Failed to load rate history:', err);
+        });
+      }
+    } else {
+      if (lpContainer) lpContainer.classList.add('hidden');
+      if (pricesRow) {
+        pricesRow.classList.remove('grid-cols-2', 'md:grid-cols-4');
+        pricesRow.classList.add('grid-cols-1', 'md:grid-cols-3');
+      }
+      if (lpInput) {
+        lpInput.value = '';
+        lpInput.title = '';
+      }
+    }
 
     const unitSelect = document.getElementById('db-unit');
     if (unitSelect) {
@@ -1095,6 +1308,7 @@ const MasterDB = {
     }
 
     this.updateFormProfits();
+    this.updateStickerButtonState(data ? (data.barcode || '') : '');
 
     setTimeout(() => {
       modal.classList.remove('opacity-0');
@@ -1132,7 +1346,7 @@ const MasterDB = {
 
     this._nameCheckTimeout = setTimeout(async () => {
       const id = document.getElementById('db-id')?.value;
-      const originalCat = this._editingCatSlug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'panels'));
+      const originalCat = this._editingCatSlug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'biscuits'));
       try {
         const dup = await window.api.findProductByName(cleanName, originalCat, id ? parseInt(id) : null);
         if (dup && inputEl && inputEl.value.trim().toLowerCase() === cleanName.toLowerCase()) {
@@ -1148,6 +1362,115 @@ const MasterDB = {
         }
       } catch(e) {}
     }, 250);
+  },
+
+  generateRandomBarcode() {
+    const input = document.getElementById('db-barcode');
+    const currentVal = (input?.value || '').trim();
+    if (currentVal) {
+      app.showToast('Item already has a barcode assigned. Barcodes can only be generated once.', 'warning');
+      return;
+    }
+    // Generate a clean 12-digit EAN-style barcode starting with 200 (store custom range)
+    const randomDigits = Math.floor(100000000 + Math.random() * 900000000);
+    const generated = `200${randomDigits}`;
+    if (input) {
+      input.value = generated;
+      this.onBarcodeChange(generated);
+      this.updateStickerButtonState(generated);
+      app.playBeep('success');
+      app.showToast(`Generated barcode: ${generated}. Save item to apply.`, 'info');
+    }
+  },
+
+  updateStickerButtonState(barcodeVal = null) {
+    if (barcodeVal === null) {
+      barcodeVal = (document.getElementById('db-barcode')?.value || '').trim();
+    }
+    const clean = String(barcodeVal || '').trim();
+    const hasBarcode = clean.length > 0;
+
+    const generateBtn = document.getElementById('db-btn-generate');
+    if (generateBtn) {
+      if (hasBarcode) {
+        generateBtn.disabled = true;
+        generateBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        generateBtn.classList.remove('cursor-pointer');
+        generateBtn.title = 'Barcode already assigned. An item can only receive a barcode once.';
+      } else {
+        generateBtn.disabled = false;
+        generateBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        generateBtn.classList.add('cursor-pointer');
+        generateBtn.title = 'Auto-generate a unique 12-digit barcode';
+      }
+    }
+  },
+
+  printRowSticker(id, itemSlug) {
+    const item = (this.filteredProducts || []).find(p => p.id === Number(id) && (!itemSlug || p.slug === itemSlug)) ||
+                 (this.allProducts || []).find(p => p.id === Number(id) && (!itemSlug || p.slug === itemSlug)) ||
+                 (this.products || []).find(p => p.id === Number(id)) ||
+                 (this.allProducts || []).find(p => p.id === Number(id));
+    if (!item) {
+      app.showAlert({ title: 'Item Not Found', message: 'Could not find the requested item to print stickers.' });
+      return;
+    }
+    if (!item.barcode || !String(item.barcode).trim()) {
+      app.showAlert({
+        title: 'Missing Barcode',
+        message: `Item <b>"${item.item_name}"</b> has no barcode assigned yet.<br><br>Please click <b>Edit</b> (<svg class="inline w-3.5 h-3.5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>) to generate and save a barcode first before printing stickers.`,
+        buttonText: 'OK'
+      });
+      return;
+    }
+    if (!item.category_label || ['panels', 'solar panels', 'inverters', 'structures', 'cables', 'breakers', 'batteries'].includes(String(item.category_label).toLowerCase())) {
+      item.category_label = this.getCategoryLabel(itemSlug || item.slug);
+    }
+    app.openBarcodeStickerModal(item, itemSlug);
+  },
+
+  _barcodeCheckTimeout: null,
+  onBarcodeChange(val) {
+    this.updateStickerButtonState(val);
+    clearTimeout(this._barcodeCheckTimeout);
+    const warningEl = document.getElementById('db-barcode-dup-warning');
+    const warningText = document.getElementById('db-barcode-dup-text');
+    const inputEl = document.getElementById('db-barcode');
+
+    const cleanBc = (val || '').trim();
+    if (!cleanBc) {
+      if (warningEl) warningEl.classList.add('hidden');
+      if (inputEl) inputEl.classList.remove('border-rose-500', 'bg-rose-50/20');
+      return;
+    }
+
+    this._barcodeCheckTimeout = setTimeout(async () => {
+      const id = document.getElementById('db-id')?.value;
+      const originalCat = this._editingCatSlug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'biscuits'));
+      try {
+        const dup = await window.api.findProductByBarcode(cleanBc, originalCat, id ? parseInt(id) : null);
+        if (dup && inputEl && inputEl.value.trim().toLowerCase() === cleanBc.toLowerCase()) {
+          if (warningEl && warningText) {
+            warningText.innerHTML = `Barcode already used by <b>"${dup.item_name}"</b> (${dup.category_label || dup.slug}).`;
+            warningEl.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+          }
+          inputEl.classList.add('border-rose-500', 'bg-rose-50/20');
+        } else {
+          if (warningEl) warningEl.classList.add('hidden');
+          if (inputEl) inputEl.classList.remove('border-rose-500', 'bg-rose-50/20');
+        }
+      } catch (e) {}
+    }, 250);
+  },
+
+  onBarcodeKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      app.playBeep('success');
+      // Keep barcode in the field without auto-saving
+    }
   },
 
   updateFormProfits() {
@@ -1192,6 +1515,28 @@ const MasterDB = {
     this.closeForm();
   },
 
+  printCurrentFormSticker() {
+    const id = document.getElementById('db-id')?.value;
+    const name = document.getElementById('db-field-item_name')?.value || 'New Item';
+    const barcode = (document.getElementById('db-barcode')?.value || '').trim();
+    if (!barcode) {
+      app.showToast('Please generate or enter a barcode first.', 'warning');
+      return;
+    }
+    const price = Number(document.getElementById('db-retail')?.value || 0);
+    const stock = Number(document.getElementById('db-stock')?.value || 1);
+    const cat = document.getElementById('db-category')?.value || this.currentCategory;
+    app.openBarcodeStickerModal({
+      id: id ? parseInt(id) : 0,
+      item_name: name,
+      barcode: barcode,
+      retail_price: price,
+      current_stock: stock,
+      slug: cat,
+      category_label: this.getCategoryLabel(cat)
+    });
+  },
+
 
   async saveForm(e, stayOpen = false) {
     if (e) e.preventDefault();
@@ -1199,7 +1544,7 @@ const MasterDB = {
     if (form && !form.reportValidity()) return;
 
     const id = document.getElementById('db-id').value;
-    const originalCat = this._editingCatSlug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'panels'));
+    const originalCat = this._editingCatSlug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'biscuits'));
     const selectedCat = document.getElementById('db-category')?.value || originalCat;
     const cat = this.categories.find(c => c.id === selectedCat) || this.categories.find(c => c.id === originalCat) || { fields: ['item_name'] };
     
@@ -1239,6 +1584,13 @@ const MasterDB = {
       data[f] = document.getElementById(`db-field-${f}`).value;
     });
 
+    const barcodeVal = (document.getElementById('db-barcode')?.value || '').trim();
+    if (barcodeVal) {
+      data.barcode = barcodeVal;
+    } else {
+      data.barcode = null;
+    }
+
     const itemName = (data.item_name || '').trim();
     if (!itemName) {
       app.showAlert({
@@ -1263,6 +1615,22 @@ const MasterDB = {
           inputEl.select();
         }
         return;
+      }
+
+      if (barcodeVal) {
+        const dupBc = await window.api.findProductByBarcode(barcodeVal, originalCat, id ? parseInt(id) : null);
+        if (dupBc) {
+          app.showAlert({
+            title: 'Duplicate Barcode',
+            message: `Barcode <b>"${barcodeVal}"</b> is already assigned to <b>"${dupBc.item_name}"</b> under <b>${dupBc.category_label || dupBc.slug}</b>.`
+          });
+          const bcInput = document.getElementById('db-barcode');
+          if (bcInput) {
+            bcInput.focus();
+            bcInput.select();
+          }
+          return;
+        }
       }
     } catch (checkErr) {
       console.error('Duplicate check error:', checkErr);
@@ -1304,7 +1672,7 @@ const MasterDB = {
   },
 
   deleteItem(id, targetSlug = null) {
-    const targetCat = targetSlug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'panels'));
+    const targetCat = targetSlug || (this.currentCategory !== 'all' ? this.currentCategory : (this.categories[0]?.id || 'biscuits'));
     app.verifyPassword({
       title: 'Delete Item Verification',
       message: 'Please enter password to delete this item:',
@@ -2062,7 +2430,7 @@ const MasterDB = {
               ${itemCat ? `<div style="font-size: 7.5px; font-weight: normal; color: #444;">${itemCat}</div>` : ''}
             </td>
             <td style="padding: 2.5px 3px; text-align: right; color: #000; font-weight: 600; border-right: 1px solid #000;">${Number(p.retail_price || 0).toLocaleString()}</td>
-            <td style="padding: 2.5px 4px; text-align: center; color: #000; font-weight: 800;">${p.current_stock || 0}</td>
+            <td style="padding: 2.5px 4px; text-align: center; color: #000; font-weight: 800;">${app.formatQty(p.current_stock || 0)}</td>
         </tr>
       `;
     }).join('');
@@ -2284,7 +2652,7 @@ const MasterDB = {
           <tr style="border-bottom: 1px dotted #000;">
             <td style="border: 1px solid #000; padding: 2.5px 2px; font-size: 9.5px; text-align: center; color: #000; font-weight: 600; line-height: 1.25;">${idx + 1}</td>
             <td style="border: 1px solid #000; padding: 2.5px 3px; font-size: 9.5px; color: #000; font-weight: 500; word-break: break-word; line-height: 1.25;">${p.item_name || 'Unnamed Item'}</td>
-            <td style="border: 1px solid #000; padding: 2.5px 3px; font-size: 9.5px; text-align: center; color: #000; font-weight: 700; line-height: 1.25;">${p.current_stock || 0}</td>
+            <td style="border: 1px solid #000; padding: 2.5px 3px; font-size: 9.5px; text-align: center; color: #000; font-weight: 700; line-height: 1.25;">${app.formatQty(p.current_stock || 0)}</td>
           </tr>
         `).join('');
 
@@ -2292,7 +2660,7 @@ const MasterDB = {
           <div style="margin-bottom: 4px;">
             <div style="background: #000; color: #fff; padding: 2.5px 4px; font-weight: 700; font-size: 9.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;">
               <span>${catLabel}</span>
-              <span style="font-size: 8.5px; font-weight: 500;">${catItems.length} items &bull; ${catStockSum} Bx</span>
+              <span style="font-size: 8.5px; font-weight: 500;">${catItems.length} items &bull; ${app.formatQty(catStockSum)} Bx</span>
             </div>
             <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; color: #000; margin-bottom: 2px;">
               <thead>
@@ -2317,7 +2685,7 @@ const MasterDB = {
           <td style="border: 1px solid #000; padding: 2.5px 3px; font-size: 9.5px; color: #000; font-weight: 500; word-break: break-word; line-height: 1.25;">
             ${p.item_name || 'Unnamed Item'}${selectedCatIds.length > 1 ? ` <span style="font-size: 8px; color: #444; font-weight: 400;">(${this.labels[p.slug] || p.slug})</span>` : ''}
           </td>
-          <td style="border: 1px solid #000; padding: 2.5px 3px; font-size: 9.5px; text-align: center; color: #000; font-weight: 700; line-height: 1.25;">${p.current_stock || 0}</td>
+          <td style="border: 1px solid #000; padding: 2.5px 3px; font-size: 9.5px; text-align: center; color: #000; font-weight: 700; line-height: 1.25;">${app.formatQty(p.current_stock || 0)}</td>
         </tr>
       `).join('');
 
@@ -2417,10 +2785,10 @@ const MasterDB = {
 
   // --- RATE CHANGES LOG & COST HISTORY ---
   async openRateHistoryModal(category, id) {
-    let product = (this.allProducts || []).find(p => p.id == id);
-    if (!product && this.rateListItems) {
-      product = this.rateListItems.find(p => p.id == id && p.slug == category);
-    }
+    let product = (this.filteredProducts || []).find(p => p.id == id && String(p.slug || '').toLowerCase() === String(category || '').toLowerCase()) ||
+                  (this.allProducts || []).find(p => p.id == id && String(p.slug || '').toLowerCase() === String(category || '').toLowerCase()) ||
+                  (this.rateListItems || []).find(p => p.id == id && String(p.slug || '').toLowerCase() === String(category || '').toLowerCase()) ||
+                  (this.allProducts || []).find(p => p.id == id);
 
     const modal = document.getElementById('rate-history-modal');
     const card = document.getElementById('rate-history-card');
@@ -2815,7 +3183,7 @@ const MasterDB = {
               <button onclick="MasterDB.openRateHistoryModal('${it.slug}', ${it.id})" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition-colors cursor-pointer" title="Rates Log">
                 <i data-lucide="history" class="w-3.5 h-3.5"></i>
               </button>
-              <button onclick="MasterDB.closeRateListModal(); MasterDB.openForm(${it.id})" class="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors cursor-pointer" title="Edit Item">
+              <button onclick="MasterDB.closeRateListModal(); MasterDB.openForm(${it.id}, '${it.slug}')" class="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors cursor-pointer" title="Edit Item">
                 <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
@@ -2877,7 +3245,7 @@ const MasterDB = {
                   <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000; vertical-align: top;">${idx + 1}</td>
                   <td style="padding: 2.5px 4px; text-align: left; vertical-align: top; border-right: 1px solid #000;">
                     <div style="font-weight: 800; word-break: break-word; line-height: 1.2;">${it.item_name}</div>
-                    <div style="font-size: 7.5px; color: #444;">[${it.category_label}] • Stk: ${it.current_stock || 0}</div>
+                    <div style="font-size: 7.5px; color: #444;">[${it.category_label}] • Stk: ${app.formatQty(it.current_stock || 0)}</div>
                   </td>
                   <td style="padding: 2.5px 3px; text-align: right; vertical-align: top; font-weight: 600; border-right: 1px solid #000;">
                     ${Number(it.cost_price || 0).toLocaleString()}

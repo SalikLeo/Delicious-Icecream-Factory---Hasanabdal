@@ -1,7 +1,7 @@
 {
-  "name": "ishaq-jadoon-traders",
+  "name": "delicious-icecream-factory",
   "version": "1.0.0",
-  "description": "Ishaq Jadoon Traders Management System",
+  "description": "Delicious Ice Cream Factory Management System - Hasanabdal",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,19 +10,20 @@
     "build:win": "electron-builder --win"
   },
   "keywords": [],
-  "author": "",
+  "author": "Salik Leo",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "better-sqlite3": "^12.9.0"
+    "better-sqlite3": "^12.9.0",
+    "jsbarcode": "^3.12.3"
   },
   "devDependencies": {
     "electron": "^41.2.0",
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.ishaqjadoon.traders",
-    "productName": "Ishaq Jadoon Traders",
+    "appId": "com.delicious.icecreamfactory",
+    "productName": "Delicious Ice Cream Factory",
     "win": {
       "target": "nsis"
     },

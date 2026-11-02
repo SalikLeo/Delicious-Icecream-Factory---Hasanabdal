@@ -153,7 +153,10 @@ window.SalesForm = {
             <div class="flex items-center gap-2.5">
               <span class="w-3.5 h-3.5 rounded-full bg-amber-400 shadow-sm"></span>
               <h2 class="text-xl font-black tracking-wide uppercase text-white flex items-center gap-2">
-                ${this.editingSaleId ? `<span class="text-blue-400">EDIT INVOICE</span> #${this.saleNumber}` : 'ISHAQ JADOON TRADERS'}
+                ${this.editingSaleId ? `<span class="text-blue-400">EDIT INVOICE</span> #${this.saleNumber}` : (this.settings?.company_name || 'ISHAQ JADOON TRADERS').replace(/\s*\(Branch \d+\)/i, '').trim()}
+                <span id="header-branch-badge" class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${app.activeBranch === 'b2' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}">
+                  ${app.activeBranch === 'b2' ? 'BRANCH 2' : 'BRANCH 1'}
+                </span>
               </h2>
             </div>
             <div class="h-4 w-[1px] bg-slate-700"></div>
@@ -179,6 +182,9 @@ window.SalesForm = {
             <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-[11px] font-bold text-slate-200 shadow-sm">
               <kbd class="px-1.5 py-0.5 rounded bg-emerald-500 text-white font-mono text-[10px] font-black shadow-sm">F5</kbd> Complete
             </span>
+            <button type="button" onclick="app.openPriceChecker()" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/80 text-[11px] font-bold text-amber-300 shadow-sm transition-all cursor-pointer" title="Quick Price Inquiry (Press F6)">
+              <kbd class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-mono text-[10px] font-black shadow-sm">F6</kbd> Price Check
+            </button>
             <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-[11px] font-bold text-slate-200 shadow-sm">
               <kbd class="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-mono text-[10px] font-black border border-slate-600">ESC</kbd> Back
             </span>
@@ -260,10 +266,10 @@ window.SalesForm = {
             </div>
           </div>
 
-          <!-- Product Search Box with Instant 1-Letter Dropdown -->
+          <!-- Product Search Box with Instant 1-Letter Dropdown & Barcode Scanner Ready -->
           <div class="relative shrink-0 z-20" id="sf-search-container">
             <div class="relative bg-white rounded-xl shadow-xs border-2 border-amber-400 focus-within:ring-3 focus-within:ring-amber-100 transition-all">
-              <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500"></i>
+              <i data-lucide="scan-barcode" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500"></i>
               <input type="text" 
                      id="sf-fast-item-search" 
                      autocomplete="off"
@@ -271,9 +277,12 @@ window.SalesForm = {
                      onfocus="SalesForm.handleSearchFocus()"
                      onclick="SalesForm.handleSearchFocus()"
                      onkeydown="SalesForm.handleSearchKeyDown(event)"
-                     placeholder="Search item name or category..." 
-                     class="w-full pl-10 pr-32 py-2 bg-transparent text-slate-900 font-bold text-sm outline-none placeholder:text-slate-400">
+                     placeholder="Scan barcode with scanner or search item..." 
+                     class="w-full pl-10 pr-48 py-2 bg-transparent text-slate-900 font-bold text-sm outline-none placeholder:text-slate-400">
               <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <span class="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-2xs select-none">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Scanner Ready
+                </span>
                 <button type="button" 
                         id="sf-item-search-clear-btn" 
                         onclick="SalesForm.clearSearchInput()" 
@@ -281,7 +290,7 @@ window.SalesForm = {
                         class="w-5 h-5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer hidden">
                   <i data-lucide="x" class="w-3.5 h-3.5"></i>
                 </button>
-                <kbd class="px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[9px] font-black shadow-2xs pointer-events-none select-none">Press F2 Key</kbd>
+                <kbd class="px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[9px] font-black shadow-2xs pointer-events-none select-none">F2</kbd>
               </div>
             </div>
 
@@ -319,8 +328,8 @@ window.SalesForm = {
                 <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 shadow-xs">
                   <span class="text-xs font-bold text-slate-600">Method:</span>
                   <div class="flex bg-slate-100 p-0.5 rounded-md border border-slate-200">
-                    <button type="button" id="btn-method-cash" onclick="SalesForm.setPaymentMethod('Cash')" class="px-2 py-0.5 text-[10px] font-black rounded ${this.paymentMethod === 'Cash' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">CASH</button>
-                    <button type="button" id="btn-method-online" onclick="SalesForm.setPaymentMethod('Online')" class="px-2 py-0.5 text-[10px] font-black rounded ${this.paymentMethod === 'Online' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">ONLINE</button>
+                    <button type="button" id="btn-method-cash" onclick="SalesForm.setPaymentMethod('Cash')" class="px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer ${this.paymentMethod === 'Cash' ? 'bg-slate-900 text-white shadow-xs hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'}">CASH</button>
+                    <button type="button" id="btn-method-online" onclick="SalesForm.setPaymentMethod('Online')" class="px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-500 hover:text-white' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-200/50'}">ONLINE</button>
                   </div>
                 </div>
               </div>
@@ -557,7 +566,17 @@ window.SalesForm = {
   },
 
   // --- Custom Customer Dropdown Methods ---
-  handleCustomerFocus() {
+  async refreshCustomers() {
+    try {
+      this.customers = await window.api.getCustomers() || [];
+    } catch (e) {
+      console.error("Failed to refresh customers in SalesForm:", e);
+    }
+  },
+
+  async handleCustomerFocus() {
+    // Keep customer list always synchronized
+    await this.refreshCustomers();
     const input = document.getElementById('sf-customer-name');
     if (input && !input.readOnly) {
       const val = (input.value || '').trim();
@@ -569,8 +588,9 @@ window.SalesForm = {
       if (val.length > 0) {
         this.handleCustomerInput(val);
       } else {
-        const dropdown = document.getElementById('sf-customer-dropdown');
-        if (dropdown) dropdown.classList.add('hidden');
+        this.customerSearchResults = (this.customers || []).slice(0, 15);
+        this.highlightedCustomerIndex = 0;
+        this.renderCustomerDropdown();
       }
     }
   },
@@ -580,7 +600,7 @@ window.SalesForm = {
     if (dropdown) dropdown.classList.add('hidden');
   },
 
-  handleCustomerInput(val) {
+  async handleCustomerInput(val) {
     const q = (val || '').trim().toLowerCase();
     const dropdown = document.getElementById('sf-customer-dropdown');
     const clearBtn = document.getElementById('sf-customer-clear-btn');
@@ -593,10 +613,14 @@ window.SalesForm = {
     if (!dropdown) return;
 
     if (q.length === 0) {
-      this.customerSearchResults = [];
-      dropdown.classList.add('hidden');
+      this.customerSearchResults = (this.customers || []).slice(0, 15);
+      this.highlightedCustomerIndex = 0;
+      this.renderCustomerDropdown();
       return;
     } else {
+      if (!this.customers || this.customers.length === 0) {
+        await this.refreshCustomers();
+      }
       const all = this.customers || [];
       let matches = all.filter(c => {
         const name = (c.name || '').toLowerCase();
@@ -853,16 +877,14 @@ window.SalesForm = {
     this.paymentMethod = method;
     const btnCash = document.getElementById('btn-method-cash');
     const btnOnline = document.getElementById('btn-method-online');
+    if (!btnCash || !btnOnline) return;
+
     if (method === 'Online') {
-      btnOnline?.classList.add('bg-indigo-600', 'text-white');
-      btnOnline?.classList.remove('text-slate-600');
-      btnCash?.classList.remove('bg-slate-900', 'text-white');
-      btnCash?.classList.add('text-slate-600');
+      btnOnline.className = 'px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer bg-indigo-600 text-white shadow-xs hover:bg-indigo-500 hover:text-white';
+      btnCash.className = 'px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-200/50';
     } else {
-      btnCash?.classList.add('bg-slate-900', 'text-white');
-      btnCash?.classList.remove('text-slate-600');
-      btnOnline?.classList.remove('bg-indigo-600', 'text-white');
-      btnOnline?.classList.add('text-slate-600');
+      btnCash.className = 'px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer bg-slate-900 text-white shadow-xs hover:bg-slate-800 hover:text-white';
+      btnOnline.className = 'px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer text-slate-600 hover:text-indigo-600 hover:bg-slate-200/50';
     }
   },
 
@@ -938,7 +960,7 @@ window.SalesForm = {
       const origQty = this.originalItemsMap[`${itemSlug}-${itemId}`] || 0;
       stock += origQty;
     }
-    return Math.max(0, stock);
+    return Math.round(Math.max(0, stock) * 100) / 100;
   },
 
   getItemLatestCost(item) {
@@ -1031,39 +1053,49 @@ window.SalesForm = {
 
     const all = this.availableItems || [];
 
-    // Filter all matching products (name, description, company, category)
+    // Filter all matching products (name, description, company, category, barcode)
     let matches = all.filter(i => {
       const name = (i.item_name || '').toLowerCase();
       const desc = (i.description || '').toLowerCase();
       const comp = (i.company_name || '').toLowerCase();
       const cat = (this.getCategoryName(i) || '').toLowerCase();
       const slug = (i.slug || '').toLowerCase();
-      return name.includes(q) || desc.includes(q) || comp.includes(q) || cat.includes(q) || slug.includes(q);
+      const barcode = (i.barcode || '').toLowerCase();
+      return name.includes(q) || desc.includes(q) || comp.includes(q) || cat.includes(q) || slug.includes(q) || barcode.includes(q);
     });
 
     // Priority sort by search relevance:
+    // 0. exact barcode match
     // 1. item_name starts with query (e.g. "Catry..." when typing "cat")
     // 2. any word in item_name starts with query
     // 3. description or company starts with query
     // 4. word in description starts with query
-    // 5. general substring match
+    // 5. barcode contains query
+    // 6. general substring match
     matches.sort((a, b) => {
+      const bcA = (a.barcode || '').toLowerCase();
+      const bcB = (b.barcode || '').toLowerCase();
+      if (bcA === q && bcB !== q) return -1;
+      if (bcB === q && bcA !== q) return 1;
+
       const nameA = (a.item_name || '').toLowerCase();
       const nameB = (b.item_name || '').toLowerCase();
       const descA = (a.description || '').toLowerCase();
       const descB = (b.description || '').toLowerCase();
 
-      const getScore = (name, desc) => {
+      const getScore = (name, desc, bc) => {
+        if (bc === q) return 0;
         if (name.startsWith(q)) return 1;
         const words = name.split(/[\s\-&/]+/);
         if (words.some(w => w.startsWith(q))) return 2;
         if (desc.startsWith(q)) return 3;
         if (desc.split(/[\s\-&/]+/).some(w => w.startsWith(q))) return 4;
-        return 5;
+        if (bc.includes(q)) return 5;
+        return 6;
       };
 
-      const scoreA = getScore(nameA, descA);
-      const scoreB = getScore(nameB, descB);
+      const scoreA = getScore(nameA, descA, bcA);
+      const scoreB = getScore(nameB, descB, bcB);
 
       if (scoreA !== scoreB) {
         return scoreA - scoreB;
@@ -1129,17 +1161,18 @@ window.SalesForm = {
         <div id="sf-search-item-${idx}" 
              onmousedown="SalesForm.selectSearchItem(${idx})"
              class="px-3.5 py-2 flex items-center justify-between border-b border-slate-100 last:border-0 cursor-pointer transition-all ${isHighlighted ? 'bg-amber-600 text-white font-bold shadow-xs' : 'hover:bg-slate-50 text-slate-800'}">
-          <!-- Single Line: Index, Item Name, Category Tag -->
-          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          <!-- Single Line: Index, Item Name, Barcode, Category Tag -->
+          <div class="flex items-center gap-2 min-w-0 flex-1">
             <span class="w-5.5 h-5.5 rounded ${isHighlighted ? 'bg-white/25 text-white border border-white/30' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-black shrink-0 font-mono">${idx + 1}</span>
             <span class="text-sm font-black truncate ${isHighlighted ? 'text-white' : 'text-slate-900'}">${item.item_name}</span>
+            ${item.barcode ? `<span class="text-[10px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60' : 'text-slate-600 bg-slate-100'} px-1.5 py-0.2 rounded border ${isHighlighted ? 'border-amber-400/40' : 'border-slate-300'}">#${item.barcode}</span>` : ''}
             ${categoryName ? `<span class="text-xs ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0 uppercase tracking-tight">(${categoryName})</span>` : ''}
           </div>
 
           <!-- Single Line: Stock, Cost Price (C: Rs. XX), Latest Cost (L.Cost: Rs. XX), Sale Price -->
           <div class="flex items-center gap-3.5 shrink-0 text-right">
             <span class="text-[13px] font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-emerald-700') : (isHighlighted ? 'text-rose-200' : 'text-rose-600')} tabular-nums">
-              ${stock} ${item.unit || 'pcs'} avail
+              ${app.formatQty(stock)} ${item.unit || 'pcs'} avail
             </span>
             <span class="text-[13px] font-bold ${isHighlighted ? 'text-amber-100/90' : 'text-slate-500'} font-display tabular-nums">
               (C: Rs. ${app.formatAmount(cost)}) (L.Cost: Rs. ${app.formatAmount(latestCost)})
@@ -1197,14 +1230,25 @@ window.SalesForm = {
         }
       }
     } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (isDropdownOpen && this.searchResults[this.highlightedSearchIndex]) {
-        const item = this.searchResults[this.highlightedSearchIndex];
-        const isAlready = this.cart.some(c => c.id === item.id && c.slug === item.slug);
-        if (!isAlready) {
-          this.selectSearchItem(this.highlightedSearchIndex);
+      const searchInput = document.getElementById('sf-fast-item-search');
+      const searchVal = (searchInput?.value || '').trim();
+
+      // Check if search query matches an exact barcode first
+      if (searchVal) {
+        const barcodeMatch = (this.availableItems || []).find(i => String(i.barcode || '').trim().toLowerCase() === searchVal.toLowerCase());
+        if (barcodeMatch) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleBarcodeScan(searchVal);
+          return;
         }
+      }
+
+      if (isDropdownOpen && this.searchResults[this.highlightedSearchIndex]) {
+        e.preventDefault();
+        this.selectSearchItem(this.highlightedSearchIndex);
       } else if (this.cart.length > 0) {
+        e.preventDefault();
         this.focusCartField(0, 'qty');
       }
     } else if (e.key === 'Escape') {
@@ -1214,14 +1258,80 @@ window.SalesForm = {
     }
   },
 
+  handleBarcodeScan(rawBarcode) {
+    if (!rawBarcode) return false;
+    const barcode = String(rawBarcode).trim();
+    if (!barcode) return false;
+
+    const all = this.availableItems || [];
+    const item = all.find(i => String(i.barcode || '').trim().toLowerCase() === barcode.toLowerCase());
+
+    if (item) {
+      const maxStock = this.getItemAvailableStock(item);
+      const existing = this.cart.find(c => c.id === item.id && c.slug === item.slug);
+
+      if (existing) {
+        if (existing.qty < maxStock) {
+          existing.qty++;
+          this.renderCart();
+          this.updateSummary();
+          app.playBeep('success');
+        } else {
+          app.playBeep('warning');
+          app.showAlert({
+            title: 'Stock Limit Reached',
+            message: `Cannot add more <b>${item.item_name}</b>.<br>Maximum available stock is ${maxStock} ${item.unit || 'pcs'}.`
+          });
+        }
+      } else {
+        if (maxStock <= 0) {
+          app.playBeep('warning');
+          app.showAlert({
+            title: 'Out of Stock',
+            message: `<b>${item.item_name}</b> is currently out of stock.`
+          });
+        } else {
+          this.addToCart(item);
+          app.playBeep('success');
+        }
+      }
+
+      this.clearSearchInput();
+      const cartIdx = this.cart.findIndex(c => c.id === item.id && c.slug === item.slug);
+      if (cartIdx !== -1) {
+        setTimeout(() => {
+          this.focusCartField(cartIdx, 'qty');
+        }, 40);
+      }
+      return true;
+    } else {
+      app.playBeep('error');
+      app.showToast(`Barcode "${barcode}" not recognized in stock`, 'error');
+      return false;
+    }
+  },
+
   selectSearchItem(index) {
     const item = this.searchResults[index];
     if (!item) return;
 
-    const isAlreadyInCart = this.cart.some(c => c.id === item.id && c.slug === item.slug);
-    if (isAlreadyInCart) return;
+    const existing = this.cart.find(c => c.id === item.id && c.slug === item.slug);
+    const maxStock = this.getItemAvailableStock(item);
 
-    this.addToCart(item);
+    if (existing) {
+      if (existing.qty < maxStock) {
+        existing.qty++;
+        this.renderCart();
+        this.updateSummary();
+        app.playBeep('success');
+      } else {
+        app.playBeep('warning');
+        app.showToast(`Max stock reached for ${item.item_name}`, 'warning');
+      }
+    } else {
+      this.addToCart(item);
+      app.playBeep('success');
+    }
 
     const searchInput = document.getElementById('sf-fast-item-search');
     const clearBtn = document.getElementById('sf-item-search-clear-btn');
@@ -1232,11 +1342,11 @@ window.SalesForm = {
     this.searchResults = [];
     this.highlightedSearchIndex = 0;
 
-    const cartIdx = this.cart.findIndex(i => i.id === item.id && i.slug === item.slug);
+    const cartIdx = this.cart.findIndex(c => c.id === item.id && c.slug === item.slug);
     if (cartIdx !== -1) {
       setTimeout(() => {
         this.focusCartField(cartIdx, 'qty');
-      }, 50);
+      }, 40);
     }
   },
 
@@ -1265,6 +1375,7 @@ window.SalesForm = {
         id: item.id,
         description: item.item_name + (catLabel ? ' - ' + catLabel : ''),
         item_name: item.item_name,
+        barcode: item.barcode || '',
         retail_price: activePrice,
         original_retail_price: activePrice,
         cost_price: activeCost,
@@ -1307,6 +1418,7 @@ window.SalesForm = {
 
     if (e.key === 'ArrowRight') {
       e.preventDefault();
+      this.flushPendingCartQty();
       if (fieldName === 'qty') {
         this.focusCartField(rowIdx, 'price');
       } else if (fieldName === 'price') {
@@ -1315,11 +1427,16 @@ window.SalesForm = {
         if (rowIdx < numRows - 1) {
           this.focusCartField(rowIdx + 1, 'qty');
         } else {
-          document.getElementById('sf-fast-item-search')?.focus();
+          const searchInput = document.getElementById('sf-fast-item-search');
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+          }
         }
       }
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
+      this.flushPendingCartQty();
       if (fieldName === 'discount') {
         this.focusCartField(rowIdx, 'price');
       } else if (fieldName === 'price') {
@@ -1328,22 +1445,24 @@ window.SalesForm = {
         if (rowIdx > 0) {
           this.focusCartField(rowIdx - 1, 'discount');
         } else {
-          document.getElementById('sf-fast-item-search')?.focus();
+          const searchInput = document.getElementById('sf-fast-item-search');
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+          }
         }
       }
-    } else if (e.key === 'ArrowDown') {
+    } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
       e.preventDefault();
-      if (rowIdx < numRows - 1) {
-        this.focusCartField(rowIdx + 1, fieldName);
-      } else {
-        const searchInput = document.getElementById('sf-fast-item-search');
-        if (searchInput) {
-          searchInput.focus();
-          searchInput.select();
-        }
+      this.flushPendingCartQty();
+      const searchInput = document.getElementById('sf-fast-item-search');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
+      this.flushPendingCartQty();
       if (rowIdx > 0) {
         this.focusCartField(rowIdx - 1, fieldName);
       } else {
@@ -1353,17 +1472,43 @@ window.SalesForm = {
           searchInput.select();
         }
       }
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const searchInput = document.getElementById('sf-fast-item-search');
-      if (searchInput) {
-        searchInput.focus();
-        searchInput.select();
-      }
     }
   },
 
   updateCartQty(index, qty, inputEl) {
+    if (this._isScanning) return;
+
+    if (this._qtyUpdateTimeout) {
+      clearTimeout(this._qtyUpdateTimeout);
+      this._qtyUpdateTimeout = null;
+    }
+
+    this._pendingQtyUpdate = { index, qty, inputEl };
+
+    // Debounce by 40ms to prevent rapid scanner bursts from contaminating active qty field
+    this._qtyUpdateTimeout = setTimeout(() => {
+      if (this._isScanning) return;
+      this._applyCartQty(index, qty, inputEl);
+      this._qtyUpdateTimeout = null;
+      this._pendingQtyUpdate = null;
+    }, 40);
+  },
+
+  flushPendingCartQty() {
+    if (this._qtyUpdateTimeout) {
+      clearTimeout(this._qtyUpdateTimeout);
+      this._qtyUpdateTimeout = null;
+    }
+    if (this._pendingQtyUpdate) {
+      const { index, qty, inputEl } = this._pendingQtyUpdate;
+      this._pendingQtyUpdate = null;
+      if (!this._isScanning) {
+        this._applyCartQty(index, qty, inputEl);
+      }
+    }
+  },
+
+  _applyCartQty(index, qty, inputEl) {
     const item = this.cart[index];
     if (!item) return;
     const maxStock = this.getItemAvailableStock(item);
@@ -1377,6 +1522,7 @@ window.SalesForm = {
 
     let parsed = parseFloat(qty);
     if (isNaN(parsed)) parsed = 0;
+    parsed = Math.round(parsed * 100) / 100;
 
     if (parsed > maxStock) {
       parsed = maxStock;
@@ -1392,6 +1538,8 @@ window.SalesForm = {
   },
 
   onCartQtyBlur(index, inputEl) {
+    if (this._isScanning) return;
+    this.flushPendingCartQty();
     const item = this.cart[index];
     if (!item) return;
     const maxStock = this.getItemAvailableStock(item);
@@ -1403,6 +1551,9 @@ window.SalesForm = {
     } else if (parsed > maxStock) {
       parsed = maxStock;
       inputEl.value = maxStock;
+    } else {
+      parsed = Math.round(parsed * 100) / 100;
+      inputEl.value = parsed;
     }
 
     item.qty = parsed;
@@ -1411,6 +1562,7 @@ window.SalesForm = {
   },
 
   updateCartPrice(index, price) {
+    if (this._isScanning) return;
     const item = this.cart[index];
     if (!item) return;
     item.retail_price = parseFloat(price) || 0;
@@ -1441,6 +1593,7 @@ window.SalesForm = {
   },
 
   updateItemDiscount(index, val) {
+    if (this._isScanning) return;
     const item = this.cart[index];
     if (!item) return;
 
@@ -1538,8 +1691,9 @@ window.SalesForm = {
           <td class="py-1 px-3 border-r border-slate-200">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="font-black text-slate-900 text-xs truncate max-w-[280px]">${item.item_name}</span>
+              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
               ${categoryLabel ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${categoryLabel})</span>` : ''}
-              <span class="text-[9px] font-bold ${maxStock > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-1.5 py-0.2 rounded border tabular-nums ml-auto sm:ml-0">${maxStock} in stock</span>
+              <span class="text-[9px] font-bold ${maxStock > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-1.5 py-0.2 rounded border tabular-nums ml-auto sm:ml-0">${app.formatQty(maxStock)} in stock</span>
             </div>
           </td>
 
@@ -1548,14 +1702,14 @@ window.SalesForm = {
             <div class="inline-flex items-center justify-center gap-1">
               <input type="number" 
                      id="cart-qty-input-${idx}"
-                     value="${item.qty}"
+                     value="${app.formatQty(item.qty)}"
                      min="1"
                      max="${maxStock}"
                      step="any"
                      onkeydown="SalesForm.handleCartKeyDown(event, ${idx}, 'qty')"
                      oninput="SalesForm.updateCartQty(${idx}, this.value, this)"
                      onblur="SalesForm.onCartQtyBlur(${idx}, this)"
-                     class="w-12 bg-transparent focus:bg-amber-100/70 border-b border-transparent focus:border-amber-500 text-right font-black text-slate-900 text-xs outline-none transition-colors tabular-nums py-0 rounded-sm">
+                     class="w-14 bg-white/60 focus:bg-amber-100 border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-right font-black text-slate-900 text-xs outline-none transition-all tabular-nums py-0.5 px-1 rounded shadow-2xs">
               <span class="w-14 text-left text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate shrink-0">${item.unit || 'pcs'}</span>
             </div>
           </td>
@@ -1570,7 +1724,7 @@ window.SalesForm = {
                      step="any"
                      onkeydown="SalesForm.handleCartKeyDown(event, ${idx}, 'price')"
                      oninput="SalesForm.updateCartPrice(${idx}, this.value)"
-                     class="w-20 bg-transparent focus:bg-amber-100/70 border-b border-transparent focus:border-amber-500 text-right font-black text-slate-900 text-xs outline-none transition-colors tabular-nums py-0 rounded-sm">
+                     class="w-20 bg-white/60 focus:bg-amber-100 border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-right font-black text-slate-900 text-xs outline-none transition-all tabular-nums py-0.5 px-1 rounded shadow-2xs">
             </div>
           </td>
 
@@ -1589,7 +1743,7 @@ window.SalesForm = {
                      step="any"
                      onkeydown="SalesForm.handleCartKeyDown(event, ${idx}, 'discount')"
                      oninput="SalesForm.updateItemDiscount(${idx}, this.value)"
-                     class="w-14 bg-transparent focus:bg-amber-100/70 border-b border-transparent focus:border-amber-500 text-right font-black text-slate-900 text-xs outline-none transition-colors tabular-nums py-0 rounded-sm">
+                     class="w-14 bg-white/60 focus:bg-amber-100 border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-right font-black text-slate-900 text-xs outline-none transition-all tabular-nums py-0.5 px-1 rounded shadow-2xs">
             </div>
           </td>
 
@@ -1605,7 +1759,7 @@ window.SalesForm = {
               <button type="button" onclick="SalesForm.resetCartPrice(${idx})" class="p-0.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer" title="Reset Rate">
                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
               </button>
-              <button type="button" onclick="SalesForm.removeFromCart(${idx})" class="p-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer" title="Remove Item">
+              <button type="button" onclick="SalesForm.removeFromCart(${idx})" class="p-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer" title="Remove Item">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
@@ -1836,10 +1990,124 @@ window.SalesForm = {
 
   setupGlobalShortcuts() {
     if (this._keyHandler) {
-      window.removeEventListener('keydown', this._keyHandler);
+      window.removeEventListener('keydown', this._keyHandler, true);
     }
+
+    this._scanBuffer = '';
+    this._lastScanTime = 0;
+    this._isScanning = false;
+    this._scanActiveEl = null;
+    this._scanActivePrevVal = null;
+    this._scanCartSnapshot = null;
+
     this._keyHandler = (e) => {
       if (app.currentPage !== 'proposal-form') return;
+
+      const now = Date.now();
+      const diff = now - this._lastScanTime;
+      this._lastScanTime = now;
+
+      // Check if interactive modals (alert, confirm, payment, price checker) are open
+      const priceModal = document.getElementById('price-checker-modal');
+      const isPriceOpen = priceModal && !priceModal.classList.contains('hidden') && priceModal.classList.contains('flex');
+      if (isPriceOpen) {
+        const isDismissKey = e.key === 'Escape' || e.key === 'F6' || e.code === 'F6' || e.key === 'F8' || e.code === 'F8';
+        if (isDismissKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          app.closePriceChecker();
+        }
+        return;
+      }
+
+      const confirmModal = document.getElementById('confirm-modal');
+      const isConfirmOpen = confirmModal && !confirmModal.classList.contains('hidden') && confirmModal.classList.contains('flex');
+      const paymentModal = document.getElementById('payment-modal');
+      const isPaymentOpen = paymentModal && !paymentModal.classList.contains('hidden') && paymentModal.classList.contains('flex');
+
+      if (!isConfirmOpen && !isPaymentOpen) {
+        // Fast burst scanner stream detection (scanner keystrokes arrive < 55ms apart)
+        if (diff > 55) {
+          this._scanBuffer = '';
+          this._isScanning = false;
+
+          // Snapshot active element state in case this first character is the beginning of a scanner burst
+          this._scanActiveEl = document.activeElement;
+          this._scanActivePrevVal = this._scanActiveEl && (this._scanActiveEl.tagName === 'INPUT' || this._scanActiveEl.tagName === 'TEXTAREA')
+            ? this._scanActiveEl.value
+            : null;
+
+          const cartMatch = this._scanActiveEl?.id ? this._scanActiveEl.id.match(/^cart-(qty|price|discount)-input-(\d+)$/) : null;
+          if (cartMatch) {
+            const fieldType = cartMatch[1];
+            const rowIdx = parseInt(cartMatch[2], 10);
+            this._scanCartSnapshot = {
+              rowIdx,
+              fieldType,
+              qty: this.cart[rowIdx]?.qty,
+              price: this.cart[rowIdx]?.retail_price,
+              discount: this.cart[rowIdx]?.discount
+            };
+          } else {
+            this._scanCartSnapshot = null;
+          }
+        } else {
+          // diff <= 55ms: Hardware scanner burst confirmed!
+          if (this._scanBuffer.length >= 1) {
+            this._isScanning = true;
+
+            // Cancel any pending debounced quantity updates
+            if (this._qtyUpdateTimeout) {
+              clearTimeout(this._qtyUpdateTimeout);
+              this._qtyUpdateTimeout = null;
+              this._pendingQtyUpdate = null;
+            }
+
+            // If the active element was a cart row input, restore its original state and blur it
+            if (this._scanCartSnapshot && this.cart[this._scanCartSnapshot.rowIdx]) {
+              const { rowIdx, qty, price, discount } = this._scanCartSnapshot;
+              this.cart[rowIdx].qty = qty;
+              this.cart[rowIdx].retail_price = price;
+              this.cart[rowIdx].discount = discount;
+              if (this._scanActiveEl) {
+                this._scanActiveEl.value = this._scanActivePrevVal !== null ? this._scanActivePrevVal : (qty || 1);
+                this._scanActiveEl.blur();
+              }
+              this.updateLineTotal(rowIdx);
+              this.updateSummary();
+              this._scanCartSnapshot = null;
+            } else if (this._scanActiveEl && this._scanActiveEl.id !== 'sf-fast-item-search') {
+              if (this._scanActivePrevVal !== null) {
+                this._scanActiveEl.value = this._scanActivePrevVal;
+              }
+              this._scanActiveEl.blur();
+            }
+          }
+        }
+
+        if (e.key === 'Enter') {
+          if (this._scanBuffer.length >= 3) {
+            const scannedCode = this._scanBuffer;
+            this._scanBuffer = '';
+            this._isScanning = false;
+            const handled = this.handleBarcodeScan(scannedCode);
+            if (handled) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+          }
+          this._scanBuffer = '';
+          this._isScanning = false;
+        } else if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+          if (this._isScanning) {
+            // Once confirmed in a scanner burst, suppress keystroke from typing into any input
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          this._scanBuffer += e.key;
+        }
+      }
 
       if (e.key === 'F1') {
         e.preventDefault();
@@ -1879,9 +2147,14 @@ window.SalesForm = {
       } else if (e.key === 'F5' || e.key === 'F9' || (e.ctrlKey && e.key === 'Enter')) {
         e.preventDefault();
         this.completeSale();
+      } else if (e.key === 'F6' || e.code === 'F6' || e.key === 'F8' || e.code === 'F8') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.repeat) return;
+        app.openPriceChecker();
       }
     };
-    window.addEventListener('keydown', this._keyHandler);
+    window.addEventListener('keydown', this._keyHandler, true);
   },
 
   async completeSale(andPrint = true) {
@@ -2177,7 +2450,7 @@ window.SalesForm = {
         </div>` : ''}
         <div class="flex justify-between items-center text-slate-500">
           <span>Total Items</span>
-          <span class="font-bold text-slate-800">${items.length} item${items.length === 1 ? '' : 's'} (${items.reduce((s, i) => s + i.qty, 0)} qty)</span>
+          <span class="font-bold text-slate-800">${items.length} item${items.length === 1 ? '' : 's'} (${app.formatQty(items.reduce((s, i) => s + (Number(i.qty) || 0), 0))} qty)</span>
         </div>
         ${totalDiscount > 0 ? `
         <div class="flex justify-between items-center text-slate-500">
@@ -2245,6 +2518,12 @@ window.SalesForm = {
     const items = data.items || [];
     const totalQty = items.reduce((acc, item) => acc + (Number(item.qty) || 0), 0);
 
+    if ((!this.availableItems || this.availableItems.length === 0) && window.api && typeof window.api.searchAllProducts === 'function') {
+      try {
+        this.availableItems = await window.api.searchAllProducts('');
+      } catch (e) {}
+    }
+
     let rowsHtml = '';
     let itemsGrossSubtotal = 0;
     if (items.length === 0) {
@@ -2265,13 +2544,29 @@ window.SalesForm = {
         
         itemsGrossSubtotal += lineTotal;
         const isLast = i === items.length - 1;
+
+        let unitStr = (item.unit || item.unit_name || '').trim();
+        if (!unitStr && this.availableItems && this.availableItems.length > 0) {
+          const match = this.availableItems.find(p => (item.item_id && p.id === item.item_id) || (item.id && p.id === item.id) || (p.item_name && item.description && item.description.toUpperCase().startsWith(p.item_name.toUpperCase())));
+          if (match && match.unit) {
+            unitStr = match.unit.trim();
+          }
+        }
+        if (!unitStr) {
+          unitStr = 'PC';
+        }
+        let unitDisplay = unitStr.toUpperCase();
+        if (unitDisplay === 'PCS' && Math.abs(Number(item.qty)) === 1) {
+          unitDisplay = 'PC';
+        }
+
         rowsHtml += `
           <tr style="border-bottom: ${isLast ? 'none' : '1px solid #000'}; font-size: 9.5px;">
             <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${i + 1}</td>
             <td style="padding: 2.5px 4px; text-align: left; font-weight: 800; word-break: break-word; line-height: 1.2; border-right: 1px solid #000;">
               <div>${desc}</div>
             </td>
-            <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${item.qty}</td>
+            <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(item.qty)} ${unitDisplay}</td>
             <td style="padding: 2.5px 3px; text-align: right; font-weight: 600; white-space: nowrap; border-right: 1px solid #000;">${app.formatAmount(rate)}</td>
             <td style="padding: 2.5px 4px; text-align: right; font-weight: 800; white-space: nowrap;">${app.formatAmount(lineTotal)}</td>
           </tr>
@@ -2307,7 +2602,7 @@ window.SalesForm = {
         
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 4px;">
-          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${this.settings.company_name || 'ISHAQ JADOON TRADERS'}</h1>
+          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${(this.settings.company_name || 'ISHAQ JADOON TRADERS').replace(/\s*\(Branch \d+\)/i, '').trim()}</h1>
           <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${this.settings.address || 'Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt'}</div>
           <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
             <div>M.Ishaq: 0301-2630481</div>
@@ -2338,9 +2633,9 @@ window.SalesForm = {
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 9.5px; border: 1.5px solid #000;">
           <thead>
             <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 900; text-transform: uppercase;">
-              <th style="padding: 3px 2px; text-align: center; width: 7%; border-right: 1px solid #000;">#</th>
-              <th style="padding: 3px 4px; text-align: left; width: 45%; border-right: 1px solid #000;">ITEM</th>
-              <th style="padding: 3px 2px; text-align: center; width: 16%; border-right: 1px solid #000;">QTY</th>
+              <th style="padding: 3px 2px; text-align: center; width: 6%; border-right: 1px solid #000;">#</th>
+              <th style="padding: 3px 4px; text-align: left; width: 42%; border-right: 1px solid #000;">ITEM</th>
+              <th style="padding: 3px 2px; text-align: center; width: 20%; border-right: 1px solid #000;">QTY</th>
               <th style="padding: 3px 3px; text-align: right; width: 16%; border-right: 1px solid #000;">RATE</th>
               <th style="padding: 3px 4px; text-align: right; width: 16%;">TOTAL</th>
             </tr>
@@ -2380,7 +2675,7 @@ window.SalesForm = {
             <span>Rs. ${app.formatAmount(remainingDue)}</span>
           </div>` : ''}
           <div style="display: flex; justify-content: space-between; margin-top: 3px; font-size: 10px; font-weight: 600;">
-            <span>Total Items: ${items.length} (Qty: ${totalQty})</span>
+            <span>Total Items: ${items.length} (Qty: ${app.formatQty(totalQty)})</span>
             <span>Status: <b>${remainingDue > 0 ? (receivedAmount > 0 ? 'PARTIAL' : 'CREDIT') : 'PAID'}</b></span>
           </div>
         </div>

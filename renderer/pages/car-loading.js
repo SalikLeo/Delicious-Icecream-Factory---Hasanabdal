@@ -1,0 +1,794 @@
+// Stage 4: Cars & Delivery Loading (Factory Warehouse -> Delivery Cars/Vans)
+window.CarLoading = {
+  cars: [],
+  cartons: [],
+  selectedCarId: null,
+  activeTab: 'cars', // 'cars' | 'dispatch' | 'history'
+  dispatchItems: {}, // { carton_id: qty_to_load }
+  dispatches: [],
+
+  async render(container) {
+    this.container = container;
+    await this.loadData();
+  },
+
+  async loadData() {
+    try {
+      this.cars = await window.api.getCars() || [];
+      this.cartons = await window.api.getPackedCartons() || [];
+      this.dispatches = await window.api.getCarLoadingBatches() || [];
+
+      if (!this.selectedCarId && this.cars.length > 0) {
+        this.selectedCarId = this.cars[0].id;
+      }
+
+      this.renderUI();
+    } catch (e) {
+      console.error('Failed to load cars/loading data:', e);
+      if (this.container) {
+        this.container.innerHTML = `<div class="p-6 text-red-500 font-bold">Error loading cars: ${e.message}</div>`;
+      }
+    }
+  },
+
+  renderUI() {
+    if (!this.container) return;
+
+    const totalCars = this.cars.length;
+    const totalCartonsLoaded = this.cars.reduce((sum, c) => sum + (c.total_loaded_cartons || 0), 0);
+
+    this.container.innerHTML = `
+      <div class="h-full flex flex-col gap-5 max-w-7xl mx-auto">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-900 text-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-blue-800/40">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-mono text-[11px] font-black border border-blue-500/30">STAGE 4</span>
+              <h2 class="text-2xl font-black tracking-tight text-white">Car Loading &amp; Delivery Vans</h2>
+            </div>
+            <p class="text-xs text-slate-300 font-medium">Load packed cartons into delivery cars/vans. Always know what is loaded in each car right now.</p>
+          </div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="CarLoading.switchTab('dispatch')" class="px-5 py-2.5 bg-blue-500 hover:bg-blue-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+              <i data-lucide="package-check" class="w-4 h-4"></i> + Load Stock into Car
+            </button>
+            <button onclick="CarLoading.openCarModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer">
+              <i data-lucide="truck" class="w-4 h-4 text-blue-400"></i> + Add Car / Van
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Registered Delivery Cars</p>
+              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalCars} <span class="text-xs font-bold text-slate-400">vehicles</span></h3>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+              <i data-lucide="truck" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Cartons in Cars</p>
+              <h3 class="text-2xl font-black text-blue-700 mt-1 tabular-nums">${totalCartonsLoaded.toLocaleString()} <span class="text-xs font-bold text-slate-400">cartons on road</span></h3>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+              <i data-lucide="package" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Available in Factory Stock</p>
+              <h3 class="text-2xl font-black text-purple-700 mt-1 tabular-nums">
+                ${this.cartons.reduce((sum, c) => sum + (c.factory_carton_stock || 0), 0).toLocaleString()} <span class="text-xs font-bold text-slate-400">cartons in freezer</span>
+              </h3>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-black">
+              <i data-lucide="warehouse" class="w-5 h-5"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+            <button onclick="CarLoading.switchTab('cars')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'cars' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+              Delivery Cars &amp; Loaded Stock
+            </button>
+            <button onclick="CarLoading.switchTab('dispatch')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'dispatch' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+              + Load Stock into Car (Dispatch)
+            </button>
+            <button onclick="CarLoading.switchTab('history')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'history' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+              Loading History &amp; Gate Passes
+            </button>
+          </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+          ${this.renderActiveTabContent()}
+        </div>
+
+      </div>
+
+      <!-- Modal Container -->
+      <div id="car-modal-container"></div>
+    `;
+
+    if (window.lucide) lucide.createIcons({ root: this.container });
+  },
+
+  renderActiveTabContent() {
+    if (this.activeTab === 'cars') return this.renderCarsView();
+    if (this.activeTab === 'dispatch') return this.renderDispatchView();
+    if (this.activeTab === 'history') return this.renderHistoryView();
+    return '';
+  },
+
+  renderCarsView() {
+    if (this.cars.length === 0) {
+      return `
+        <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
+          <i data-lucide="truck" class="w-12 h-12 mb-3 text-slate-300"></i>
+          <h4 class="text-sm font-black text-slate-600">No delivery cars registered</h4>
+          <p class="text-xs text-slate-400 mt-1">Click "+ Add Car / Van" to add your vehicles and drivers.</p>
+        </div>
+      `;
+    }
+
+    const activeCar = this.cars.find(c => c.id === this.selectedCarId) || this.cars[0];
+
+    return `
+      <div class="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-200 overflow-hidden">
+        
+        <!-- Left: Cars List (40%) -->
+        <div class="w-full md:w-5/12 p-4 overflow-y-auto space-y-3 custom-scrollbar bg-slate-50/50">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200/80">
+            <span class="text-xs font-black uppercase text-slate-500 tracking-wider">Select Vehicle</span>
+            <span class="text-[11px] font-bold text-slate-400">${this.cars.length} cars</span>
+          </div>
+
+          ${this.cars.map(c => {
+            const isSelected = c.id === activeCar.id;
+            const loaded = c.total_loaded_cartons || 0;
+
+            return `
+              <div onclick="CarLoading.selectCar(${c.id})" class="p-4 rounded-2xl border transition-all cursor-pointer ${isSelected ? 'bg-blue-50 border-blue-400 shadow-sm ring-2 ring-blue-100' : 'bg-white border-slate-200 hover:border-blue-200'}">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 class="font-black text-sm text-slate-900">${c.car_number}</h4>
+                    <p class="text-xs font-bold text-slate-600 mt-0.5 flex items-center gap-1.5">
+                      <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${c.driver_name} ${c.phone ? `• <span class="font-mono text-slate-500">${c.phone}</span>` : ''}
+                    </p>
+                    ${c.area ? `<p class="text-[11px] text-blue-700 font-semibold mt-1">📍 ${c.area}</p>` : ''}
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="px-2.5 py-1 rounded-xl ${loaded > 0 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'} font-black text-xs tabular-nums block">
+                      ${loaded} ctns
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400 mt-0.5 block">in car</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-[11px]">
+                  <span class="text-slate-400">${c.total_deliveries_count || 0} deliveries completed</span>
+                  <div class="flex items-center gap-1">
+                    <button onclick="event.stopPropagation(); CarLoading.openCarModal(${c.id})" class="p-1 text-slate-400 hover:text-slate-800 rounded">
+                      <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); CarLoading.deleteCar(${c.id})" class="p-1 text-slate-400 hover:text-rose-600 rounded">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Right: Current Inventory Breakdown for Selected Car (60%) -->
+        <div class="w-full md:w-7/12 p-6 flex flex-col overflow-y-auto custom-scrollbar flex-1" id="car-inventory-breakdown">
+          <!-- Rendered by loadCarDetails -->
+          <div class="flex items-center justify-center p-8 text-slate-400">Loading car inventory...</div>
+        </div>
+
+      </div>
+    `;
+  },
+
+  async selectCar(carId) {
+    this.selectedCarId = carId;
+    this.renderUI();
+    await this.loadSelectedCarInventory();
+  },
+
+  async loadSelectedCarInventory() {
+    const target = document.getElementById('car-inventory-breakdown');
+    if (!target) return;
+
+    const car = this.cars.find(c => c.id === this.selectedCarId);
+    if (!car) return;
+
+    const inv = await window.api.getCarInventory(car.id) || [];
+    const loadedItems = inv.filter(it => (it.cartons_loaded || 0) > 0);
+    const totalCartons = loadedItems.reduce((sum, it) => sum + it.cartons_loaded, 0);
+    const totalLoadedValue = loadedItems.reduce((sum, it) => sum + (it.loaded_value || 0), 0);
+
+    target.innerHTML = `
+      <div class="flex items-start justify-between pb-4 border-b border-slate-200">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-mono text-[10px] font-black">CAR INVENTORY</span>
+            <h3 class="text-lg font-black text-slate-900">${car.car_number}</h3>
+          </div>
+          <p class="text-xs text-slate-500 font-bold mt-1">Driver: ${car.driver_name} • Phone: ${car.phone || 'N/A'}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="CarLoading.startLoadingForCar(${car.id})" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="plus" class="w-4 h-4"></i> Load Stock
+          </button>
+          <button onclick="CarLoading.printCarStockSheet(${car.id})" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all cursor-pointer" title="Print Car Stock Sheet">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="my-4 grid grid-cols-2 gap-3">
+        <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-xl">
+          <span class="text-[10px] font-black uppercase text-blue-900 tracking-wider block">Total Cartons in Car</span>
+          <span class="text-xl font-black text-blue-700 tabular-nums">${totalCartons} cartons</span>
+        </div>
+        <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+          <span class="text-[10px] font-black uppercase text-emerald-900 tracking-wider block">Estimated Stock Value</span>
+          <span class="text-xl font-black text-emerald-700 tabular-nums">Rs. ${Math.round(totalLoadedValue).toLocaleString()}</span>
+        </div>
+      </div>
+
+      <h4 class="text-xs font-black uppercase text-slate-500 tracking-wider mb-2">Cartons Currently Loaded Inside This Car</h4>
+      
+      ${loadedItems.length === 0 ? `
+        <div class="p-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <p class="font-bold text-xs text-slate-500">This vehicle is currently empty.</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">Click "Load Stock" to add cartons from factory stock into this car.</p>
+        </div>
+      ` : `
+        <div class="border border-slate-200 rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs border-collapse border border-slate-200">
+            <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500">
+              <tr>
+                <th class="py-2.5 px-3">Item / Flavor</th>
+                <th class="py-2.5 px-3 text-center">Spec</th>
+                <th class="py-2.5 px-3 text-right">Loaded Qty</th>
+                <th class="py-2.5 px-3 text-right">Rate</th>
+                <th class="py-2.5 px-3 text-right">Total Value</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+              ${loadedItems.map(it => `
+                <tr class="hover:bg-slate-50">
+                  <td class="py-2.5 px-3 font-black text-slate-900">${it.carton_name}</td>
+                  <td class="py-2.5 px-3 text-center font-mono text-[11px] text-slate-500">${it.pieces_per_carton} pcs</td>
+                  <td class="py-2.5 px-3 text-right font-black text-blue-700 text-sm tabular-nums">${it.cartons_loaded} ctns</td>
+                  <td class="py-2.5 px-3 text-right font-mono text-slate-600 tabular-nums">Rs. ${it.carton_sale_price}</td>
+                  <td class="py-2.5 px-3 text-right font-black text-emerald-700 tabular-nums">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
+    `;
+
+    if (window.lucide) lucide.createIcons({ root: target });
+  },
+
+  renderDispatchView() {
+    const activeCar = this.cars.find(c => c.id === this.selectedCarId) || this.cars[0];
+
+    return `
+      <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
+        <div class="max-w-4xl mx-auto space-y-6">
+          
+          <!-- Dispatch Form Header -->
+          <div class="p-5 bg-gradient-to-r from-blue-50 to-slate-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">DISPATCH OPERATION</span>
+              <h3 class="text-lg font-black text-slate-900 mt-1">Load Cartons from Warehouse into Car</h3>
+              <p class="text-xs text-slate-500 font-medium">Cartons will be deducted from factory freezer and transferred to car inventory.</p>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Target Car / Vehicle *</label>
+              <select id="dsp-car-select" onchange="CarLoading.onDispatchCarChange(this.value)"
+                      class="px-3.5 py-2.5 bg-white border-2 border-blue-400 rounded-xl text-xs font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 shadow-sm">
+                ${this.cars.map(c => `
+                  <option value="${c.id}" ${activeCar && c.id === activeCar.id ? 'selected' : ''}>
+                    ${c.car_number} (${c.driver_name} - currently has ${c.total_loaded_cartons || 0} ctns)
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+          </div>
+
+          <!-- Table of Carton Products to Load -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs bg-white">
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+              <div>
+                <h4 class="font-black text-sm text-slate-900">Select Cartons to Load</h4>
+                <p class="text-[11px] text-slate-400 font-medium">Enter quantity to load for each product</p>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold text-slate-500">Dispatch Date:</span>
+                <input type="date" id="dsp-date" value="${new Date().toISOString().split('T')[0]}" class="ml-1 px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 outline-none">
+              </div>
+            </div>
+
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4 border-r border-slate-200">Carton Item</th>
+                  <th class="py-3 px-4 text-center border-r border-slate-200">Spec</th>
+                  <th class="py-3 px-4 text-right border-r border-slate-200">Already In Car</th>
+                  <th class="py-3 px-4 text-right border-r border-slate-200">Factory Warehouse Stock</th>
+                  <th class="py-3 px-4 text-right w-44 border-r border-slate-200">Cartons to Load</th>
+                  <th class="py-3 px-4 text-right">Total in Car After</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-semibold text-slate-700" id="dsp-table-body">
+                <!-- Injected by loadDispatchTable -->
+              </tbody>
+            </table>
+
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div class="text-xs font-black text-slate-700" id="dsp-summary-text">
+                Total Cartons Being Loaded: <span class="text-blue-600 text-sm" id="dsp-total-load-count">0</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="CarLoading.switchTab('cars')" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 cursor-pointer">Cancel</button>
+                <button type="button" onclick="CarLoading.submitDispatch()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
+                  <i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Loading &amp; Print Sheet
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
+  },
+
+  async onDispatchCarChange(carId) {
+    this.selectedCarId = Number(carId);
+    await this.renderDispatchRows();
+  },
+
+  async renderDispatchRows() {
+    const tbody = document.getElementById('dsp-table-body');
+    if (!tbody) return;
+
+    const carId = Number(document.getElementById('dsp-car-select')?.value) || this.selectedCarId;
+    const inv = await window.api.getCarInventory(carId) || [];
+    const invMap = {};
+    inv.forEach(i => invMap[i.carton_id] = i.cartons_loaded || 0);
+
+    tbody.innerHTML = this.cartons.map(c => {
+      const inCar = invMap[c.id] || 0;
+      const warehouse = c.factory_carton_stock || 0;
+
+      return `
+        <tr class="hover:bg-slate-50">
+          <td class="py-3 px-4 border-r border-slate-200">
+            <div class="font-black text-slate-900">${c.carton_name}</div>
+            <div class="text-[10px] text-slate-400">Rate: Rs. ${c.carton_sale_price}</div>
+          </td>
+          <td class="py-3 px-4 text-center font-mono text-[11px] text-slate-500 border-r border-slate-200">${c.pieces_per_carton} pcs</td>
+          <td class="py-3 px-4 text-right font-mono font-bold text-blue-600 tabular-nums border-r border-slate-200">${inCar} ctns</td>
+          <td class="py-3 px-4 text-right font-black ${warehouse > 0 ? 'text-purple-700' : 'text-slate-400'} tabular-nums border-r border-slate-200">
+            ${warehouse} ctns
+          </td>
+          <td class="py-3 px-4 text-right border-r border-slate-200">
+            <div class="flex items-center justify-end gap-1.5">
+              <input type="number" min="0" max="${warehouse}" data-carton-id="${c.id}" data-in-car="${inCar}"
+                     placeholder="0" oninput="CarLoading.onLoadQtyChange(this)"
+                     class="dsp-qty-input w-24 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-center font-black text-sm text-slate-900 outline-none focus:border-blue-500 tabular-nums">
+            </div>
+          </td>
+          <td class="py-3 px-4 text-right font-black text-slate-900 tabular-nums dsp-total-after" id="dsp-after-${c.id}">
+            ${inCar} ctns
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    this.updateDispatchTotalCount();
+  },
+
+  onLoadQtyChange(input) {
+    const cartonId = input.dataset.cartonId;
+    const inCar = Number(input.dataset.inCar) || 0;
+    const qty = Number(input.value) || 0;
+    const afterEl = document.getElementById(`dsp-after-${cartonId}`);
+    if (afterEl) {
+      afterEl.textContent = `${inCar + qty} ctns`;
+    }
+    this.updateDispatchTotalCount();
+  },
+
+  updateDispatchTotalCount() {
+    let total = 0;
+    document.querySelectorAll('.dsp-qty-input').forEach(inp => {
+      total += Number(inp.value) || 0;
+    });
+    const countEl = document.getElementById('dsp-total-load-count');
+    if (countEl) countEl.textContent = `${total} cartons`;
+  },
+
+  async submitDispatch() {
+    const carId = Number(document.getElementById('dsp-car-select')?.value);
+    const date = document.getElementById('dsp-date')?.value || new Date().toISOString().split('T')[0];
+
+    if (!carId) {
+      app.showAlert({ title: 'Select Vehicle', message: 'Please select a delivery vehicle.' });
+      return;
+    }
+
+    const items = [];
+    document.querySelectorAll('.dsp-qty-input').forEach(inp => {
+      const qty = Number(inp.value) || 0;
+      if (qty > 0) {
+        items.push({
+          carton_id: Number(inp.dataset.cartonId),
+          cartons_to_load: qty
+        });
+      }
+    });
+
+    if (items.length === 0) {
+      app.showAlert({ title: 'No Cartons Selected', message: 'Please enter cartons to load for at least one item.' });
+      return;
+    }
+
+    const res = await window.api.loadCarStock({
+      car_id: carId,
+      date,
+      items
+    });
+
+    if (res && res.success) {
+      app.showToast(`Stock loaded! Dispatch No: ${res.dispatchNo}`, 'success');
+      // Generate & preview A5 Gate Pass Loading Sheet
+      await this.printLoadingGatePass(res.batchId);
+      await this.loadData();
+      this.switchTab('cars');
+    } else {
+      app.showAlert({ title: 'Loading Error', message: res.error || 'Failed to load cartons.' });
+    }
+  },
+
+  renderHistoryView() {
+    if (this.dispatches.length === 0) {
+      return `
+        <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
+          <i data-lucide="history" class="w-12 h-12 mb-3 text-slate-300"></i>
+          <h4 class="text-sm font-black text-slate-600">No dispatches logged yet</h4>
+          <p class="text-xs text-slate-400 mt-1">Car loading operations will be recorded here.</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="overflow-x-auto flex-1">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-3 px-4">Dispatch #</th>
+              <th class="py-3 px-4">Date</th>
+              <th class="py-3 px-4">Vehicle</th>
+              <th class="py-3 px-4">Driver</th>
+              <th class="py-3 px-4 text-right">Total Cartons Loaded</th>
+              <th class="py-3 px-4">Notes</th>
+              <th class="py-3 px-4 text-right">Gate Pass</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+            ${this.dispatches.map(d => `
+              <tr class="hover:bg-slate-50/60 transition-colors">
+                <td class="py-3 px-4 font-mono font-bold text-blue-800 border-r border-slate-200 whitespace-nowrap">${d.dispatch_no}</td>
+                <td class="py-3 px-4 font-mono text-slate-500 border-r border-slate-200 whitespace-nowrap">${d.date}</td>
+                <td class="py-3 px-4 font-black text-slate-900 border-r border-slate-200">${d.car_number}</td>
+                <td class="py-3 px-4 font-bold text-slate-700 border-r border-slate-200">${d.driver_name}</td>
+                <td class="py-3 px-4 text-right font-black text-blue-700 tabular-nums border-r border-slate-200">${d.total_cartons} ctns</td>
+                <td class="py-3 px-4 text-slate-400 text-[11px] border-r border-slate-200">${d.notes || ''}</td>
+                <td class="py-3 px-4 text-center">
+                  <button onclick="CarLoading.printLoadingGatePass(${d.id})" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 mx-auto cursor-pointer">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  },
+
+  switchTab(tab) {
+    this.activeTab = tab;
+    this.renderUI();
+    if (tab === 'cars') {
+      this.loadSelectedCarInventory();
+    } else if (tab === 'dispatch') {
+      this.renderDispatchRows();
+    }
+  },
+
+  startLoadingForCar(carId) {
+    this.selectedCarId = carId;
+    this.switchTab('dispatch');
+  },
+
+  openCarModal(id = null) {
+    const car = id ? this.cars.find(x => x.id === id) : {
+      id: null,
+      car_number: '',
+      driver_name: '',
+      phone: '',
+      area: '',
+      is_active: 1,
+      notes: ''
+    };
+    if (!car) return;
+
+    const modalEl = document.getElementById('car-modal-container');
+    if (!modalEl) return;
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CarLoading.closeModal()">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
+            <h3 class="text-base font-black tracking-tight">${car.id ? 'Edit Delivery Car' : 'Add New Delivery Car'}</h3>
+            <button onclick="CarLoading.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <form onsubmit="CarLoading.handleCarSubmit(event)" class="p-6 space-y-4">
+            <input type="hidden" id="car-id" value="${car.id || ''}">
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Car / Van Number *</label>
+              <input type="text" id="car-number" required value="${car.car_number || ''}" placeholder="e.g. Suzuki Bolan - LEA-4521..."
+                     class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Driver / Salesman Name *</label>
+              <input type="text" id="car-driver" required value="${car.driver_name || ''}" placeholder="e.g. Muhammad Ali..."
+                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Phone Number</label>
+                <input type="text" id="car-phone" value="${car.phone || ''}" placeholder="0300-1234567"
+                       class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500 font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Delivery Route / Area</label>
+                <input type="text" id="car-area" value="${car.area || ''}" placeholder="e.g. Wah & Taxila..."
+                       class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes</label>
+              <input type="text" id="car-notes" value="${car.notes || ''}" placeholder="Capacity, condition, remarks..."
+                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button type="button" onclick="CarLoading.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black shadow-md cursor-pointer">Save Vehicle</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+  },
+
+  closeModal() {
+    const modalEl = document.getElementById('car-modal-container');
+    if (modalEl) modalEl.innerHTML = '';
+  },
+
+  async handleCarSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById('car-id').value;
+    const data = {
+      id: id ? Number(id) : null,
+      car_number: document.getElementById('car-number').value,
+      driver_name: document.getElementById('car-driver').value,
+      phone: document.getElementById('car-phone').value,
+      area: document.getElementById('car-area').value,
+      notes: document.getElementById('car-notes').value
+    };
+
+    const res = await window.api.saveCar(data);
+    if (res && res.success) {
+      this.closeModal();
+      app.showToast('Vehicle saved!', 'success');
+      await this.loadData();
+    } else {
+      app.showAlert({ title: 'Error', message: res.error || 'Failed to save car.' });
+    }
+  },
+
+  async deleteCar(id) {
+    const ok = await new Promise(resolve => {
+      app.showConfirm({
+        title: 'Delete Vehicle?',
+        message: 'Are you sure you want to remove this delivery car?',
+        confirmText: 'Delete',
+        confirmColor: 'red',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false)
+      });
+    });
+
+    if (ok) {
+      const res = await window.api.deleteCar(id);
+      if (res && res.success) {
+        app.showToast('Vehicle deleted', 'success');
+        await this.loadData();
+      } else {
+        app.showAlert({ title: 'Cannot Delete', message: res.error || 'Failed to delete vehicle.' });
+      }
+    }
+  },
+
+  async printCarStockSheet(carId) {
+    const car = this.cars.find(c => c.id === carId);
+    if (!car) return;
+
+    const inv = await window.api.getCarInventory(car.id) || [];
+    const loadedItems = inv.filter(it => (it.cartons_loaded || 0) > 0);
+    const totalCartons = loadedItems.reduce((sum, it) => sum + it.cartons_loaded, 0);
+    const totalValue = loadedItems.reduce((sum, it) => sum + (it.loaded_value || 0), 0);
+
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Ice Cream Factory';
+    const date = new Date().toLocaleDateString('en-GB');
+
+    const html = `
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0;">${company}</h1>
+          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 700;">STAGE 4: CAR LOADED STOCK INVENTORY SHEET</p>
+          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Date: ${date} | Vehicle: ${car.car_number}</p>
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 8px; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #f8fafc;">
+          <div>
+            <div><strong>Car / Van:</strong> ${car.car_number}</div>
+            <div><strong>Driver / Salesman:</strong> ${car.driver_name}</div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Contact:</strong> ${car.phone || 'N/A'}</div>
+            <div><strong>Route / Area:</strong> ${car.area || 'All Areas'}</div>
+          </div>
+        </div>
+
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px;">
+          <thead>
+            <tr style="background: #f1f5f9;">
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">S#</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Carton Product</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">Spec</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Loaded Qty</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Carton Rate</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Total Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${loadedItems.length === 0 ? `
+              <tr><td colspan="6" style="padding: 12px; text-align: center; color: #64748b;">No cartons currently loaded in this vehicle.</td></tr>
+            ` : loadedItems.map((it, idx) => `
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 4px;">${idx + 1}</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 800;">${it.carton_name}</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${it.pieces_per_carton} pcs</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800; color: #1d4ed8;">${it.cartons_loaded} ctns</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right;">Rs. ${it.carton_sale_price}</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #0f172a; padding-top: 6px; font-size: 10px; font-weight: 800;">
+          <span>TOTAL CARTONS IN VEHICLE: ${totalCartons}</span>
+          <span>ESTIMATED VALUE: Rs. ${Math.round(totalValue).toLocaleString()}</span>
+        </div>
+
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+            Driver / Salesman Signature
+          </div>
+          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+            Dispatch Officer Signature
+          </div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, `Car Stock Sheet - ${car.car_number} (A5)`);
+  },
+
+  async printLoadingGatePass(batchId) {
+    const batch = await window.api.getCarLoadingBatch(batchId);
+    if (!batch) return;
+
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Ice Cream Factory';
+    const totalVal = (batch.items || []).reduce((sum, it) => sum + (it.cartons_loaded * (it.sale_price || 0)), 0);
+
+    const html = `
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0;">${company}</h1>
+          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 700;">CAR LOADING DISPATCH GATE PASS / گیٹ پاس</p>
+          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Pass #: ${batch.dispatch_no} | Date: ${batch.date}</p>
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 8px; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #f8fafc;">
+          <div>
+            <div><strong>Vehicle:</strong> ${batch.car_number}</div>
+            <div><strong>Driver:</strong> ${batch.driver_name}</div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Driver Phone:</strong> ${batch.phone || 'N/A'}</div>
+            <div><strong>Route / Area:</strong> ${batch.area || 'All Routes'}</div>
+          </div>
+        </div>
+
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px;">
+          <thead>
+            <tr style="background: #f1f5f9;">
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">S#</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Carton Description</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">Packing</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Cartons Loaded</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Unit Rate</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Total Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(batch.items || []).map((it, idx) => `
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 4px;">${idx + 1}</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 800;">${it.carton_name}</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${it.pieces_per_carton} pcs</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800; color: #1d4ed8;">${it.cartons_loaded} ctns</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right;">Rs. ${it.sale_price}</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">Rs. ${Math.round(it.cartons_loaded * (it.sale_price || 0)).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #0f172a; padding-top: 6px; font-size: 10px; font-weight: 800;">
+          <span>TOTAL CARTONS DISPATCHED: ${batch.total_cartons}</span>
+          <span>ESTIMATED VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
+        </div>
+
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+            Driver / Receiver Signature
+          </div>
+          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+            Factory Gate / Security Officer
+          </div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, `Dispatch Gate Pass - ${batch.dispatch_no} (A5)`);
+  }
+};

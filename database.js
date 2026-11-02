@@ -4,29 +4,133 @@ const fs = require('fs');
 const { app } = require('electron');
 
 let db;
+let currentBranch = 'b1';
+const branchDbs = {};
+
+function getDbPathForBranch(branchId = 'b1') {
+  const filename = branchId === 'b2' ? 'ishaq_jadoon_b2.db' : 'ishaq_jadoon.db';
+  if (app && typeof app.getPath === 'function') {
+    return path.join(app.getPath('userData'), filename);
+  }
+  const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library/Application Support') : path.join(process.env.HOME, '.config'));
+  const dir = path.join(appData, 'ishaq-jadoon-traders');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, filename);
+}
+
+function initBranch(branchId = 'b1') {
+  if (branchDbs[branchId]) {
+    return branchDbs[branchId];
+  }
+  const dbPath = getDbPathForBranch(branchId);
+  const instance = new Database(dbPath);
+  instance.pragma('journal_mode = WAL');
+  instance.pragma('synchronous = NORMAL');
+  instance.pragma('temp_store = MEMORY');
+  instance.pragma('cache_size = -64000');
+  
+  branchDbs[branchId] = instance;
+  
+  const prevDb = db;
+  db = instance;
+  createTables();
+  seedInitialData(branchId);
+  db = prevDb || instance;
+  
+  return instance;
+}
 
 function init(customPath = null) {
-  let dbPath;
   if (customPath) {
-    dbPath = customPath;
-  } else if (app && typeof app.getPath === 'function') {
-    dbPath = path.join(app.getPath('userData'), 'ishaq_jadoon.db');
-  } else {
-    const fs = require('fs');
-    const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library/Application Support') : path.join(process.env.HOME, '.config'));
-    const dir = path.join(appData, 'ishaq-jadoon-traders');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    dbPath = path.join(dir, 'ishaq_jadoon.db');
+    db = new Database(customPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('temp_store = MEMORY');
+    db.pragma('cache_size = -64000');
+    branchDbs['b1'] = db;
+    currentBranch = 'b1';
+    createTables();
+    seedInitialData('b1');
+    return;
   }
 
-  db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('synchronous = NORMAL');
-  db.pragma('temp_store = MEMORY');
-  db.pragma('cache_size = -64000');
+  currentBranch = 'b1';
+  db = initBranch('b1');
+}
+
+function switchBranch(branchId = 'b1') {
+  if (branchId !== 'b1' && branchId !== 'b2') branchId = 'b1';
+  currentBranch = branchId;
+  db = initBranch(branchId);
+  return { success: true, branch: currentBranch, dbPath: getDbPathForBranch(currentBranch) };
+}
+
+function getCurrentBranch() {
+  return currentBranch;
+}
+
+function copyCatalogFromBranch(fromBranch = 'b1', toBranch = 'b2') {
+  const sourceDb = initBranch(fromBranch);
+  const targetDb = initBranch(toBranch);
   
-  createTables();
-  seedInitialData();
+  let totalCopied = 0;
+  
+  const tx = targetDb.transaction(() => {
+    // 1. Copy category labels
+    const sourceCatLabels = sourceDb.prepare('SELECT slug, label FROM category_labels').all();
+    const insertCatStmt = targetDb.prepare('INSERT OR IGNORE INTO category_labels (slug, label) VALUES (?, ?)');
+    sourceCatLabels.forEach(c => insertCatStmt.run(c.slug, c.label));
+    
+    // 2. Copy units
+    const sourceUnits = sourceDb.prepare('SELECT name FROM product_units').all();
+    const insertUnitStmt = targetDb.prepare('INSERT OR IGNORE INTO product_units (name) VALUES (?)');
+    sourceUnits.forEach(u => insertUnitStmt.run(u.name));
+    
+    // 3. Copy products for all categories
+    sourceCatLabels.forEach(cat => {
+      try {
+        const sourceProducts = sourceDb.prepare(`SELECT * FROM products_${cat.slug}`).all();
+        if (!sourceProducts || sourceProducts.length === 0) return;
+        
+        const insertStmt = targetDb.prepare(`
+          INSERT INTO products_${cat.slug} (
+            item_name, description, current_stock, unit, cost_price, retail_price, 
+            wholesale_cost_price, wholesale_price, company_id, barcode
+          ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        const existingNames = new Set(targetDb.prepare(`SELECT LOWER(TRIM(COALESCE(item_name, ''))) as n FROM products_${cat.slug}`).all().map(r => r.n));
+        const existingBarcodes = new Set(targetDb.prepare(`SELECT LOWER(TRIM(COALESCE(barcode, ''))) as b FROM products_${cat.slug} WHERE barcode IS NOT NULL`).all().map(r => r.b));
+        
+        sourceProducts.forEach(p => {
+          const nameClean = (p.item_name || '').trim().toLowerCase();
+          const bcClean = (p.barcode || '').trim().toLowerCase();
+          if (nameClean && existingNames.has(nameClean)) return;
+          if (bcClean && existingBarcodes.has(bcClean)) return;
+          
+          insertStmt.run(
+            p.item_name,
+            p.description || '',
+            p.unit || 'pcs',
+            p.cost_price || 0,
+            p.retail_price || 0,
+            p.wholesale_cost_price || 0,
+            p.wholesale_price || 0,
+            p.company_id || null,
+            p.barcode || null
+          );
+          if (nameClean) existingNames.add(nameClean);
+          if (bcClean) existingBarcodes.add(bcClean);
+          totalCopied++;
+        });
+      } catch (err) {
+        console.warn(`Error copying category ${cat.slug}:`, err);
+      }
+    });
+  });
+  
+  tx();
+  return { success: true, count: totalCopied };
 }
 
 function createTables() {
@@ -127,6 +231,21 @@ function createTables() {
           db.exec(`ALTER TABLE ${tableName} ADD COLUMN pieces_per_carton INTEGER DEFAULT NULL`);
         } catch(e) {}
     }
+    if (!columns.includes('barcode')) {
+        try { 
+          db.exec(`ALTER TABLE ${tableName} ADD COLUMN barcode TEXT`);
+        } catch(e) {}
+    }
+    try {
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_${tableName}_barcode ON ${tableName}(barcode)`);
+    } catch(e) {}
+  });
+
+  // Ensure stock floats are clean (never more than 2 decimals)
+  productTables.forEach(row => {
+    try {
+      db.exec(`UPDATE ${row.name} SET current_stock = ROUND(current_stock, 2) WHERE current_stock IS NOT NULL`);
+    } catch(e) {}
   });
 
   // Performance Indexes
@@ -360,15 +479,22 @@ function createTables() {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_comp_name ON companies(name)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_favs_cat_prod ON favorites(category_slug, product_id)`);
   } catch(e) {}
+
+  createIcecreamFactoryTables();
 }
 
-function seedInitialData() {
+function seedInitialData(branchId = 'b1') {
   try {
+    const isB2 = branchId === 'b2';
+    const defaultCompanyName = 'Ice Cream Factory';
+
     // Ensure default company settings
     const existingCompany = db.prepare("SELECT value FROM settings WHERE key = 'company_name'").get();
-    if (!existingCompany || !existingCompany.value || existingCompany.value === 'Ultimate Marketing' || existingCompany.value.toLowerCase().includes('baba') || existingCompany.value.toLowerCase().includes('waziristan')) {
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_name', ?)").run('Ishaq Jadoon Traders');
+    if (!existingCompany || !existingCompany.value || existingCompany.value === 'Ultimate Marketing' || existingCompany.value === 'Ishaq Jadoon Traders' || existingCompany.value.toLowerCase().includes('baba') || existingCompany.value.toLowerCase().includes('waziristan') || /\(Branch \d+\)/i.test(existingCompany.value)) {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_name', ?)").run(defaultCompanyName);
     }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('branch_id', ?)").run(branchId);
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('branch_name', ?)").run(isB2 ? 'Branch 2' : 'Branch 1');
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('address', ?)").run('Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt');
     
     // Check phone
@@ -421,21 +547,37 @@ function seedInitialData() {
       { slug: 'others', label: 'General Items' }
     ];
     
-    // Always upsert the 8 standard categories
+    // Always upsert the 8 standard categories and wipe out any legacy solar labels
     productLabels.forEach(l => {
       const existing = db.prepare('SELECT id, label FROM category_labels WHERE slug = ?').get(l.slug);
       if (!existing) {
         db.prepare('INSERT INTO category_labels (slug, label) VALUES (?, ?)').run(l.slug, l.label);
-      } else if (existing.label === 'Panels' || existing.label === 'Solar Panels' || existing.label === 'Inverters' || existing.label === 'Structures' || existing.label === 'Cables' || existing.label === 'Breakers' || existing.label === 'Batteries' || existing.label === 'Accessories') {
-        db.prepare('UPDATE category_labels SET label = ? WHERE slug = ?').run(l.label, l.slug);
+      } else {
+        const lowerLabel = String(existing.label || '').toLowerCase().trim();
+        const solarKeywords = ['panels', 'solar panels', 'inverters', 'solar inverters', 'structures', 'cables', 'breakers', 'batteries', 'accessories', 'solar', ''];
+        if (solarKeywords.includes(lowerLabel)) {
+          db.prepare('UPDATE category_labels SET label = ? WHERE slug = ?').run(l.label, l.slug);
+        }
       }
     });
+
+    // Delete any stray/orphan categories created with solar names
+    try {
+      db.prepare(`
+        DELETE FROM category_labels 
+        WHERE LOWER(label) IN ('panels', 'solar panels', 'inverters', 'solar inverters', 'structures', 'cables', 'breakers', 'batteries', 'accessories', 'solar')
+          AND slug NOT IN ('panels', 'inverters', 'structures', 'cables', 'breakers', 'batteries', 'misc', 'others')
+      `).run();
+    } catch(e) {}
 
     // Default units
     db.exec(`DELETE FROM product_units WHERE name IN ('FEET', 'RUNNING FEET', 'METER', 'COTTON')`);
     const productUnits = ['PACK', 'PCS', 'BOX', 'BOTTLE', 'CARTON', 'SET'];
     const unitStmt = db.prepare('INSERT OR IGNORE INTO product_units (name) VALUES (?)');
     productUnits.forEach(u => unitStmt.run(u));
+
+    // Seed default Ice Cream Factory data
+    seedIcecreamFactoryData(branchId);
   } catch (e) {
     console.error("Failed to seed initial data:", e);
   }
@@ -586,7 +728,7 @@ function saveAllKv(entries) {
 }
 
 function getProducts(category, companyId = null) {
-  if (category === 'all') {
+  if (!category || category === 'all') {
     return searchAllProducts('', companyId);
   }
   let sql = `
@@ -604,7 +746,12 @@ function getProducts(category, companyId = null) {
   }
   
   sql += ` ORDER BY p.id DESC`;
-  return db.prepare(sql).all(...params);
+  try {
+    return db.prepare(sql).all(...params);
+  } catch (e) {
+    console.error(`getProducts error for category "${category}":`, e);
+    return [];
+  }
 }
 
 function findProductByName(itemName, excludeCategory = null, excludeId = null) {
@@ -637,6 +784,37 @@ function findProductByName(itemName, excludeCategory = null, excludeId = null) {
   return null;
 }
 
+function findProductByBarcode(barcode, excludeCategory = null, excludeId = null) {
+  if (!barcode || typeof barcode !== 'string') return null;
+  const cleanBarcode = barcode.trim();
+  if (!cleanBarcode) return null;
+  const lowerBarcode = cleanBarcode.toLowerCase();
+
+  const labels = getCategoryLabels();
+  for (const l of labels) {
+    const cat = l.slug;
+    const catLabel = l.label || cat;
+    let sql = `
+      SELECT p.*, c.name as company_name, '${cat}' as slug, '${catLabel.replace(/'/g, "''")}' as category_label 
+      FROM products_${cat} p
+      LEFT JOIN companies c ON c.id = p.company_id
+      WHERE LOWER(TRIM(COALESCE(p.barcode, ''))) = ?
+    `;
+    const params = [lowerBarcode];
+    if (excludeCategory && excludeId && String(cat).toLowerCase() === String(excludeCategory).toLowerCase()) {
+      sql += ' AND p.id != ?';
+      params.push(Number(excludeId));
+    }
+    try {
+      const match = db.prepare(sql).get(...params);
+      if (match) {
+        return match;
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
 function addProduct(category, data) {
   const itemName = (data.item_name || data.description || '').trim();
   if (itemName) {
@@ -647,6 +825,23 @@ function addProduct(category, data) {
     }
   }
 
+  if (data.barcode !== undefined && data.barcode !== null) {
+    const cleanBarcode = String(data.barcode).trim();
+    if (cleanBarcode) {
+      const existingBarcode = findProductByBarcode(cleanBarcode);
+      if (existingBarcode) {
+        const catName = existingBarcode.category_label || existingBarcode.slug;
+        throw new Error(`Barcode "${cleanBarcode}" is already assigned to "${existingBarcode.item_name}" under "${catName}".`);
+      }
+      data.barcode = cleanBarcode;
+    } else {
+      delete data.barcode;
+    }
+  }
+
+  if (data.current_stock !== undefined) {
+    data.current_stock = Math.round((Number(data.current_stock) || 0) * 100) / 100;
+  }
   const keys = Object.keys(data);
   const values = Object.values(data);
   const placeholders = keys.map(() => '?').join(', ');
@@ -655,6 +850,9 @@ function addProduct(category, data) {
 }
 
 function updateProduct(category, id, data) {
+  if (data.current_stock !== undefined) {
+    data.current_stock = Math.round((Number(data.current_stock) || 0) * 100) / 100;
+  }
   if (data.item_name !== undefined) {
     const itemName = String(data.item_name || '').trim();
     if (itemName) {
@@ -663,6 +861,20 @@ function updateProduct(category, id, data) {
         const catName = existing.category_label || existing.slug;
         throw new Error(`Item "${existing.item_name || itemName}" is already in stock under "${catName}". Duplicate items cannot be added.`);
       }
+    }
+  }
+
+  if (data.barcode !== undefined && data.barcode !== null) {
+    const cleanBarcode = String(data.barcode).trim();
+    if (cleanBarcode) {
+      const existingBarcode = findProductByBarcode(cleanBarcode, category, id);
+      if (existingBarcode) {
+        const catName = existingBarcode.category_label || existingBarcode.slug;
+        throw new Error(`Barcode "${cleanBarcode}" is already assigned to "${existingBarcode.item_name}" under "${catName}".`);
+      }
+      data.barcode = cleanBarcode;
+    } else {
+      data.barcode = null;
     }
   }
 
@@ -785,7 +997,25 @@ function deleteProduct(category, id) {
 }
 
 function getCategoryLabels() {
-  return db.prepare('SELECT * FROM category_labels').all();
+  const legacyMap = {
+    panels: 'Biscuits',
+    inverters: 'Cold Drinks',
+    structures: 'Jellies & Candies',
+    cables: 'Snacks & Chips',
+    breakers: 'Chocolates',
+    batteries: 'Dairy & Groceries',
+    misc: 'Juices & Beverages',
+    others: 'General Items'
+  };
+  const solarKeywords = ['panels', 'solar panels', 'inverters', 'solar inverters', 'structures', 'cables', 'breakers', 'batteries', 'accessories', 'solar'];
+  const rows = db.prepare('SELECT * FROM category_labels').all();
+  return rows.map(r => {
+    let lbl = (r.label || '').trim();
+    if (!lbl || solarKeywords.includes(lbl.toLowerCase())) {
+      lbl = legacyMap[r.slug] || 'General Items';
+    }
+    return { ...r, label: lbl };
+  });
 }
 
 function updateCategoryLabel(slug, label) {
@@ -819,8 +1049,8 @@ function searchAllProducts(query = '', companyId = null) {
           params.push(companyId);
         }
       } else {
-        sql += ` WHERE (p.item_name LIKE ? OR p.description LIKE ?)`;
-        params.push(qFuzzy, qFuzzy);
+        sql += ` WHERE (p.item_name LIKE ? OR p.description LIKE ? OR p.barcode LIKE ?)`;
+        params.push(qFuzzy, qFuzzy, qFuzzy);
         if (companyId) {
           sql += ` AND p.company_id = ?`;
           params.push(companyId);
@@ -869,11 +1099,22 @@ function getFavoriteProducts() {
 }
 
 function getCategoryStats() {
-    const labels = getCategoryLabels();
-    return labels.map(l => {
-        const count = db.prepare(`SELECT COUNT(*) as c FROM products_${l.slug}`).get().c || 0;
-        return { ...l, count };
-    });
+    try {
+        const labels = getCategoryLabels();
+        return labels.map(l => {
+            let count = 0;
+            try {
+                const row = db.prepare(`SELECT COUNT(*) as c FROM products_${l.slug}`).get();
+                count = row ? (row.c || 0) : 0;
+            } catch(e) {
+                count = 0;
+            }
+            return { ...l, count };
+        });
+    } catch(e) {
+        console.error('getCategoryStats error:', e);
+        return [];
+    }
 }
 
 function addCategory(label) {
@@ -991,7 +1232,7 @@ function saveProposal(data) {
           const table = getProductTable(oldItem.section);
           if (table) {
             try {
-              db.prepare(`UPDATE ${table} SET current_stock = current_stock + ? WHERE id = ?`).run(oldItem.qty, oldItem.item_id);
+              db.prepare(`UPDATE ${table} SET current_stock = ROUND(current_stock + ?, 2) WHERE id = ?`).run(oldItem.qty, oldItem.item_id);
             } catch (stockErr) {
               console.error(`[STOCK RESTORE EDIT] Failed to restore for ${table}:`, stockErr);
             }
@@ -1021,7 +1262,7 @@ function saveProposal(data) {
             const table = getProductTable(item.section);
             if (table) {
               try {
-                db.prepare(`UPDATE ${table} SET current_stock = MAX(0, current_stock - ?) WHERE id = ?`).run(item.qty, item.item_id);
+                db.prepare(`UPDATE ${table} SET current_stock = MAX(0, ROUND(current_stock - ?, 2)) WHERE id = ?`).run(item.qty, item.item_id);
               } catch(stockErr) {
                 console.error(`[STOCK DEDUCT] Failed to deduct for ${table}:`, stockErr);
               }
@@ -1043,7 +1284,7 @@ function deleteProposal(id) {
         const table = getProductTable(item.section);
         if (table) {
           try {
-            db.prepare(`UPDATE ${table} SET current_stock = current_stock + ? WHERE id = ?`).run(item.qty, item.item_id);
+            db.prepare(`UPDATE ${table} SET current_stock = ROUND(current_stock + ?, 2) WHERE id = ?`).run(item.qty, item.item_id);
           } catch (stockErr) {
             console.error(`[STOCK RESTORE DELETE] Failed to restore for ${table}:`, stockErr);
           }
@@ -1600,15 +1841,15 @@ function deleteUnit(id) {
 }
 
 function getDbPath() {
-  if (app && typeof app.getPath === 'function') {
-    return path.join(app.getPath('userData'), 'ishaq_jadoon.db');
-  }
-  const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library/Application Support') : path.join(process.env.HOME, '.config'));
-  return path.join(appData, 'ishaq-jadoon-traders', 'ishaq_jadoon.db');
+  return getDbPathForBranch(currentBranch);
 }
 
 function close() {
-  if (db) db.close();
+  Object.values(branchDbs).forEach(database => {
+    try {
+      if (database && database.open) database.close();
+    } catch(e) {}
+  });
 }
 
 
@@ -1670,7 +1911,7 @@ function addProductStock(data) {
   }
   newCost = Math.round(newCost * 100) / 100;
 
-  const newStock = Math.max(0, oldStock) + inQty;
+  const newStock = Math.round((Math.max(0, oldStock) + inQty) * 100) / 100;
   const newRetail = (retailPrice !== null && retailPrice !== undefined && retailPrice !== '') 
     ? Number(retailPrice) 
     : (current.retail_price || 0);
@@ -1803,11 +2044,1458 @@ function markProposalPaid(idOrNumber) {
   return { success: true, id: p.id };
 }
 
+
+
+// ==========================================
+// ICE CREAM FACTORY 5-STAGE WORKFLOW MODULE
+// ==========================================
+
+// Helper functions for Ice Cream Factory
+function createIcecreamFactoryTables() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS raw_materials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      category TEXT DEFAULT 'General',
+      unit TEXT NOT NULL,
+      current_stock REAL DEFAULT 0,
+      cost_price REAL DEFAULT 0,
+      min_stock_alert REAL DEFAULT 0,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS raw_material_purchases (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      material_id INTEGER NOT NULL REFERENCES raw_materials(id),
+      material_name TEXT,
+      qty REAL NOT NULL,
+      unit TEXT,
+      unit_cost REAL NOT NULL,
+      total_cost REAL NOT NULL,
+      supplier_name TEXT,
+      invoice_no TEXT,
+      date TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS raw_material_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      material_id INTEGER NOT NULL,
+      material_name TEXT,
+      action TEXT,
+      qty_change REAL,
+      stock_before REAL,
+      stock_after REAL,
+      reference_id INTEGER,
+      date TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS icecream_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      flavor TEXT,
+      unit_cost REAL DEFAULT 0,
+      retail_piece_price REAL DEFAULT 0,
+      current_single_stock INTEGER DEFAULT 0,
+      default_pcs_per_carton INTEGER DEFAULT 20,
+      barcode TEXT,
+      image_path TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS production_batches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      batch_number TEXT UNIQUE,
+      date TEXT NOT NULL,
+      item_id INTEGER NOT NULL REFERENCES icecream_items(id),
+      item_name TEXT NOT NULL,
+      produced_pieces INTEGER NOT NULL,
+      unit_cost REAL DEFAULT 0,
+      total_cost REAL DEFAULT 0,
+      raw_materials_summary TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS production_batch_materials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      batch_id INTEGER NOT NULL REFERENCES production_batches(id) ON DELETE CASCADE,
+      material_id INTEGER NOT NULL,
+      material_name TEXT NOT NULL,
+      qty_used REAL NOT NULL,
+      unit TEXT NOT NULL,
+      unit_cost REAL DEFAULT 0,
+      line_cost REAL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS packed_cartons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_id INTEGER NOT NULL REFERENCES icecream_items(id),
+      item_name TEXT NOT NULL,
+      carton_name TEXT NOT NULL,
+      pieces_per_carton INTEGER NOT NULL,
+      carton_cost_price REAL DEFAULT 0,
+      carton_sale_price REAL NOT NULL,
+      carton_wholesale_price REAL DEFAULT 0,
+      factory_carton_stock INTEGER DEFAULT 0,
+      barcode TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS packing_batches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      packing_number TEXT UNIQUE,
+      date TEXT NOT NULL,
+      carton_id INTEGER NOT NULL REFERENCES packed_cartons(id),
+      item_id INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      cartons_packed INTEGER NOT NULL,
+      pieces_per_carton INTEGER NOT NULL,
+      total_pieces_consumed INTEGER NOT NULL,
+      carton_cost REAL DEFAULT 0,
+      total_cost REAL DEFAULT 0,
+      carton_sale_price REAL DEFAULT 0,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS cars (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      car_number TEXT NOT NULL,
+      driver_name TEXT NOT NULL,
+      phone TEXT,
+      area TEXT,
+      is_active INTEGER DEFAULT 1,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS shops (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      owner_name TEXT,
+      phone TEXT,
+      address TEXT,
+      city TEXT DEFAULT 'Wah Cantt',
+      amount REAL DEFAULT 0,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS car_inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      car_id INTEGER NOT NULL REFERENCES cars(id),
+      carton_id INTEGER NOT NULL REFERENCES packed_cartons(id),
+      cartons_loaded INTEGER DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(car_id, carton_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS car_loading_batches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dispatch_no TEXT UNIQUE,
+      car_id INTEGER NOT NULL REFERENCES cars(id),
+      date TEXT NOT NULL,
+      total_cartons INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS car_loading_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dispatch_id INTEGER NOT NULL REFERENCES car_loading_batches(id) ON DELETE CASCADE,
+      carton_id INTEGER NOT NULL,
+      carton_name TEXT NOT NULL,
+      pieces_per_carton INTEGER NOT NULL,
+      cartons_loaded INTEGER NOT NULL,
+      sale_price REAL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS shop_deliveries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_no TEXT UNIQUE,
+      date TEXT NOT NULL,
+      shop_id INTEGER,
+      shop_name TEXT NOT NULL,
+      shop_phone TEXT,
+      shop_address TEXT,
+      car_id INTEGER REFERENCES cars(id),
+      car_number TEXT,
+      driver_name TEXT,
+      subtotal REAL DEFAULT 0,
+      discount REAL DEFAULT 0,
+      total_amount REAL DEFAULT 0,
+      received_amount REAL DEFAULT 0,
+      previous_balance REAL DEFAULT 0,
+      remaining_balance REAL DEFAULT 0,
+      payment_method TEXT DEFAULT 'Cash',
+      notes TEXT,
+      status TEXT DEFAULT 'Completed',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS shop_delivery_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      delivery_id INTEGER NOT NULL REFERENCES shop_deliveries(id) ON DELETE CASCADE,
+      carton_id INTEGER NOT NULL,
+      carton_name TEXT NOT NULL,
+      pieces_per_carton INTEGER NOT NULL,
+      ordered_cartons INTEGER DEFAULT 0,
+      delivered_cartons INTEGER NOT NULL,
+      returned_cartons INTEGER DEFAULT 0,
+      return_destination TEXT DEFAULT 'car',
+      carton_price REAL NOT NULL,
+      line_total REAL NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS shop_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      shop_id INTEGER NOT NULL REFERENCES shops(id),
+      amount REAL NOT NULL,
+      payment_method TEXT DEFAULT 'Cash',
+      receipt_no TEXT,
+      date TEXT NOT NULL,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  try {
+    const carCols = db.prepare("PRAGMA table_info(cars)").all().map(c => c.name);
+    if (!carCols.includes('is_active')) db.exec('ALTER TABLE cars ADD COLUMN is_active INTEGER DEFAULT 1');
+    if (!carCols.includes('area')) db.exec('ALTER TABLE cars ADD COLUMN area TEXT');
+  } catch(e) {}
+
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_car_inv_car ON car_inventory(car_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_car_inv_carton ON car_inventory(carton_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_del_date ON shop_deliveries(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_del_car ON shop_deliveries(car_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_del_shop ON shop_deliveries(shop_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_prod_batches_date ON production_batches(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_packing_batches_date ON packing_batches(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_payments_shop ON shop_payments(shop_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_payments_date ON shop_payments(date)`);
+  } catch (e) {}
+}
+
+function seedIcecreamFactoryData(branchId = 'b1') {
+  try {
+    // 1. Raw Materials seed
+    const rawCount = db.prepare('SELECT COUNT(*) as c FROM raw_materials').get().c;
+    if (rawCount === 0) {
+      const stmt = db.prepare('INSERT INTO raw_materials (name, category, unit, current_stock, cost_price, min_stock_alert) VALUES (?, ?, ?, ?, ?, ?)');
+      const defaults = [
+        ['Fresh Whole Milk', 'Dairy', 'Liter', 150, 180, 30],
+        ['Refined Sugar', 'Sweeteners', 'Kg', 100, 150, 20],
+        ['Dairy Cream (35%)', 'Dairy', 'Kg', 50, 650, 10],
+        ['Cocoa & Chocolate Coating', 'Flavors & Coating', 'Kg', 30, 950, 5],
+        ['Wooden Chocbar Sticks', 'Packaging & Sticks', 'Pcs', 5000, 0.8, 500],
+        ['Ice Loly Sticks', 'Packaging & Sticks', 'Pcs', 3000, 0.5, 300],
+        ['Ice Cream Wrappers & Foils', 'Packaging & Sticks', 'Pcs', 4000, 1.5, 500],
+        ['Corrugated Outer Cartons', 'Packaging & Sticks', 'Pcs', 300, 35, 30],
+        ['Pure Vanilla & Fruit Extracts', 'Flavors & Coating', 'Liter', 15, 850, 3]
+      ];
+      defaults.forEach(d => stmt.run(...d));
+    }
+
+    // 2. Ice Cream Items seed (single pieces)
+    const itemCount = db.prepare('SELECT COUNT(*) as c FROM icecream_items').get().c;
+    if (itemCount === 0) {
+      const stmt = db.prepare('INSERT INTO icecream_items (name, flavor, unit_cost, retail_piece_price, current_single_stock, default_pcs_per_carton) VALUES (?, ?, ?, ?, ?, ?)');
+      const defaults = [
+        ['Chocbar', 'Rich Milk Chocolate', 10, 40, 100, 20],
+        ['Ice Loly', 'Orange & Mango Twist', 7, 25, 80, 20],
+        ['Mango Bar', 'Alphonso Mango', 12, 40, 60, 20],
+        ['Kulfi Stick', 'Traditional Khoya Pista', 15, 50, 50, 20],
+        ['Crunch Cone', 'Vanilla Chocolate Crisp', 20, 60, 40, 15]
+      ];
+      defaults.forEach(d => stmt.run(...d));
+    }
+
+    // 3. Packed Cartons seed (warehouse ready-to-sell inventory)
+    const cartonCount = db.prepare('SELECT COUNT(*) as c FROM packed_cartons').get().c;
+    if (cartonCount === 0) {
+      const items = db.prepare('SELECT id, name, unit_cost, default_pcs_per_carton FROM icecream_items').all();
+      const insertCarton = db.prepare('INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      
+      const cartonSpecs = {
+        'Chocbar': { pcs: 20, sale: 250, wholesale: 240, stock: 15 },
+        'Ice Loly': { pcs: 20, sale: 200, wholesale: 190, stock: 10 },
+        'Mango Bar': { pcs: 20, sale: 300, wholesale: 280, stock: 8 },
+        'Kulfi Stick': { pcs: 20, sale: 380, wholesale: 360, stock: 6 },
+        'Crunch Cone': { pcs: 15, sale: 420, wholesale: 400, stock: 5 }
+      };
+
+      items.forEach(item => {
+        const spec = cartonSpecs[item.name] || { pcs: item.default_pcs_per_carton || 20, sale: 250, wholesale: 240, stock: 5 };
+        const cost = (item.unit_cost || 10) * spec.pcs;
+        insertCarton.run(item.id, item.name, `${item.name} Carton (${spec.pcs} Pcs)`, spec.pcs, cost, spec.sale, spec.wholesale, spec.stock);
+      });
+    }
+
+    // 4. Cars seed
+    const carsCount = db.prepare('SELECT COUNT(*) as c FROM cars').get().c;
+    if (carsCount === 0) {
+      const insertCar = db.prepare('INSERT INTO cars (car_number, driver_name, phone, area) VALUES (?, ?, ?, ?)');
+      const c1 = insertCar.run('Suzuki Bolan - LEA-4521', 'Muhammad Ali', '0301-5551234', 'Route 1: Wah Cantt & Taxila');
+      const c2 = insertCar.run('Shahzore Van - RIP-8820', 'Tariq Shahzad', '0313-7778899', 'Route 2: Rawalpindi City & Saddar');
+
+      // Seed initial loaded stock for car 1
+      const cartons = db.prepare('SELECT id, carton_name FROM packed_cartons').all();
+      if (cartons.length >= 2) {
+        const loadStmt = db.prepare('INSERT INTO car_inventory (car_id, carton_id, cartons_loaded) VALUES (?, ?, ?)');
+        loadStmt.run(c1.lastInsertRowid, cartons[0].id, 5); // 5 Chocbar cartons
+        loadStmt.run(c1.lastInsertRowid, cartons[1].id, 4); // 4 Ice Loly cartons
+      }
+    }
+
+    // 5. Shops seed
+    const shopsCount = db.prepare('SELECT COUNT(*) as c FROM shops').get().c;
+    if (shopsCount === 0) {
+      const insertShop = db.prepare('INSERT INTO shops (name, owner_name, phone, address, city, amount) VALUES (?, ?, ?, ?, ?, ?)');
+      insertShop.run('Madina Bakers & Cold Point', 'Haji Aslam', '0300-9876543', 'Main GT Road, Wah Cantt', 'Wah Cantt', 0);
+      insertShop.run('Al-Rehman Super Store', 'M. Tariq', '0321-4567890', 'Barrier 3, Taxila', 'Taxila', 0);
+      insertShop.run('Bismillah Karyana & Refreshment', 'Rashid Khan', '0333-1122334', 'Saddar Bazar, Rawalpindi', 'Rawalpindi', 0);
+    }
+  } catch (err) {
+    console.error('Failed to seed ice cream factory data:', err);
+  }
+}
+
+
+// Ice Cream Factory Methods
+
+// --- STAGE 1: RAW MATERIALS ---
+function getRawMaterials() {
+  return db.prepare(`
+    SELECT rm.*, 
+           ROUND(rm.current_stock * rm.cost_price, 2) as total_value,
+           (SELECT COUNT(*) FROM raw_material_logs rml WHERE rml.material_id = rm.id) as log_count
+    FROM raw_materials rm
+    ORDER BY rm.name ASC
+  `).all();
+}
+
+function getRawMaterial(id) {
+  return db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(id);
+}
+
+function saveRawMaterial(data) {
+  if (data.id) {
+    db.prepare(`
+      UPDATE raw_materials 
+      SET name = ?, category = ?, unit = ?, current_stock = ?, cost_price = ?, min_stock_alert = ?, notes = ?
+      WHERE id = ?
+    `).run(
+      data.name.trim(),
+      data.category || 'General',
+      data.unit || 'Kg',
+      Number(data.current_stock) || 0,
+      Number(data.cost_price) || 0,
+      Number(data.min_stock_alert) || 0,
+      data.notes || '',
+      data.id
+    );
+    return { success: true, id: data.id };
+  } else {
+    const res = db.prepare(`
+      INSERT INTO raw_materials (name, category, unit, current_stock, cost_price, min_stock_alert, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.name.trim(),
+      data.category || 'General',
+      data.unit || 'Kg',
+      Number(data.current_stock) || 0,
+      Number(data.cost_price) || 0,
+      Number(data.min_stock_alert) || 0,
+      data.notes || ''
+    );
+    return { success: true, id: res.lastInsertRowid };
+  }
+}
+
+function deleteRawMaterial(id) {
+  const usage = db.prepare('SELECT COUNT(*) as c FROM production_batch_materials WHERE material_id = ?').get(id).c;
+  if (usage > 0) {
+    return { error: 'Cannot delete material that has been used in production batches.' };
+  }
+  db.prepare('DELETE FROM raw_material_logs WHERE material_id = ?').run(id);
+  db.prepare('DELETE FROM raw_material_purchases WHERE material_id = ?').run(id);
+  db.prepare('DELETE FROM raw_materials WHERE id = ?').run(id);
+  return { success: true };
+}
+
+function addRawMaterialPurchase(data) {
+  const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(data.material_id);
+  if (!mat) return { error: 'Raw material not found' };
+
+  const qty = Number(data.qty) || 0;
+  const unitCost = Number(data.unit_cost) || 0;
+  const totalCost = qty * unitCost;
+  const date = data.date || new Date().toISOString().split('T')[0];
+
+  let purchaseId;
+  const tx = db.transaction(() => {
+    const res = db.prepare(`
+      INSERT INTO raw_material_purchases (material_id, material_name, qty, unit, unit_cost, total_cost, supplier_name, invoice_no, date, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      mat.id,
+      mat.name,
+      qty,
+      mat.unit,
+      unitCost,
+      totalCost,
+      data.supplier_name || '',
+      data.invoice_no || '',
+      date,
+      data.notes || ''
+    );
+    purchaseId = res.lastInsertRowid;
+
+    const stockBefore = mat.current_stock;
+    const stockAfter = stockBefore + qty;
+
+    db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?').run(stockAfter, unitCost, mat.id);
+
+    db.prepare(`
+      INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+      VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, ?)
+    `).run(
+      mat.id,
+      mat.name,
+      qty,
+      stockBefore,
+      stockAfter,
+      purchaseId,
+      date,
+      `Purchased ${qty} ${mat.unit} from ${data.supplier_name || 'Supplier'} @ Rs. ${unitCost}`
+    );
+  });
+
+  tx();
+  return { success: true, purchaseId, newStock: mat.current_stock + qty };
+}
+
+function getRawMaterialLogs(filters = {}) {
+  let query = 'SELECT * FROM raw_material_logs WHERE 1=1';
+  const params = [];
+
+  if (filters.material_id) {
+    query += ' AND material_id = ?';
+    params.push(filters.material_id);
+  }
+  if (filters.action) {
+    query += ' AND action = ?';
+    params.push(filters.action);
+  }
+  if (filters.fromDate) {
+    query += ' AND date >= ?';
+    params.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    query += ' AND date <= ?';
+    params.push(filters.toDate);
+  }
+
+  query += ' ORDER BY id DESC LIMIT 200';
+  return db.prepare(query).all(...params);
+}
+
+// --- STAGE 2: SINGLE ITEMS PRODUCTION ---
+function getIcecreamItems() {
+  return db.prepare(`
+    SELECT ii.*,
+           ROUND(ii.current_single_stock * ii.unit_cost, 2) as total_stock_cost,
+           ROUND(ii.current_single_stock * ii.retail_piece_price, 2) as total_stock_retail,
+           (SELECT COUNT(*) FROM packed_cartons pc WHERE pc.item_id = ii.id) as carton_variants_count
+    FROM icecream_items ii
+    ORDER BY ii.name ASC
+  `).all();
+}
+
+function getIcecreamItem(id) {
+  return db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(id);
+}
+
+function saveIcecreamItem(data) {
+  if (data.id) {
+    db.prepare(`
+      UPDATE icecream_items 
+      SET name = ?, flavor = ?, unit_cost = ?, retail_piece_price = ?, current_single_stock = ?, default_pcs_per_carton = ?, barcode = ?, image_path = ?, notes = ?
+      WHERE id = ?
+    `).run(
+      data.name.trim(),
+      data.flavor || '',
+      Number(data.unit_cost) || 0,
+      Number(data.retail_piece_price) || 0,
+      Number(data.current_single_stock) || 0,
+      Number(data.default_pcs_per_carton) || 20,
+      data.barcode || '',
+      data.image_path || '',
+      data.notes || '',
+      data.id
+    );
+    // Also update name on associated packed cartons if exists
+    db.prepare('UPDATE packed_cartons SET item_name = ? WHERE item_id = ?').run(data.name.trim(), data.id);
+    return { success: true, id: data.id };
+  } else {
+    const res = db.prepare(`
+      INSERT INTO icecream_items (name, flavor, unit_cost, retail_piece_price, current_single_stock, default_pcs_per_carton, barcode, image_path, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.name.trim(),
+      data.flavor || '',
+      Number(data.unit_cost) || 0,
+      Number(data.retail_piece_price) || 0,
+      Number(data.current_single_stock) || 0,
+      Number(data.default_pcs_per_carton) || 20,
+      data.barcode || '',
+      data.image_path || '',
+      data.notes || ''
+    );
+    const newId = res.lastInsertRowid;
+    // Auto-create default packed carton configuration if none exists
+    const defaultPcs = Number(data.default_pcs_per_carton) || 20;
+    const cost = (Number(data.unit_cost) || 10) * defaultPcs;
+    const sale = (Number(data.retail_piece_price) || 20) * defaultPcs * 0.8; // default 20% discount wholesale
+    db.prepare(`
+      INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+    `).run(newId, data.name.trim(), `${data.name.trim()} Carton (${defaultPcs} Pcs)`, defaultPcs, cost, sale, sale);
+
+    return { success: true, id: newId };
+  }
+}
+
+function deleteIcecreamItem(id) {
+  const cartons = db.prepare('SELECT COUNT(*) as c FROM packed_cartons WHERE item_id = ?').get(id).c;
+  if (cartons > 0) {
+    return { error: 'Please remove associated packed cartons first before deleting this item.' };
+  }
+  db.prepare('DELETE FROM production_batches WHERE item_id = ?').run(id);
+  db.prepare('DELETE FROM icecream_items WHERE id = ?').run(id);
+  return { success: true };
+}
+
+function runProductionBatch(data) {
+  const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(data.item_id);
+  if (!item) return { error: 'Ice cream item not found' };
+
+  const pieces = Number(data.produced_pieces) || 0;
+  if (pieces <= 0) return { error: 'Produced pieces must be greater than 0' };
+
+  const unitCost = Number(data.unit_cost) || Number(item.unit_cost) || 0;
+  const totalCost = pieces * unitCost;
+  const date = data.date || new Date().toISOString().split('T')[0];
+
+  // Generate unique batch number
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM production_batches WHERE date = ?').get(date).c + 1;
+  const batchNumber = `PRD-${todayStr}-${String(countToday).padStart(3, '0')}`;
+
+  let batchId;
+  const materialsSummaryList = [];
+
+  const tx = db.transaction(() => {
+    // 1. Check & deduct raw materials if specified
+    if (Array.isArray(data.materials) && data.materials.length > 0) {
+      for (const matUsage of data.materials) {
+        const matId = matUsage.material_id;
+        const qtyUsed = Number(matUsage.qty_used) || 0;
+        if (matId && qtyUsed > 0) {
+          const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(matId);
+          if (mat) {
+            const stockBefore = mat.current_stock;
+            const stockAfter = Math.max(0, stockBefore - qtyUsed);
+            db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(stockAfter, mat.id);
+
+            db.prepare(`
+              INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, date, notes)
+              VALUES (?, ?, 'PRODUCTION_USED', ?, ?, ?, ?, ?)
+            `).run(
+              mat.id,
+              mat.name,
+              -qtyUsed,
+              stockBefore,
+              stockAfter,
+              date,
+              `Used in Production Batch ${batchNumber} (${pieces} pcs ${item.name})`
+            );
+
+            materialsSummaryList.push(`${mat.name}: ${qtyUsed} ${mat.unit}`);
+          }
+        }
+      }
+    }
+
+    const summaryText = materialsSummaryList.join(', ') || (data.raw_materials_summary || 'Standard ingredients');
+
+    // 2. Insert batch record
+    const res = db.prepare(`
+      INSERT INTO production_batches (batch_number, date, item_id, item_name, produced_pieces, unit_cost, total_cost, raw_materials_summary, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      batchNumber,
+      date,
+      item.id,
+      item.name,
+      pieces,
+      unitCost,
+      totalCost,
+      summaryText,
+      data.notes || ''
+    );
+    batchId = res.lastInsertRowid;
+
+    // 3. Add to single items pool
+    db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock + ?, unit_cost = ? WHERE id = ?')
+      .run(pieces, unitCost, item.id);
+  });
+
+  tx();
+  return { 
+    success: true, 
+    batchId, 
+    batchNumber, 
+    produced_pieces: pieces, 
+    item_name: item.name, 
+    new_single_stock: item.current_single_stock + pieces 
+  };
+}
+
+function getProductionBatches(filters = {}) {
+  let query = 'SELECT pb.* FROM production_batches pb WHERE 1=1';
+  const params = [];
+
+  if (filters.item_id) {
+    query += ' AND pb.item_id = ?';
+    params.push(filters.item_id);
+  }
+  if (filters.fromDate) {
+    query += ' AND pb.date >= ?';
+    params.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    query += ' AND pb.date <= ?';
+    params.push(filters.toDate);
+  }
+
+  query += ' ORDER BY pb.id DESC LIMIT 100';
+  return db.prepare(query).all(...params);
+}
+
+function deleteProductionBatch(id) {
+  const batch = db.prepare('SELECT * FROM production_batches WHERE id = ?').get(id);
+  if (!batch) return { error: 'Batch not found' };
+
+  db.transaction(() => {
+    // Reverse single stock
+    db.prepare('UPDATE icecream_items SET current_single_stock = MAX(0, current_single_stock - ?) WHERE id = ?')
+      .run(batch.produced_pieces, batch.item_id);
+    db.prepare('DELETE FROM production_batches WHERE id = ?').run(id);
+  })();
+
+  return { success: true };
+}
+
+// --- STAGE 3: CARTON PACKING (SELLABLE INVENTORY) ---
+function getPackedCartons() {
+  return db.prepare(`
+    SELECT pc.*,
+           ii.name as base_item_name,
+           ii.current_single_stock as available_single_pieces,
+           ROUND(pc.factory_carton_stock * pc.carton_cost_price, 2) as total_warehouse_cost,
+           ROUND(pc.factory_carton_stock * pc.carton_sale_price, 2) as total_warehouse_value,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci WHERE ci.carton_id = pc.id), 0) as total_loaded_in_cars
+    FROM packed_cartons pc
+    JOIN icecream_items ii ON ii.id = pc.item_id
+    ORDER BY pc.carton_name ASC
+  `).all();
+}
+
+function getPackedCarton(id) {
+  return db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(id);
+}
+
+function savePackedCarton(data) {
+  if (data.id) {
+    db.prepare(`
+      UPDATE packed_cartons
+      SET item_id = ?, carton_name = ?, pieces_per_carton = ?, carton_cost_price = ?, carton_sale_price = ?, carton_wholesale_price = ?, factory_carton_stock = ?, barcode = ?, notes = ?
+      WHERE id = ?
+    `).run(
+      data.item_id,
+      data.carton_name.trim(),
+      Number(data.pieces_per_carton) || 20,
+      Number(data.carton_cost_price) || 0,
+      Number(data.carton_sale_price) || 0,
+      Number(data.carton_wholesale_price) || 0,
+      Number(data.factory_carton_stock) || 0,
+      data.barcode || '',
+      data.notes || '',
+      data.id
+    );
+    return { success: true, id: data.id };
+  } else {
+    const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(data.item_id);
+    const itemName = item ? item.name : '';
+    const res = db.prepare(`
+      INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock, barcode, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.item_id,
+      itemName,
+      data.carton_name.trim(),
+      Number(data.pieces_per_carton) || 20,
+      Number(data.carton_cost_price) || 0,
+      Number(data.carton_sale_price) || 0,
+      Number(data.carton_wholesale_price) || 0,
+      Number(data.factory_carton_stock) || 0,
+      data.barcode || '',
+      data.notes || ''
+    );
+    return { success: true, id: res.lastInsertRowid };
+  }
+}
+
+function deletePackedCarton(id) {
+  const loaded = db.prepare('SELECT SUM(cartons_loaded) as s FROM car_inventory WHERE carton_id = ?').get(id).s || 0;
+  if (loaded > 0) {
+    return { error: `Cannot delete: ${loaded} cartons are currently loaded in delivery cars.` };
+  }
+  db.prepare('DELETE FROM car_inventory WHERE carton_id = ?').run(id);
+  db.prepare('DELETE FROM packing_batches WHERE carton_id = ?').run(id);
+  db.prepare('DELETE FROM packed_cartons WHERE id = ?').run(id);
+  return { success: true };
+}
+
+function runCartonPacking(data) {
+  const carton = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(data.carton_id);
+  if (!carton) return { error: 'Packed carton configuration not found' };
+
+  const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(carton.item_id);
+  if (!item) return { error: 'Associated single ice cream item not found' };
+
+  const cartonsPacked = Number(data.cartons_packed) || 0;
+  if (cartonsPacked <= 0) return { error: 'Cartons to pack must be greater than 0' };
+
+  const piecesPerCarton = Number(data.pieces_per_carton) || Number(carton.pieces_per_carton) || 20;
+  const totalPiecesNeeded = cartonsPacked * piecesPerCarton;
+
+  if (item.current_single_stock < totalPiecesNeeded) {
+    return { 
+      error: `Insufficient single pieces! Required: ${totalPiecesNeeded} pieces of ${item.name}, but only ${item.current_single_stock} available in production stock.` 
+    };
+  }
+
+  const cartonCost = Number(data.carton_cost) || (item.unit_cost * piecesPerCarton);
+  const totalCost = cartonsPacked * cartonCost;
+  const cartonSalePrice = Number(data.carton_sale_price) || carton.carton_sale_price;
+  const date = data.date || new Date().toISOString().split('T')[0];
+
+  // Batch number
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM packing_batches WHERE date = ?').get(date).c + 1;
+  const packingNumber = `PCK-${todayStr}-${String(countToday).padStart(3, '0')}`;
+
+  let batchId;
+  const tx = db.transaction(() => {
+    // 1. Deduct single pieces from item pool
+    db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock - ? WHERE id = ?')
+      .run(totalPiecesNeeded, item.id);
+
+    // 2. Add cartons to warehouse stock and update prices
+    db.prepare(`
+      UPDATE packed_cartons 
+      SET factory_carton_stock = factory_carton_stock + ?, 
+          pieces_per_carton = ?,
+          carton_cost_price = ?, 
+          carton_sale_price = ? 
+      WHERE id = ?
+    `).run(cartonsPacked, piecesPerCarton, cartonCost, cartonSalePrice, carton.id);
+
+    // 3. Insert packing batch record
+    const res = db.prepare(`
+      INSERT INTO packing_batches (packing_number, date, carton_id, item_id, item_name, cartons_packed, pieces_per_carton, total_pieces_consumed, carton_cost, total_cost, carton_sale_price, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      packingNumber,
+      date,
+      carton.id,
+      item.id,
+      item.name,
+      cartonsPacked,
+      piecesPerCarton,
+      totalPiecesNeeded,
+      cartonCost,
+      totalCost,
+      cartonSalePrice,
+      data.notes || ''
+    );
+    batchId = res.lastInsertRowid;
+  });
+
+  tx();
+  return { 
+    success: true, 
+    batchId, 
+    packingNumber, 
+    cartonsPacked, 
+    totalPiecesNeeded,
+    newCartonStock: carton.factory_carton_stock + cartonsPacked,
+    remainingSingleStock: item.current_single_stock - totalPiecesNeeded 
+  };
+}
+
+function getPackingBatches(filters = {}) {
+  let query = 'SELECT pb.* FROM packing_batches pb WHERE 1=1';
+  const params = [];
+
+  if (filters.carton_id) {
+    query += ' AND pb.carton_id = ?';
+    params.push(filters.carton_id);
+  }
+  if (filters.fromDate) {
+    query += ' AND pb.date >= ?';
+    params.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    query += ' AND pb.date <= ?';
+    params.push(filters.toDate);
+  }
+
+  query += ' ORDER BY pb.id DESC LIMIT 100';
+  return db.prepare(query).all(...params);
+}
+
+function deletePackingBatch(id) {
+  const batch = db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
+  if (!batch) return { error: 'Packing batch not found' };
+
+  db.transaction(() => {
+    // Reverse: add back single items, deduct cartons
+    db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock + ? WHERE id = ?')
+      .run(batch.total_pieces_consumed, batch.item_id);
+    db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
+      .run(batch.cartons_packed, batch.carton_id);
+    db.prepare('DELETE FROM packing_batches WHERE id = ?').run(id);
+  })();
+
+  return { success: true };
+}
+
+// --- STAGE 4: CARS & DELIVERY LOADING ---
+function getCars() {
+  return db.prepare(`
+    SELECT c.*,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci WHERE ci.car_id = c.id), 0) as total_loaded_cartons,
+           (SELECT COUNT(*) FROM shop_deliveries sd WHERE sd.car_id = c.id) as total_deliveries_count
+    FROM cars c
+    ORDER BY c.id ASC
+  `).all();
+}
+
+function getCar(id) {
+  return db.prepare('SELECT * FROM cars WHERE id = ?').get(id);
+}
+
+function saveCar(data) {
+  if (data.id) {
+    db.prepare(`
+      UPDATE cars 
+      SET car_number = ?, driver_name = ?, phone = ?, area = ?, is_active = ?, notes = ?
+      WHERE id = ?
+    `).run(
+      data.car_number.trim(),
+      data.driver_name.trim(),
+      data.phone || '',
+      data.area || '',
+      data.is_active !== undefined ? Number(data.is_active) : 1,
+      data.notes || '',
+      data.id
+    );
+    return { success: true, id: data.id };
+  } else {
+    const res = db.prepare(`
+      INSERT INTO cars (car_number, driver_name, phone, area, is_active, notes)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      data.car_number.trim(),
+      data.driver_name.trim(),
+      data.phone || '',
+      data.area || '',
+      data.is_active !== undefined ? Number(data.is_active) : 1,
+      data.notes || ''
+    );
+    return { success: true, id: res.lastInsertRowid };
+  }
+}
+
+function deleteCar(id) {
+  const loaded = db.prepare('SELECT SUM(cartons_loaded) as s FROM car_inventory WHERE car_id = ?').get(id).s || 0;
+  if (loaded > 0) {
+    return { error: `Cannot delete car: It currently has ${loaded} cartons loaded. Return them to stock first.` };
+  }
+  db.prepare('DELETE FROM car_inventory WHERE car_id = ?').run(id);
+  db.prepare('DELETE FROM cars WHERE id = ?').run(id);
+  return { success: true };
+}
+
+function getCarInventory(carId) {
+  return db.prepare(`
+    SELECT pc.id as carton_id,
+           pc.carton_name,
+           pc.pieces_per_carton,
+           pc.carton_sale_price,
+           pc.carton_cost_price,
+           pc.factory_carton_stock,
+           COALESCE(ci.cartons_loaded, 0) as cartons_loaded,
+           ROUND(COALESCE(ci.cartons_loaded, 0) * pc.carton_sale_price, 2) as loaded_value
+    FROM packed_cartons pc
+    LEFT JOIN car_inventory ci ON ci.carton_id = pc.id AND ci.car_id = ?
+    ORDER BY pc.carton_name ASC
+  `).all(carId);
+}
+
+function loadCarStock(data) {
+  const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(data.car_id);
+  if (!car) return { error: 'Car / Vehicle not found' };
+
+  if (!Array.isArray(data.items) || data.items.length === 0) {
+    return { error: 'No items selected to load' };
+  }
+
+  const date = data.date || new Date().toISOString().split('T')[0];
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
+  const dispatchNo = `DISP-${todayStr}-${String(countToday).padStart(3, '0')}`;
+
+  let totalCartonsLoaded = 0;
+  let batchId;
+
+  const tx = db.transaction(() => {
+    // Check factory stock first
+    for (const item of data.items) {
+      const qty = Number(item.cartons_to_load) || 0;
+      if (qty > 0) {
+        const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(item.carton_id);
+        if (!pc || pc.factory_carton_stock < qty) {
+          throw new Error(`Insufficient warehouse stock for ${pc ? pc.carton_name : 'item'}. Available: ${pc ? pc.factory_carton_stock : 0}, requested to load: ${qty}`);
+        }
+      }
+    }
+
+    // Insert loading batch
+    const batchRes = db.prepare(`
+      INSERT INTO car_loading_batches (dispatch_no, car_id, date, total_cartons, notes)
+      VALUES (?, ?, ?, 0, ?)
+    `).run(dispatchNo, car.id, date, data.notes || '');
+    batchId = batchRes.lastInsertRowid;
+
+    for (const item of data.items) {
+      const qty = Number(item.cartons_to_load) || 0;
+      if (qty > 0) {
+        const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(item.carton_id);
+        // Deduct from factory warehouse
+        db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock - ? WHERE id = ?')
+          .run(qty, pc.id);
+
+        // Add to car inventory (upsert)
+        db.prepare(`
+          INSERT INTO car_inventory (car_id, carton_id, cartons_loaded, updated_at)
+          VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(car_id, carton_id) DO UPDATE SET 
+            cartons_loaded = car_inventory.cartons_loaded + ?,
+            updated_at = CURRENT_TIMESTAMP
+        `).run(car.id, pc.id, qty, qty);
+
+        // Insert item log
+        db.prepare(`
+          INSERT INTO car_loading_items (dispatch_id, carton_id, carton_name, pieces_per_carton, cartons_loaded, sale_price)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(batchId, pc.id, pc.carton_name, pc.pieces_per_carton, qty, pc.carton_sale_price);
+
+        totalCartonsLoaded += qty;
+      }
+    }
+
+    db.prepare('UPDATE car_loading_batches SET total_cartons = ? WHERE id = ?').run(totalCartonsLoaded, batchId);
+  });
+
+  try {
+    tx();
+    return { success: true, batchId, dispatchNo, totalCartonsLoaded, car_number: car.car_number };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+function getCarLoadingBatches(carId = null) {
+  let query = `
+    SELECT clb.*, c.car_number, c.driver_name
+    FROM car_loading_batches clb
+    JOIN cars c ON c.id = clb.car_id
+    WHERE 1=1
+  `;
+  const params = [];
+  if (carId) {
+    query += ' AND clb.car_id = ?';
+    params.push(carId);
+  }
+  query += ' ORDER BY clb.id DESC LIMIT 100';
+  return db.prepare(query).all(...params);
+}
+
+function getCarLoadingBatch(id) {
+  const batch = db.prepare(`
+    SELECT clb.*, c.car_number, c.driver_name, c.phone, c.area
+    FROM car_loading_batches clb
+    JOIN cars c ON c.id = clb.car_id
+    WHERE clb.id = ?
+  `).get(id);
+  if (!batch) return null;
+  batch.items = db.prepare('SELECT * FROM car_loading_items WHERE dispatch_id = ?').all(id);
+  return batch;
+}
+
+// --- STAGE 5: SHOP DELIVERIES, SALES & RETURNS ---
+function saveShopDelivery(data) {
+  if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+    return { error: 'No items in delivery order' };
+  }
+
+  const car = data.car_id ? db.prepare('SELECT * FROM cars WHERE id = ?').get(data.car_id) : null;
+  const shop = data.shop_id ? db.prepare('SELECT * FROM shops WHERE id = ?').get(data.shop_id) : null;
+  const shopName = data.shop_name || (shop ? shop.name : 'Counter Sale');
+  const shopPhone = data.shop_phone || (shop ? shop.phone : '');
+  const shopAddress = data.shop_address || (shop ? shop.address : '');
+
+  const date = data.date || new Date().toISOString().split('T')[0];
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_deliveries WHERE date = ?').get(date).c + 1;
+  const invoiceNo = `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
+
+  const discount = Number(data.discount) || 0;
+  const receivedAmount = Number(data.received_amount) || 0;
+  const paymentMethod = data.payment_method || 'Cash';
+
+  let subtotal = 0;
+  data.items.forEach(it => {
+    const delivered = Number(it.delivered_cartons) || 0;
+    const price = Number(it.carton_price) || 0;
+    subtotal += delivered * price;
+  });
+
+  const totalAmount = Math.max(0, subtotal - discount);
+  const previousBalance = shop ? Number(shop.amount || 0) : 0;
+  const remainingBillBalance = Math.max(0, totalAmount - receivedAmount);
+  const newShopBalance = previousBalance + remainingBillBalance;
+
+  let deliveryId;
+
+  const tx = db.transaction(() => {
+    // 1. Insert delivery invoice
+    const res = db.prepare(`
+      INSERT INTO shop_deliveries (
+        invoice_no, date, shop_id, shop_name, shop_phone, shop_address,
+        car_id, car_number, driver_name, subtotal, discount, total_amount,
+        received_amount, previous_balance, remaining_balance, payment_method, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      invoiceNo,
+      date,
+      shop ? shop.id : null,
+      shopName,
+      shopPhone,
+      shopAddress,
+      car ? car.id : null,
+      car ? car.car_number : 'Direct Warehouse',
+      car ? car.driver_name : 'Direct Dispatch',
+      subtotal,
+      discount,
+      totalAmount,
+      receivedAmount,
+      previousBalance,
+      remainingBillBalance,
+      paymentMethod,
+      data.notes || ''
+    );
+    deliveryId = res.lastInsertRowid;
+
+    // 2. Process each item and returns
+    for (const it of data.items) {
+      const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(it.carton_id);
+      const cartonName = pc ? pc.carton_name : (it.carton_name || 'Ice Cream Carton');
+      const pcsPerCarton = pc ? pc.pieces_per_carton : (Number(it.pieces_per_carton) || 20);
+      const ordered = Number(it.ordered_cartons) || Number(it.delivered_cartons) || 0;
+      const delivered = Number(it.delivered_cartons) || 0;
+      const returned = Number(it.returned_cartons) || 0;
+      const returnDest = (it.return_destination || 'car').toLowerCase(); // 'car' or 'stock'
+      const price = Number(it.carton_price) || 0;
+      const lineTotal = delivered * price;
+
+      // Insert item
+      db.prepare(`
+        INSERT INTO shop_delivery_items (
+          delivery_id, carton_id, carton_name, pieces_per_carton,
+          ordered_cartons, delivered_cartons, returned_cartons, return_destination,
+          carton_price, line_total
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        deliveryId,
+        it.carton_id,
+        cartonName,
+        pcsPerCarton,
+        ordered,
+        delivered,
+        returned,
+        returnDest,
+        price,
+        lineTotal
+      );
+
+      // Handle stock and car inventory deduction:
+      if (car) {
+        if (returnDest === 'car') {
+          // Returned cartons stay loaded inside the car!
+          // Therefore, only the actual delivered/sold cartons are deducted from car!
+          db.prepare(`
+            UPDATE car_inventory 
+            SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
+            WHERE car_id = ? AND carton_id = ?
+          `).run(delivered, car.id, it.carton_id);
+        } else {
+          // Returned cartons are unloaded from car and returned to factory warehouse stock!
+          // All taken out of car is (delivered + returned)
+          db.prepare(`
+            UPDATE car_inventory 
+            SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
+            WHERE car_id = ? AND carton_id = ?
+          `).run(delivered + returned, car.id, it.carton_id);
+
+          // Add returned cartons back into factory warehouse stock!
+          if (returned > 0) {
+            db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+              .run(returned, it.carton_id);
+          }
+        }
+      } else {
+        // Direct warehouse sale: deduct delivered from factory stock
+        db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
+          .run(delivered, it.carton_id);
+      }
+    }
+
+    // 3. Update shop balance if registered shop
+    if (shop) {
+      db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newShopBalance, shop.id);
+    }
+  });
+
+  tx();
+  return {
+    success: true,
+    id: deliveryId,
+    invoice_no: invoiceNo,
+    total_amount: totalAmount,
+    received_amount: receivedAmount,
+    remaining_balance: remainingBillBalance,
+    previous_balance: previousBalance,
+    new_shop_balance: newShopBalance
+  };
+}
+
+function getShopDeliveries(filters = {}) {
+  let query = `
+    SELECT sd.*, 
+           (SELECT COUNT(*) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_items_count,
+           (SELECT SUM(sdi.delivered_cartons) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_cartons_delivered
+    FROM shop_deliveries sd
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (filters.car_id) {
+    query += ' AND sd.car_id = ?';
+    params.push(filters.car_id);
+  }
+  if (filters.shop_id) {
+    query += ' AND sd.shop_id = ?';
+    params.push(filters.shop_id);
+  }
+  if (filters.fromDate) {
+    query += ' AND sd.date >= ?';
+    params.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    query += ' AND sd.date <= ?';
+    params.push(filters.toDate);
+  }
+
+  query += ' ORDER BY sd.id DESC LIMIT 150';
+  return db.prepare(query).all(...params);
+}
+
+function getShopDelivery(id) {
+  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
+  if (!delivery) return null;
+  delivery.items = db.prepare('SELECT * FROM shop_delivery_items WHERE delivery_id = ?').all(id);
+  return delivery;
+}
+
+function deleteShopDelivery(id) {
+  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
+  if (!delivery) return { error: 'Delivery invoice not found' };
+
+  db.transaction(() => {
+    // If shop balance was updated, reverse the remaining balance
+    if (delivery.shop_id && delivery.remaining_balance > 0) {
+      db.prepare('UPDATE shops SET amount = MAX(0, amount - ?) WHERE id = ?')
+        .run(delivery.remaining_balance, delivery.shop_id);
+    }
+    db.prepare('DELETE FROM shop_deliveries WHERE id = ?').run(id);
+  })();
+
+  return { success: true };
+}
+
+function receiveShopPayment(data) {
+  if (!data.shop_id) return { error: 'Shop ID is required' };
+  const amount = Number(data.amount) || 0;
+  if (amount <= 0) return { error: 'Payment amount must be greater than 0' };
+
+  const shop = db.prepare('SELECT * FROM shops WHERE id = ?').get(data.shop_id);
+  if (!shop) return { error: 'Shop not found' };
+
+  const date = data.date || new Date().toISOString().split('T')[0];
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_payments WHERE date = ?').get(date)?.c || 0;
+  const receiptNo = `REC-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
+
+  let paymentId;
+  let newBalance = 0;
+  db.transaction(() => {
+    const res = db.prepare(`
+      INSERT INTO shop_payments (shop_id, amount, payment_method, receipt_no, date, notes)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      data.shop_id,
+      amount,
+      data.payment_method || 'Cash',
+      receiptNo,
+      date,
+      data.notes || ''
+    );
+    paymentId = res.lastInsertRowid;
+    newBalance = Math.max(0, (shop.amount || 0) - amount);
+    db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newBalance, data.shop_id);
+  })();
+
+  return {
+    success: true,
+    id: paymentId,
+    receipt_no: receiptNo,
+    shop_id: data.shop_id,
+    shop_name: shop.name,
+    amount_paid: amount,
+    previous_balance: shop.amount || 0,
+    new_balance: newBalance,
+    date,
+    payment_method: data.payment_method || 'Cash',
+    notes: data.notes || ''
+  };
+}
+
+function getShopLedger(shopId) {
+  const shop = db.prepare('SELECT * FROM shops WHERE id = ?').get(shopId);
+  if (!shop) return null;
+
+  // Deliveries (debit to shop account)
+  const deliveries = db.prepare(`
+    SELECT sd.id, sd.invoice_no, sd.date, sd.total_amount, sd.received_amount, sd.remaining_balance,
+           sd.car_number, sd.driver_name, sd.payment_method, sd.notes,
+           'delivery' as record_type,
+           COALESCE((SELECT SUM(delivered_cartons) FROM shop_delivery_items WHERE delivery_id = sd.id), 0) as cartons_count
+    FROM shop_deliveries sd
+    WHERE sd.shop_id = ?
+  `).all(shopId);
+
+  // Cash Payments (credit to shop account)
+  const payments = db.prepare(`
+    SELECT sp.id, sp.receipt_no as invoice_no, sp.date, 0 as total_amount, sp.amount as received_amount, 0 as remaining_balance,
+           'Factory Office' as car_number, '' as driver_name, sp.payment_method, sp.notes,
+           'payment' as record_type,
+           0 as cartons_count
+    FROM shop_payments sp
+    WHERE sp.shop_id = ?
+  `).all(shopId);
+
+  // Combine and sort chronologically
+  const entries = [...deliveries, ...payments].sort((a, b) => {
+    const da = new Date(a.date).getTime();
+    const db = new Date(b.date).getTime();
+    if (da !== db) return da - db;
+    return a.id - b.id;
+  });
+
+  return {
+    shop,
+    current_balance: shop.amount || 0,
+    entries
+  };
+}
+
+function deleteShopPayment(id) {
+  const payment = db.prepare('SELECT * FROM shop_payments WHERE id = ?').get(id);
+  if (!payment) return { error: 'Payment not found' };
+
+  db.transaction(() => {
+    db.prepare('UPDATE shops SET amount = amount + ? WHERE id = ?').run(payment.amount, payment.shop_id);
+    db.prepare('DELETE FROM shop_payments WHERE id = ?').run(id);
+  })();
+
+  return { success: true };
+}
+
+function getCarSalesReport(carId, fromDate = null, toDate = null) {
+  const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
+  if (!car) return { error: 'Car not found' };
+
+  let query = 'SELECT * FROM shop_deliveries WHERE car_id = ?';
+  const params = [carId];
+  if (fromDate) {
+    query += ' AND date >= ?';
+    params.push(fromDate);
+  }
+  if (toDate) {
+    query += ' AND date <= ?';
+    params.push(toDate);
+  }
+  query += ' ORDER BY id DESC';
+
+  const deliveries = db.prepare(query).all(...params);
+  let totalSales = 0;
+  let totalReceived = 0;
+  let totalCartons = 0;
+
+  deliveries.forEach(d => {
+    totalSales += d.total_amount || 0;
+    totalReceived += d.received_amount || 0;
+    const cartons = db.prepare('SELECT SUM(delivered_cartons) as s FROM shop_delivery_items WHERE delivery_id = ?').get(d.id).s || 0;
+    d.cartons_delivered = cartons;
+    totalCartons += cartons;
+  });
+
+  const currentInventory = getCarInventory(carId);
+
+  return {
+    car,
+    fromDate,
+    toDate,
+    totalSales,
+    totalReceived,
+    totalCartons,
+    totalCartonsDelivered: totalCartons,
+    deliveriesCount: deliveries.length,
+    totalDeliveries: deliveries.length,
+    deliveries,
+    currentInventory
+  };
+}
+
+function getIcecreamFactorySummary() {
+  const today = new Date().toISOString().split('T')[0];
+
+  // 1. Raw Materials Summary
+  const rawStats = db.prepare(`
+    SELECT COUNT(*) as total_materials,
+           COALESCE(SUM(current_stock * cost_price), 0) as total_raw_value,
+           COALESCE(SUM(CASE WHEN current_stock <= min_stock_alert THEN 1 ELSE 0 END), 0) as low_stock_count
+    FROM raw_materials
+  `).get();
+
+  // 2. Single Items Production Pool Summary
+  const singleStats = db.prepare(`
+    SELECT COUNT(*) as total_items,
+           COALESCE(SUM(current_single_stock), 0) as total_single_pieces,
+           COALESCE(SUM(current_single_stock * unit_cost), 0) as total_single_cost,
+           COALESCE(SUM(current_single_stock * retail_piece_price), 0) as total_single_retail
+    FROM icecream_items
+  `).get();
+
+  // 3. Packed Cartons Warehouse Stock Summary
+  const cartonStats = db.prepare(`
+    SELECT COUNT(*) as total_carton_variants,
+           COALESCE(SUM(factory_carton_stock), 0) as total_warehouse_cartons,
+           COALESCE(SUM(factory_carton_stock * carton_cost_price), 0) as total_warehouse_cost,
+           COALESCE(SUM(factory_carton_stock * carton_sale_price), 0) as total_warehouse_sale_value
+    FROM packed_cartons
+  `).get();
+
+  // 4. Cars & Loaded Stock Summary
+  const carStats = db.prepare(`
+    SELECT COUNT(*) as total_cars,
+           COALESCE(SUM(is_active), 0) as active_cars,
+           COALESCE((SELECT SUM(cartons_loaded) FROM car_inventory), 0) as total_cartons_in_cars
+    FROM cars
+  `).get();
+
+  // 5. Today's Delivery & Sales Performance
+  const todaySales = db.prepare(`
+    SELECT COUNT(*) as total_invoices_today,
+           COALESCE(SUM(total_amount), 0) as total_sales_today,
+           COALESCE(SUM(received_amount), 0) as total_received_today
+    FROM shop_deliveries
+    WHERE date = ?
+  `).get(today);
+
+  const todayCartons = db.prepare(`
+    SELECT COALESCE(SUM(sdi.delivered_cartons), 0) as cartons_sold_today
+    FROM shop_delivery_items sdi
+    JOIN shop_deliveries sd ON sd.id = sdi.delivery_id
+    WHERE sd.date = ?
+  `).get(today).cartons_sold_today;
+
+  return {
+    rawMaterials: rawStats,
+    singleItems: singleStats,
+    packedCartons: cartonStats,
+    cars: carStats,
+    today: {
+      date: today,
+      sales: todaySales.total_sales_today,
+      received: todaySales.total_received_today,
+      invoices: todaySales.total_invoices_today,
+      cartons_sold: todayCartons
+    }
+  };
+}
+
+
 module.exports = {
-  init, getDbPath, close, backupDatabase, clearAllData,
+  // Stage 1: Raw Materials
+  getRawMaterials, getRawMaterial, saveRawMaterial, deleteRawMaterial, addRawMaterialPurchase, getRawMaterialLogs,
+  // Stage 2: Single Items Production
+  getIcecreamItems, getIcecreamItem, saveIcecreamItem, deleteIcecreamItem, runProductionBatch, getProductionBatches, deleteProductionBatch,
+  // Stage 3: Packed Cartons
+  getPackedCartons, getPackedCarton, savePackedCarton, deletePackedCarton, runCartonPacking, getPackingBatches, deletePackingBatch,
+  // Stage 4: Cars & Delivery Loading
+  getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, getCarLoadingBatches, getCarLoadingBatch,
+  // Stage 5: Shop Deliveries, Sales & Returns
+  saveShopDelivery, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
+
+  init, getDbPath, getDbPathForBranch, close, backupDatabase, clearAllData,
+  switchBranch, getCurrentBranch, copyCatalogFromBranch,
   addProductStock, getRateHistory, deleteRateHistory, getAllRatesList, markProposalPaid,
   getSettings, saveSettings,
-  getProducts, addProduct, updateProduct, deleteProduct, findProductByName, changeProductCategory,
+  getProducts, addProduct, updateProduct, deleteProduct, findProductByName, findProductByBarcode, changeProductCategory,
   getCategoryLabels, updateCategoryLabel, searchAllProducts, getCategoryStats, addCategory, deleteCategory,
   getProposals, getProposal, saveProposal, deleteProposal, updateProposalStatus, receivePayment, getNextProposalNumber, getNextCustomerName,
   getAllProposalItems,

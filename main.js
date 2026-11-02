@@ -26,6 +26,21 @@ function createWindow() {
     console.log(`[Renderer] ${message} (${sourceId}:${line})`);
   });
 
+  // Intercept F6 and F8 globally before Chromium's native handlers intercept or suppress them
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown') {
+      const key = (input.key || '').toUpperCase();
+      const code = (input.code || '').toUpperCase();
+      const isF6 = key === 'F6' || code === 'F6';
+      const isF8 = key === 'F8' || code === 'F8';
+
+      if (isF6 || isF8) {
+        event.preventDefault();
+        mainWindow.webContents.send('trigger-price-checker');
+      }
+    }
+  });
+
   // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http') || url.startsWith('mailto:')) {
@@ -88,6 +103,11 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
 });
 
+// Multi-Branch IPC
+ipcMain.handle('get-active-branch', () => (db.getCurrentBranch ? db.getCurrentBranch() : 'b1'));
+ipcMain.handle('switch-branch', (event, branchId) => (db.switchBranch ? db.switchBranch(branchId) : { success: true }));
+ipcMain.handle('copy-catalog-from-branch', (event, fromBranch, toBranch) => (db.copyCatalogFromBranch ? db.copyCatalogFromBranch(fromBranch, toBranch) : { success: false }));
+
 // Settings IPC
 ipcMain.handle('get-settings', () => db.getSettings());
 ipcMain.handle('save-settings', (event, data) => db.saveSettings(data));
@@ -99,6 +119,7 @@ ipcMain.handle('update-product', (event, category, id, data) => db.updateProduct
 ipcMain.handle('change-product-category', (event, oldCategory, newCategory, id, data) => db.changeProductCategory(oldCategory, newCategory, id, data));
 ipcMain.handle('delete-product', (event, category, id) => db.deleteProduct(category, id));
 ipcMain.handle('find-product-by-name', (event, name, excludeCategory, excludeId) => db.findProductByName(name, excludeCategory, excludeId));
+ipcMain.handle('find-product-by-barcode', (event, barcode, excludeCategory, excludeId) => db.findProductByBarcode(barcode, excludeCategory, excludeId));
 ipcMain.handle('get-category-labels', () => db.getCategoryLabels());
 ipcMain.handle('get-category-stats', () => db.getCategoryStats());
 ipcMain.handle('update-category-label', (event, slug, label) => db.updateCategoryLabel(slug, label));
@@ -157,6 +178,57 @@ ipcMain.handle('get-shops', () => db.getShops());
 ipcMain.handle('get-shop', (event, id) => db.getShop(id));
 ipcMain.handle('save-shop', (event, data) => db.saveShop(data));
 ipcMain.handle('delete-shop', (event, id) => db.deleteShop(id));
+
+// ==========================================
+// Ice Cream Factory 5-Stage System IPC Handlers
+// ==========================================
+
+// Stage 1: Raw Materials
+ipcMain.handle('get-raw-materials', () => db.getRawMaterials());
+ipcMain.handle('get-raw-material', (event, id) => db.getRawMaterial(id));
+ipcMain.handle('save-raw-material', (event, data) => db.saveRawMaterial(data));
+ipcMain.handle('delete-raw-material', (event, id) => db.deleteRawMaterial(id));
+ipcMain.handle('add-raw-material-purchase', (event, data) => db.addRawMaterialPurchase(data));
+ipcMain.handle('get-raw-material-logs', (event, filters) => db.getRawMaterialLogs(filters));
+
+// Stage 2: Single Items Production
+ipcMain.handle('get-icecream-items', () => db.getIcecreamItems());
+ipcMain.handle('get-icecream-item', (event, id) => db.getIcecreamItem(id));
+ipcMain.handle('save-icecream-item', (event, data) => db.saveIcecreamItem(data));
+ipcMain.handle('delete-icecream-item', (event, id) => db.deleteIcecreamItem(id));
+ipcMain.handle('run-production-batch', (event, data) => db.runProductionBatch(data));
+ipcMain.handle('get-production-batches', (event, filters) => db.getProductionBatches(filters));
+ipcMain.handle('delete-production-batch', (event, id) => db.deleteProductionBatch(id));
+
+// Stage 3: Packed Cartons (Sellable Inventory)
+ipcMain.handle('get-packed-cartons', () => db.getPackedCartons());
+ipcMain.handle('get-packed-carton', (event, id) => db.getPackedCarton(id));
+ipcMain.handle('save-packed-carton', (event, data) => db.savePackedCarton(data));
+ipcMain.handle('delete-packed-carton', (event, id) => db.deletePackedCarton(id));
+ipcMain.handle('run-carton-packing', (event, data) => db.runCartonPacking(data));
+ipcMain.handle('get-packing-batches', (event, filters) => db.getPackingBatches(filters));
+ipcMain.handle('delete-packing-batch', (event, id) => db.deletePackingBatch(id));
+
+// Stage 4: Cars & Delivery Loading
+ipcMain.handle('get-cars', () => db.getCars());
+ipcMain.handle('get-car', (event, id) => db.getCar(id));
+ipcMain.handle('save-car', (event, data) => db.saveCar(data));
+ipcMain.handle('delete-car', (event, id) => db.deleteCar(id));
+ipcMain.handle('get-car-inventory', (event, carId) => db.getCarInventory(carId));
+ipcMain.handle('load-car-stock', (event, data) => db.loadCarStock(data));
+ipcMain.handle('get-car-loading-batches', (event, carId) => db.getCarLoadingBatches(carId));
+ipcMain.handle('get-car-loading-batch', (event, id) => db.getCarLoadingBatch(id));
+
+// Stage 5: Shop Deliveries, Sales & Returns
+ipcMain.handle('save-shop-delivery', (event, data) => db.saveShopDelivery(data));
+ipcMain.handle('get-shop-deliveries', (event, filters) => db.getShopDeliveries(filters));
+ipcMain.handle('get-shop-delivery', (event, id) => db.getShopDelivery(id));
+ipcMain.handle('delete-shop-delivery', (event, id) => db.deleteShopDelivery(id));
+ipcMain.handle('receive-shop-payment', (event, data) => db.receiveShopPayment(data));
+ipcMain.handle('get-shop-ledger', (event, shopId) => db.getShopLedger(shopId));
+ipcMain.handle('delete-shop-payment', (event, id) => db.deleteShopPayment(id));
+ipcMain.handle('get-car-sales-report', (event, carId, fromDate, toDate) => db.getCarSalesReport(carId, fromDate, toDate));
+ipcMain.handle('get-icecream-factory-summary', () => db.getIcecreamFactorySummary());
 
 // Dashboard Stats IPC
 ipcMain.handle('get-dashboard-stats', (event, period) => db.getDashboardStats(period));
@@ -220,7 +292,8 @@ async function performAutoBackup() {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-    const fileName = `IshaqJadoonTraders-AutoBackup-${datetimeStr}.db`;
+    const branchTag = (db.getCurrentBranch ? db.getCurrentBranch().toUpperCase() : 'B1');
+    const fileName = `IshaqJadoonTraders_${branchTag}-AutoBackup-${datetimeStr}.db`;
     const destPath = path.join(targetDir, fileName);
 
     console.log(`[AutoBackup] Backing up database to: ${destPath}`);
@@ -287,9 +360,10 @@ ipcMain.handle('backup-data', async () => {
   const pad = (n) => String(n).padStart(2, '0');
   const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   
+  const branchTag = (db.getCurrentBranch ? db.getCurrentBranch().toUpperCase() : 'B1');
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Backup Database',
-    defaultPath: `IshaqJadoonTraders-${datetimeStr}.db`,
+    defaultPath: `IshaqJadoonTraders_${branchTag}-${datetimeStr}.db`,
     filters: [{ name: 'SQLite Database', extensions: ['db'] }]
   });
 
@@ -368,6 +442,7 @@ ipcMain.handle('generate-pdf', async (event, filename) => {
   if (!result.canceled && result.filePath) {
     try {
         const pdfOptions = {
+            pageSize: 'A5',
             printBackground: true,
             margins: {
                 marginType: 'none',
@@ -388,7 +463,7 @@ ipcMain.handle('generate-pdf', async (event, filename) => {
   return { success: false };
 });
 
-// Thermal Printer IPC
+// Printer IPC
 ipcMain.handle('get-printers', async (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return [];
@@ -401,12 +476,18 @@ ipcMain.handle('print-receipt', async (event, options = {}) => {
 
   try {
     const printers = await win.webContents.getPrintersAsync();
-    const posPrinter = printers.find(p => /pos|receipt|thermal|xp-|80|58|xprinter|printer/i.test(p.name));
-    const targetPrinter = options.deviceName || (posPrinter ? posPrinter.name : undefined);
+    let targetPrinter = options.deviceName;
+    
+    // Only auto-target thermal printer when NOT printing A5
+    if (!targetPrinter && options.pageSize !== 'A5' && !options.isA5) {
+      const posPrinter = printers.find(p => /pos|receipt|thermal|xp-|80mm|58mm|xprinter|speed-x|sp-650/i.test(p.name));
+      if (posPrinter) targetPrinter = posPrinter.name;
+    }
 
     const printOptions = {
-      silent: options.silent || false,
+      silent: options.silent !== undefined ? options.silent : false,
       printBackground: true,
+      pageSize: options.pageSize || 'A5',
       margins: {
         marginType: 'none',
         top: 0,
@@ -419,6 +500,12 @@ ipcMain.handle('print-receipt', async (event, options = {}) => {
     if (targetPrinter) {
       printOptions.deviceName = targetPrinter;
     }
+    if (options.pageSize) {
+      printOptions.pageSize = options.pageSize;
+    }
+    if (options.copies && Number(options.copies) > 1) {
+      printOptions.copies = Number(options.copies);
+    }
 
     return new Promise((resolve) => {
       win.webContents.print(printOptions, (success, failureReason) => {
@@ -427,6 +514,54 @@ ipcMain.handle('print-receipt', async (event, options = {}) => {
     });
   } catch (err) {
     console.error('print-receipt error:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('print-barcode-stickers', async (event, options = {}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return { success: false, error: 'No active window' };
+
+  try {
+    const printers = await win.webContents.getPrintersAsync();
+    // Prioritize 4BARCODE 3B-365B / sticker printer first, avoid POS80 receipt printer
+    const labelPrinter = options.deviceName || 
+      (printers.find(p => /4barcode|3b-365/i.test(p.name))?.name) ||
+      (printers.find(p => /label|sticker|speed|sp-|650/i.test(p.name))?.name) ||
+      (printers.find(p => /barcode/i.test(p.name))?.name) ||
+      (printers.find(p => /pos|receipt|thermal|xp-|80|58|xprinter/i.test(p.name))?.name);
+
+    const printOptions = {
+      silent: options.silent !== undefined ? options.silent : false,
+      printBackground: true,
+      margins: {
+        marginType: 'none',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      }
+    };
+
+    if (labelPrinter) {
+      printOptions.deviceName = labelPrinter;
+    }
+
+    if (options.pageSize) {
+      printOptions.pageSize = options.pageSize;
+    }
+
+    if (options.copies && Number(options.copies) > 1) {
+      printOptions.copies = Number(options.copies);
+    }
+
+    return new Promise((resolve) => {
+      win.webContents.print(printOptions, (success, failureReason) => {
+        resolve({ success, failureReason, deviceName: printOptions.deviceName });
+      });
+    });
+  } catch (err) {
+    console.error('print-barcode-stickers error:', err);
     return { success: false, error: err.message };
   }
 });

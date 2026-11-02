@@ -1,39 +1,64 @@
+/* ==========================================================================
+   A5 Paper Format Print Stylesheet (148mm x 210mm Portrait)
+   Optimized for Ice Cream Factory Invoices, Delivery Challans & Reports
+   ========================================================================== */
+
 @media print {
   @page {
-    size: 80mm auto;
-    margin: 0mm;
+    size: 148mm 210mm; /* Standard A5 Portrait */
+    margin: 5mm 6mm;
   }
   
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    max-width: 148mm !important;
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
     display: block !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    -webkit-font-smoothing: antialiased !important;
+    text-rendering: geometricPrecision !important;
   }
 
-  /* Hide everything except print containers */
+  /* Hide all interactive UI elements, sidebars, headers, modals, toasts, overlays */
+  .no-print,
+  #app-toast-container,
+  #barcode-sticker-modal,
+  #price-checker-modal,
+  #confirm-modal, 
+  #payment-modal, 
+  #preview-modal, 
+  #loading-overlay,
+  #quick-calculator-widget,
   body > aside, 
-  body > main, 
-  body > #confirm-modal, 
-  body > #payment-modal, 
-  body > #preview-modal, 
-  body > #loading-overlay,
-  body > #quick-calculator-widget {
+  body > main,
+  body > div:not(.active-print-target) {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
   /* Default: hide all print containers */
   #receipt-print, 
   #db-print-container, 
   #voucher-print, 
-  #report-print-container {
+  #report-print-container,
+  #barcode-sticker-print {
     display: none !important;
   }
 
@@ -44,38 +69,115 @@
   #report-print-container.active-print-target:not(:empty) {
     display: block !important;
     position: relative !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
+    width: 100% !important;
+    max-width: 148mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* A5 Document Layout Container */
+  .receipt-a5, .invoice-a5, .receipt-80mm, .a5-container {
+    width: 100% !important;
+    max-width: 148mm !important;
+    margin: 0 auto !important;
+    padding: 2mm 3mm !important;
+    box-sizing: border-box !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Typography & Table rules for A5 format */
+  .a5-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 11px !important;
+  }
+
+  .a5-table th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+    letter-spacing: 0.03em !important;
+  }
+
+  .a5-table td {
+    border: 1px solid #e2e8f0 !important;
+    padding: 4px 6px !important;
+    color: #1e293b !important;
+    font-size: 11px !important;
+  }
+
+  .a5-table tr:nth-child(even) {
+    background-color: #f8fafc !important;
+  }
+
+  .a5-meta-box {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    background-color: #f8fafc !important;
+    margin-bottom: 8px !important;
+  }
+
+  .a5-summary-box {
+    border: 1.5px solid #0f172a !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    background-color: #f8fafc !important;
+  }
+
+  .a5-signatures {
+    margin-top: 24px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    padding-top: 10px !important;
+  }
+
+  .a5-sig-line {
+    border-top: 1.5px dashed #475569 !important;
+    width: 42% !important;
+    text-align: center !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #334155 !important;
+    padding-top: 4px !important;
+  }
+
+  /* Sticker printing fallback */
+  #barcode-sticker-print.active-print-target:not(:empty) {
+    display: block !important;
+    position: relative !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .barcode-sticker-item {
+    page-break-after: always !important;
+    break-after: page !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important;
     margin: 0 auto !important;
     padding: 0 !important;
   }
 
-  /* 80mm Thermal Paper Print layout & container overrides */
-  .receipt-80mm {
-    width: 100% !important;
-    max-width: 80mm !important;
-    margin: 0 auto !important;
-    padding: 4px 6px !important;
-    box-sizing: border-box !important;
-    color: #000000 !important;
-    background: #ffffff !important;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif !important;
-    font-size: 11px !important;
-    line-height: 1.35 !important;
-    -webkit-font-smoothing: antialiased !important;
-    text-rendering: geometricPrecision !important;
-  }
-
-  .receipt-80mm, .receipt-80mm * {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif !important;
-  }
-
-  /* Ensure all colors, backgrounds, and text contrast are preserved crisp without blur */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    box-shadow: none !important;
-    -webkit-font-smoothing: antialiased !important;
-    text-rendering: geometricPrecision !important;
+  .barcode-sticker-item:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 }

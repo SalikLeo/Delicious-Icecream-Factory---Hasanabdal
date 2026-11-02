@@ -1,324 +1,1040 @@
+// Factory Reports: Comprehensive A5 Reporting Hub for Ice Cream Factory
 window.Reports = {
-  reportType: 'daily', // daily, monthly, annual
+  currentTab: 'cars', // 'cars' | 'raw' | 'inventory' | 'finance'
+  periodType: 'daily', // 'daily' | 'monthly' | 'all'
   selectedDate: '',
+  selectedCarId: '',
   settings: {},
 
-  getLocalDateStr(d = new Date()) {
-    if (!d) return '';
-    if (typeof d === 'string') return d.split('T')[0];
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  },
+  // Cached data
+  cars: [],
+  rawMaterials: [],
+  packedCartons: [],
+  singleItems: [],
+  deliveries: [],
+  expenses: [],
 
   async render(container) {
-    this.settings = await window.api.getSettings();
-    
+    this.container = container;
+    const now = new Date();
+    this.selectedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    this.settings = await window.api.getSettings() || {};
+    this.cars = await window.api.getCars() || [];
+
     container.innerHTML = `
-      <div>
-        <!-- Page Header -->
-        <div class="flex justify-between items-center mb-6 no-print flex-wrap gap-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-              <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+      <div class="h-full flex flex-col gap-4 max-w-7xl mx-auto p-4 md:p-6 overflow-y-auto custom-scrollbar">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white p-5 rounded-3xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-slate-700 shrink-0">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-black">REPORTS HUB</span>
+              <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">Ice Cream Factory Reports</h2>
             </div>
-            <h2 class="text-3xl font-bold text-slate-800">Financial Reports</h2>
+            <p class="text-xs text-slate-300 font-medium">Daily &amp; monthly tracking for delivery vehicles, raw materials stock balance, and warehouse inventory in standard A5 format.</p>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="Reports.printCurrentReport()"
+                    class="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print Report
+            </button>
           </div>
         </div>
 
-        <!-- Main Layout Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-8">
-          
-          <!-- Left Column (8 cols): Report Configuration -->
-          <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-4 px-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <i data-lucide="sliders" class="w-4 h-4 text-amber-500"></i>
-                <h3 class="font-bold text-base text-slate-800">Report Configuration</h3>
-              </div>
-              <span class="text-xs font-semibold text-slate-400">Select period & parameters</span>
-            </div>
-
-            <div class="p-6 space-y-6">
-              <!-- Step 1: Report Type Selection -->
-              <div>
-                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">1. Select Report Period Type</label>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button type="button" onclick="Reports.setType('daily')" id="type-daily" class="report-type-btn flex items-center sm:flex-col justify-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white transition-all group font-bold cursor-pointer text-left sm:text-center">
-                    <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-500">
-                      <i data-lucide="calendar-days" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                      <div class="font-black text-sm">Daily Report</div>
-                      <div class="text-[11px] opacity-75 font-medium mt-0.5">Day-by-day revenue & cost</div>
-                    </div>
-                  </button>
-
-                  <button type="button" onclick="Reports.setType('monthly')" id="type-monthly" class="report-type-btn flex items-center sm:flex-col justify-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white transition-all group font-bold cursor-pointer text-left sm:text-center">
-                    <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-500">
-                      <i data-lucide="calendar-range" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                      <div class="font-black text-sm">Monthly Report</div>
-                      <div class="text-[11px] opacity-75 font-medium mt-0.5">Full calendar month summary</div>
-                    </div>
-                  </button>
-
-                  <button type="button" onclick="Reports.setType('annual')" id="type-annual" class="report-type-btn flex items-center sm:flex-col justify-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white transition-all group font-bold cursor-pointer text-left sm:text-center">
-                    <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-500">
-                      <i data-lucide="calendar" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                      <div class="font-black text-sm">Annual Report</div>
-                      <div class="text-[11px] opacity-75 font-medium mt-0.5">Full fiscal year breakdown</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Step 2: Date Picker Input -->
-              <div id="date-picker-container" class="pt-2">
-                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2" id="picker-label">2. Select Day</label>
-                <div class="relative max-w-md">
-                  <i data-lucide="calendar" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                  <input type="date" id="report-date-input" 
-                    value="${this.selectedDate}" 
-                    onchange="Reports.updateSelectedDate(this.value)"
-                    class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-slate-800 focus:bg-white focus:border-accent focus:ring-4 focus:ring-amber-50/50 outline-none transition-all shadow-2xs cursor-pointer">
-                </div>
-              </div>
-
-              <!-- Action button -->
-              <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                <button type="button" onclick="Reports.generate()" class="h-11 px-6 bg-slate-900 hover:bg-slate-800 text-white font-black text-sm rounded-xl flex items-center gap-2.5 shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">
-                  <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i>
-                  <span>Generate & Print Report</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Column (4 cols): Information Card -->
-          <div class="lg:col-span-4 space-y-4">
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-              <h4 class="font-black text-sm text-slate-800 uppercase tracking-wider mb-3.5 flex items-center gap-2">
-                <i data-lucide="info" class="w-4 h-4 text-amber-500"></i>
-                What's Included in Report
-              </h4>
-              <div class="space-y-3 text-xs text-slate-600">
-                <div class="flex items-start gap-2.5">
-                  <div class="w-5 h-5 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 border border-emerald-200/60">1</div>
-                  <div><strong class="text-slate-800">Sales Summary:</strong> Total invoices, item units sold, gross sales revenue, and inventory cost.</div>
-                </div>
-                <div class="flex items-start gap-2.5">
-                  <div class="w-5 h-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 border border-blue-200/60">2</div>
-                  <div><strong class="text-slate-800">Operating Expenses:</strong> All recorded expenses, utility bills, salaries, and purchase vouchers.</div>
-                </div>
-                <div class="flex items-start gap-2.5">
-                  <div class="w-5 h-5 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 border border-amber-200/60">3</div>
-                  <div><strong class="text-slate-800">Net Profit / Loss:</strong> Exact margin calculations and true business net earnings.</div>
-                </div>
-                <div class="flex items-start gap-2.5">
-                  <div class="w-5 h-5 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 border border-purple-200/60">4</div>
-                  <div><strong class="text-slate-800">Supplier Balances:</strong> Up-to-date outstanding accounts payable summary.</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-gradient-to-br from-amber-500/10 to-amber-600/5 rounded-2xl border border-amber-200/80 p-4 flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 font-bold shadow-2xs">
-                <i data-lucide="printer" class="w-4 h-4"></i>
-              </div>
-              <div class="text-xs">
-                <p class="font-bold text-amber-950">Thermal 80mm Ready</p>
-                <p class="text-amber-800/80 mt-0.5">Formatted for instant high-speed POS receipt printing.</p>
-              </div>
-            </div>
-          </div>
-
+        <!-- Navigation Tabs -->
+        <div class="flex bg-slate-200/80 p-1.5 rounded-2xl gap-1 shrink-0 overflow-x-auto">
+          <button type="button" onclick="Reports.switchTab('cars')" id="rpt-tab-cars"
+                  class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer bg-white text-slate-900 shadow-sm">
+            <i data-lucide="truck" class="w-4 h-4 text-blue-600"></i> 1. Cars &amp; Delivery Sales
+          </button>
+          <button type="button" onclick="Reports.switchTab('raw')" id="rpt-tab-raw"
+                  class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900">
+            <i data-lucide="boxes" class="w-4 h-4 text-emerald-600"></i> 2. Raw Material Balance
+          </button>
+          <button type="button" onclick="Reports.switchTab('inventory')" id="rpt-tab-inventory"
+                  class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900">
+            <i data-lucide="package" class="w-4 h-4 text-purple-600"></i> 3. Finished Goods Stock
+          </button>
+          <button type="button" onclick="Reports.switchTab('finance')" id="rpt-tab-finance"
+                  class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900">
+            <i data-lucide="badge-dollar-sign" class="w-4 h-4 text-amber-600"></i> 4. Profit &amp; Expenses
+          </button>
         </div>
+
+        <!-- Dynamic Content Body -->
+        <div id="reports-tab-content" class="flex-1 min-h-0 flex flex-col gap-4">
+          <!-- Loaded dynamically -->
+        </div>
+
       </div>
     `;
 
     if (window.lucide) lucide.createIcons();
-    this.setType('daily');
+    await this.loadTabContent();
   },
 
-  setType(type) {
-    this.reportType = type;
-    
-    // Update UI buttons
-    document.querySelectorAll('.report-type-btn').forEach(btn => {
-      btn.className = 'report-type-btn flex items-center sm:flex-col justify-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white transition-all group font-bold cursor-pointer text-left sm:text-center';
-      const iconWrap = btn.querySelector('div:first-child');
-      if (iconWrap) iconWrap.className = 'w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-500';
+  async switchTab(tab) {
+    this.currentTab = tab;
+    ['cars', 'raw', 'inventory', 'finance'].forEach(t => {
+      const btn = document.getElementById(`rpt-tab-${t}`);
+      if (!btn) return;
+      if (t === tab) {
+        btn.className = 'flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer bg-white text-slate-900 shadow-sm';
+      } else {
+        btn.className = 'flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900';
+      }
     });
 
-    const activeBtn = document.getElementById(`type-${type}`);
-    if (activeBtn) {
-      activeBtn.className = 'report-type-btn flex items-center sm:flex-col justify-center gap-3 p-4 rounded-xl border-2 border-amber-500 bg-amber-50/70 text-slate-950 shadow-xs transition-all group font-bold cursor-pointer text-left sm:text-center ring-1 ring-amber-400/40';
-      const iconWrap = activeBtn.querySelector('div:first-child');
-      if (iconWrap) iconWrap.className = 'w-9 h-9 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 font-bold shadow-2xs';
+    await this.loadTabContent();
+  },
+
+  async loadTabContent() {
+    const container = document.getElementById('reports-tab-content');
+    if (!container) return;
+
+    if (this.currentTab === 'cars') {
+      await this.renderCarsReport(container);
+    } else if (this.currentTab === 'raw') {
+      await this.renderRawReport(container);
+    } else if (this.currentTab === 'inventory') {
+      await this.renderInventoryReport(container);
+    } else if (this.currentTab === 'finance') {
+      await this.renderFinanceReport(container);
     }
 
-    const input = document.getElementById('report-date-input');
-    const label = document.getElementById('picker-label');
-    if (!input || !label) return;
-    
-    if (type === 'daily') {
-      input.type = 'date';
-      label.textContent = '2. Select Day';
-      input.value = this.getLocalDateStr();
-      this.selectedDate = input.value;
-    } else if (type === 'monthly') {
-      input.type = 'month';
-      label.textContent = '2. Select Month';
-      const now = new Date();
-      input.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      this.selectedDate = input.value;
-    } else if (type === 'annual') {
-      label.textContent = '2. Select Year';
-      input.type = 'number';
-      input.min = '2000';
-      input.max = '2100';
-      input.value = new Date().getFullYear();
-      this.selectedDate = input.value;
-    }
     if (window.lucide) lucide.createIcons();
   },
 
-  updateSelectedDate(val) {
-    this.selectedDate = val;
-  },
+  // -------------------------------------------------------------
+  // TAB 1: CAR SALES & DELIVERIES
+  // -------------------------------------------------------------
+  async renderCarsReport(container) {
+    const allDeliveries = await window.api.getShopDeliveries() || [];
+    this.deliveries = allDeliveries;
 
-  async generate() {
-    app.showLoading();
-    
-    let filters = {};
-    let periodLabel = '';
-    
-    const inputVal = document.getElementById('report-date-input').value;
-    
-    if (this.reportType === 'daily') {
-      filters = { start: inputVal, end: inputVal };
-      periodLabel = app.formatDate(inputVal);
-    } else if (this.reportType === 'monthly') {
-      const [year, month] = inputVal.split('-').map(Number);
-      const lastDay = new Date(year, month, 0).getDate();
-      filters = { 
-        start: `${year}-${String(month).padStart(2, '0')}-01`, 
-        end: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}` 
-      };
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      periodLabel = `${monthNames[month - 1]} ${year}`;
-    } else if (this.reportType === 'annual') {
-      const year = inputVal;
-      filters = { 
-        start: `${year}-01-01`, 
-        end: `${year}-12-31` 
-      };
-      periodLabel = `Year ${year}`;
+    // Filter by selected car and date
+    let filtered = allDeliveries;
+    if (this.selectedCarId) {
+      filtered = filtered.filter(d => String(d.car_id) === String(this.selectedCarId));
+    }
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filtered = filtered.filter(d => d.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filtered = filtered.filter(d => d.date && d.date.startsWith(ym));
     }
 
-    const data = await window.api.getReportSummary(filters);
-    
-    const margin = data.sales.amount > 0 ? (data.sales.profit / data.sales.amount * 100).toFixed(2) : '0.00';
-    const netProfit = data.sales.profit - data.expenses.amount;
+    let totalDeliveredCartons = 0;
+    let totalSales = 0;
+    let totalCashReceived = 0;
+    let totalRemainingKhata = 0;
 
-    const printContainer = document.getElementById('report-print-container');
-    const html = `
-        <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
-            <!-- Header -->
-            <div style="text-align: center; margin-bottom: 4px;">
-                <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${this.settings.company_name || 'ISHAQ JADOON TRADERS'}</h1>
-                <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${this.settings.address || 'Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt'}</div>
-                <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
-                    <div>M.Ishaq: 0301-2630481</div>
-                    <div>Ch. Shakir: 0300-5074410</div>
-                </div>
-                <div style="margin-top: 5px;">
-                    <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">FINANCIAL REPORT &bull; ${this.reportType.toUpperCase()}</span>
-                </div>
-            </div>
-            
-            <!-- Metadata -->
-            <div style="font-size: 11px; line-height: 1.35; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed #000;">
-                <div style="display: flex; justify-content: space-between;">
-                    <span><b>Period:</b> ${periodLabel}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 1px;">
-                    <span><b>Date:</b> ${app.formatDateTime(new Date().toISOString())}</span>
-                </div>
-            </div>
+    filtered.forEach(d => {
+      totalDeliveredCartons += (d.total_cartons_delivered || 0);
+      totalSales += (d.total_amount || 0);
+      totalCashReceived += (d.received_amount || 0);
+      totalRemainingKhata += (d.remaining_balance || 0);
+    });
 
-            <!-- Sales Summary Section -->
-            <div style="margin-bottom: 4px;">
-                <div style="font-weight: 900; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.5px; margin-bottom: 2px; border-bottom: 1px solid #000; padding-bottom: 1px;">SALES SUMMARY</div>
-                <table style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 1.45;">
-                    <tr style="border-bottom: 1px dashed #f1f5f9;"><td style="padding: 2px 0;">Total Invoices:</td><td style="text-align: right; font-weight: 600; padding: 2px 0;">${data.sales.count}</td></tr>
-                    <tr style="border-bottom: 1px dashed #f1f5f9;"><td style="padding: 2px 0;">Total Items Sold:</td><td style="text-align: right; font-weight: 600; padding: 2px 0;">${data.sales.itemsSold}</td></tr>
-                    <tr style="border-bottom: 1px dashed #f1f5f9;"><td style="padding: 2px 0;">Total Sell Amount:</td><td style="text-align: right; font-weight: 700; padding: 2px 0;">${app.formatCurrency(data.sales.amount)}</td></tr>
-                    <tr style="border-bottom: 1px dashed #f1f5f9;"><td style="padding: 2px 0;">Total Inventory Cost:</td><td style="text-align: right; font-weight: 600; padding: 2px 0;">${app.formatCurrency(data.sales.cost)}</td></tr>
-                    <tr style="border-top: 1px dashed #000; border-bottom: 1px dashed #000;"><td style="padding: 2px 0; font-weight: 800;">Gross Profit:</td><td style="text-align: right; font-weight: 800; padding: 2px 0;">${app.formatCurrency(data.sales.profit)} (${margin}%)</td></tr>
-                </table>
-            </div>
-
-            <!-- Expenses Summary Section -->
-            <div style="margin-bottom: 4px; border-top: 1px dashed #000; padding-top: 3px;">
-                <div style="font-weight: 900; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.5px; margin-bottom: 2px; border-bottom: 1px solid #000; padding-bottom: 1px;">EXPENSES & PURCHASES</div>
-                <table style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 1.45;">
-                    <tr style="border-bottom: 1px dashed #f1f5f9;"><td style="padding: 2px 0;">Total Expenses:</td><td style="text-align: right; font-weight: 700; padding: 2px 0;">${app.formatCurrency(data.expenses.amount)}</td></tr>
-                    <tr><td style="padding: 2px 0;">Transactions Count:</td><td style="text-align: right; font-weight: 600; padding: 2px 0;">${data.expenses.count}</td></tr>
-                </table>
-            </div>
-
-            <!-- Supplier Balances Section -->
-            <div style="margin-bottom: 4px; border-top: 1px dashed #000; padding-top: 3px;">
-                <div style="font-weight: 900; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.5px; margin-bottom: 2px; border-bottom: 1px solid #000; padding-bottom: 1px;">SUPPLIER BALANCES</div>
-                <table style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 1.45;">
-                    <tr style="border-bottom: 1px dashed #f1f5f9;"><td style="padding: 2px 0;">Total Accounts Payable:</td><td style="text-align: right; font-weight: 700; padding: 2px 0;">${app.formatCurrency(data.vendors.amount)}</td></tr>
-                    <tr><td style="padding: 2px 0;">Active Suppliers:</td><td style="text-align: right; font-weight: 600; padding: 2px 0;">${data.vendors.count}</td></tr>
-                </table>
-            </div>
-
-            <!-- Net Summary Box -->
-            <div style="margin-top: 4px; border-top: 1.5px solid #000; padding-top: 4px; font-size: 11.5px; line-height: 1.5;">
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Gross Profit:</span>
-                    <span style="font-weight: 700;">${app.formatCurrency(data.sales.profit)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Operating Expenses:</span>
-                    <span style="font-weight: 700;">(${app.formatCurrency(data.expenses.amount)})</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 3px 0; margin-top: 3px; font-size: 13.5px; font-weight: 900;">
-                    <span>NET ${netProfit >= 0 ? 'PROFIT' : 'LOSS'}:</span>
-                    <span>${netProfit < 0 ? '(' : ''}${app.formatCurrency(Math.abs(netProfit))}${netProfit < 0 ? ')' : ''}</span>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="margin-top: 6px; border-top: 1px dashed #000; padding-top: 4px; text-align: center; font-size: 10px;">
-                <p style="margin: 0; font-weight: 700; text-transform: uppercase;">*** END OF FINANCIAL REPORT ***</p>
-            </div>
+    // Also get in-car stock for selected car
+    let carInventoryHtml = '';
+    if (this.selectedCarId) {
+      const inv = await window.api.getCarInventory(this.selectedCarId) || [];
+      const loaded = inv.filter(i => (i.cartons_loaded || 0) > 0);
+      carInventoryHtml = `
+        <div class="bg-blue-50/60 p-3 rounded-2xl border border-blue-100 mb-4 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+            <span class="font-black text-slate-800">Current Stock Loaded Inside This Car:</span>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            ${loaded.length > 0 ? loaded.map(i => `
+              <span class="px-2.5 py-1 bg-white border border-blue-200 rounded-lg font-bold text-blue-900 text-[11px] shadow-2xs">
+                ${i.carton_name}: <strong class="text-blue-700">${i.cartons_loaded} ctns</strong>
+              </span>
+            `).join('') : '<span class="text-slate-400 font-bold">No stock loaded inside car right now.</span>'}
+          </div>
         </div>
+      `;
+    }
+
+    container.innerHTML = `
+      <!-- Filter Controls -->
+      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Select Vehicle / Car</label>
+            <select id="rpt-car-select" onchange="Reports.onCarChange(this.value)"
+                    class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
+              <option value="">-- All Delivery Cars --</option>
+              ${this.cars.map(c => `
+                <option value="${c.id}" ${String(c.id) === String(this.selectedCarId) ? 'selected' : ''}>
+                  ${c.car_number} (${c.driver_name})
+                </option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Period</label>
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button type="button" onclick="Reports.setPeriod('daily')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Daily
+              </button>
+              <button type="button" onclick="Reports.setPeriod('monthly')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Monthly
+              </button>
+              <button type="button" onclick="Reports.setPeriod('all')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                All Time
+              </button>
+            </div>
+          </div>
+
+          ${this.periodType !== 'all' ? `
+            <div>
+              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Date</label>
+              <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
+                     value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
+                     onchange="Reports.onDateChange(this.value)"
+                     class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
+            </div>
+          ` : ''}
+        </div>
+
+        <button type="button" onclick="Reports.printCarReport()"
+                class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Report
+        </button>
+      </div>
+
+      ${carInventoryHtml}
+
+      <!-- Summary KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Total Deliveries</p>
+          <h3 class="text-xl font-black text-slate-900 mt-1">${filtered.length} Orders</h3>
+          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${totalDeliveredCartons} Cartons Sold</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Total Sales Value</p>
+          <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalSales).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-slate-400 mt-0.5">Gross Invoiced</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Cash Collected</p>
+          <h3 class="text-xl font-black text-slate-900 mt-1">Rs. ${Math.round(totalCashReceived).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Driver Handover Cash</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Pending Khata Credit</p>
+          <h3 class="text-xl font-black text-rose-600 mt-1">Rs. ${Math.round(totalRemainingKhata).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-rose-500 mt-0.5">Added to Shop Ledger</p>
+        </div>
+      </div>
+
+      <!-- Deliveries Table -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+        <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Vehicle Delivery Log (${filtered.length} entries)</h4>
+          <span class="text-[11px] font-bold text-slate-400">All amounts in PKR</span>
+        </div>
+
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-left text-xs border-collapse border border-slate-200">
+            <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Invoice #</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Vehicle &amp; Driver</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Shop / Customer</th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200">Cartons</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Total (Rs.)</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Cash (Rs.)</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Khata Due</th>
+                <th class="py-2.5 px-3 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+              ${filtered.length > 0 ? filtered.map(d => `
+                <tr class="hover:bg-slate-50/70 transition-colors">
+                  <td class="py-2 px-3 text-[11px] font-bold text-slate-500 border-r border-slate-200 whitespace-nowrap">${d.date}</td>
+                  <td class="py-2 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
+                  <td class="py-2 px-3 text-slate-800 font-bold border-r border-slate-200">${d.car_number}<br><span class="text-[10px] text-slate-400">${d.driver_name || ''}</span></td>
+                  <td class="py-2 px-3 font-bold text-slate-900 border-r border-slate-200">${d.shop_name}</td>
+                  <td class="py-2 px-2 text-center font-black text-blue-700 bg-blue-50/40 border-r border-slate-200">${d.total_cartons_delivered || 0}</td>
+                  <td class="py-2 px-3 text-right font-black text-slate-900 border-r border-slate-200">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
+                  <td class="py-2 px-3 text-right font-black text-emerald-700 border-r border-slate-200">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
+                  <td class="py-2 px-3 text-right font-black ${d.remaining_balance > 0 ? 'text-rose-600' : 'text-slate-400'} border-r border-slate-200">
+                    Rs. ${Math.round(d.remaining_balance).toLocaleString()}
+                  </td>
+                  <td class="py-2 px-3 text-center">
+                    <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-lg cursor-pointer flex items-center gap-1 mx-auto">
+                      <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
+                    </button>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td colspan="9" class="p-8 text-center text-slate-400 font-bold">No deliveries found for the selected vehicle and date.</td>
+                </tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  onCarChange(val) {
+    this.selectedCarId = val;
+    this.loadTabContent();
+  },
+
+  onDateChange(val) {
+    this.selectedDate = val;
+    this.loadTabContent();
+  },
+
+  setPeriod(period) {
+    this.periodType = period;
+    this.loadTabContent();
+  },
+
+  // -------------------------------------------------------------
+  // TAB 2: RAW MATERIALS STOCK & BALANCE
+  // -------------------------------------------------------------
+  async renderRawReport(container) {
+    const rawList = await window.api.getRawMaterials() || [];
+    this.rawMaterials = rawList;
+
+    let totalValuation = 0;
+    let lowStockCount = 0;
+
+    rawList.forEach(m => {
+      totalValuation += (m.total_value || 0);
+      if (m.current_stock <= m.min_stock_alert) lowStockCount++;
+    });
+
+    container.innerHTML = `
+      <!-- Top Action Bar -->
+      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
+        <div>
+          <h3 class="font-black text-sm text-slate-900">Raw Materials Inventory &amp; Remaining Balance</h3>
+          <p class="text-[11px] text-slate-500 font-medium">Clear breakdown of what raw material is left behind in factory stock and current financial valuation.</p>
+        </div>
+        <button type="button" onclick="Reports.printRawReport()"
+                class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Report
+        </button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Total Registered Materials</p>
+          <h3 class="text-xl font-black text-slate-900 mt-1">${rawList.length} Items</h3>
+          <p class="text-[11px] font-bold text-slate-400 mt-0.5">Milk, Sugar, Sticks, Wrappers, Cartons</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Total Stock Valuation</p>
+          <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalValuation).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Total Value at Purchase Cost</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Low Stock Alerts</p>
+          <h3 class="text-xl font-black ${lowStockCount > 0 ? 'text-amber-600' : 'text-slate-900'} mt-1">${lowStockCount} Materials</h3>
+          <p class="text-[11px] font-bold ${lowStockCount > 0 ? 'text-amber-600' : 'text-slate-400'} mt-0.5">Below alert threshold</p>
+        </div>
+      </div>
+
+      <!-- Raw Materials Table -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3 border-r border-slate-200">Material Name</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Category</th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200">Unit</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Remaining Stock Balance</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Total Value (Rs.)</th>
+                <th class="py-2.5 px-3 text-center">Stock Alert Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+              ${rawList.map(m => {
+                const isLow = m.current_stock <= m.min_stock_alert;
+                return `
+                  <tr class="hover:bg-slate-50/70 transition-colors">
+                    <td class="py-2.5 px-3 font-black text-slate-900 border-r border-slate-200">${m.name}</td>
+                    <td class="py-2.5 px-3 text-slate-500 border-r border-slate-200">${m.category}</td>
+                    <td class="py-2.5 px-2 text-center font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
+                    <td class="py-2.5 px-3 text-right font-black text-sm text-slate-900 tabular-nums border-r border-slate-200">
+                      ${m.current_stock} <span class="text-[10px] text-slate-400 font-bold">${m.unit}</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-right text-slate-600 tabular-nums border-r border-slate-200">Rs. ${m.cost_price}</td>
+                    <td class="py-2.5 px-3 text-right font-black text-emerald-800 tabular-nums border-r border-slate-200">
+                      Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                      ${isLow ? `
+                        <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black">
+                          ⚠️ Low Stock (Alert &le; ${m.min_stock_alert})
+                        </span>
+                      ` : `
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+                          ✓ Adequate Stock
+                        </span>
+                      `}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  // -------------------------------------------------------------
+  // TAB 3: FINISHED GOODS WAREHOUSE INVENTORY
+  // -------------------------------------------------------------
+  async renderInventoryReport(container) {
+    const cartons = await window.api.getPackedCartons() || [];
+    const singleItems = await window.api.getIcecreamItems() || [];
+    const cars = await window.api.getCars() || [];
+    this.packedCartons = cartons;
+    this.singleItems = singleItems;
+
+    let totalWarehouseCartons = 0;
+    let totalSaleValuation = 0;
+    let totalCostValuation = 0;
+
+    cartons.forEach(c => {
+      totalWarehouseCartons += (c.factory_carton_stock || 0);
+      totalSaleValuation += ((c.factory_carton_stock || 0) * (c.carton_sale_price || 0));
+      totalCostValuation += ((c.factory_carton_stock || 0) * (c.carton_cost_price || 0));
+    });
+
+    // Compute stock loaded in cars
+    let totalCartonsInCars = 0;
+    for (const car of cars) {
+      const inv = await window.api.getCarInventory(car.id) || [];
+      inv.forEach(i => { totalCartonsInCars += (i.cartons_loaded || 0); });
+    }
+
+    container.innerHTML = `
+      <!-- Action Bar -->
+      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
+        <div>
+          <h3 class="font-black text-sm text-slate-900">Finished Goods &amp; Ready Warehouse Inventory</h3>
+          <p class="text-[11px] text-slate-500 font-medium">Ready packed cartons in factory warehouse and loaded inside delivery vehicles.</p>
+        </div>
+        <button type="button" onclick="Reports.printInventoryReport()"
+                class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Report
+        </button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Cartons</p>
+          <h3 class="text-xl font-black text-slate-900 mt-1">${totalWarehouseCartons} Cartons</h3>
+          <p class="text-[11px] font-bold text-purple-600 mt-0.5">Ready for Dispatch</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Loaded in Delivery Cars</p>
+          <h3 class="text-xl font-black text-blue-700 mt-1">${totalCartonsInCars} Cartons</h3>
+          <p class="text-[11px] font-bold text-blue-600 mt-0.5">On the Road in Vehicles</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Cost Value</p>
+          <h3 class="text-xl font-black text-slate-900 mt-1">Rs. ${Math.round(totalCostValuation).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-slate-400 mt-0.5">Production Cost</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Sale Value</p>
+          <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalSaleValuation).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Expected Revenue</p>
+        </div>
+      </div>
+
+      <!-- Cartons Inventory Table -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+        <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Packed Cartons Product Catalog</h4>
+          <span class="text-[11px] font-bold text-slate-400">${cartons.length} Products</span>
+        </div>
+
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3 border-r border-slate-200">Product / Carton Name</th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200">Pcs / Ctn</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Carton Cost (Rs.)</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Sale Price (Rs.)</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Margin / Ctn</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Warehouse Stock</th>
+                <th class="py-2.5 px-3 text-right">Total Sale Worth</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+              ${cartons.map(c => {
+                const margin = (c.carton_sale_price || 0) - (c.carton_cost_price || 0);
+                const stockWorth = (c.factory_carton_stock || 0) * (c.carton_sale_price || 0);
+                return `
+                  <tr class="hover:bg-slate-50/70 transition-colors">
+                    <td class="py-2.5 px-3 font-black text-slate-900 border-r border-slate-200">${c.carton_name}</td>
+                    <td class="py-2.5 px-2 text-center font-bold text-purple-700 border-r border-slate-200">${c.pieces_per_carton} pcs</td>
+                    <td class="py-2.5 px-3 text-right text-slate-600 border-r border-slate-200">Rs. ${c.carton_cost_price}</td>
+                    <td class="py-2.5 px-3 text-right font-black text-slate-900 border-r border-slate-200">Rs. ${c.carton_sale_price}</td>
+                    <td class="py-2.5 px-3 text-right font-bold text-emerald-700 border-r border-slate-200">+Rs. ${margin}</td>
+                    <td class="py-2.5 px-3 text-right font-black text-base text-purple-800 border-r border-slate-200">
+                      ${c.factory_carton_stock} <span class="text-[10px] text-slate-400 font-bold">ctns</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-black text-emerald-800">
+                      Rs. ${Math.round(stockWorth).toLocaleString()}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  // -------------------------------------------------------------
+  // TAB 4: FACTORY PROFIT & LOSS / EXPENSES
+  // -------------------------------------------------------------
+  async renderFinanceReport(container) {
+    const deliveries = await window.api.getShopDeliveries() || [];
+    const expenses = await window.api.getExpenses() || [];
+
+    // Filter by period
+    let filtDeliv = deliveries;
+    let filtExp = expenses;
+
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filtDeliv = filtDeliv.filter(d => d.date === this.selectedDate);
+      filtExp = filtExp.filter(e => e.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(ym));
+      filtExp = filtExp.filter(e => e.date && e.date.startsWith(ym));
+    }
+
+    let totalSales = 0;
+    let totalCashReceived = 0;
+    filtDeliv.forEach(d => {
+      totalSales += (d.total_amount || 0);
+      totalCashReceived += (d.received_amount || 0);
+    });
+
+    let totalExpenses = 0;
+    filtExp.forEach(e => {
+      totalExpenses += (e.amount || 0);
+    });
+
+    // Approximate cost of goods at ~70% of gross sales or exact carton costs
+    const estCogs = Math.round(totalSales * 0.70);
+    const grossProfit = totalSales - estCogs;
+    const netProfit = grossProfit - totalExpenses;
+
+    container.innerHTML = `
+      <!-- Filters -->
+      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Financial Period</label>
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button type="button" onclick="Reports.setPeriod('daily')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Daily
+              </button>
+              <button type="button" onclick="Reports.setPeriod('monthly')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Monthly
+              </button>
+              <button type="button" onclick="Reports.setPeriod('all')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                All Time
+              </button>
+            </div>
+          </div>
+
+          ${this.periodType !== 'all' ? `
+            <div>
+              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Date</label>
+              <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
+                     value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
+                     onchange="Reports.onDateChange(this.value)"
+                     class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
+            </div>
+          ` : ''}
+        </div>
+
+        <button type="button" onclick="Reports.printFinanceReport()"
+                class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Report
+        </button>
+      </div>
+
+      <!-- Financial Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Gross Sales Revenue</p>
+          <h3 class="text-xl font-black text-slate-900 mt-1">Rs. ${Math.round(totalSales).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-slate-500 mt-0.5">Cash: Rs. ${Math.round(totalCashReceived).toLocaleString()}</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Est. Production Cost</p>
+          <h3 class="text-xl font-black text-rose-700 mt-1">Rs. ${Math.round(estCogs).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-rose-500 mt-0.5">Raw materials &amp; packs</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Operating Expenses</p>
+          <h3 class="text-xl font-black text-amber-700 mt-1">Rs. ${Math.round(totalExpenses).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-amber-600 mt-0.5">Fuel, power, labor, repairs</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Estimated Net Profit</p>
+          <h3 class="text-xl font-black ${netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700'} mt-1">
+            Rs. ${Math.round(netProfit).toLocaleString()}
+          </h3>
+          <p class="text-[11px] font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'} mt-0.5">
+            ${totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) + '% net margin' : '0%'}
+          </p>
+        </div>
+      </div>
+
+      <!-- Expenses Breakdown Table -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+        <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Recorded Expenses Log (${filtExp.length} items)</h4>
+          <span class="text-[11px] font-bold text-slate-400">Total Expenses: Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
+        </div>
+
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Category</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Description / Remarks</th>
+                <th class="py-2.5 px-3 text-right">Amount (Rs.)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+              ${filtExp.length > 0 ? filtExp.map(e => `
+                <tr class="hover:bg-slate-50/70 transition-colors">
+                  <td class="py-2 px-3 text-slate-500 font-bold border-r border-slate-200 whitespace-nowrap">${e.date}</td>
+                  <td class="py-2 px-3 font-black text-slate-800 border-r border-slate-200">${e.category}</td>
+                  <td class="py-2 px-3 text-slate-600 border-r border-slate-200">${e.description || e.notes || 'Expense entry'}</td>
+                  <td class="py-2 px-3 text-right font-black text-slate-900 tabular-nums">
+                    Rs. ${Math.round(e.amount).toLocaleString()}
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td colspan="4" class="p-8 text-center text-slate-400 font-bold">No expenses recorded for this period.</td>
+                </tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  // -------------------------------------------------------------
+  // PRINT ROUTERS & A5 GENERATORS
+  // -------------------------------------------------------------
+  printCurrentReport() {
+    if (this.currentTab === 'cars') this.printCarReport();
+    else if (this.currentTab === 'raw') this.printRawReport();
+    else if (this.currentTab === 'inventory') this.printInventoryReport();
+    else if (this.currentTab === 'finance') this.printFinanceReport();
+  },
+
+  async printCarReport() {
+    const s = this.settings;
+    const car = this.cars.find(c => String(c.id) === String(this.selectedCarId));
+    const carName = car ? `${car.car_number} (${car.driver_name})` : 'All Delivery Vehicles';
+
+    let filtered = this.deliveries;
+    if (this.selectedCarId) filtered = filtered.filter(d => String(d.car_id) === String(this.selectedCarId));
+    if (this.periodType === 'daily' && this.selectedDate) filtered = filtered.filter(d => d.date === this.selectedDate);
+    else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filtered = filtered.filter(d => d.date && d.date.startsWith(ym));
+    }
+
+    let totalCartons = 0;
+    let totalSales = 0;
+    let totalCash = 0;
+    let totalDue = 0;
+
+    filtered.forEach(d => {
+      totalCartons += (d.total_cartons_delivered || 0);
+      totalSales += (d.total_amount || 0);
+      totalCash += (d.received_amount || 0);
+      totalDue += (d.remaining_balance || 0);
+    });
+
+    const html = `
+      <div class="a5-container">
+        <div class="a5-header">
+          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-doc-title" style="background:#0f172a; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
+            DELIVERY VEHICLE SALES &amp; PERFORMANCE REPORT (A5)
+          </div>
+        </div>
+
+        <div class="a5-meta-box">
+          <div>
+            <div><strong>Vehicle / Route:</strong> ${carName}</div>
+            <div><strong>Driver Phone:</strong> ${car?.phone || 'N/A'}</div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.selectedDate || 'All Time'})</div>
+            <div><strong>Printed On:</strong> ${new Date().toLocaleString()}</div>
+          </div>
+        </div>
+
+        <table class="a5-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Inv #</th>
+              <th>Shop / Customer</th>
+              <th style="text-align:center;">Ctns</th>
+              <th style="text-align:right;">Total (Rs.)</th>
+              <th style="text-align:right;">Cash (Rs.)</th>
+              <th style="text-align:right;">Khata Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(d => `
+              <tr>
+                <td>${d.date}</td>
+                <td style="font-weight:700;">${d.invoice_no}</td>
+                <td>${d.shop_name}</td>
+                <td style="text-align:center; font-weight:800;">${d.total_cartons_delivered || 0}</td>
+                <td style="text-align:right;">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
+                <td style="text-align:right; font-weight:700;">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
+                <td style="text-align:right;">Rs. ${Math.round(d.remaining_balance).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="a5-summary-box">
+          <div class="a5-summary-row">
+            <span>Total Deliveries Completed:</span>
+            <span>${filtered.length} Orders</span>
+          </div>
+          <div class="a5-summary-row">
+            <span>Total Cartons Delivered to Shops:</span>
+            <span>${totalCartons} Cartons</span>
+          </div>
+          <div class="a5-summary-row">
+            <span>Gross Sales Value:</span>
+            <span>Rs. ${Math.round(totalSales).toLocaleString()}</span>
+          </div>
+          <div class="a5-summary-row">
+            <span>Cash Collected by Driver:</span>
+            <span>Rs. ${Math.round(totalCash).toLocaleString()}</span>
+          </div>
+          <div class="a5-summary-row a5-total">
+            <span>Outstanding Khata Added:</span>
+            <span>Rs. ${Math.round(totalDue).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div class="a5-signatures">
+          <div class="a5-sig-line">Driver Signature</div>
+          <div class="a5-sig-line">Cashier / Manager</div>
+        </div>
+      </div>
     `;
 
-    app.setPrintContent('report-print-container', html);
+    app.showA5Preview(html, `Car Delivery Report - ${carName}`);
+  },
 
-    // Show Preview
-    const previewEl = document.getElementById('preview-paper');
-    if (previewEl) previewEl.innerHTML = html;
-    
-    document.getElementById('preview-title').textContent = 'Financial Report Preview';
-    document.getElementById('preview-subtitle').textContent = `80MM THERMAL RECEIPT • ${this.reportType.toUpperCase()}`;
-    
-    const modal = document.getElementById('preview-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    if (window.lucide) lucide.createIcons();
+  async printRawReport() {
+    const s = this.settings;
+    const rawList = await window.api.getRawMaterials() || [];
+    let totalVal = 0;
+    rawList.forEach(m => totalVal += (m.total_value || 0));
 
-    app.hideLoading();
+    const html = `
+      <div class="a5-container">
+        <div class="a5-header">
+          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-doc-title" style="background:#059669; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
+            RAW MATERIALS STOCK &amp; REMAINING BALANCE SHEET (A5)
+          </div>
+        </div>
+
+        <div class="a5-meta-box">
+          <div>
+            <div><strong>Factory Stage:</strong> Stage 1: Raw Materials Inventory</div>
+            <div><strong>Total Materials:</strong> ${rawList.length} Items</div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</div>
+            <div><strong>Valuation Method:</strong> Purchase Cost Average</div>
+          </div>
+        </div>
+
+        <table class="a5-table">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Category</th>
+              <th style="text-align:center;">Unit</th>
+              <th style="text-align:right;">Remaining Balance</th>
+              <th style="text-align:right;">Cost / Unit</th>
+              <th style="text-align:right;">Value (Rs.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rawList.map(m => `
+              <tr>
+                <td style="font-weight:700;">${m.name}</td>
+                <td>${m.category}</td>
+                <td style="text-align:center;">${m.unit}</td>
+                <td style="text-align:right; font-weight:800;">${m.current_stock} ${m.unit}</td>
+                <td style="text-align:right;">Rs. ${m.cost_price}</td>
+                <td style="text-align:right; font-weight:700;">Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="a5-summary-box">
+          <div class="a5-summary-row a5-total">
+            <span>Total Raw Material Valuation:</span>
+            <span>Rs. ${Math.round(totalVal).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div class="a5-signatures">
+          <div class="a5-sig-line">Store Keeper</div>
+          <div class="a5-sig-line">Factory Supervisor</div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, 'Raw Material Stock Balance Sheet');
+  },
+
+  async printInventoryReport() {
+    const s = this.settings;
+    const cartons = await window.api.getPackedCartons() || [];
+    let totalStock = 0;
+    let totalWorth = 0;
+
+    cartons.forEach(c => {
+      totalStock += (c.factory_carton_stock || 0);
+      totalWorth += ((c.factory_carton_stock || 0) * (c.carton_sale_price || 0));
+    });
+
+    const html = `
+      <div class="a5-container">
+        <div class="a5-header">
+          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-doc-title" style="background:#7c3aed; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
+            FINISHED GOODS WAREHOUSE INVENTORY SHEET (A5)
+          </div>
+        </div>
+
+        <div class="a5-meta-box">
+          <div>
+            <div><strong>Inventory Location:</strong> Main Cold Storage Warehouse</div>
+            <div><strong>Catalog Variants:</strong> ${cartons.length} Products</div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</div>
+            <div><strong>Status:</strong> Ready Packed Cartons</div>
+          </div>
+        </div>
+
+        <table class="a5-table">
+          <thead>
+            <tr>
+              <th>Carton Product</th>
+              <th style="text-align:center;">Pcs/Ctn</th>
+              <th style="text-align:right;">Cost (Rs.)</th>
+              <th style="text-align:right;">Sale (Rs.)</th>
+              <th style="text-align:right;">Warehouse Stock</th>
+              <th style="text-align:right;">Total Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cartons.map(c => `
+              <tr>
+                <td style="font-weight:700;">${c.carton_name}</td>
+                <td style="text-align:center;">${c.pieces_per_carton}</td>
+                <td style="text-align:right;">Rs. ${c.carton_cost_price}</td>
+                <td style="text-align:right; font-weight:700;">Rs. ${c.carton_sale_price}</td>
+                <td style="text-align:right; font-weight:800;">${c.factory_carton_stock} ctns</td>
+                <td style="text-align:right; font-weight:700;">Rs. ${Math.round((c.factory_carton_stock || 0) * (c.carton_sale_price || 0)).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="a5-summary-box">
+          <div class="a5-summary-row">
+            <span>Total Packed Cartons in Stock:</span>
+            <span>${totalStock} Cartons</span>
+          </div>
+          <div class="a5-summary-row a5-total">
+            <span>Total Warehouse Realizable Value:</span>
+            <span>Rs. ${Math.round(totalWorth).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div class="a5-signatures">
+          <div class="a5-sig-line">Cold Storage Incharge</div>
+          <div class="a5-sig-line">Factory Manager</div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, 'Finished Goods Warehouse Stock Sheet');
+  },
+
+  async printFinanceReport() {
+    const s = this.settings;
+    const deliveries = await window.api.getShopDeliveries() || [];
+    const expenses = await window.api.getExpenses() || [];
+
+    let filtDeliv = deliveries;
+    let filtExp = expenses;
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filtDeliv = filtDeliv.filter(d => d.date === this.selectedDate);
+      filtExp = filtExp.filter(e => e.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(ym));
+      filtExp = filtExp.filter(e => e.date && e.date.startsWith(ym));
+    }
+
+    let totalSales = 0;
+    let totalCash = 0;
+    filtDeliv.forEach(d => {
+      totalSales += (d.total_amount || 0);
+      totalCash += (d.received_amount || 0);
+    });
+
+    let totalExpenses = 0;
+    filtExp.forEach(e => totalExpenses += (e.amount || 0));
+
+    const estCogs = Math.round(totalSales * 0.70);
+    const grossProfit = totalSales - estCogs;
+    const netProfit = grossProfit - totalExpenses;
+
+    const html = `
+      <div class="a5-container">
+        <div class="a5-header">
+          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-doc-title" style="background:#b45309; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
+            FACTORY PROFIT &amp; LOSS FINANCIAL STATEMENT (A5)
+          </div>
+        </div>
+
+        <div class="a5-meta-box">
+          <div>
+            <div><strong>Financial Period:</strong> ${this.periodType.toUpperCase()} (${this.selectedDate || 'All Time'})</div>
+            <div><strong>Currency:</strong> Pakistani Rupee (PKR)</div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
+            <div><strong>Audited By:</strong> Management</div>
+          </div>
+        </div>
+
+        <div class="a5-summary-box" style="margin-top: 15px;">
+          <div class="a5-summary-row">
+            <span>Gross Ice Cream Sales Revenue:</span>
+            <span style="font-weight: 800;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
+          </div>
+          <div class="a5-summary-row">
+            <span>Estimated Cost of Goods Sold (Raw Materials &amp; Packaging):</span>
+            <span style="color: #b91c1c;">- Rs. ${Math.round(estCogs).toLocaleString()}</span>
+          </div>
+          <div class="a5-summary-row" style="border-top: 1px dashed #cbd5e1; padding-top: 4px;">
+            <span>Gross Manufacturing Profit:</span>
+            <span style="font-weight: 800; color: #047857;">Rs. ${Math.round(grossProfit).toLocaleString()}</span>
+          </div>
+          <div class="a5-summary-row">
+            <span>Factory Operating &amp; Delivery Expenses:</span>
+            <span style="color: #b91c1c;">- Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
+          </div>
+          <div class="a5-summary-row a5-total" style="font-size: 14px; margin-top: 8px;">
+            <span>Net Factory Profit / (Loss):</span>
+            <span style="color: ${netProfit >= 0 ? '#047857' : '#b91c1c'};">Rs. ${Math.round(netProfit).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 5px;">Key Operating Expenses Summary</div>
+          <table class="a5-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Remarks</th>
+                <th style="text-align:right;">Amount (Rs.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtExp.slice(0, 8).map(e => `
+                <tr>
+                  <td style="font-weight:700;">${e.category}</td>
+                  <td>${e.description || e.notes || 'Operating expense'}</td>
+                  <td style="text-align:right; font-weight:700;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+              ${filtExp.length === 0 ? '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">No operating expenses recorded.</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="a5-signatures" style="margin-top: 40px;">
+          <div class="a5-sig-line">Accountant</div>
+          <div class="a5-sig-line">Factory Owner / Director</div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, 'Factory Profit & Loss Statement');
   }
 };

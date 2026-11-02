@@ -1,13 +1,14 @@
 const LOCKABLE_TABS = [
-  { key: 'proposal-form', name: 'New Sale' },
-  { key: 'proposals', name: 'Sales History' },
-  { key: 'customers', name: 'Customers' },
-  { key: 'master-db', name: 'Stock' },
-  { key: 'rate-list', name: 'Rate List' },
-  { key: 'expenses', name: 'Expenses' },
-  { key: 'reports', name: 'Reports' },
-  { key: 'companies', name: 'Purchases' },
   { key: 'dashboard', name: 'Dashboard' },
+  { key: 'raw-materials', name: '1. Raw Materials' },
+  { key: 'production', name: '2. Production (Pcs)' },
+  { key: 'carton-packing', name: '3. Carton Packing' },
+  { key: 'car-loading', name: '4. Cars & Loading' },
+  { key: 'shop-sales', name: '5. Shop Deliveries' },
+  { key: 'proposals', name: 'Delivery History' },
+  { key: 'customers', name: 'Shops / Khata' },
+  { key: 'reports', name: 'Factory Reports' },
+  { key: 'expenses', name: 'Expenses' },
   { key: 'settings', name: 'Settings' }
 ];
 
@@ -68,16 +69,22 @@ const Settings = {
               <!-- Fields -->
               <div class="grid grid-cols-1 gap-4">
                 <div>
-                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Company Name *</label>
-                  <input type="text" id="set-name" disabled class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm opacity-70 cursor-not-allowed outline-none">
+                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Factory / Company Name *</label>
+                  <input type="text" id="set-name" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Contact Phone Numbers</label>
+                    <input type="text" id="set-phone" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none" placeholder="0309-5369472">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Website / Tagline</label>
+                    <input type="text" id="set-web" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Quality Ice Cream">
+                  </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Website</label>
-                  <input type="text" id="set-web" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Company Address</label>
-                  <textarea id="set-address" rows="2" disabled class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm opacity-70 cursor-not-allowed outline-none" placeholder="Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt"></textarea>
+                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Factory Address</label>
+                  <textarea id="set-address" rows="2" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Industrial Area, Near Barrier 3, Main GT Road, Wah Cantt"></textarea>
                 </div>
               </div>
             </form>
@@ -227,14 +234,105 @@ const Settings = {
     }
   },
 
+
+  async refreshPrinters() {
+    const select = document.getElementById('set-label-printer');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Detecting printers...</option>';
+    let printers = [];
+    try {
+      if (window.api && window.api.getPrinters) {
+        printers = await window.api.getPrinters() || [];
+      }
+    } catch (e) {
+      console.warn('Failed to get printers:', e);
+    }
+
+    if (!printers || printers.length === 0) {
+      select.innerHTML = '<option value="">Default Windows Printer (Auto)</option>';
+      return;
+    }
+
+    const savedPrinter = window.storage ? window.storage.get('label_printer_name') || '' : '';
+
+    printers.sort((a, b) => {
+      const isPosA = /pos|speed|label|sticker|barcode|thermal|xp-|80/i.test(a.name);
+      const isPosB = /pos|speed|label|sticker|barcode|thermal|xp-|80/i.test(b.name);
+      if (isPosA && !isPosB) return -1;
+      if (!isPosA && isPosB) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    select.innerHTML = printers.map(p => {
+      const isSpeedOrPos = /pos|speed|label|sticker|barcode|thermal|xp-|80/i.test(p.name);
+      const label = p.name + (isSpeedOrPos ? ' ★ (Speed-X / Thermal Ready)' : '') + (p.isDefault ? ' [Default]' : '');
+      return '<option value="' + p.name + '">' + label + '</option>';
+    }).join('');
+
+    if (savedPrinter && printers.some(p => p.name === savedPrinter)) {
+      select.value = savedPrinter;
+    } else {
+      const best = printers.find(p => /speed|sp-|650|label|sticker|barcode/i.test(p.name)) ||
+                   printers.find(p => /pos|thermal|xp-|80/i.test(p.name)) ||
+                   printers.find(p => p.isDefault) || printers[0];
+      if (best) select.value = best.name;
+    }
+  },
+
+  savePrinterSettings() {
+    if (!window.storage) return;
+    const printer = document.getElementById('set-label-printer')?.value || '';
+    const size = document.getElementById('set-label-size')?.value || '38x28';
+    const mode = document.getElementById('set-print-mode')?.value || 'silent';
+    const store = (document.getElementById('set-sticker-store-name')?.value || '').trim();
+
+    window.storage.set('label_printer_name', printer);
+    window.storage.set('label_sticker_size', size);
+    window.storage.set('label_print_mode', mode);
+    if (store) window.storage.set('label_store_name', store);
+
+    if (window.app && app.barcodeStickerState) {
+      app.barcodeStickerState.selectedPrinter = printer;
+      app.barcodeStickerState.sizePreset = size;
+      if (store) app.barcodeStickerState.storeName = store;
+    }
+  },
+
+  testStickerPrint() {
+    this.savePrinterSettings();
+    if (window.app && typeof app.openBarcodeStickerModal === 'function') {
+      app.openBarcodeStickerModal();
+      setTimeout(() => {
+        if (typeof app.testPrintBarcodeSticker === 'function') {
+          app.testPrintBarcodeSticker();
+        }
+      }, 300);
+    }
+  },
+
   async reloadSettings() {
     const s = await window.api.getSettings();
-    if (document.getElementById('set-name')) document.getElementById('set-name').value = s.company_name || 'Ishaq Jadoon Traders';
+    if (document.getElementById('set-name')) document.getElementById('set-name').value = s.company_name || 'Ice Cream Factory';
     if (document.getElementById('set-web')) document.getElementById('set-web').value = s.website || '';
-    if (document.getElementById('set-address')) document.getElementById('set-address').value = s.address || 'Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt';
-    if (document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone || 'M.Ishaq 0301-2630481, Ch. Shakir 0300-5074410';
+    if (document.getElementById('set-address')) document.getElementById('set-address').value = s.address || 'Industrial Area, Wah Cantt';
+    if (document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone || '0309-5369472';
     this.originalLogo = s.logo_path || '';
     this.updateLogoPreview(this.originalLogo);
+
+    // Populate Barcode Sticker Printer settings
+    await this.refreshPrinters();
+    const savedSize = window.storage ? window.storage.get('label_sticker_size') || '38x28' : '38x28';
+    const savedMode = window.storage ? window.storage.get('label_print_mode') || 'silent' : 'silent';
+    const savedStore = window.storage ? window.storage.get('label_store_name') : null;
+    const sizeSelect = document.getElementById('set-label-size');
+    const modeSelect = document.getElementById('set-print-mode');
+    const storeInput = document.getElementById('set-sticker-store-name');
+
+    if (sizeSelect) sizeSelect.value = savedSize;
+    if (modeSelect) modeSelect.value = savedMode;
+    if (storeInput) storeInput.value = savedStore !== null ? savedStore : (s.company_name || 'ISHAQ JADOON TRADERS');
+
 
     const stockPassword = window.storage.get('stock_password') || '';
     const passInput = document.getElementById('set-stock-password');

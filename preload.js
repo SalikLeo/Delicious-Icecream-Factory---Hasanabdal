@@ -1,6 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  // Multi-Branch Management
+  getActiveBranch: () => ipcRenderer.invoke('get-active-branch'),
+  switchBranch: (branchId) => ipcRenderer.invoke('switch-branch', branchId),
+  copyCatalogFromBranch: (fromBranch, toBranch) => ipcRenderer.invoke('copy-catalog-from-branch', fromBranch, toBranch),
+
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (data) => ipcRenderer.invoke('save-settings', data),
@@ -13,6 +18,7 @@ contextBridge.exposeInMainWorld('api', {
   changeProductCategory: (oldCategory, newCategory, id, data) => ipcRenderer.invoke('change-product-category', oldCategory, newCategory, id, data),
   deleteProduct: (category, id) => ipcRenderer.invoke('delete-product', category, id),
   findProductByName: (name, excludeCategory, excludeId) => ipcRenderer.invoke('find-product-by-name', name, excludeCategory, excludeId),
+  findProductByBarcode: (barcode, excludeCategory, excludeId) => ipcRenderer.invoke('find-product-by-barcode', barcode, excludeCategory, excludeId),
   getCategoryLabels: () => ipcRenderer.invoke('get-category-labels'),
   getCategoryStats: () => ipcRenderer.invoke('get-category-stats'),
   updateCategoryLabel: (slug, label) => ipcRenderer.invoke('update-category-label', slug, label),
@@ -88,6 +94,54 @@ contextBridge.exposeInMainWorld('api', {
   selectBackupDirectory: () => ipcRenderer.invoke('select-backup-directory'),
   openBackupDirectory: () => ipcRenderer.invoke('open-backup-directory'),
 
+  // Ice Cream Factory 5-Stage System
+  // Stage 1: Raw Materials
+  getRawMaterials: () => ipcRenderer.invoke('get-raw-materials'),
+  getRawMaterial: (id) => ipcRenderer.invoke('get-raw-material', id),
+  saveRawMaterial: (data) => ipcRenderer.invoke('save-raw-material', data),
+  deleteRawMaterial: (id) => ipcRenderer.invoke('delete-raw-material', id),
+  addRawMaterialPurchase: (data) => ipcRenderer.invoke('add-raw-material-purchase', data),
+  getRawMaterialLogs: (filters) => ipcRenderer.invoke('get-raw-material-logs', filters),
+
+  // Stage 2: Single Items Production
+  getIcecreamItems: () => ipcRenderer.invoke('get-icecream-items'),
+  getIcecreamItem: (id) => ipcRenderer.invoke('get-icecream-item', id),
+  saveIcecreamItem: (data) => ipcRenderer.invoke('save-icecream-item', data),
+  deleteIcecreamItem: (id) => ipcRenderer.invoke('delete-icecream-item', id),
+  runProductionBatch: (data) => ipcRenderer.invoke('run-production-batch', data),
+  getProductionBatches: (filters) => ipcRenderer.invoke('get-production-batches', filters),
+  deleteProductionBatch: (id) => ipcRenderer.invoke('delete-production-batch', id),
+
+  // Stage 3: Carton Packing (Sellable Inventory)
+  getPackedCartons: () => ipcRenderer.invoke('get-packed-cartons'),
+  getPackedCarton: (id) => ipcRenderer.invoke('get-packed-carton', id),
+  savePackedCarton: (data) => ipcRenderer.invoke('save-packed-carton', data),
+  deletePackedCarton: (id) => ipcRenderer.invoke('delete-packed-carton', id),
+  runCartonPacking: (data) => ipcRenderer.invoke('run-carton-packing', data),
+  getPackingBatches: (filters) => ipcRenderer.invoke('get-packing-batches', filters),
+  deletePackingBatch: (id) => ipcRenderer.invoke('delete-packing-batch', id),
+
+  // Stage 4: Cars & Delivery Loading
+  getCars: () => ipcRenderer.invoke('get-cars'),
+  getCar: (id) => ipcRenderer.invoke('get-car', id),
+  saveCar: (data) => ipcRenderer.invoke('save-car', data),
+  deleteCar: (id) => ipcRenderer.invoke('delete-car', id),
+  getCarInventory: (carId) => ipcRenderer.invoke('get-car-inventory', carId),
+  loadCarStock: (data) => ipcRenderer.invoke('load-car-stock', data),
+  getCarLoadingBatches: (carId) => ipcRenderer.invoke('get-car-loading-batches', carId),
+  getCarLoadingBatch: (id) => ipcRenderer.invoke('get-car-loading-batch', id),
+
+  // Stage 5: Shop Deliveries, Sales & Returns
+  saveShopDelivery: (data) => ipcRenderer.invoke('save-shop-delivery', data),
+  getShopDeliveries: (filters) => ipcRenderer.invoke('get-shop-deliveries', filters),
+  getShopDelivery: (id) => ipcRenderer.invoke('get-shop-delivery', id),
+  deleteShopDelivery: (id) => ipcRenderer.invoke('delete-shop-delivery', id),
+  receiveShopPayment: (data) => ipcRenderer.invoke('receive-shop-payment', data),
+  getShopLedger: (shopId) => ipcRenderer.invoke('get-shop-ledger', shopId),
+  deleteShopPayment: (id) => ipcRenderer.invoke('delete-shop-payment', id),
+  getCarSalesReport: (carId, fromDate, toDate) => ipcRenderer.invoke('get-car-sales-report', carId, fromDate, toDate),
+  getIcecreamFactorySummary: () => ipcRenderer.invoke('get-icecream-factory-summary'),
+
   // Storage Sync
   getAllKv: () => ipcRenderer.invoke('get-all-kv'),
   setKv: (key, value) => ipcRenderer.invoke('set-kv', key, value),
@@ -95,5 +149,11 @@ contextBridge.exposeInMainWorld('api', {
 
   // Thermal Printing
   printReceipt: (options) => ipcRenderer.invoke('print-receipt', options),
+  printBarcodeStickers: (options) => ipcRenderer.invoke('print-barcode-stickers', options),
   getPrinters: () => ipcRenderer.invoke('get-printers'),
+
+  // Global Shortcuts Event
+  onTriggerPriceChecker: (callback) => {
+    ipcRenderer.on('trigger-price-checker', () => callback());
+  },
 });

@@ -1,5 +1,124 @@
 const app = {
   currentPage: null,
+  activeBranch: 'b1',
+
+  async switchBranch(branchId) {
+    if (branchId !== 'b1' && branchId !== 'b2') branchId = 'b1';
+    if (this.activeBranch === branchId) return;
+
+    if (this.currentPage === 'proposal-form' && window.SalesForm && SalesForm.cart && SalesForm.cart.length > 0) {
+      const ok = await new Promise(resolve => {
+        this.showConfirm({
+          title: 'Switch Branch?',
+          message: 'You have active items in your cart. Switching branches will reset the current sale bill. Continue?',
+          confirmText: 'Switch Branch',
+          confirmColor: 'amber',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
+      });
+      if (!ok) return;
+    }
+
+    this.showLoading();
+    try {
+      this.activeBranch = branchId;
+      if (window.api && window.api.switchBranch) {
+        await window.api.switchBranch(branchId);
+      }
+
+      this.updateBranchUI();
+
+      // Clear cached tab-panel DOM containers so new branch content renders cleanly
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) {
+        mainContent.innerHTML = '';
+      }
+
+      // Reset in-memory cached state across modules
+      if (window.SalesForm) {
+        SalesForm.cart = [];
+        SalesForm.availableItems = [];
+        SalesForm.customers = [];
+        SalesForm.editingSaleId = null;
+      }
+      if (window.MasterDB) {
+        MasterDB.products = [];
+        MasterDB.allProducts = [];
+        MasterDB.filteredProducts = [];
+      }
+      if (window.Proposals) {
+        Proposals.proposals = [];
+      }
+      if (window.Customers) {
+        Customers.customers = [];
+      }
+      if (window.Expenses) {
+        Expenses.expenses = [];
+      }
+      if (window.RateList) {
+        RateList.items = [];
+      }
+      if (window.Dashboard) {
+        Dashboard.stats = null;
+      }
+
+      await this.loadSettings();
+      this.updateSaleModeUI();
+
+      const targetPage = this.currentPage || 'proposal-form';
+      await this.navigate(targetPage, { force: true, reset: true });
+    } catch (e) {
+      console.error('Failed to switch branch:', e);
+      this.showAlert({ title: 'Branch Error', message: 'Could not switch branch: ' + e.message });
+    } finally {
+      this.hideLoading();
+    }
+  },
+
+  updateBranchUI() {
+    const isB1 = this.activeBranch !== 'b2';
+    const b1Btn = document.getElementById('branch-btn-b1');
+    const b2Btn = document.getElementById('branch-btn-b2');
+
+    if (b1Btn && b2Btn) {
+      if (isB1) {
+        b1Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-sm cursor-pointer';
+        b1Btn.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span><span>B1</span>';
+        b1Btn.title = 'Branch 1 (Active)';
+
+        b2Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 cursor-pointer';
+        b2Btn.innerHTML = '<span>B2</span>';
+        b2Btn.title = 'Switch to Branch 2';
+      } else {
+        b2Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-sm cursor-pointer';
+        b2Btn.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span><span>B2</span>';
+        b2Btn.title = 'Branch 2 (Active)';
+
+        b1Btn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 cursor-pointer';
+        b1Btn.innerHTML = '<span>B1</span>';
+        b1Btn.title = 'Switch to Branch 1';
+      }
+    }
+
+    const badge = document.getElementById('header-branch-badge');
+    if (badge) {
+      badge.textContent = isB1 ? 'BRANCH 1' : 'BRANCH 2';
+      badge.className = isB1 
+        ? 'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+        : 'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    }
+
+    const title = document.getElementById('sidebar-title');
+    if (title) {
+      const compName = this.settings?.company_name || 'Ice Cream Factory';
+      if (isB1) {
+        title.textContent = compName.includes('(Branch 1)') ? compName : (compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 1)');
+      } else {
+        title.textContent = compName.includes('(Branch 2)') ? compName : (compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 2)');
+      }
+    }
+  },
   modalTimeout: null,
   isStockUnlocked: false,
   unlockedTabs: {},
@@ -26,7 +145,24 @@ const app = {
     await this.loadSettings();
     this.updateSaleModeUI();
     if (window.lucide) lucide.createIcons();
-    this.navigate('proposal-form');
+
+    if (window.api && window.api.onTriggerPriceChecker) {
+      window.api.onTriggerPriceChecker(() => {
+        this.togglePriceChecker();
+      });
+    }
+
+    // Multi-branch sync on init
+    let savedBranch = 'b1';
+    try {
+      if (window.api && window.api.getActiveBranch) {
+        savedBranch = (await window.api.getActiveBranch()) || 'b1';
+      }
+    } catch(e) {}
+    this.activeBranch = savedBranch;
+    this.updateBranchUI();
+
+    this.navigate('dashboard');
   },
 
   setSaleMode(mode) {
@@ -83,6 +219,27 @@ const app = {
 
     // Global Key Listener: Enter = Confirm/Save/Complete, Escape = Cancel/Back/Close
     window.addEventListener('keydown', (e) => {
+      // 0. Quick Price Checker Modal (#price-checker-modal) - Shortcut: F6, F8
+      const isPriceKey = e.key === 'F6' || e.code === 'F6' || e.key === 'F8' || e.code === 'F8';
+      if (isPriceKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.repeat) return;
+        this.togglePriceChecker();
+        return;
+      }
+
+      const priceModal = document.getElementById('price-checker-modal');
+      const isPriceModalOpen = priceModal && !priceModal.classList.contains('hidden') && priceModal.classList.contains('flex');
+      if (isPriceModalOpen) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.closePriceChecker();
+          return;
+        }
+      }
+
       // 1. Confirm Modal (#confirm-modal) - Includes Confirm Invoice, Prompts, Alerts
       const confirmModal = document.getElementById('confirm-modal');
       if (confirmModal && !confirmModal.classList.contains('hidden') && confirmModal.classList.contains('flex')) {
@@ -167,8 +324,8 @@ const app = {
           if (document.activeElement && document.activeElement.tagName === 'TEXTAREA' && !e.ctrlKey) {
             return;
           }
-          // Do not hijack Enter if inside New Purchase modal or dynamic item grids
-          if (topModal.id === 'new-purchase-modal' || (document.activeElement && document.activeElement.closest('#new-purchase-modal'))) {
+          // Do not hijack Enter if inside Add/Edit Item modal, New Purchase modal, or dynamic item grids
+          if (topModal.id === 'db-modal' || topModal.id === 'new-purchase-modal' || (document.activeElement && (document.activeElement.closest('#db-modal') || document.activeElement.closest('#new-purchase-modal')))) {
             return;
           }
           const submitBtn = topModal.querySelector('button[type="submit"], button.submit-btn, button.btn-primary, button[onclick*="save" i], button[onclick*="submit" i], button[onclick*="confirm" i]');
@@ -203,7 +360,16 @@ const app = {
     }
 
     if (settings.company_name) {
-      title.textContent = settings.company_name;
+      const isB1 = this.activeBranch !== 'b2';
+      let compName = settings.company_name;
+      if (isB1 && !compName.includes('(Branch 1)')) {
+        compName = compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 1)';
+      } else if (!isB1 && !compName.includes('(Branch 2)')) {
+        compName = compName.replace(/\s*\(Branch \d+\)/i, '') + ' (Branch 2)';
+      }
+      title.textContent = compName;
+    } else {
+      title.textContent = this.activeBranch === 'b2' ? 'Ice Cream Factory (Branch 2)' : 'Ice Cream Factory (Branch 1)';
     }
   },
 
@@ -242,10 +408,6 @@ const app = {
 
     let panel = document.getElementById(`tab-panel-${page}`);
     const isNew = !panel;
-    const hasSpecificArgs = Boolean(args && (args.id || args.reset || Object.keys(args).length > 0));
-
-    // If user was editing a sale in proposal-form and now clicks "New Sale" without an edit ID, reset to new sale
-    const editingSaleToNewSale = (page === 'proposal-form' && window.SalesForm && SalesForm.editingSaleId && (!args || !args.id));
 
     if (!panel) {
       panel = document.createElement('div');
@@ -256,7 +418,13 @@ const app = {
 
     panel.classList.remove('hidden');
 
-    if (page === 'proposal-form') {
+    const isBlank = !panel.firstElementChild || panel.innerHTML.trim() === '';
+    const hasSpecificArgs = Boolean(args && (args.id || args.reset || args.force || Object.keys(args).length > 0));
+
+    // If user was editing a sale in proposal-form and now clicks "New Sale" without an edit ID, reset to new sale
+    const editingSaleToNewSale = (page === 'proposal-form' && window.SalesForm && SalesForm.editingSaleId && (!args || !args.id));
+
+    if (page === 'proposal-form' || page === 'shop-sales') {
       content.style.overflow = 'hidden';
       content.style.height = '100vh';
       content.classList.remove('p-8');
@@ -268,39 +436,88 @@ const app = {
       content.classList.add('p-8');
     }
 
-    if (isNew || hasSpecificArgs || editingSaleToNewSale) {
-      // Route to corresponding module to render
-      switch(page) {
-        case 'dashboard': (window.Dashboard || Dashboard).render(panel); break;
-        case 'proposals': (window.Proposals || Proposals).render(panel); break;
-        case 'customers': (window.Customers || Customers).render(panel); break;
-        case 'item-sales': (window.ItemSales || ItemSales).render(panel, args); break;
-        case 'proposal-form': (window.SalesForm || SalesForm).render(panel, editingSaleToNewSale ? { reset: true } : args); break;
-        case 'master-db': (window.MasterDB || MasterDB).render(panel); break;
-        case 'rate-list': (window.RateList || RateList).render(panel, args); break;
-        case 'expenses': (window.Expenses || Expenses).render(panel); break;
-        case 'companies': (window.Companies || Companies).render(panel); break;
-        case 'reports': (window.Reports || Reports).render(panel); break;
-        case 'settings': (window.Settings || Settings).render(panel); break;
-      }
+    if (isNew || isBlank || hasSpecificArgs || editingSaleToNewSale) {
+      // Route to corresponding module to render safely
+      const renderPage = async () => {
+        try {
+          switch(page) {
+            case 'dashboard': await (window.Dashboard || Dashboard).render(panel); break;
+            case 'raw-materials': await (window.RawMaterials || RawMaterials).render(panel); break;
+            case 'production': await (window.Production || Production).render(panel); break;
+            case 'carton-packing': await (window.CartonPacking || CartonPacking).render(panel); break;
+            case 'car-loading': await (window.CarLoading || CarLoading).render(panel); break;
+            case 'shop-sales': await (window.ShopSales || ShopSales).render(panel, args); break;
+            case 'proposals': await (window.Proposals || Proposals).render(panel); break;
+            case 'customers': await (window.Customers || Customers).render(panel); break;
+            case 'item-sales': await (window.ItemSales || ItemSales).render(panel, args); break;
+            case 'proposal-form': 
+              if (window.ShopSales) {
+                await ShopSales.render(panel, args);
+              } else {
+                await (window.SalesForm || SalesForm).render(panel, editingSaleToNewSale ? { reset: true } : args);
+              }
+              break;
+            case 'master-db': await (window.MasterDB || MasterDB).render(panel); break;
+            case 'rate-list': await (window.RateList || RateList).render(panel, args); break;
+            case 'expenses': await (window.Expenses || Expenses).render(panel); break;
+            case 'companies': await (window.Companies || Companies).render(panel); break;
+            case 'reports': await (window.Reports || Reports).render(panel); break;
+            case 'settings': await (window.Settings || Settings).render(panel); break;
+          }
+          if (window.lucide) lucide.createIcons();
+        } catch (err) {
+          console.error(`[app.navigate] Failed to render "${page}":`, err);
+          panel.innerHTML = `
+            <div class="p-8 text-center text-slate-500 flex flex-col items-center justify-center min-h-[50vh]">
+              <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3 border border-rose-200 shadow-sm">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+              </div>
+              <h3 class="text-base font-black text-slate-800">Error Loading Tab</h3>
+              <p class="text-xs text-slate-400 mt-1 max-w-md">${err.message || 'An unexpected error occurred while loading this tab.'}</p>
+              <button onclick="app.navigate('${page}', { force: true })" class="mt-4 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer">
+                Retry Tab
+              </button>
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons({ root: panel });
+        }
+      };
+      renderPage();
     } else {
       // Returning to an already-rendered tab without clearing state!
-      if (page === 'proposals' && window.Proposals && typeof Proposals.loadData === 'function') {
-        Proposals.loadData();
-      } else if (page === 'dashboard' && window.Dashboard && typeof Dashboard.loadStats === 'function') {
-        Dashboard.loadStats();
-      } else if (page === 'customers' && window.Customers && typeof Customers.loadData === 'function') {
-        Customers.loadData();
-      } else if (page === 'item-sales' && window.ItemSales && typeof ItemSales.loadData === 'function') {
-        ItemSales.loadData();
-      } else if (page === 'expenses' && window.Expenses && typeof Expenses.loadData === 'function') {
-        Expenses.loadData();
-      } else if (page === 'companies' && window.Companies && typeof Companies.loadCompanies === 'function') {
-        Companies.loadCompanies();
-      } else if (page === 'proposal-form' && window.SalesForm && typeof SalesForm.refreshStockIndicators === 'function') {
-        SalesForm.refreshStockIndicators();
-      } else if (page === 'master-db' && window.MasterDB && typeof MasterDB.loadData === 'function') {
-        MasterDB.loadData();
+      try {
+        if (page === 'raw-materials' && window.RawMaterials && typeof RawMaterials.loadData === 'function') {
+          RawMaterials.loadData();
+        } else if (page === 'production' && window.Production && typeof Production.loadData === 'function') {
+          Production.loadData();
+        } else if (page === 'carton-packing' && window.CartonPacking && typeof CartonPacking.loadData === 'function') {
+          CartonPacking.loadData();
+        } else if (page === 'car-loading' && window.CarLoading && typeof CarLoading.loadData === 'function') {
+          CarLoading.loadData();
+        } else if (page === 'shop-sales' && window.ShopSales && typeof ShopSales.loadData === 'function') {
+          ShopSales.loadData();
+        } else if (page === 'proposals' && window.Proposals && typeof Proposals.loadData === 'function') {
+          Proposals.loadData();
+        } else if (page === 'dashboard' && window.Dashboard && typeof Dashboard.loadStats === 'function') {
+          Dashboard.loadStats();
+        } else if (page === 'customers' && window.Customers && typeof Customers.loadData === 'function') {
+          Customers.loadData();
+        } else if (page === 'item-sales' && window.ItemSales && typeof ItemSales.loadData === 'function') {
+          ItemSales.loadData();
+        } else if (page === 'expenses' && window.Expenses && typeof Expenses.loadData === 'function') {
+          Expenses.loadData();
+        } else if (page === 'companies' && window.Companies && typeof Companies.loadCompanies === 'function') {
+          Companies.loadCompanies();
+        } else if (page === 'proposal-form' && window.SalesForm) {
+          if (typeof SalesForm.refreshStockIndicators === 'function') SalesForm.refreshStockIndicators();
+          if (typeof SalesForm.refreshCustomers === 'function') SalesForm.refreshCustomers();
+        } else if (page === 'master-db' && window.MasterDB && typeof MasterDB.loadData === 'function') {
+          MasterDB.loadData();
+        } else if (page === 'rate-list' && window.RateList && typeof RateList.loadData === 'function') {
+          RateList.loadData();
+        }
+      } catch (err) {
+        console.error(`[app.navigate] Error reloading active tab "${page}":`, err);
       }
     }
     
@@ -617,6 +834,53 @@ const app = {
     }, 2800);
   },
 
+  playBeep(type = 'success') {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!this._audioCtx) {
+        this._audioCtx = new AudioCtx();
+      }
+      if (this._audioCtx.state === 'suspended') {
+        this._audioCtx.resume();
+      }
+      const ctx = this._audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      if (type === 'success') {
+        // High-pitch crisp positive barcode beep
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1750, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else if (type === 'warning') {
+        // Medium double beep
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(900, now);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      } else {
+        // Low buzz for error / barcode not found
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(230, now);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      }
+    } catch (e) {
+      console.warn('Audio beep error:', e);
+    }
+  },
+
   showPrompt({ title = 'Input Required', message = '', value = '', type = 'text', confirmText = 'Submit', onConfirm }) {
     this.confirmCallback = onConfirm;
     
@@ -712,7 +976,7 @@ const app = {
   },
 
   formatCurrency(amount) {
-    const num = Number(amount || 0);
+    const num = Math.round((Number(amount || 0)) * 100) / 100;
     const hasDecimals = (num % 1) !== 0;
     return num.toLocaleString('en-IN', { 
       style: 'currency', 
@@ -723,7 +987,7 @@ const app = {
   },
 
   formatNumber(amount) {
-    const num = Number(amount || 0);
+    const num = Math.round((Number(amount || 0)) * 100) / 100;
     const hasDecimals = (num % 1) !== 0;
     return num.toLocaleString('en-IN', { 
       minimumFractionDigits: hasDecimals ? 2 : 0, 
@@ -732,17 +996,28 @@ const app = {
   },
 
   formatAmount(amount) {
-    return Number(amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    const num = Math.round((Number(amount || 0)) * 100) / 100;
+    const hasDecimals = (num % 1) !== 0;
+    return num.toLocaleString('en-IN', { 
+      minimumFractionDigits: hasDecimals ? 2 : 0, 
+      maximumFractionDigits: 2 
+    });
+  },
+
+  formatQty(val) {
+    if (val === null || val === undefined || val === '') return '0';
+    const num = Math.round((Number(val) || 0) * 100) / 100;
+    return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   },
 
   formatStock(totalBoxes) {
-    const boxes = parseInt(totalBoxes) || 0;
-    return `${boxes} Bx`;
+    const boxes = Math.round((Number(totalBoxes) || 0) * 100) / 100;
+    return `${this.formatQty(boxes)} Bx`;
   },
 
   formatStockShort(totalBoxes) {
-    const boxes = parseInt(totalBoxes) || 0;
-    return `${boxes}`;
+    const boxes = Math.round((Number(totalBoxes) || 0) * 100) / 100;
+    return `${this.formatQty(boxes)}`;
   },
 
   parseStockBoxes(boxes) {
@@ -763,12 +1038,28 @@ const app = {
   formatDateTime(dateStr) {
     if (!dateStr) return '';
     try {
-      const d = new Date(dateStr);
-      if (isNaN(d)) return dateStr;
+      let cleanStr = String(dateStr).trim();
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(cleanStr)) {
+        cleanStr = cleanStr.replace(' ', 'T');
+      }
+      const d = new Date(cleanStr);
+      if (isNaN(d.getTime())) {
+        const match = cleanStr.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/);
+        if (match) {
+          const [, ymd, hh, mm] = match;
+          let hour = parseInt(hh, 10);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          hour = hour % 12 || 12;
+          return `${ymd} ${hour}:${mm} ${ampm}`;
+        }
+        return dateStr;
+      }
       
-      const date = `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
       const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      return `${time} ${date}`;
+      return `${year}-${month}-${day} ${time}`;
     } catch {
       return dateStr;
     }
@@ -907,11 +1198,364 @@ const app = {
 
   closePreview() {
     const modal = document.getElementById('preview-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    this.clearAllPrintContainers();
     
     if (this.currentPage === 'proposal-form' && SalesForm.onClosePreview) {
         SalesForm.onClosePreview();
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // QUICK PRICE INQUIRY (F8 PRICE CHECKER)
+  // --------------------------------------------------------------------------
+  openPriceChecker() {
+    const modal = document.getElementById('price-checker-modal');
+    if (!modal) return;
+    this._priceCheckerPrevActiveEl = document.activeElement;
+    this._activePriceItem = null;
+    this._priceSearchResults = [];
+
+    // 1. Immediately open modal synchronously
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const input = document.getElementById('price-checker-input');
+    const dropdown = document.getElementById('price-checker-dropdown');
+    if (input) input.value = '';
+    if (dropdown) dropdown.classList.add('hidden');
+
+    this.renderPriceCheckerReady();
+
+    // 2. Focus input ready for scan
+    setTimeout(() => {
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 40);
+
+    // 3. Cache products for zero-latency in-memory lookup
+    if (this.currentPage === 'proposal-form' && window.SalesForm && window.SalesForm.availableItems && window.SalesForm.availableItems.length > 0) {
+      this._priceAllItems = window.SalesForm.availableItems;
+    } else if (window.api && typeof window.api.searchAllProducts === 'function') {
+      window.api.searchAllProducts('').then(items => {
+        this._priceAllItems = items || [];
+      }).catch(() => {
+        this._priceAllItems = [];
+      });
+    } else {
+      this._priceAllItems = [];
+    }
+  },
+
+  closePriceChecker() {
+    const modal = document.getElementById('price-checker-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+
+    const dropdown = document.getElementById('price-checker-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+
+    if (this._priceInputTimeout) {
+      clearTimeout(this._priceInputTimeout);
+      this._priceInputTimeout = null;
+    }
+
+    this._activePriceItem = null;
+    this._priceSearchResults = [];
+
+    if (this._priceCheckerPrevActiveEl && typeof this._priceCheckerPrevActiveEl.focus === 'function') {
+      try {
+        this._priceCheckerPrevActiveEl.focus();
+        if (typeof this._priceCheckerPrevActiveEl.select === 'function') {
+          this._priceCheckerPrevActiveEl.select();
+        }
+      } catch (err) {}
+    } else if (this.currentPage === 'proposal-form') {
+      const searchInput = document.getElementById('sf-fast-item-search');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  },
+
+  togglePriceChecker() {
+    const modal = document.getElementById('price-checker-modal');
+    if (!modal) return;
+    if (!modal.classList.contains('hidden') && modal.classList.contains('flex')) {
+      this.closePriceChecker();
+    } else {
+      this.openPriceChecker();
+    }
+  },
+
+  getPriceCheckerItems() {
+    if (this._priceAllItems && this._priceAllItems.length > 0) {
+      return this._priceAllItems;
+    }
+    if (this.currentPage === 'proposal-form' && window.SalesForm && window.SalesForm.availableItems) {
+      return window.SalesForm.availableItems;
+    }
+    return [];
+  },
+
+  renderPriceCheckerReady() {
+    const resultBox = document.getElementById('price-checker-result');
+    const actionBtns = document.getElementById('price-checker-action-btns');
+    if (resultBox) {
+      resultBox.innerHTML = `
+        <div class="text-center py-4 text-slate-400 flex flex-col items-center">
+          <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 border border-amber-200/60 flex items-center justify-center mb-3 shadow-inner">
+            <i data-lucide="scan-barcode" class="w-8 h-8"></i>
+          </div>
+          <h4 class="text-base font-black text-slate-800">Scan Barcode or Type Item Name</h4>
+          <p class="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">Point the scanner at any item to instantly check its price and live stock.</p>
+          <div class="mt-4 flex items-center gap-2 text-[11px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/70 select-none">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Your current sale bill is completely safe & preserved
+          </div>
+        </div>
+      `;
+    }
+    if (actionBtns) {
+      actionBtns.innerHTML = `
+        <button type="button" onclick="app.closePriceChecker()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-xs transition-colors cursor-pointer">
+          Close (Esc)
+        </button>
+      `;
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  handlePriceCheckerInput(rawVal) {
+    if (this._priceInputTimeout) {
+      clearTimeout(this._priceInputTimeout);
+      this._priceInputTimeout = null;
+    }
+
+    const val = (rawVal || '').trim();
+    const dropdown = document.getElementById('price-checker-dropdown');
+    if (!val) {
+      if (dropdown) dropdown.classList.add('hidden');
+      return;
+    }
+
+    const allItems = this.getPriceCheckerItems();
+
+    // Fast check: if exact barcode match, show it immediately
+    const exactMatch = allItems.find(i => String(i.barcode || '').trim().toLowerCase() === val.toLowerCase());
+    if (exactMatch) {
+      if (dropdown) dropdown.classList.add('hidden');
+      this.showPriceCheckerItem(exactMatch);
+      return;
+    }
+
+    // Debounce typing suggestions to prevent input stuttering
+    this._priceInputTimeout = setTimeout(() => {
+      const q = val.toLowerCase();
+      const matches = allItems.filter(i => {
+        const name = (i.item_name || '').toLowerCase();
+        const comp = (i.company_name || '').toLowerCase();
+        const bc = (i.barcode || '').toLowerCase();
+        return name.includes(q) || comp.includes(q) || bc.includes(q);
+      }).slice(0, 6);
+
+      this._priceSearchResults = matches;
+
+      if (matches.length > 0 && dropdown) {
+        dropdown.innerHTML = matches.map((item, idx) => `
+          <div onclick="app.selectPriceSearchItem(${idx})" class="px-4 py-2 hover:bg-amber-50 cursor-pointer border-b border-slate-100 flex items-center justify-between transition-colors">
+            <div class="truncate pr-2">
+              <span class="font-bold text-slate-800 text-xs">${item.item_name}</span>
+              ${item.barcode ? `<span class="text-[10px] font-mono text-slate-400 ml-1">#${item.barcode}</span>` : ''}
+            </div>
+            <span class="font-black text-xs text-emerald-600 font-display shrink-0">Rs. ${app.formatAmount(item.retail_price || 0)}</span>
+          </div>
+        `).join('');
+        dropdown.classList.remove('hidden');
+      } else if (dropdown) {
+        dropdown.classList.add('hidden');
+      }
+    }, 120);
+  },
+
+  selectPriceSearchItem(idx) {
+    const item = this._priceSearchResults && this._priceSearchResults[idx];
+    if (item) {
+      const dropdown = document.getElementById('price-checker-dropdown');
+      if (dropdown) dropdown.classList.add('hidden');
+      this.showPriceCheckerItem(item);
+    }
+  },
+
+  handlePriceCheckerKeyDown(e) {
+    const isDismissKey = e.key === 'Escape' || e.key === 'F6' || e.code === 'F6' || e.key === 'F8' || e.code === 'F8';
+    if (isDismissKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.closePriceChecker();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const now = Date.now();
+      const timeSinceShown = now - (this._priceItemShownAt || 0);
+
+      // If an item is already displayed on screen and the cashier presses Enter (after viewing the price),
+      // add it directly to the bill! (The >120ms check ensures the scanner's own trailing Enter report doesn't prematurely trigger this).
+      if (this._activePriceItem && timeSinceShown > 120 && this.currentPage === 'proposal-form') {
+        this.addPriceCheckedItemToBill();
+        return;
+      }
+
+      const input = document.getElementById('price-checker-input');
+      const val = (input?.value || '').trim();
+      if (!val) return;
+
+      const dropdown = document.getElementById('price-checker-dropdown');
+      if (dropdown) dropdown.classList.add('hidden');
+
+      const allItems = this.getPriceCheckerItems();
+
+      // Look up by barcode first, then by name
+      const match = allItems.find(i => String(i.barcode || '').trim().toLowerCase() === val.toLowerCase()) ||
+                    allItems.find(i => (i.item_name || '').toLowerCase() === val.toLowerCase()) ||
+                    allItems.find(i => (i.item_name || '').toLowerCase().includes(val.toLowerCase()));
+
+      if (match) {
+        this.showPriceCheckerItem(match);
+      } else {
+        this.playBeep('error');
+        const resultBox = document.getElementById('price-checker-result');
+        if (resultBox) {
+          resultBox.innerHTML = `
+            <div class="text-center py-4 text-rose-500 flex flex-col items-center">
+              <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200/80 flex items-center justify-center mb-2.5">
+                <i data-lucide="alert-circle" class="w-7 h-7 text-rose-500"></i>
+              </div>
+              <h4 class="text-base font-black text-rose-600">Product Not Found</h4>
+              <p class="text-xs text-slate-500 mt-1 max-w-xs">No item found matching "${val}". Check barcode or spelling.</p>
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons();
+        }
+        if (input) input.select();
+      }
+    }
+  },
+
+  showPriceCheckerItem(item) {
+    this._activePriceItem = item;
+    this._priceItemShownAt = Date.now();
+    this.playBeep('success');
+
+    let availableStock = item.stock !== undefined ? Number(item.stock) : (Number(item.quantity) || 0);
+    if (this.currentPage === 'proposal-form' && window.SalesForm && typeof window.SalesForm.getItemAvailableStock === 'function') {
+      availableStock = window.SalesForm.getItemAvailableStock(item);
+    }
+    availableStock = Math.round(availableStock * 100) / 100;
+
+    const unit = (item.unit || item.unit_name || 'PCS').toUpperCase();
+    const isOutOfStock = availableStock <= 0;
+    const priceStr = app.formatAmount(item.retail_price || 0);
+
+    let categoryLabel = '';
+    if (this.currentPage === 'proposal-form' && window.SalesForm && typeof window.SalesForm.getCategoryName === 'function') {
+      categoryLabel = window.SalesForm.getCategoryName(item);
+    } else {
+      categoryLabel = item.category_name || item.slug || '';
+    }
+
+    const resultBox = document.getElementById('price-checker-result');
+    if (resultBox) {
+      resultBox.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <!-- Item Tag Row -->
+          <div class="flex items-center gap-2 flex-wrap justify-center mb-1.5">
+            ${categoryLabel ? `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-wider border border-slate-200">${categoryLabel}</span>` : ''}
+            ${item.barcode ? `<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-mono font-black border border-amber-200/70">#${item.barcode}</span>` : ''}
+            ${item.company_name ? `<span class="px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 text-[10px] font-bold border border-slate-200">${item.company_name}</span>` : ''}
+          </div>
+
+          <!-- Product Name -->
+          <h3 class="text-xl font-black text-slate-900 text-center tracking-tight mb-3 px-2">${item.item_name}</h3>
+
+          <!-- Price Display Banner -->
+          <div class="w-full bg-gradient-to-br from-emerald-500 to-teal-700 rounded-2xl p-4 text-white text-center shadow-lg shadow-emerald-500/20 mb-3 border border-emerald-400/40">
+            <span class="text-[11px] uppercase tracking-widest font-black text-emerald-100 block mb-0.5">Sale Rate / Retail Price</span>
+            <div class="text-3xl md:text-4xl font-black font-display tracking-tight text-white flex items-center justify-center gap-1.5">
+              <span class="text-lg font-bold text-emerald-200">Rs.</span>
+              <span>${priceStr}</span>
+            </div>
+            <span class="text-[11px] font-bold text-emerald-100/90 mt-0.5 block">per ${unit}</span>
+          </div>
+
+          <!-- Stock Pill -->
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black ${isOutOfStock ? 'bg-rose-100 text-rose-700 border border-rose-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}">
+              <span class="w-2 h-2 rounded-full ${isOutOfStock ? 'bg-rose-500' : 'bg-emerald-500'}"></span>
+              ${isOutOfStock ? 'OUT OF STOCK (0 ' + unit + ')' : app.formatQty(availableStock) + ' ' + unit + ' In Stock'}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    const actionBtns = document.getElementById('price-checker-action-btns');
+    if (actionBtns) {
+      if (this.currentPage === 'proposal-form') {
+        actionBtns.innerHTML = `
+          <button type="button" onclick="app.closePriceChecker()" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer">
+            Close (Esc)
+          </button>
+          <button type="button" onclick="app.addPriceCheckedItemToBill()" class="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl font-black text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-slate-950"></i>
+            <span>+ Add to Bill (Enter)</span>
+          </button>
+        `;
+      } else {
+        actionBtns.innerHTML = `
+          <button type="button" onclick="app.closePriceChecker()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-xs transition-colors cursor-pointer">
+            Close (Esc)
+          </button>
+        `;
+      }
+    }
+
+    if (window.lucide) lucide.createIcons();
+
+    const input = document.getElementById('price-checker-input');
+    if (input) {
+      input.select();
+    }
+  },
+
+  addPriceCheckedItemToBill() {
+    if (!this._activePriceItem || this.currentPage !== 'proposal-form' || !window.SalesForm) return;
+    const item = this._activePriceItem;
+    this.closePriceChecker();
+
+    // Add directly to cart
+    if (typeof window.SalesForm.handleBarcodeScan === 'function' && item.barcode) {
+      window.SalesForm.handleBarcodeScan(item.barcode);
+    } else if (typeof window.SalesForm.addToCart === 'function') {
+      window.SalesForm.addToCart(item);
+      window.SalesForm.renderCart();
+      window.SalesForm.updateSummary();
+      const cartIdx = window.SalesForm.cart.findIndex(c => c.id === item.id && c.slug === item.slug);
+      if (cartIdx !== -1) {
+        setTimeout(() => {
+          window.SalesForm.focusCartField(cartIdx, 'qty');
+        }, 40);
+      }
     }
   },
 
@@ -920,7 +1564,8 @@ const app = {
       'receipt-print',
       'db-print-container',
       'voucher-print',
-      'report-print-container'
+      'report-print-container',
+      'barcode-sticker-print'
     ];
 
     printContainerIds.forEach(id => {
@@ -942,7 +1587,8 @@ const app = {
       'receipt-print',
       'db-print-container',
       'voucher-print',
-      'report-print-container'
+      'report-print-container',
+      'barcode-sticker-print'
     ];
 
     printContainerIds.forEach(id => {
@@ -972,15 +1618,668 @@ const app = {
     return result;
   },
 
+  showA5Preview(htmlContent, title = 'Invoice Preview') {
+    const modal = document.getElementById('preview-modal');
+    const paper = document.getElementById('preview-paper');
+    const titleEl = document.getElementById('preview-title');
+    const subtitleEl = document.getElementById('preview-subtitle');
+
+    if (titleEl) titleEl.textContent = title;
+    if (subtitleEl) subtitleEl.textContent = 'A5 PAPER FORMAT (148 × 210 MM)';
+
+    if (paper) {
+      paper.className = 'bg-white shadow-2xl origin-top mb-12 w-full max-w-[580px] rounded-lg p-5 border border-slate-200';
+      paper.innerHTML = htmlContent;
+    }
+
+    const printContainer = document.getElementById('receipt-print');
+    if (printContainer) {
+      this.clearAllPrintContainers();
+      printContainer.innerHTML = htmlContent;
+      printContainer.classList.add('active-print-target');
+    }
+
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  async printA5Document(htmlContent, title = 'Document') {
+    const printContainer = document.getElementById('receipt-print');
+    if (!printContainer) return;
+    this.clearAllPrintContainers();
+    printContainer.innerHTML = htmlContent;
+    printContainer.classList.add('active-print-target');
+    return await this.printReceipt({ pageSize: 'A5' });
+  },
+
   async confirmPrint() {
     const modal = document.getElementById('preview-modal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     
-    await this.printReceipt();
+    await this.printReceipt({ pageSize: 'A5' });
     
     if (this.currentPage === 'proposal-form' && SalesForm.onAfterPrint) {
         SalesForm.onAfterPrint();
+    }
+  },
+
+
+  // --------------------------------------------------------------------------
+  // BARCODE STICKER & THERMAL LABEL PRINTER (Speed-X SP-650UL)
+  // --------------------------------------------------------------------------
+  barcodeStickerState: {
+    activeItem: null,
+    qty: 1,
+    sizePreset: '38x28',
+    widthMm: 38.1,
+    heightMm: 27.94,
+    storeName: 'ISHAQ JADOON TRADERS',
+    showStore: true,
+    showName: true,
+    showPrice: true,
+    showBarcode: true,
+    selectedPrinter: '',
+    silent: true,
+    allProducts: []
+  },
+
+  async openBarcodeStickerModal(itemOrId = null, optionalCategory = null) {
+    const modal = document.getElementById('barcode-sticker-modal');
+    if (!modal) return;
+
+    // Load saved settings if any
+    const savedPrinter = window.storage ? window.storage.get('label_printer_name') || '' : '';
+    const savedSize = window.storage ? window.storage.get('label_sticker_size') || '38x28' : '38x28';
+    const savedStore = window.storage ? window.storage.get('label_store_name') : null;
+    let storeTitle = savedStore;
+    if (!storeTitle) {
+      try {
+        const settings = await window.api.getSettings();
+        storeTitle = (settings?.company_name || 'ISHAQ JADOON TRADERS').replace(/\s*\(Branch \d+\)/i, '').trim();
+      } catch (e) {
+        storeTitle = 'ISHAQ JADOON TRADERS';
+      }
+    }
+
+    this.barcodeStickerState.storeName = storeTitle;
+    this.barcodeStickerState.sizePreset = savedSize;
+    this.barcodeStickerState.selectedPrinter = savedPrinter;
+
+    // Populate printers list
+    await this.refreshPrintersList();
+
+    // Cache products list for quick search
+    if (window.SalesForm && window.SalesForm.availableItems && window.SalesForm.availableItems.length > 0) {
+      this.barcodeStickerState.allProducts = window.SalesForm.availableItems;
+    } else {
+      try {
+        this.barcodeStickerState.allProducts = (await window.api.searchAllProducts('')) || [];
+      } catch (e) {
+        this.barcodeStickerState.allProducts = [];
+      }
+    }
+
+    // Determine target active item
+    let targetItem = null;
+    if (itemOrId && typeof itemOrId === 'object') {
+      targetItem = itemOrId;
+    } else if (itemOrId) {
+      const numId = Number(itemOrId);
+      targetItem = this.barcodeStickerState.allProducts.find(p => p.id === numId && (!optionalCategory || p.slug === optionalCategory || p.category_slug === optionalCategory)) ||
+                   this.barcodeStickerState.allProducts.find(p => p.id === numId);
+    }
+
+    if (!targetItem) {
+      targetItem = this.barcodeStickerState.allProducts[0] || {
+        id: 0,
+        item_name: 'Sample Item',
+        barcode: '123456789012',
+        retail_price: 100,
+        category_label: 'Biscuits',
+        current_stock: 10
+      };
+    }
+
+    if (targetItem) {
+      targetItem.category_label = this.getCategoryDisplayName(targetItem);
+    }
+
+    this.setActiveStickerItem(targetItem);
+
+    // Set UI inputs
+    const storeInput = document.getElementById('bsm-store-name');
+    if (storeInput) storeInput.value = this.barcodeStickerState.storeName;
+
+    this.selectStickerSize(this.barcodeStickerState.sizePreset);
+    this.setStickerQty(1);
+
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.lucide) lucide.createIcons();
+  },
+
+  closeBarcodeStickerModal() {
+    const modal = document.getElementById('barcode-sticker-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  },
+
+  getCategoryDisplayName(itemOrSlug) {
+    if (!itemOrSlug) return 'General Items';
+    let slug = '';
+    let label = '';
+    if (typeof itemOrSlug === 'string') {
+      slug = itemOrSlug.toLowerCase().trim();
+    } else {
+      slug = (itemOrSlug.slug || itemOrSlug.category_slug || itemOrSlug.category || '').toLowerCase().trim();
+      label = (itemOrSlug.category_label || itemOrSlug.category_name || '').trim();
+    }
+    const legacyMap = {
+      panels: 'Biscuits',
+      inverters: 'Cold Drinks',
+      structures: 'Jellies & Candies',
+      cables: 'Snacks & Chips',
+      breakers: 'Chocolates',
+      batteries: 'Dairy & Groceries',
+      misc: 'Juices & Beverages',
+      others: 'General Items'
+    };
+    const solarKeywords = ['panels', 'solar panels', 'inverters', 'solar inverters', 'structures', 'cables', 'breakers', 'batteries', 'solar', 'accessories', 'misc', 'others'];
+    
+    if (label && !solarKeywords.includes(label.toLowerCase())) {
+      return label;
+    }
+    if (slug && legacyMap[slug]) {
+      return legacyMap[slug];
+    }
+    return label || 'General Items';
+  },
+
+  setActiveStickerItem(item) {
+    if (!item) return;
+    this.barcodeStickerState.activeItem = item;
+
+    const nameEl = document.getElementById('bsm-item-name');
+    const catEl = document.getElementById('bsm-item-category');
+    const bcDisplay = document.getElementById('bsm-item-barcode-display');
+    const priceDisplay = document.getElementById('bsm-item-price-display');
+    const stockDisplay = document.getElementById('bsm-item-stock-display');
+    const genBtn = document.getElementById('bsm-gen-barcode-btn');
+    const matchStockBtn = document.getElementById('bsm-match-stock-btn');
+
+    const catName = this.getCategoryDisplayName(item);
+    const price = Number(item.retail_price || item.sale_price || 0);
+    const stock = Number(item.current_stock || 0);
+    const hasBarcode = Boolean(item.barcode && String(item.barcode).trim());
+
+    if (nameEl) nameEl.textContent = item.item_name || 'Unnamed Item';
+    if (catEl) catEl.textContent = catName;
+    if (priceDisplay) priceDisplay.textContent = 'Price: Rs. ' + price.toLocaleString();
+    if (stockDisplay) stockDisplay.textContent = 'Stock: ' + stock;
+
+    if (bcDisplay) {
+      if (hasBarcode) {
+        bcDisplay.innerHTML = 'Barcode: <span class="text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-mono font-black">' + item.barcode + '</span>';
+      } else {
+        bcDisplay.innerHTML = '<span class="text-rose-600 font-bold bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">No Barcode Assigned</span>';
+      }
+    }
+
+    if (genBtn) {
+      if (!hasBarcode) genBtn.classList.remove('hidden');
+      else genBtn.classList.add('hidden');
+    }
+
+    if (matchStockBtn) {
+      matchStockBtn.textContent = 'Match Stock (' + stock + ')';
+    }
+
+    this.updateStickerPreview();
+  },
+
+  async generateBarcodeForActiveItem() {
+    const item = this.barcodeStickerState.activeItem;
+    if (!item || !item.id) return;
+
+    // Generate random 12-digit code
+    const randCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    item.barcode = randCode;
+
+    try {
+      const slug = item.slug || item.category_slug || (this.barcodeStickerState.allProducts[0]?.slug) || 'biscuits';
+      if (window.api && window.api.saveProduct) {
+        await window.api.saveProduct(slug, { ...item, barcode: randCode });
+        this.showToast('Generated barcode #' + randCode + ' for "' + item.item_name + '"', 'success');
+      }
+    } catch (e) {
+      console.warn('Failed to save generated barcode to DB:', e);
+    }
+
+    this.setActiveStickerItem(item);
+  },
+
+  selectStickerSize(preset = '38x28') {
+    this.barcodeStickerState.sizePreset = '38x28';
+    this.barcodeStickerState.widthMm = 38.1;
+    this.barcodeStickerState.heightMm = 27.94;
+
+    const dimBadge = document.getElementById('bsm-preview-dimension-badge');
+    if (dimBadge) dimBadge.textContent = '38 × 28 mm (1.5" × 1.1")';
+
+    if (window.storage) window.storage.set('label_sticker_size', '38x28');
+    this.updateStickerPreview();
+  },
+
+  adjustStickerQty(delta) {
+    const input = document.getElementById('bsm-qty');
+    let val = parseInt(input?.value || '1', 10) + delta;
+    if (val < 1) val = 1;
+    if (val > 999) val = 999;
+    this.setStickerQty(val);
+  },
+
+  setStickerQty(qty) {
+    const q = Math.max(1, Math.min(999, parseInt(qty, 10) || 1));
+    this.barcodeStickerState.qty = q;
+    const input = document.getElementById('bsm-qty');
+    if (input) input.value = q;
+
+    const copiesBadge = document.getElementById('bsm-pv-copies-badge');
+    if (copiesBadge) copiesBadge.textContent = q + (q === 1 ? ' copy' : ' copies');
+
+    const printBtnText = document.getElementById('bsm-submit-print-text');
+    if (printBtnText) {
+      printBtnText.textContent = 'Print ' + q + ' Sticker' + (q === 1 ? '' : 's') + ' (Speed-X)';
+    }
+  },
+
+  setStickerQtyToStock() {
+    const stock = Number(this.barcodeStickerState.activeItem?.current_stock || 1);
+    this.setStickerQty(stock > 0 ? stock : 1);
+  },
+
+  onStickerQtyChange(val) {
+    this.setStickerQty(val);
+  },
+
+  async refreshPrintersList() {
+    let printers = [];
+    try {
+      if (window.api && window.api.getPrinters) {
+        printers = await window.api.getPrinters() || [];
+      }
+    } catch (e) {
+      console.warn('Failed to load printers:', e);
+    }
+
+    const savedPrinter = window.storage ? window.storage.get('label_printer_name') || '' : '';
+
+    if (savedPrinter && printers.some(p => p.name === savedPrinter)) {
+      this.barcodeStickerState.selectedPrinter = savedPrinter;
+    } else {
+      const best = printers.find(p => /4barcode|3b-365/i.test(p.name)) ||
+                   printers.find(p => /speed|sp-650|sticker|label/i.test(p.name)) ||
+                   printers.find(p => /barcode/i.test(p.name)) ||
+                   printers.find(p => /pos|thermal|xp-|80/i.test(p.name)) ||
+                   printers.find(p => p.isDefault) || printers[0];
+      if (best) this.barcodeStickerState.selectedPrinter = best.name;
+    }
+
+    const select = document.getElementById('bsm-printer-select');
+    if (select && printers.length > 0) {
+      select.innerHTML = printers.map(p => {
+        const isSpeedOrPos = /4barcode|3b-365|pos|speed|label|sticker|barcode|thermal|xp-|80/i.test(p.name);
+        const label = p.name + (isSpeedOrPos ? ' ★ (Thermal Ready)' : '') + (p.isDefault ? ' [Default]' : '');
+        return '<option value="' + p.name + '">' + label + '</option>';
+      }).join('');
+      if (this.barcodeStickerState.selectedPrinter) {
+        select.value = this.barcodeStickerState.selectedPrinter;
+      }
+      select.onchange = () => {
+        this.barcodeStickerState.selectedPrinter = select.value;
+        if (window.storage) window.storage.set('label_printer_name', select.value);
+      };
+    }
+  },
+
+  updateStickerPreview() {
+    const item = this.barcodeStickerState.activeItem;
+    if (!item) return;
+
+    const showStore = document.getElementById('bsm-toggle-store')?.checked ?? true;
+    const showName = document.getElementById('bsm-toggle-item-name')?.checked ?? true;
+    const showPrice = document.getElementById('bsm-toggle-price')?.checked ?? true;
+    const showBc = document.getElementById('bsm-toggle-barcode')?.checked ?? true;
+
+    const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || 'ISHAQ JADOON TRADERS';
+    if (window.storage) window.storage.set('label_store_name', storeName);
+
+    const storeEl = document.getElementById('bsm-pv-store');
+    const nameEl = document.getElementById('bsm-pv-name');
+    const priceEl = document.getElementById('bsm-pv-price');
+    const priceBar = document.getElementById('bsm-pv-price-bar');
+    const bcSvg = document.getElementById('bsm-pv-barcode-svg');
+    const bcTxt = document.getElementById('bsm-pv-barcode-txt');
+    const stickerBox = document.getElementById('bsm-live-sticker');
+
+    if (storeEl) {
+      storeEl.textContent = storeName;
+      storeEl.style.display = showStore ? 'block' : 'none';
+    }
+
+    if (nameEl) {
+      nameEl.textContent = item.item_name || 'Item Name';
+      nameEl.style.display = showName ? 'block' : 'none';
+    }
+
+    const price = Number(item.retail_price || item.sale_price || 0);
+    if (priceEl) {
+      priceEl.textContent = 'Rs. ' + price.toLocaleString();
+    }
+
+    if (priceBar) {
+      priceBar.style.display = showPrice ? 'flex' : 'none';
+    }
+
+    if (stickerBox) {
+      stickerBox.style.width = '190px';
+      stickerBox.style.height = '140px';
+    }
+
+    const barcodeVal = String(item.barcode || '').trim() || '123456789012';
+    if (bcTxt) {
+      bcTxt.textContent = barcodeVal;
+      bcTxt.style.display = showBc ? 'block' : 'none';
+    }
+
+    if (bcSvg) {
+      if (showBc && window.JsBarcode) {
+        bcSvg.style.display = 'block';
+        try {
+          bcSvg.innerHTML = '';
+          window.JsBarcode(bcSvg, barcodeVal, {
+            format: 'CODE128',
+            width: 1.15,
+            height: 22,
+            displayValue: false,
+            margin: 0,
+            background: '#ffffff',
+            lineColor: '#000000'
+          });
+        } catch (e) {
+          console.warn('JsBarcode preview render error:', e);
+          bcSvg.innerHTML = '<rect width="100%" height="24" fill="#eee"/><text x="50%" y="15" text-anchor="middle" font-size="10" font-family="monospace">' + barcodeVal + '</text>';
+        }
+      } else {
+        bcSvg.style.display = 'none';
+      }
+    }
+  },
+
+  handleStickerSearchInput(val) {
+    const q = (val || '').trim().toLowerCase();
+    const dropdown = document.getElementById('bsm-search-dropdown');
+    const clearBtn = document.getElementById('bsm-search-clear');
+
+    if (clearBtn) {
+      if (q.length > 0) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+    }
+
+    if (!dropdown) return;
+    if (q.length === 0) {
+      dropdown.classList.add('hidden');
+      dropdown.innerHTML = '';
+      return;
+    }
+
+    const all = this.barcodeStickerState.allProducts || [];
+    const matches = all.filter(p => {
+      const name = String(p.item_name || '').toLowerCase();
+      const bc = String(p.barcode || '').toLowerCase();
+      const cat = String(p.category_label || p.category_name || p.slug || '').toLowerCase();
+      return name.includes(q) || bc.includes(q) || cat.includes(q);
+    }).slice(0, 15);
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = '<div class="p-3 text-xs text-slate-400 text-center font-bold">No items found matching "' + val + '"</div>';
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    dropdown.innerHTML = matches.map(m => {
+      const price = Number(m.retail_price || m.sale_price || 0);
+      return (
+        '<div onclick="app.selectStickerSearchResult(' + m.id + ', \'' + (m.slug || m.category_slug || '') + '\')" ' +
+             'class="p-2.5 px-3 border-b border-slate-100 hover:bg-amber-50 cursor-pointer flex items-center justify-between transition-colors">' +
+          '<div class="min-w-0 pr-2">' +
+            '<div class="font-black text-xs text-slate-800 truncate">' + m.item_name + '</div>' +
+            '<div class="flex items-center gap-2 text-[10px] text-slate-500 font-bold mt-0.5">' +
+              (m.barcode ? '<span class="font-mono text-amber-800 bg-amber-100 px-1 rounded">#' + m.barcode + '</span>' : '<span class="text-rose-500 font-normal">No barcode</span>') +
+              '<span>' + (m.category_label || m.slug || '') + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="text-right shrink-0">' +
+            '<div class="font-black text-xs text-emerald-700">Rs. ' + price.toLocaleString() + '</div>' +
+            '<div class="text-[10px] text-slate-400 font-bold">Stk: ' + (m.current_stock || 0) + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  },
+
+  clearStickerSearch() {
+    const input = document.getElementById('bsm-search-input');
+    const dropdown = document.getElementById('bsm-search-dropdown');
+    const clearBtn = document.getElementById('bsm-search-clear');
+    if (input) input.value = '';
+    if (dropdown) dropdown.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+  },
+
+  selectStickerSearchResult(id, slug) {
+    const all = this.barcodeStickerState.allProducts || [];
+    const found = all.find(p => p.id === Number(id) && (!slug || p.slug === slug || p.category_slug === slug)) ||
+                  all.find(p => p.id === Number(id));
+    if (found) {
+      this.setActiveStickerItem(found);
+      this.clearStickerSearch();
+    }
+  },
+
+  testPrintBarcodeSticker() {
+    this.executeStickerPrint(true);
+  },
+
+  async executeStickerPrint(isTest = false) {
+    const item = this.barcodeStickerState.activeItem;
+    if (!item) {
+      this.showAlert({ title: 'No Item', message: 'Please select an item to print stickers.' });
+      return;
+    }
+
+    const barcodeVal = String(item.barcode || '').trim();
+    if (!barcodeVal) {
+      this.showAlert({
+        title: 'Missing Barcode',
+        message: 'Item <b>"' + item.item_name + '"</b> has no barcode assigned.<br><br>Click <b>"+ Generate Barcode"</b> first to generate a unique barcode for this item.',
+        buttonText: 'OK'
+      });
+      return;
+    }
+
+    const qty = isTest ? 1 : (this.barcodeStickerState.qty || 1);
+    // Locked to physical roll stock: 38.1mm x 27.94mm (1.50" x 1.10" Die-Cut)
+    const widthMm = 38.1;
+    const heightMm = 27.94;
+    const printerSelect = document.getElementById('bsm-printer-select');
+    const targetPrinter = printerSelect?.value || this.barcodeStickerState.selectedPrinter || (window.storage ? window.storage.get('label_printer_name') || '' : '') || '4BARCODE 3B-365B';
+    const isSilent = false; // 1-Click direct field disabled as requested
+
+    const showStore = document.getElementById('bsm-toggle-store')?.checked ?? true;
+    const showName = document.getElementById('bsm-toggle-item-name')?.checked ?? true;
+    const showPrice = document.getElementById('bsm-toggle-price')?.checked ?? true;
+    const showBc = document.getElementById('bsm-toggle-barcode')?.checked ?? true;
+    const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || 'ISHAQ JADOON TRADERS';
+    const price = Number(item.retail_price || item.sale_price || 0);
+
+    // 1. Immediately hide the modal and remove any toasts so Chromium NEVER prints them
+    const modal = document.getElementById('barcode-sticker-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    const toastEl = document.getElementById('app-toast-container');
+    if (toastEl) toastEl.remove();
+
+    // 2. Build clean sticker HTML templates (pure white background, pure black ink, dead-centered with 0 padding)
+    let stickerHtml = '';
+    for (let i = 0; i < qty; i++) {
+      stickerHtml += (
+        '<div class="barcode-sticker-item" style="width: 38.1mm; height: 27.94mm; max-width: 38.1mm; max-height: 27.94mm; box-sizing: border-box; padding: 0 !important; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #ffffff !important; background-color: #ffffff !important; color: #000000 !important; overflow: hidden; page-break-after: always; break-after: page;">' +
+          (showStore ? '<div style="font-size: 6.0pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.05; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.2mm; color: #000000 !important; background: transparent !important;">' + storeName + '</div>' : '') +
+          (showName ? '<div style="font-size: 7.4pt; font-weight: 900; line-height: 1.1; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0; margin-bottom: 0.3mm; color: #000000 !important; background: transparent !important;">' + item.item_name + '</div>' : '') +
+          (showBc ? (
+            '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-height: 11.5mm; overflow: hidden; margin: 0.1mm 0; background: transparent !important;">' +
+              '<svg class="barcode-print-svg" data-barcode="' + barcodeVal + '" style="width: 100%; max-height: 8.5mm; display: block; background: #ffffff !important;"></svg>' +
+              '<div style="font-size: 5.5pt; font-family: Inter, monospace; font-weight: 800; letter-spacing: 1.0px; line-height: 1; margin-top: 0.2mm; color: #000000 !important; background: transparent !important;">' + barcodeVal + '</div>' +
+            '</div>'
+          ) : '') +
+          (showPrice ? (
+            '<div style="display: flex; justify-content: center; align-items: center; width: 100%; border-top: 0.5px solid #000000 !important; padding-top: 0.3mm; margin-top: 0.2mm; font-size: 6.0pt; font-weight: 800; color: #000000 !important; background: transparent !important;">' +
+              '<span style="font-size: 8.4pt; font-weight: 900; color: #000000 !important;">Rs. ' + price.toLocaleString() + '</span>' +
+            '</div>'
+          ) : '') +
+        '</div>'
+      );
+    }
+
+    // 3. Inject strict print style overrides for exact sticker dimensions and 100% white background
+    let dynStyle = document.getElementById('dynamic-sticker-print-style');
+    if (!dynStyle) {
+      dynStyle = document.createElement('style');
+      dynStyle.id = 'dynamic-sticker-print-style';
+      document.head.appendChild(dynStyle);
+    }
+    dynStyle.textContent =
+      '@media print {' +
+        '@page {' +
+          'size: 38.1mm 27.94mm !important;' +
+          'margin: 0mm !important;' +
+        '}' +
+        'html, body {' +
+          'background: #ffffff !important;' +
+          'background-color: #ffffff !important;' +
+          'color: #000000 !important;' +
+          'margin: 0 !important;' +
+          'padding: 0 !important;' +
+          'width: 38.1mm !important;' +
+          'max-width: 38.1mm !important;' +
+          'height: auto !important;' +
+          'overflow: visible !important;' +
+        '}' +
+        '.no-print, #app-toast-container, #barcode-sticker-modal, #price-checker-modal, #confirm-modal, #payment-modal, #preview-modal, #loading-overlay, #quick-calculator-widget, body > aside, body > main, body > div:not(.active-print-target) {' +
+          'display: none !important;' +
+          'visibility: hidden !important;' +
+          'opacity: 0 !important;' +
+        '}' +
+        '#barcode-sticker-print.active-print-target {' +
+          'display: block !important;' +
+          'visibility: visible !important;' +
+          'width: 38.1mm !important;' +
+          'max-width: 38.1mm !important;' +
+          'background: #ffffff !important;' +
+          'background-color: #ffffff !important;' +
+          'margin: 0 auto !important;' +
+          'padding: 0 !important;' +
+        '}' +
+        '.barcode-sticker-item {' +
+          'page-break-after: always !important;' +
+          'break-after: page !important;' +
+          'box-sizing: border-box !important;' +
+          'background: #ffffff !important;' +
+          'background-color: #ffffff !important;' +
+          'color: #000000 !important;' +
+          'border: none !important;' +
+          'margin: 0 auto !important;' +
+          'padding: 0 !important;' +
+          'display: flex !important;' +
+          'flex-direction: column !important;' +
+          'align-items: center !important;' +
+          'justify-content: center !important;' +
+        '}' +
+        '.barcode-sticker-item:last-child {' +
+          'page-break-after: avoid !important;' +
+          'break-after: avoid !important;' +
+        '}' +
+      '}';
+
+    // 4. Inject HTML into #barcode-sticker-print container
+    this.setPrintContent('barcode-sticker-print', stickerHtml);
+
+    // 5. Render barcodes on each generated SVG via JsBarcode
+    const container = document.getElementById('barcode-sticker-print');
+    if (container && window.JsBarcode) {
+      const svgs = container.querySelectorAll('.barcode-print-svg');
+      svgs.forEach(svg => {
+        const code = svg.getAttribute('data-barcode') || barcodeVal;
+        try {
+          window.JsBarcode(svg, code, {
+            format: 'CODE128',
+            width: 1.15,
+            height: 20,
+            displayValue: false,
+            margin: 0,
+            background: '#ffffff',
+            lineColor: '#000000'
+          });
+        } catch (e) {
+          console.warn('JsBarcode print SVG render error:', e);
+        }
+      });
+    }
+
+    // 6. Give Chromium 60ms to flush DOM changes before firing print
+    await new Promise(r => setTimeout(r, 60));
+
+    // 7. Send print command via IPC
+    const printOptions = {
+      deviceName: targetPrinter,
+      silent: isSilent,
+      pageSize: {
+        width: 38100, // exact 1.50 in = 38.1 mm (matched to driver stock 38x28)
+        height: 27940 // exact 1.10 in = 27.94 mm (matched to driver stock 38x28)
+      }
+    };
+
+    try {
+      let result;
+      if (window.api && window.api.printBarcodeStickers) {
+        result = await window.api.printBarcodeStickers(printOptions);
+      } else if (window.api && window.api.printReceipt) {
+        result = await window.api.printReceipt(printOptions);
+      } else {
+        window.print();
+        result = { success: true };
+      }
+
+      if (result && result.success !== false) {
+        this.showToast('Successfully printed ' + qty + ' sticker' + (qty > 1 ? 's' : '') + '!', 'success');
+      } else if (result && result.failureReason) {
+        console.warn('Print response:', result.failureReason);
+      }
+    } catch (err) {
+      console.error('Error during sticker print:', err);
+      this.showToast('Print failed: ' + (err.message || 'Check printer connection'), 'error');
     }
   },
 

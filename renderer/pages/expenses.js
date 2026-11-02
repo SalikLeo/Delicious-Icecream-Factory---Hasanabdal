@@ -2,6 +2,9 @@ const Expenses = {
   expenses: [],
   categories: [],
   currentPeriodType: 'day',
+  currentPage: 1,
+  pageSize: 50,
+  currentFilteredExpenses: [],
   settings: {},
 
   getLocalDateStr(d = new Date()) {
@@ -161,6 +164,7 @@ const Expenses = {
             </tbody>
           </table>
         </div>
+        <div id="expenses-pagination-footer" class="shrink-0"></div>
       </div>
 
       <!-- Expense Modal -->
@@ -448,9 +452,16 @@ const Expenses = {
       return 0;
     });
 
+    this.currentPage = 1;
+    this.currentFilteredExpenses = filtered;
     this.renderList(filtered);
     this.updateSummary(filtered);
     this.updateClearPeriodButton();
+  },
+
+  changePage(page) {
+    this.currentPage = page;
+    this.renderList(this.currentFilteredExpenses || []);
   },
 
   updateClearPeriodButton() {
@@ -647,101 +658,112 @@ const Expenses = {
       </tr>
     `).join('');
 
-    const html = `
-      <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
-        <div style="text-align: center; margin-bottom: 4px;">
-          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${settings.company_name || 'ISHAQ JADOON TRADERS'}</h1>
-          <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${settings.address || 'Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt'}</div>
-          <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
-            <div>M.Ishaq: 0301-2630481</div>
-            <div>Ch. Shakir: 0300-5074410</div>
-          </div>
-          <div style="margin-top: 5px;">
-            <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">EXPENSES REPORT</span>
+    const a5Html = `
+      <div class="a5-container">
+        <div class="a5-header">
+          <div class="a5-title">${settings.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle">${settings.address || 'Wah Cantt / Taxila'} • Phones: ${settings.phone || '0309-5369472'}</div>
+          <div class="a5-doc-title" style="background:#0f172a; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
+            FACTORY EXPENSES REPORT (A5)
           </div>
         </div>
 
-        <div style="font-size: 11px; line-height: 1.35; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed #000;">
-          <div style="display: flex; justify-content: space-between;">
-            <span><b>Period:</b> ${period}</span>
-            <span><b>Category:</b> ${cat}</span>
+        <div class="a5-meta-box">
+          <div>
+            <div><strong>Period:</strong> ${period}</div>
+            <div><strong>Category:</strong> ${cat}</div>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 1px;">
-            <span><b>Date:</b> ${app.formatDateTime(new Date().toISOString())}</span>
-            <span><b>Count:</b> ${list.length}</span>
+          <div style="text-align: right;">
+            <div><strong>Generated:</strong> ${app.formatDateTime(new Date().toISOString())}</div>
+            <div><strong>Total Entries:</strong> ${list.length} Items</div>
           </div>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 9.5px; border: 1.5px solid #000;">
+        <table class="a5-table">
           <thead>
-            <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 900; text-transform: uppercase;">
-              <th style="padding: 3px 2px; text-align: center; width: 7%; border-right: 1px solid #000;">#</th>
-              <th style="padding: 3px 4px; text-align: left; width: 43%; border-right: 1px solid #000;">EXPENSE / DETAIL</th>
-              <th style="padding: 3px 3px; text-align: left; width: 25%; border-right: 1px solid #000;">CATEGORY</th>
-              <th style="padding: 3px 4px; text-align: right; width: 25%;">AMOUNT</th>
+            <tr>
+              <th style="width:7%; text-align:center;">#</th>
+              <th>Expense / Description</th>
+              <th>Category</th>
+              <th style="text-align:right;">Amount (Rs.)</th>
             </tr>
           </thead>
           <tbody>
-            ${rowsHtml}
+            ${list.map((e, idx) => `
+              <tr>
+                <td style="text-align:center;">${idx + 1}</td>
+                <td>
+                  <div style="font-weight:700;">${e.description || e.category || 'Expense'}</div>
+                  <div style="font-size:10px; color:#64748b;">${app.formatDate(e.date)}${e.paid_by ? ` • By: ${e.paid_by}` : ''}</div>
+                </td>
+                <td style="font-weight:600;">${e.category || 'General'}</td>
+                <td style="text-align:right; font-weight:800;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+            ${list.length === 0 ? '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No expenses recorded.</td></tr>' : ''}
           </tbody>
         </table>
 
-        <div style="border-top: 1px dashed #000; padding-top: 4px; font-size: 11.5px; line-height: 1.45;">
-          <div style="display: flex; justify-content: space-between; padding: 3px 0; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 13.5px; font-weight: 900;">
+        <div class="a5-summary-box">
+          <div class="a5-summary-row a5-total">
             <span>TOTAL EXPENSES:</span>
-            <span>${app.formatCurrency(total)}</span>
+            <span>Rs. ${Math.round(total).toLocaleString()}</span>
           </div>
         </div>
 
         ${(catKeys.length > 1 && list.length > 1) ? `
-        <div style="margin-top: 6px; border-top: 1px dashed #000; padding-top: 4px;">
-          <div style="font-weight: 900; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.5px; margin-bottom: 2px;">CATEGORY BREAKDOWN</div>
-          <table style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 1.4;">
-            ${catKeys.map(catName => `
-              <tr style="border-bottom: 1px dashed #f1f5f9;">
-                <td style="padding: 2px 0; font-weight: 600;">${catName}:</td>
-                <td style="text-align: right; font-weight: 700; padding: 2px 0;">${app.formatCurrency(catTotals[catName])}</td>
-              </tr>
-            `).join('')}
-          </table>
-        </div>` : ''}
+          <div style="margin-top: 15px;">
+            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 5px;">Category Breakdown</div>
+            <table class="a5-table">
+              <tbody>
+                ${catKeys.map(catName => `
+                  <tr>
+                    <td style="font-weight:700;">${catName}</td>
+                    <td style="text-align:right; font-weight:800;">Rs. ${Math.round(catTotals[catName]).toLocaleString()}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
 
-        <div style="text-align: center; margin-top: 6px; border-top: 1px dashed #000; padding-top: 4px; font-size: 10px;">
-          <p style="margin: 0; font-weight: 700; text-transform: uppercase;">*** END OF EXPENSE REPORT ***</p>
+        <div class="a5-signatures">
+          <div class="a5-sig-line">Prepared By</div>
+          <div class="a5-sig-line">Approved By</div>
         </div>
       </div>
     `;
 
-    app.setPrintContent('receipt-print', html);
-    const previewEl = document.getElementById('preview-paper');
-    if (previewEl) previewEl.innerHTML = html;
-
-    document.getElementById('preview-title').textContent = 'Expense Report Preview';
-    document.getElementById('preview-subtitle').textContent = '80MM THERMAL RECEIPT • ' + period.toUpperCase();
-    
-    const modal = document.getElementById('preview-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-
-    const printBtn = document.getElementById('confirm-print-btn');
-    if (printBtn) {
-      printBtn.onclick = () => app.confirmPrint();
-    }
+    app.showA5Preview(a5Html, 'Expense Report (A5)');
 
     if (window.lucide) lucide.createIcons();
   },
 
   renderList(list) {
+    this.currentFilteredExpenses = list || [];
     const tbody = document.getElementById('expenses-list');
+    const footer = document.getElementById('expenses-pagination-footer');
     if (!tbody) return;
-    if (list.length === 0) {
+
+    if (!list || list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium italic">No expenses found for this period.</td></tr>`;
+      if (footer) footer.innerHTML = '';
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
-    tbody.innerHTML = list.map((e, index) => `
+    const total = list.length;
+    const totalPages = Math.ceil(total / this.pageSize);
+    if (this.currentPage > totalPages) this.currentPage = totalPages;
+    if (this.currentPage < 1) this.currentPage = 1;
+
+    const startIdx = (this.currentPage - 1) * this.pageSize;
+    const endIdx = Math.min(startIdx + this.pageSize, total);
+    const paginated = list.slice(startIdx, endIdx);
+
+    tbody.innerHTML = paginated.map((e, index) => `
       <tr class="hover:bg-slate-50 border-b border-slate-200 group transition-colors">
-        <td class="px-2 py-1 border-r border-slate-200 text-center font-bold text-slate-400 tabular-nums text-xs">${index + 1}</td>
+        <td class="px-2 py-1 border-r border-slate-200 text-center font-bold text-slate-400 tabular-nums text-xs">${startIdx + index + 1}</td>
         <td class="px-4 py-1 border-r border-slate-200 font-bold text-slate-800 text-xs">${app.formatDate(e.date)}</td>
         <td class="px-4 py-1 border-r border-slate-200">
           <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wider">${e.category}</span>
@@ -759,6 +781,38 @@ const Expenses = {
         </td>
       </tr>
     `).join('');
+
+    if (footer) {
+      if (total <= this.pageSize) {
+        footer.innerHTML = `
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs font-bold text-slate-500">
+            <span>Showing all <span class="font-black text-slate-800">${total}</span> expense${total === 1 ? '' : 's'}</span>
+          </div>
+        `;
+      } else {
+        footer.innerHTML = `
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs font-bold text-slate-600 flex-wrap gap-2 select-none">
+            <div>
+              Showing <span class="font-black text-slate-900">${startIdx + 1}</span> - <span class="font-black text-slate-900">${endIdx}</span> of <span class="font-black text-slate-900">${total}</span> expenses
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" ${this.currentPage <= 1 ? 'disabled class="opacity-40 cursor-not-allowed"' : 'onclick="Expenses.changePage(' + (this.currentPage - 1) + ')" class="cursor-pointer hover:bg-slate-200 active:scale-95"'} class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-slate-700 font-bold transition-all flex items-center gap-1">
+                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                <span>Prev</span>
+              </button>
+              <span class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-black">
+                Page ${this.currentPage} of ${totalPages}
+              </span>
+              <button type="button" ${this.currentPage >= totalPages ? 'disabled class="opacity-40 cursor-not-allowed"' : 'onclick="Expenses.changePage(' + (this.currentPage + 1) + ')" class="cursor-pointer hover:bg-slate-200 active:scale-95"'} class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-slate-700 font-bold transition-all flex items-center gap-1">
+                <span>Next</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
     if (window.lucide) lucide.createIcons();
   },
 

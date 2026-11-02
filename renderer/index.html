@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Ishaq Jadoon Traders</title>
+  <title>Ice Cream Factory Management System</title>
   <link rel="stylesheet" href="styles/fonts.css">
   <script src="libs/tailwind.min.js"></script>
   <script>
@@ -91,18 +91,40 @@
       background: #475569;
     }
 
+
+    @media print {
+      .no-print,
+      #app-toast-container,
+      #barcode-sticker-modal,
+      #price-checker-modal,
+      #confirm-modal, 
+      #payment-modal, 
+      #preview-modal, 
+      #loading-overlay,
+      #quick-calculator-widget,
+      body > aside, 
+      body > main,
+      body > div:not(.active-print-target) {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+      }
+    }
+
     /* Print containers must NEVER be visible on screen */
     @media screen {
       #receipt-print,
       #db-print-container,
       #voucher-print,
-      #report-print-container {
+      #report-print-container,
+      #barcode-sticker-print {
         display: none !important;
       }
     }
   </style>
   <link rel="stylesheet" href="styles/print.css" media="print">
   <script src="libs/lucide.min.js"></script>
+  <script src="libs/jsbarcode.min.js"></script>
 </head>
 <body class="bg-gray-50 text-slate-800 font-sans h-screen flex overflow-hidden">
 
@@ -117,52 +139,84 @@
               <i data-lucide="image" class="w-12 h-12 opacity-20"></i>
           </div>
         </div>
-        <h1 id="sidebar-title" class="text-base font-bold text-white tracking-tight text-center px-1 leading-snug">Ishaq Jadoon Traders</h1>
+        <h1 id="sidebar-title" class="text-base font-bold text-white tracking-tight text-center px-1 leading-snug">Ice Cream Factory (Branch 1)</h1>
+
+        <!-- Branch Toggle (B1 / B2) -->
+        <div class="w-full bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 flex items-center gap-1 shadow-inner mt-0.5">
+          <button type="button" id="branch-btn-b1" onclick="app.switchBranch('b1')" 
+                  title="Branch 1 (Default)"
+                  class="flex-1 py-1 px-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-sm cursor-pointer">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
+            <span>B1</span>
+          </button>
+          <button type="button" id="branch-btn-b2" onclick="app.switchBranch('b2')" 
+                  title="Branch 2"
+                  class="flex-1 py-1 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 cursor-pointer">
+            <span>B2</span>
+          </button>
+        </div>
       </div>
   
       <!-- Nav Links -->
       <nav class="flex-1 py-2.5 flex flex-col gap-1 px-2.5">
-        <button onclick="app.navigate('proposal-form')" id="nav-proposal-form" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="shopping-cart" class="w-5 h-5"></i></span>
-          <span class="truncate">New Sale</span>
-        </button>
-        <button onclick="app.navigate('proposals')" id="nav-proposals" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="history" class="w-5 h-5"></i></span>
-          <span class="truncate">Sales History</span>
-        </button>
-        <button onclick="app.navigate('customers')" id="nav-customers" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-5 h-5"></i></span>
-          <span class="truncate">Customers</span>
-        </button>
-        <button onclick="app.navigate('master-db')" id="nav-master-db" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="database" class="w-5 h-5"></i></span>
-          <span class="truncate">Stock</span>
-        </button>
-        <button onclick="app.navigate('rate-list')" id="nav-rate-list" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="tags" class="w-5 h-5"></i></span>
-          <span class="truncate">Rate List</span>
-        </button>
-        <button onclick="app.navigate('expenses')" id="nav-expenses" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="receipt" class="w-5 h-5"></i></span>
-          <span class="truncate">Expenses</span>
-        </button>
-        <button onclick="app.navigate('reports')" id="nav-reports" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></span>
-          <span class="truncate">Reports</span>
-        </button>
-        <button onclick="app.navigate('companies')" id="nav-companies" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="book-open" class="w-5 h-5"></i></span>
-          <span class="truncate">Purchases</span>
-        </button>
-        <button onclick="app.navigate('dashboard')" id="nav-dashboard" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></span>
+        <button onclick="app.navigate('dashboard')" id="nav-dashboard" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-400"><i data-lucide="layout-dashboard" class="w-4 h-4"></i></span>
           <span class="truncate">Dashboard</span>
         </button>
-        <button onclick="app.navigate('settings')" id="nav-settings" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-left transition-colors font-medium">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0"><i data-lucide="settings" class="w-5 h-5"></i></span>
-          <span class="truncate">Settings</span>
+
+        <div class="px-2 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400/80">Factory Stages</div>
+
+        <button onclick="app.navigate('raw-materials')" id="nav-raw-materials" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-emerald-400"><i data-lucide="boxes" class="w-4 h-4"></i></span>
+          <span class="truncate">1. Raw Materials</span>
         </button>
-      </nav>
+
+        <button onclick="app.navigate('production')" id="nav-production" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-cyan-400"><i data-lucide="layers" class="w-4 h-4"></i></span>
+          <span class="truncate">2. Production (Pcs)</span>
+        </button>
+
+        <button onclick="app.navigate('carton-packing')" id="nav-carton-packing" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-purple-400"><i data-lucide="package" class="w-4 h-4"></i></span>
+          <span class="truncate">3. Carton Packing</span>
+        </button>
+
+        <button onclick="app.navigate('car-loading')" id="nav-car-loading" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-blue-400"><i data-lucide="truck" class="w-4 h-4"></i></span>
+          <span class="truncate">4. Cars &amp; Loading</span>
+        </button>
+
+        <button onclick="app.navigate('shop-sales')" id="nav-shop-sales" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-400"><i data-lucide="shopping-cart" class="w-4 h-4"></i></span>
+          <span class="truncate">5. Shop Deliveries</span>
+        </button>
+
+        <div class="px-2 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400/80">Records &amp; Accounts</div>
+
+        <button onclick="app.navigate('proposals')" id="nav-proposals" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="history" class="w-4 h-4"></i></span>
+          <span class="truncate">Delivery History</span>
+        </button>
+
+        <button onclick="app.navigate('customers')" id="nav-customers" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="store" class="w-4 h-4"></i></span>
+          <span class="truncate">Shops / Khata</span>
+        </button>
+
+        <button onclick="app.navigate('reports')" id="nav-reports" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></span>
+          <span class="truncate">Factory Reports</span>
+        </button>
+
+        <button onclick="app.navigate('expenses')" id="nav-expenses" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="receipt" class="w-4 h-4"></i></span>
+          <span class="truncate">Expenses</span>
+        </button>
+
+        <button onclick="app.navigate('settings')" id="nav-settings" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
+          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="settings" class="w-4 h-4"></i></span>
+          <span class="truncate">Settings</span>
+        </button></nav>
     </div>
 
     <!-- Bottom Sidebar Section (Credits & Contact) -->
@@ -222,6 +276,69 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Quick Price Inquiry Modal (F6 Price Checker) -->
+  <div id="price-checker-modal" onclick="if(event.target === this) app.closePriceChecker()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs hidden items-center justify-center z-[1200] no-print p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col border border-slate-200" id="price-checker-card">
+      <!-- Header -->
+      <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
+            <i data-lucide="scan-barcode" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-black tracking-tight text-white uppercase">Quick Price Inquiry</h3>
+              <kbd class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-mono text-[10px] font-black shadow-xs">F6</kbd>
+            </div>
+            <p class="text-[11px] font-bold text-slate-400">Instant price & stock lookup without clearing current bill</p>
+          </div>
+        </div>
+        <button type="button" onclick="app.closePriceChecker()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" title="Close (Esc)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Search / Scan Barcode Input -->
+      <div class="p-5 pb-3 bg-slate-50 border-b border-slate-200/80">
+        <div class="relative">
+          <i data-lucide="scan" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500"></i>
+          <input type="text" 
+                 id="price-checker-input" 
+                 autocomplete="off"
+                 placeholder="Scan barcode with scanner or type name..." 
+                 onkeydown="app.handlePriceCheckerKeyDown(event)"
+                 oninput="app.handlePriceCheckerInput(this.value)"
+                 class="w-full pl-11 pr-24 py-3 bg-white border-2 border-amber-400 focus:border-amber-500 focus:ring-4 focus:ring-amber-100 rounded-2xl text-slate-900 font-black text-sm outline-none transition-all placeholder:text-slate-400 placeholder:font-normal shadow-sm">
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md border border-slate-200 select-none">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Ready
+            </span>
+          </div>
+        </div>
+
+        <!-- Dropdown Suggestions for typed searches -->
+        <div id="price-checker-dropdown" class="relative mt-1 hidden bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto z-50"></div>
+      </div>
+
+      <!-- Result Card -->
+      <div id="price-checker-result" class="p-6 flex flex-col items-center justify-center min-h-[220px]">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- Footer Buttons -->
+      <div id="price-checker-footer" class="p-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-3">
+        <span class="text-[11px] font-bold text-slate-400 flex items-center gap-1 select-none">
+          <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[9px] font-black">ESC</kbd> Close Inquiry
+        </span>
+        <div class="flex items-center gap-2" id="price-checker-action-btns">
+          <button type="button" onclick="app.closePriceChecker()" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -367,7 +484,7 @@
             </div>
             <div>
                 <h3 id="preview-title" class="font-black text-slate-800 tracking-tight">Receipt Preview</h3>
-                <p id="preview-subtitle" class="text-[10px] uppercase font-black text-slate-400 tracking-widest leading-none mt-1">80MM THERMAL RECEIPT PREVIEW</p>
+                <p id="preview-subtitle" class="text-[10px] uppercase font-black text-slate-400 tracking-widest leading-none mt-1">A5 PAPER INVOICE &amp; REPORT PREVIEW (148 × 210 MM)</p>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -378,8 +495,160 @@
         </div>
       </div>
       <div class="flex-1 overflow-y-auto p-8 flex justify-center items-start bg-slate-200/50 scrollbar-thin scrollbar-thumb-slate-300">
-        <div id="preview-paper" class="bg-white shadow-2xl transform origin-top mb-12 w-full max-w-[360px] rounded-lg">
+        <div id="preview-paper" class="bg-white shadow-2xl transform origin-top mb-12 w-full max-w-[580px] rounded-lg">
             <!-- Receipt content injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- Barcode Sticker & Label Printer Modal (Speed-X SP-650UL Optimized) -->
+  <div id="barcode-sticker-modal" onclick="if(event.target === this) app.closeBarcodeStickerModal()" class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs hidden items-center justify-center z-[1300] no-print p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col overflow-hidden border border-slate-200" id="barcode-sticker-card">
+      <!-- Modal Header -->
+      <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
+            <i data-lucide="printer" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-black tracking-tight text-white uppercase">Barcode Sticker &amp; Label Printer</h3>
+              <span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-400/30 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 38 × 28 mm Die-Cut
+              </span>
+            </div>
+            <p class="text-[11px] font-bold text-slate-400">Print adhesive thermal barcode stickers for store items</p>
+          </div>
+        </div>
+        <button type="button" onclick="app.closeBarcodeStickerModal()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" title="Close (Esc)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (2 Columns) -->
+      <div class="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-12 gap-4 custom-scrollbar bg-slate-50/60">
+        <!-- Left: Configuration & Controls (6 cols) -->
+        <div class="md:col-span-6 flex flex-col gap-3">
+          <!-- 1. Selected Item Details Banner -->
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+            <div id="bsm-active-item-card" class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <h4 id="bsm-item-name" class="font-black text-sm text-slate-900 truncate">No item selected</h4>
+                  <span id="bsm-item-category" class="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 text-[9px] font-black uppercase">Category</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1 text-xs font-bold text-slate-600 flex-wrap">
+                  <span class="font-mono text-[11px] font-black text-slate-800" id="bsm-item-barcode-display">Barcode: None</span>
+                  <span class="text-slate-300">•</span>
+                  <span class="text-emerald-700" id="bsm-item-price-display">Price: Rs. 0</span>
+                  <span class="text-slate-300">•</span>
+                  <span class="text-slate-500" id="bsm-item-stock-display">Stock: 0</span>
+                </div>
+              </div>
+              <button type="button" id="bsm-gen-barcode-btn" onclick="app.generateBarcodeForActiveItem()" class="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-black shadow-xs shrink-0 cursor-pointer hidden">
+                + Generate Barcode
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Quantity (Compact) -->
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+            <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Quantity of Stickers</span>
+              <span class="text-[10px] text-slate-400 font-bold">Number of copies</span>
+            </label>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center border border-slate-300 rounded-xl bg-slate-50 overflow-hidden shadow-2xs">
+                <button type="button" onclick="app.adjustStickerQty(-1)" class="w-9 h-9 flex items-center justify-center font-black text-slate-700 hover:bg-slate-200 active:scale-95 text-base select-none cursor-pointer">−</button>
+                <input type="number" id="bsm-qty" min="1" max="999" value="1" oninput="app.onStickerQtyChange(this.value)"
+                       class="w-16 h-9 text-center font-black text-sm text-slate-900 bg-white border-x border-slate-300 outline-none tabular-nums">
+                <button type="button" onclick="app.adjustStickerQty(1)" class="w-9 h-9 flex items-center justify-center font-black text-slate-700 hover:bg-slate-200 active:scale-95 text-base select-none cursor-pointer">+</button>
+              </div>
+              <span class="text-xs font-bold text-slate-500">copies to print</span>
+            </div>
+          </div>
+
+          <!-- 3. Sticker Elements -->
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
+            <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider">Sticker Elements</label>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" id="bsm-toggle-store" checked onchange="app.updateStickerPreview()" class="w-4 h-4 rounded text-amber-500 focus:ring-0 cursor-pointer">
+                  <span class="text-xs font-bold text-slate-800">Store Name Header</span>
+                </label>
+              </div>
+              <input type="text" id="bsm-store-name" value="ISHAQ JADOON TRADERS" oninput="app.updateStickerPreview()"
+                     class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:bg-white focus:border-amber-400">
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+              <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" id="bsm-toggle-item-name" checked onchange="app.updateStickerPreview()" class="w-4 h-4 rounded text-amber-500 focus:ring-0 cursor-pointer">
+                <span class="text-xs font-bold text-slate-800">Item Name</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" id="bsm-toggle-barcode" checked onchange="app.updateStickerPreview()" class="w-4 h-4 rounded text-amber-500 focus:ring-0 cursor-pointer">
+                <span class="text-xs font-bold text-slate-800">Barcode</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" id="bsm-toggle-price" checked onchange="app.updateStickerPreview()" class="w-4 h-4 rounded text-amber-500 focus:ring-0 cursor-pointer">
+                <span class="text-xs font-bold text-slate-800">Price (Rs.)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Live Sticker Preview (6 cols) -->
+        <div class="md:col-span-6 flex flex-col gap-3">
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col flex-1">
+            <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-2">
+              <span class="text-xs font-black uppercase text-slate-600 tracking-wider flex items-center gap-1.5">
+                <i data-lucide="eye" class="w-4 h-4 text-amber-500"></i> Live Sticker Preview
+              </span>
+              <span id="bsm-preview-dimension-badge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-mono text-[10px] font-black border border-amber-300">
+                38 × 28 mm (1.5" × 1.1")
+              </span>
+            </div>
+
+            <!-- Visual Label Mockup Area -->
+            <div class="flex-1 bg-slate-100/90 rounded-2xl p-3 flex flex-col items-center justify-center min-h-[220px] border border-dashed border-slate-300 relative overflow-hidden">
+              <!-- Physical sticker container rendered in white -->
+              <div id="bsm-live-sticker" class="bg-white text-black shadow-md rounded-lg flex flex-col justify-between items-center text-center transition-all select-none border border-slate-300"
+                   style="width: 190px; height: 140px; box-sizing: border-box; padding: 8px 10px;">
+                <!-- Store Name -->
+                <div id="bsm-pv-store" class="text-[8.5px] font-extrabold uppercase tracking-wide leading-tight w-full truncate">ISHAQ JADOON TRADERS</div>
+                <!-- Item Name -->
+                <div id="bsm-pv-name" class="text-[10.5px] font-black leading-tight w-full truncate px-0.5">ToothPick</div>
+                <!-- Barcode SVG -->
+                <div class="w-full flex flex-col items-center justify-center my-0.5 overflow-hidden">
+                  <svg id="bsm-pv-barcode-svg" class="w-full max-h-[30px]"></svg>
+                  <div id="bsm-pv-barcode-txt" class="text-[8px] font-mono font-bold tracking-widest leading-none mt-1">6933961560259</div>
+                </div>
+                <!-- Bottom Info: Price -->
+                <div id="bsm-pv-price-bar" class="w-full flex items-center justify-center border-t border-black/80 pt-0.5 mt-0.5 font-bold">
+                  <span id="bsm-pv-price" class="font-black text-[11px] tracking-tight">Rs. 20</span>
+                </div>
+              </div>
+
+              <!-- Label roll gap indicator lines -->
+              <div class="w-full flex justify-between items-center px-4 mt-2.5 text-[9px] font-bold text-slate-400">
+                <span>◀ 38×28 mm Die-Cut Roll ▶</span>
+                <span id="bsm-pv-copies-badge">1 copy</span>
+              </div>
+            </div>
+
+            <!-- Big Print Button -->
+            <div class="mt-3 pt-2.5 border-t border-slate-100">
+              <button type="button" id="bsm-submit-print-btn" onclick="app.executeStickerPrint()"
+                      class="w-full py-3 px-5 bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-slate-950 font-black text-sm rounded-xl shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                <span id="bsm-submit-print-text">Print 1 Sticker Now</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -390,6 +659,7 @@
   <div id="db-print-container" class="hidden print:block bg-white"></div>
   <div id="voucher-print" class="hidden print:block bg-white"></div>
   <div id="report-print-container" class="hidden print:block bg-white"></div>
+  <div id="barcode-sticker-print" class="hidden print:block bg-white"></div>
 
   <!-- Scripts -->
   <script src="pages/dashboard.js"></script>
@@ -403,6 +673,11 @@
   <script src="pages/companies.js"></script>
   <script src="pages/reports.js"></script>
   <script src="pages/settings.js"></script>
+  <script src="pages/raw-materials.js"></script>
+  <script src="pages/production.js"></script>
+  <script src="pages/carton-packing.js"></script>
+  <script src="pages/car-loading.js"></script>
+  <script src="pages/shop-sales.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

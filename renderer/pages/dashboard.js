@@ -1,580 +1,273 @@
-const Dashboard = {
-  currentPeriod: 'daily',
-  selectedDate: '',
-  selectedMonth: new Date().getMonth() + 1,
-  selectedYear: new Date().getFullYear(),
-  customStart: '',
-  customEnd: '',
-  availableYears: [],
-
-  formatDate(d = new Date()) {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  },
+// Unified Ice Cream Factory Dashboard
+window.Dashboard = {
+  summary: null,
+  recentDeliveries: [],
+  cars: [],
 
   async render(container) {
-    const today = new Date();
-    this.selectedDate = this.selectedDate || this.formatDate(today);
-    this.selectedMonth = this.selectedMonth || (today.getMonth() + 1);
-    this.selectedYear = this.selectedYear || today.getFullYear();
-    
-    // Default custom range: last 7 days to today
-    if (!this.customEnd) {
-      this.customEnd = this.formatDate(today);
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 6);
-      this.customStart = this.formatDate(sevenDaysAgo);
-    }
-
-    container.innerHTML = `
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-          </div>
-          <h2 class="text-3xl font-bold text-slate-800">Dashboard</h2>
-        </div>
-
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <!-- Main Period Switcher Tabs -->
-          <div class="bg-slate-100/90 p-1 rounded-xl flex gap-1 border border-slate-200/80 shadow-xs">
-            <button onclick="Dashboard.switchPeriod('daily')" id="dash-btn-daily" class="dash-period-btn px-3 py-1.5 rounded-lg text-xs font-black transition-all">Daily</button>
-            <button onclick="Dashboard.switchPeriod('monthly')" id="dash-btn-monthly" class="dash-period-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Monthly</button>
-            <button onclick="Dashboard.switchPeriod('annual')" id="dash-btn-annual" class="dash-period-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Annual</button>
-            <button onclick="Dashboard.switchPeriod('custom')" id="dash-btn-custom" class="dash-period-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all">Custom</button>
-            <button onclick="Dashboard.switchPeriod('all')" id="dash-btn-all" class="dash-period-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all">All Time</button>
-          </div>
-
-          <!-- Dynamic Sub-controls -->
-          <div id="dash-subcontrols-container" class="flex items-center gap-2">
-            <!-- Daily Controls -->
-            <div id="dash-daily-controls" class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
-              <button onclick="Dashboard.changeDayStep(-1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Day">
-                <i data-lucide="chevron-left" class="w-4 h-4"></i>
-              </button>
-              <input type="date" id="dash-date-picker" value="${this.selectedDate}" onchange="Dashboard.onDateChange(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-white focus:bg-white focus:border-accent transition-all cursor-pointer">
-              <button onclick="Dashboard.changeDayStep(1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Day">
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-              </button>
-              <button onclick="Dashboard.setToday()" class="px-2.5 py-1 text-[10.5px] font-black uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all cursor-pointer ml-0.5">Today</button>
-            </div>
-
-            <!-- Monthly Controls -->
-            <div id="dash-monthly-controls" class="hidden flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
-              <button onclick="Dashboard.changeMonthStep(-1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Month">
-                <i data-lucide="chevron-left" class="w-4 h-4"></i>
-              </button>
-              <select id="dash-month-select" onchange="Dashboard.onMonthChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-white focus:border-accent transition-all cursor-pointer">
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-              </select>
-              <select id="dash-month-year-select" onchange="Dashboard.onMonthChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-white focus:border-accent transition-all cursor-pointer">
-              </select>
-              <button onclick="Dashboard.changeMonthStep(1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Month">
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-              </button>
-              <button onclick="Dashboard.setThisMonth()" class="px-2.5 py-1 text-[10.5px] font-black uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all cursor-pointer ml-0.5">This Month</button>
-            </div>
-
-            <!-- Annual Controls -->
-            <div id="dash-annual-controls" class="hidden flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
-              <button onclick="Dashboard.changeYearStep(-1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Year">
-                <i data-lucide="chevron-left" class="w-4 h-4"></i>
-              </button>
-              <select id="dash-year-select" onchange="Dashboard.onYearChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-white focus:border-accent transition-all cursor-pointer">
-              </select>
-              <button onclick="Dashboard.changeYearStep(1)" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Year">
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-              </button>
-              <button onclick="Dashboard.setThisYear()" class="px-2.5 py-1 text-[10.5px] font-black uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all cursor-pointer ml-0.5">This Year</button>
-            </div>
-
-            <!-- Custom Range Controls -->
-            <div id="dash-custom-controls" class="hidden flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 shadow-xs flex-wrap">
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-black uppercase text-slate-400">From</span>
-                <input type="date" id="dash-custom-start" value="${this.customStart}" onchange="Dashboard.onCustomChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-white focus:border-accent transition-all cursor-pointer">
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-black uppercase text-slate-400">To</span>
-                <input type="date" id="dash-custom-end" value="${this.customEnd}" onchange="Dashboard.onCustomChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none hover:bg-white focus:border-accent transition-all cursor-pointer">
-              </div>
-              <div class="h-4 w-[1px] bg-slate-200 mx-0.5"></div>
-              <button onclick="Dashboard.setCustomPreset('7days')" class="px-2 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-all cursor-pointer">Last 7D</button>
-              <button onclick="Dashboard.setCustomPreset('30days')" class="px-2 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-all cursor-pointer">Last 30D</button>
-              <button onclick="Dashboard.setCustomPreset('thisMonth')" class="px-2 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-all cursor-pointer">This Month</button>
-            </div>
-          </div>
-
-          <!-- Quick Refresh Button -->
-          <button onclick="Dashboard.refresh()" id="dash-refresh-btn" class="p-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl shadow-xs transition-all hover:shadow cursor-pointer" title="Refresh Stats">
-            <i data-lucide="rotate-cw" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-
-      <div id="dashboard-stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 transition-opacity duration-200">
-        <!-- Stats loading placeholder -->
-    `;
-
-    // Initialize controls state & load initial stats
-    this.updatePeriodButtons();
+    this.container = container;
     await this.loadStats();
-  },
-
-  updateYearDropdowns(years) {
-    if (!years || !years.length) return;
-    this.availableYears = years;
-
-    const monthYearSelect = document.getElementById('dash-month-year-select');
-    const yearSelect = document.getElementById('dash-year-select');
-
-    const optionsHtml = years.map(y => `<option value="${y}">${y}</option>`).join('');
-
-    if (monthYearSelect && monthYearSelect.innerHTML !== optionsHtml) {
-      monthYearSelect.innerHTML = optionsHtml;
-      monthYearSelect.value = this.selectedYear;
-    }
-
-    if (yearSelect && yearSelect.innerHTML !== optionsHtml) {
-      yearSelect.innerHTML = optionsHtml;
-      yearSelect.value = this.selectedYear;
-    }
-  },
-
-  async switchPeriod(period) {
-    this.currentPeriod = period;
-    this.updatePeriodButtons();
-    await this.loadStats();
-  },
-
-  updatePeriodButtons() {
-    ['daily', 'monthly', 'annual', 'custom', 'all'].forEach(p => {
-      const btn = document.getElementById(`dash-btn-${p}`);
-      if (!btn) return;
-      if (p === this.currentPeriod) {
-        btn.className = 'dash-period-btn px-3.5 py-1.5 rounded-lg text-xs font-black bg-white shadow-xs text-slate-900 border border-slate-200 transition-all';
-      } else {
-        btn.className = 'dash-period-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 transition-all';
-      }
-    });
-
-    // Toggle sub-control panels
-    const dailyCtrl = document.getElementById('dash-daily-controls');
-    const monthlyCtrl = document.getElementById('dash-monthly-controls');
-    const annualCtrl = document.getElementById('dash-annual-controls');
-    const customCtrl = document.getElementById('dash-custom-controls');
-
-    if (dailyCtrl) dailyCtrl.classList.toggle('hidden', this.currentPeriod !== 'daily');
-    if (monthlyCtrl) monthlyCtrl.classList.toggle('hidden', this.currentPeriod !== 'monthly');
-    if (annualCtrl) annualCtrl.classList.toggle('hidden', this.currentPeriod !== 'annual');
-    if (customCtrl) customCtrl.classList.toggle('hidden', this.currentPeriod !== 'custom');
-
-    // Ensure inputs reflect current state
-    const mSelect = document.getElementById('dash-month-select');
-    if (mSelect) mSelect.value = this.selectedMonth;
-
-    const mySelect = document.getElementById('dash-month-year-select');
-    if (mySelect) mySelect.value = this.selectedYear;
-
-    const ySelect = document.getElementById('dash-year-select');
-    if (ySelect) ySelect.value = this.selectedYear;
-
-    const dPicker = document.getElementById('dash-date-picker');
-    if (dPicker) dPicker.value = this.selectedDate;
-
-    this.updatePeriodBadge();
-  },
-
-  updatePeriodBadge() {
-    const badgeText = document.getElementById('dash-period-badge-text');
-    const rangeText = document.getElementById('dash-date-range-text');
-    if (!badgeText || !rangeText) return;
-
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const todayStr = this.formatDate(new Date());
-
-    if (this.currentPeriod === 'daily') {
-      if (this.selectedDate === todayStr) {
-        badgeText.textContent = 'Today';
-      } else {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (this.selectedDate === this.formatDate(yesterday)) {
-          badgeText.textContent = 'Yesterday';
-        } else {
-          badgeText.textContent = 'Day View';
-        }
-      }
-
-      try {
-        const [y, m, d] = this.selectedDate.split('-').map(Number);
-        const dt = new Date(y, m - 1, d);
-        rangeText.textContent = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-      } catch(e) {
-        rangeText.textContent = this.selectedDate;
-      }
-    } else if (this.currentPeriod === 'monthly') {
-      const now = new Date();
-      const isCurrentMonth = (this.selectedMonth === (now.getMonth() + 1) && this.selectedYear === now.getFullYear());
-      badgeText.textContent = isCurrentMonth ? 'This Month' : 'Monthly';
-      rangeText.textContent = `${monthNames[this.selectedMonth - 1]} ${this.selectedYear}`;
-    } else if (this.currentPeriod === 'annual') {
-      const now = new Date();
-      badgeText.textContent = (this.selectedYear === now.getFullYear()) ? 'This Year' : 'Annual';
-      rangeText.textContent = `Full Year ${this.selectedYear}`;
-    } else if (this.currentPeriod === 'custom') {
-      badgeText.textContent = 'Custom Range';
-      rangeText.textContent = `${this.customStart || 'Start'}  ➔  ${this.customEnd || 'End'}`;
-    } else if (this.currentPeriod === 'all') {
-      badgeText.textContent = 'All Time';
-      rangeText.textContent = 'All historical records';
-    }
-  },
-
-  changeDayStep(delta) {
-    let parts = this.selectedDate ? this.selectedDate.split('-').map(Number) : null;
-    let d = (parts && parts.length === 3) ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date();
-    d.setDate(d.getDate() + delta);
-    this.selectedDate = this.formatDate(d);
-
-    const input = document.getElementById('dash-date-picker');
-    if (input) input.value = this.selectedDate;
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  setToday() {
-    this.selectedDate = this.formatDate(new Date());
-    const input = document.getElementById('dash-date-picker');
-    if (input) input.value = this.selectedDate;
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  onDateChange(val) {
-    if (!val) return;
-    this.selectedDate = val;
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  changeMonthStep(delta) {
-    let m = this.selectedMonth + delta;
-    let y = this.selectedYear;
-
-    if (m > 12) {
-      m = 1;
-      y += 1;
-    } else if (m < 1) {
-      m = 12;
-      y -= 1;
-    }
-
-    this.selectedMonth = m;
-    this.selectedYear = y;
-
-    const mSelect = document.getElementById('dash-month-select');
-    if (mSelect) mSelect.value = m;
-
-    const mySelect = document.getElementById('dash-month-year-select');
-    if (mySelect) {
-      let opt = Array.from(mySelect.options).find(o => parseInt(o.value) === y);
-      if (!opt) {
-        const newOpt = document.createElement('option');
-        newOpt.value = y;
-        newOpt.textContent = y;
-        mySelect.appendChild(newOpt);
-      }
-      mySelect.value = y;
-    }
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  setThisMonth() {
-    const now = new Date();
-    this.selectedMonth = now.getMonth() + 1;
-    this.selectedYear = now.getFullYear();
-
-    const mSelect = document.getElementById('dash-month-select');
-    if (mSelect) mSelect.value = this.selectedMonth;
-
-    const mySelect = document.getElementById('dash-month-year-select');
-    if (mySelect) mySelect.value = this.selectedYear;
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  onMonthChange() {
-    const mSelect = document.getElementById('dash-month-select');
-    const mySelect = document.getElementById('dash-month-year-select');
-
-    if (mSelect) this.selectedMonth = parseInt(mSelect.value) || (new Date().getMonth() + 1);
-    if (mySelect) this.selectedYear = parseInt(mySelect.value) || new Date().getFullYear();
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  changeYearStep(delta) {
-    this.selectedYear += delta;
-
-    const ySelect = document.getElementById('dash-year-select');
-    if (ySelect) {
-      let opt = Array.from(ySelect.options).find(o => parseInt(o.value) === this.selectedYear);
-      if (!opt) {
-        const newOpt = document.createElement('option');
-        newOpt.value = this.selectedYear;
-        newOpt.textContent = this.selectedYear;
-        ySelect.appendChild(newOpt);
-      }
-      ySelect.value = this.selectedYear;
-    }
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  setThisYear() {
-    this.selectedYear = new Date().getFullYear();
-    const ySelect = document.getElementById('dash-year-select');
-    if (ySelect) ySelect.value = this.selectedYear;
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  onYearChange() {
-    const ySelect = document.getElementById('dash-year-select');
-    if (ySelect) this.selectedYear = parseInt(ySelect.value) || new Date().getFullYear();
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  onCustomChange() {
-    const startInput = document.getElementById('dash-custom-start');
-    const endInput = document.getElementById('dash-custom-end');
-
-    if (startInput) this.customStart = startInput.value;
-    if (endInput) this.customEnd = endInput.value;
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  setCustomPreset(preset) {
-    const today = new Date();
-    const endStr = this.formatDate(today);
-
-    if (preset === '7days') {
-      const start = new Date(today);
-      start.setDate(today.getDate() - 6);
-      this.customStart = this.formatDate(start);
-      this.customEnd = endStr;
-    } else if (preset === '30days') {
-      const start = new Date(today);
-      start.setDate(today.getDate() - 29);
-      this.customStart = this.formatDate(start);
-      this.customEnd = endStr;
-    } else if (preset === 'thisMonth') {
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      this.customStart = this.formatDate(start);
-      this.customEnd = endStr;
-    }
-
-    const startInput = document.getElementById('dash-custom-start');
-    const endInput = document.getElementById('dash-custom-end');
-    if (startInput) startInput.value = this.customStart;
-    if (endInput) endInput.value = this.customEnd;
-
-    this.updatePeriodBadge();
-    this.loadStats();
-  },
-
-  async refresh() {
-    const refreshBtn = document.getElementById('dash-refresh-btn');
-    if (refreshBtn) {
-      refreshBtn.classList.add('animate-spin');
-      setTimeout(() => refreshBtn?.classList.remove('animate-spin'), 600);
-    }
-    await this.loadStats();
-  },
-
-  buildFilterPayload() {
-    if (this.currentPeriod === 'daily') {
-      return {
-        period: 'daily',
-        targetDate: this.selectedDate
-      };
-    } else if (this.currentPeriod === 'monthly') {
-      return {
-        period: 'monthly',
-        targetMonth: `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}`,
-        year: this.selectedYear,
-        month: this.selectedMonth
-      };
-    } else if (this.currentPeriod === 'annual') {
-      return {
-        period: 'annual',
-        targetYear: String(this.selectedYear),
-        year: this.selectedYear
-      };
-    } else if (this.currentPeriod === 'custom') {
-      return {
-        period: 'custom',
-        startDate: this.customStart,
-        endDate: this.customEnd
-      };
-    } else {
-      return {
-        period: 'all'
-      };
-    }
   },
 
   async loadStats() {
-    const statsContainer = document.getElementById('dashboard-stats');
-    if (statsContainer) {
-      statsContainer.classList.add('opacity-50');
-    }
-
     try {
-      const filter = this.buildFilterPayload();
-      const stats = await window.api.getDashboardStats(filter);
-      
-      if (stats && stats.availableYears && stats.availableYears.length) {
-        this.updateYearDropdowns(stats.availableYears);
-      }
-
-      this.populateStats(stats);
-      this.updatePeriodBadge();
-      if (window.lucide) lucide.createIcons();
+      this.summary = await window.api.getIcecreamFactorySummary() || {};
+      this.cars = await window.api.getCars() || [];
+      this.recentDeliveries = await window.api.getShopDeliveries({ fromDate: new Date().toISOString().split('T')[0] }) || [];
+      this.renderUI();
     } catch (e) {
-      console.error('[DASHBOARD] Error loading stats:', e);
-    } finally {
-      if (statsContainer) {
-        statsContainer.classList.remove('opacity-50');
+      console.error('Failed to load factory dashboard:', e);
+      if (this.container) {
+        this.container.innerHTML = `<div class="p-6 text-red-500 font-bold">Error loading dashboard: ${e.message}</div>`;
       }
     }
   },
 
-  populateStats(stats) {
-    const statsContainer = document.getElementById('dashboard-stats');
-    if (!statsContainer || !stats) return;
+  renderUI() {
+    if (!this.container) return;
 
-    const profit = stats.totalProfit || 0;
-    const isProfitNeg = profit < 0;
-    const profitColorClass = isProfitNeg ? 'text-rose-600' : 'text-emerald-700';
-    const profitBadgeBg = isProfitNeg ? 'bg-rose-50 text-rose-600' : 'bg-amber-100 text-amber-700';
+    const s = this.summary || {};
+    const raw = s.rawMaterials || { total_materials: 0, total_raw_value: 0, low_stock_count: 0 };
+    const single = s.singleItems || { total_items: 0, total_single_pieces: 0, total_single_cost: 0 };
+    const cartons = s.packedCartons || { total_carton_variants: 0, total_warehouse_cartons: 0, total_warehouse_sale_value: 0 };
+    const carStats = s.cars || { total_cars: 0, active_cars: 0, total_cartons_in_cars: 0 };
+    const today = s.today || { date: '', sales: 0, received: 0, invoices: 0, cartons_sold: 0 };
 
-    statsContainer.innerHTML = `
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 group-hover:scale-105 group-hover:bg-blue-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="file-text" class="w-6 h-6"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Sales</p>
-          <p class="text-2xl font-black text-slate-800 font-display mt-0.5 tabular-nums">${stats.proposalCount}</p>
-        </div>
-      </div>
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Ice Cream Factory';
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="trending-up" class="w-6 h-6"></i>
+    this.container.innerHTML = `
+      <div class="h-full flex flex-col gap-6 max-w-7xl mx-auto overflow-y-auto custom-scrollbar p-1">
+        
+        <!-- Welcome & Factory Header -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-indigo-800/40">
+          <div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[10px] font-black uppercase tracking-wider">FACTORY HUB</span>
+              <span class="text-xs text-slate-400 font-mono font-bold">${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-black tracking-tight text-white">${company} Management</h2>
+            <p class="text-xs text-slate-300 font-medium mt-1">Complete 5-stage production, packing, vehicle dispatch, and shop deliveries control center.</p>
+          </div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="app.navigate('shop-sales')" class="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+              <i data-lucide="shopping-cart" class="w-4 h-4"></i> + New Shop Delivery
+            </button>
+            <button onclick="Dashboard.loadStats()" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-all cursor-pointer" title="Refresh Dashboard">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Revenue</p>
-          <p class="text-2xl font-black text-slate-800 font-display mt-0.5 tabular-nums truncate">${app.formatCurrency(stats.totalRevenue)}</p>
-        </div>
-      </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 group-hover:scale-105 group-hover:bg-rose-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="arrow-down-circle" class="w-6 h-6"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Expenses</p>
-          <p class="text-2xl font-black text-slate-800 font-display mt-0.5 tabular-nums truncate">${app.formatCurrency(stats.totalExpenses)}</p>
-        </div>
-      </div>
+        <!-- 5-STAGE FACTORY WORKFLOW INTERACTIVE STEPPER -->
+        <div>
+          <div class="flex items-center justify-between mb-3 px-1">
+            <h3 class="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-2">
+              <i data-lucide="git-commit" class="w-4 h-4 text-amber-500"></i> The 5 Factory Stages Workflow
+            </h3>
+            <span class="text-[11px] font-bold text-slate-400">Click any stage to open</span>
+          </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl ${profitBadgeBg} group-hover:scale-105 transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="pie-chart" class="w-6 h-6"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Est. Profit</p>
-          <p class="text-2xl font-black ${profitColorClass} font-display mt-0.5 tabular-nums truncate">${app.formatCurrency(stats.totalProfit)}</p>
-        </div>
-      </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+            
+            <!-- Stage 1 Card: Raw Materials -->
+            <div onclick="app.navigate('raw-materials')" class="bg-white p-4 rounded-2xl border-2 border-emerald-300/80 hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[9px]">STAGE 1</span>
+                  <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                    <i data-lucide="boxes" class="w-3.5 h-3.5"></i>
+                  </div>
+                </div>
+                <h4 class="font-black text-sm text-slate-900 group-hover:text-emerald-700 transition-colors">Raw Materials</h4>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5">Milk, Sugar, Sticks, Cocoa</p>
+                
+                <div class="mt-3 pt-2.5 border-t border-slate-100">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Stock Value:</div>
+                  <div class="text-base font-black text-slate-900 tabular-nums">Rs. ${Math.round(raw.total_raw_value).toLocaleString()}</div>
+                  ${raw.low_stock_count > 0 ? `<div class="text-[10px] font-black text-rose-600 mt-0.5">⚠️ ${raw.low_stock_count} low stock</div>` : `<div class="text-[10px] font-bold text-emerald-700 mt-0.5">✓ Stock healthy</div>`}
+                </div>
+              </div>
+              <span class="mt-3 text-[10px] font-black text-emerald-600 flex items-center gap-1">Open Raw Stock ➔</span>
+            </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 group-hover:scale-105 group-hover:bg-orange-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="tag" class="w-6 h-6"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Discounts</p>
-          <p class="text-2xl font-black text-slate-800 font-display mt-0.5 tabular-nums truncate">${app.formatCurrency(stats.totalDiscount || 0)}</p>
-        </div>
-      </div>
+            <!-- Stage 2 Card: Single Items Production -->
+            <div onclick="app.navigate('production')" class="bg-white p-4 rounded-2xl border-2 border-cyan-300/80 hover:border-cyan-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-800 font-black text-[9px]">STAGE 2</span>
+                  <div class="w-7 h-7 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-white transition-all">
+                    <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                  </div>
+                </div>
+                <h4 class="font-black text-sm text-slate-900 group-hover:text-cyan-700 transition-colors">Item Production</h4>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5">Loose pieces (Chocbar, Ice Loly)</p>
+                
+                <div class="mt-3 pt-2.5 border-t border-slate-100">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Pieces in Pool:</div>
+                  <div class="text-base font-black text-cyan-700 tabular-nums">${single.total_single_pieces.toLocaleString()} <span class="text-xs font-normal text-slate-500">pcs</span></div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">Ready to pack into cartons</div>
+                </div>
+              </div>
+              <span class="mt-3 text-[10px] font-black text-cyan-600 flex items-center gap-1">Make Pieces ➔</span>
+            </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 group-hover:scale-105 group-hover:bg-indigo-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="users" class="w-6 h-6"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Customers</p>
-          <p class="text-2xl font-black text-slate-800 font-display mt-0.5 tabular-nums">${stats.totalCustomers || 0}</p>
-        </div>
-      </div>
+            <!-- Stage 3 Card: Carton Packing -->
+            <div onclick="app.navigate('carton-packing')" class="bg-white p-4 rounded-2xl border-2 border-purple-300/80 hover:border-purple-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 font-black text-[9px]">STAGE 3</span>
+                  <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-all">
+                    <i data-lucide="package" class="w-3.5 h-3.5"></i>
+                  </div>
+                </div>
+                <h4 class="font-black text-sm text-slate-900 group-hover:text-purple-700 transition-colors">Carton Packing</h4>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5">Ready-to-Sell cartons inventory</p>
+                
+                <div class="mt-3 pt-2.5 border-t border-slate-100">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Warehouse Stock:</div>
+                  <div class="text-base font-black text-purple-700 tabular-nums">${cartons.total_warehouse_cartons.toLocaleString()} <span class="text-xs font-normal text-slate-500">ctns</span></div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">Val: Rs. ${Math.round(cartons.total_warehouse_sale_value).toLocaleString()}</div>
+                </div>
+              </div>
+              <span class="mt-3 text-[10px] font-black text-purple-600 flex items-center gap-1">Pack Cartons ➔</span>
+            </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 group-hover:scale-105 group-hover:bg-purple-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="building-2" class="w-6 h-6"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Companies</p>
-          <p class="text-2xl font-black text-slate-800 font-display mt-0.5 tabular-nums">${stats.totalVendors || 0}</p>
-        </div>
-      </div>
+            <!-- Stage 4 Card: Cars & Delivery Loading -->
+            <div onclick="app.navigate('car-loading')" class="bg-white p-4 rounded-2xl border-2 border-blue-300/80 hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-black text-[9px]">STAGE 4</span>
+                  <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all">
+                    <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+                  </div>
+                </div>
+                <h4 class="font-black text-sm text-slate-900 group-hover:text-blue-700 transition-colors">Cars &amp; Loading</h4>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5">Vehicles list &amp; loaded stock</p>
+                
+                <div class="mt-3 pt-2.5 border-t border-slate-100">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Loaded in Cars:</div>
+                  <div class="text-base font-black text-blue-700 tabular-nums">${carStats.total_cartons_in_cars.toLocaleString()} <span class="text-xs font-normal text-slate-500">ctns</span></div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">${carStats.total_cars} delivery vehicles</div>
+                </div>
+              </div>
+              <span class="mt-3 text-[10px] font-black text-blue-600 flex items-center gap-1">Load Cars ➔</span>
+            </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 group-hover:scale-105 group-hover:bg-rose-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="alert-circle" class="w-6 h-6"></i>
-        </div>
-        <div class="min-w-0">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">To Receive</p>
-          <p class="text-2xl font-black text-slate-800 font-display mt-0.5 tabular-nums truncate">${app.formatCurrency(stats.totalReceivables || 0)}</p>
-        </div>
-      </div>
+            <!-- Stage 5 Card: Shop Deliveries -->
+            <div onclick="app.navigate('shop-sales')" class="bg-white p-4 rounded-2xl border-2 border-amber-300/80 hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black text-[9px]">STAGE 5</span>
+                  <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
+                    <i data-lucide="store" class="w-3.5 h-3.5"></i>
+                  </div>
+                </div>
+                <h4 class="font-black text-sm text-slate-900 group-hover:text-amber-700 transition-colors">Shop Deliveries</h4>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5">Sales, returns &amp; A5 billing</p>
+                
+                <div class="mt-3 pt-2.5 border-t border-slate-100">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Today's Sales:</div>
+                  <div class="text-base font-black text-emerald-700 tabular-nums">Rs. ${Math.round(today.sales).toLocaleString()}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">${today.cartons_sold} ctns sold today</div>
+                </div>
+              </div>
+              <span class="mt-3 text-[10px] font-black text-amber-600 flex items-center gap-1">Sell &amp; Bill ➔</span>
+            </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-4 hover:shadow-md hover:border-slate-300 transition-all group">
-        <div class="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 group-hover:scale-105 group-hover:bg-cyan-600 group-hover:text-white transition-all flex items-center justify-center shrink-0 shadow-2xs">
-          <i data-lucide="award" class="w-6 h-6"></i>
+          </div>
         </div>
-        <div class="min-w-0 flex-1">
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Top Sold</p>
-          <p class="text-lg font-black text-slate-800 truncate mt-0.5" title="${stats.topSold}">${stats.topSold}</p>
+
+        <!-- Middle 2 Columns: Active Delivery Cars vs Today's Invoices -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          
+          <!-- Left: Active Delivery Cars on Route (5 cols) -->
+          <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <i data-lucide="truck" class="w-4 h-4 text-blue-600"></i>
+                <h3 class="font-black text-sm text-slate-900">Delivery Cars &amp; Van Balances</h3>
+              </div>
+              <button onclick="app.navigate('car-loading')" class="text-[11px] font-black text-blue-600 hover:text-blue-700 cursor-pointer">
+                Manage Cars ➔
+              </button>
+            </div>
+
+            <div class="space-y-2.5">
+              ${this.cars.map(c => `
+                <div onclick="app.navigate('car-loading')" class="p-3 bg-slate-50 hover:bg-blue-50/60 rounded-2xl border border-slate-200/80 transition-all cursor-pointer flex items-center justify-between">
+                  <div>
+                    <h4 class="font-black text-xs text-slate-900">${c.car_number}</h4>
+                    <p class="text-[11px] text-slate-500 font-medium">${c.driver_name} ${c.phone ? `• ${c.phone}` : ''}</p>
+                    ${c.area ? `<span class="text-[10px] text-blue-700 font-bold block mt-0.5">📍 ${c.area}</span>` : ''}
+                  </div>
+                  <div class="text-right">
+                    <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white font-black text-xs tabular-nums block">
+                      ${c.total_loaded_cartons || 0} ctns
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400 mt-0.5 block">loaded now</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Right: Today's Shop Invoices & Deliveries (7 cols) -->
+          <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <i data-lucide="receipt" class="w-4 h-4 text-amber-500"></i>
+                <h3 class="font-black text-sm text-slate-900">Today's Deliveries &amp; Invoices</h3>
+              </div>
+              <button onclick="app.navigate('proposals')" class="text-[11px] font-black text-amber-600 hover:text-amber-700 cursor-pointer">
+                View All Invoices ➔
+              </button>
+            </div>
+
+            ${this.recentDeliveries.length === 0 ? `
+              <div class="p-8 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+                <p class="font-bold text-xs text-slate-500">No deliveries completed yet today.</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Click "+ New Shop Delivery" to record your first delivery for today.</p>
+              </div>
+            ` : `
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse border border-slate-200">
+                  <thead>
+                    <tr class="text-[10px] font-black uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
+                      <th class="py-2.5 px-3 border-r border-slate-200">Invoice #</th>
+                      <th class="py-2.5 px-3 border-r border-slate-200">Shop</th>
+                      <th class="py-2.5 px-3 border-r border-slate-200">Vehicle</th>
+                      <th class="py-2.5 px-3 text-right border-r border-slate-200">Cartons</th>
+                      <th class="py-2.5 px-3 text-right border-r border-slate-200">Total</th>
+                      <th class="py-2.5 px-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+                    ${this.recentDeliveries.slice(0, 6).map(d => `
+                      <tr class="hover:bg-slate-50">
+                        <td class="py-2 px-3 font-mono font-bold text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
+                        <td class="py-2 px-3 font-black text-slate-900 border-r border-slate-200">${d.shop_name}</td>
+                        <td class="py-2 px-3 text-slate-500 text-[11px] border-r border-slate-200">${d.car_number || 'Direct'}</td>
+                        <td class="py-2 px-3 text-right font-black text-blue-700 tabular-nums border-r border-slate-200">${d.total_cartons_delivered || 0} ctns</td>
+                        <td class="py-2 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
+                        <td class="py-2 px-3 text-center">
+                          <button onclick="ShopSales.printDeliveryInvoice(${d.id})" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-black cursor-pointer flex items-center gap-1 mx-auto">
+                            <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+
         </div>
+
       </div>
     `;
+
+    if (window.lucide) lucide.createIcons({ root: this.container });
   }
 };

@@ -388,7 +388,7 @@ window.CarLoading = {
               </div>
               <div class="flex items-center gap-2">
                 <button type="button" onclick="CarLoading.switchTab('cars')" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 cursor-pointer">Cancel</button>
-                <button type="button" onclick="CarLoading.submitDispatch()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
+                <button type="button" id="dsp-submit-btn" onclick="CarLoading.submitDispatch()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
                   <i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Loading &amp; Print Sheet
                 </button>
               </div>
@@ -431,7 +431,7 @@ window.CarLoading = {
           </td>
           <td class="py-3 px-4 text-right border-r border-slate-200">
             <div class="flex items-center justify-end gap-1.5">
-              <input type="number" min="0" max="${warehouse}" data-carton-id="${c.id}" data-in-car="${inCar}"
+              <input type="number" min="0" max="${warehouse}" data-carton-id="${c.id}" data-in-car="${inCar}" data-warehouse="${warehouse}"
                      placeholder="0" oninput="CarLoading.onLoadQtyChange(this)"
                      class="dsp-qty-input w-24 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-center font-black text-sm text-slate-900 outline-none focus:border-blue-500 tabular-nums">
             </div>
@@ -449,11 +449,23 @@ window.CarLoading = {
   onLoadQtyChange(input) {
     const cartonId = input.dataset.cartonId;
     const inCar = Number(input.dataset.inCar) || 0;
+    const warehouse = Number(input.dataset.warehouse) || 0;
     const qty = Number(input.value) || 0;
     const afterEl = document.getElementById(`dsp-after-${cartonId}`);
     if (afterEl) {
       afterEl.textContent = `${inCar + qty} ctns`;
     }
+
+    if (qty > warehouse) {
+      input.classList.add('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+      input.classList.remove('border-slate-300', 'text-slate-900');
+      input.title = `Exceeds available factory stock (${warehouse} ctns)`;
+    } else {
+      input.classList.remove('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+      input.classList.add('border-slate-300', 'text-slate-900');
+      input.title = '';
+    }
+
     this.updateDispatchTotalCount();
   },
 
@@ -464,6 +476,26 @@ window.CarLoading = {
     });
     const countEl = document.getElementById('dsp-total-load-count');
     if (countEl) countEl.textContent = `${total} cartons`;
+
+    const submitBtn = document.getElementById('dsp-submit-btn');
+    let hasExceeding = false;
+    document.querySelectorAll('.dsp-qty-input').forEach(inp => {
+      const q = Number(inp.value) || 0;
+      const w = Number(inp.dataset.warehouse) || 0;
+      if (q > w) hasExceeding = true;
+    });
+
+    if (submitBtn) {
+      if (hasExceeding || total <= 0) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        submitBtn.classList.remove('cursor-pointer', 'hover:bg-blue-500', 'active:scale-95');
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        submitBtn.classList.add('cursor-pointer', 'hover:bg-blue-500', 'active:scale-95');
+      }
+    }
   },
 
   async submitDispatch() {

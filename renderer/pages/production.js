@@ -540,7 +540,7 @@ window.Production = {
         `).join('')}
       </select>
       <div class="flex items-center gap-1 flex-1">
-        <input type="number" step="any" min="0" placeholder="Qty used" class="w-full pr-mat-qty px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none tabular-nums focus:border-cyan-500">
+        <input type="number" step="any" min="0" placeholder="Qty used" oninput="Production.validateMaterialsStock()" class="w-full pr-mat-qty px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none tabular-nums focus:border-cyan-500">
       </div>
       <button type="button" onclick="Production.removeMaterialRow('${rowId}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Remove row">
         <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -604,6 +604,49 @@ window.Production = {
       } else {
         addBtn.classList.remove('opacity-40', 'cursor-not-allowed');
         addBtn.title = 'Add another raw material';
+      }
+    }
+
+    this.validateMaterialsStock();
+  },
+
+  validateMaterialsStock() {
+    const list = document.getElementById('pr-materials-list');
+    const submitBtn = document.querySelector('#prd-modal-container button[type="submit"]');
+    if (!list) return;
+
+    let hasExceeding = false;
+    const matRows = list.querySelectorAll('div[id^="mat-row-"]');
+    matRows.forEach(row => {
+      const select = row.querySelector('.pr-mat-select');
+      const qtyInput = row.querySelector('.pr-mat-qty');
+      const matId = Number(select?.value);
+      const qty = Number(qtyInput?.value) || 0;
+      const mat = this.rawMaterials.find(m => m.id === matId);
+
+      if (mat && qty > (mat.current_stock || 0)) {
+        hasExceeding = true;
+        qtyInput?.classList.add('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+        qtyInput?.classList.remove('border-slate-300', 'text-slate-900');
+        qtyInput.title = `Exceeds available stock (${mat.current_stock} ${mat.unit})`;
+      } else {
+        qtyInput?.classList.remove('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+        qtyInput?.classList.add('border-slate-300', 'text-slate-900');
+        qtyInput.title = '';
+      }
+    });
+
+    if (submitBtn) {
+      if (hasExceeding) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        submitBtn.classList.remove('cursor-pointer', 'hover:bg-cyan-400', 'active:scale-95');
+        submitBtn.title = 'Cannot complete: raw material quantity exceeds available stock';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        submitBtn.classList.add('cursor-pointer', 'hover:bg-cyan-400', 'active:scale-95');
+        submitBtn.title = 'Complete Production Run';
       }
     }
   },

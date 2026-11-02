@@ -490,15 +490,44 @@ window.CartonPacking = {
     if (totalCostDisplay) totalCostDisplay.textContent = `Rs. ${Math.round(totalCost).toLocaleString()}`;
 
     const availablePcs = c.available_single_pieces || 0;
-    if (totalPcsNeeded > availablePcs) {
+    const isExceeding = totalPcsNeeded > availablePcs;
+    const isZeroOrNegative = cartonsQty <= 0;
+    const qtyInput = document.getElementById('pk-cartons-qty');
+
+    if (isExceeding) {
       if (warning) {
         warning.classList.remove('hidden');
-        warning.textContent = `⚠️ Insufficient single pieces! Need ${totalPcsNeeded} pcs, but only ${availablePcs} pcs available in production pool.`;
+        warning.textContent = `⚠️ Insufficient pieces in pool! Need ${totalPcsNeeded.toLocaleString()} pcs, but only ${availablePcs.toLocaleString()} available.`;
       }
-      if (submitBtn) submitBtn.classList.add('opacity-50');
+      if (qtyInput) {
+        qtyInput.classList.add('border-rose-500', 'bg-rose-50/50', 'text-rose-700');
+        qtyInput.classList.remove('border-slate-300', 'text-purple-700');
+      }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        submitBtn.classList.remove('cursor-pointer', 'hover:bg-purple-500', 'active:scale-95');
+        submitBtn.title = `Cannot pack: ${totalPcsNeeded} pcs needed exceeds available ${availablePcs} pcs`;
+      }
     } else {
       if (warning) warning.classList.add('hidden');
-      if (submitBtn) submitBtn.classList.remove('opacity-50');
+      if (qtyInput) {
+        qtyInput.classList.remove('border-rose-500', 'bg-rose-50/50', 'text-rose-700');
+        qtyInput.classList.add('border-slate-300', 'text-purple-700');
+      }
+      if (submitBtn) {
+        if (isZeroOrNegative) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+          submitBtn.classList.remove('cursor-pointer', 'hover:bg-purple-500', 'active:scale-95');
+          submitBtn.title = 'Enter number of cartons to pack';
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+          submitBtn.classList.add('cursor-pointer', 'hover:bg-purple-500', 'active:scale-95');
+          submitBtn.title = 'Complete Carton Packing';
+        }
+      }
     }
   },
 
@@ -587,12 +616,16 @@ window.CartonPacking = {
     const pcsPerCarton = Number(document.getElementById('pk-pcs-per-carton').value);
     const salePrice = Number(document.getElementById('pk-sale-price').value);
 
-    if (!cartonId || cartonsPacked <= 0) {
-      app.showAlert({ title: 'Invalid Packing', message: 'Please select a carton and enter number of cartons to pack.' });
+    const c = this.cartons.find(x => x.id === cartonId);
+    const totalPcsNeeded = pcsPerCarton * cartonsPacked;
+    const availablePcs = c?.available_single_pieces || 0;
+
+    // Silently block if exceeding or invalid (button is already disabled)
+    if (!cartonId || cartonsPacked <= 0 || totalPcsNeeded > availablePcs) {
+      this.calcPackingTotal();
       return;
     }
 
-    const c = this.cartons.find(x => x.id === cartonId);
     const singleCost = (c && c.carton_cost_price && c.pieces_per_carton) ? (c.carton_cost_price / c.pieces_per_carton) : 10;
     const cartonCost = pcsPerCarton * singleCost;
 
@@ -611,7 +644,17 @@ window.CartonPacking = {
       app.showToast(`Packed +${cartonsPacked} cartons successfully! (${res.totalPiecesNeeded} pcs consumed)`, 'success');
       await this.loadData();
     } else {
-      app.showAlert({ title: 'Packing Error', message: res.error || 'Failed to pack cartons.' });
+      // Show error inline in modal instead of popup alert
+      const warning = document.getElementById('pk-insufficient-warning');
+      const submitBtn = document.getElementById('pk-submit-btn');
+      if (warning) {
+        warning.classList.remove('hidden');
+        warning.textContent = `⚠️ ${res.error || 'Failed to pack cartons.'}`;
+      }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      }
     }
   },
 

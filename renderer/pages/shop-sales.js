@@ -30,11 +30,6 @@ window.ShopSales = {
         this.carInventory = await window.api.getCarInventory(this.selectedCarId) || [];
       }
 
-      // Reset items or populate initial item row
-      if (this.items.length === 0) {
-        this.addItemRow();
-      }
-
       this.renderUI();
     } catch (e) {
       console.error('Failed to load shop sales:', e);
@@ -48,16 +43,17 @@ window.ShopSales = {
     const selectedCartonIds = new Set(this.items.map(it => it.carton_id));
     const cId = defaultCartonId || (this.cartons.find(c => !selectedCartonIds.has(c.id))?.id || this.cartons[0]?.id || null);
     const carton = this.cartons.find(c => c.id === cId);
+    const price = carton ? (carton.carton_sale_price || 0) : 250;
     this.items.push({
       carton_id: cId,
       carton_name: carton ? carton.carton_name : '',
       pieces_per_carton: carton ? carton.pieces_per_carton : 20,
-      ordered_cartons: 10,
-      delivered_cartons: 8,
-      returned_cartons: 2,
+      ordered_cartons: 1,
+      delivered_cartons: 1,
+      returned_cartons: 0,
       return_destination: 'car', // 'car' | 'stock'
-      carton_price: carton ? carton.carton_sale_price : 250,
-      line_total: 8 * (carton ? carton.carton_sale_price : 250)
+      carton_price: price,
+      line_total: 1 * price
     });
   },
 
@@ -163,19 +159,24 @@ window.ShopSales = {
               </button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <select id="ss-shop-id" onchange="ShopSales.onShopChange(this.value)"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
-                <option value="">-- Choose Registered Shop --</option>
-                ${this.shops.map(s => `
-                  <option value="${s.id}" ${activeShop && s.id === activeShop.id ? 'selected' : ''}>
-                    ${s.name} (${s.owner_name || s.city || ''})
-                  </option>
-                `).join('')}
-              </select>
-
-              <input type="text" id="ss-shop-name" value="${activeShop ? activeShop.name : ''}" placeholder="Or type counter shop name..."
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <select id="ss-shop-id" onchange="ShopSales.onShopChange(this.value)"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border-2 ${activeShop ? 'border-amber-400 bg-amber-50/20' : 'border-slate-300'} rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-amber-500 transition-all cursor-pointer">
+                  <option value="">-- Choose Registered Shop --</option>
+                  ${this.shops.map(s => `
+                    <option value="${s.id}" ${activeShop && s.id === activeShop.id ? 'selected' : ''}>
+                      ${s.name} ${s.owner_name ? `(${s.owner_name})` : ''} ${s.city ? `• ${s.city}` : ''}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+              ${activeShop ? `
+                <button type="button" onclick="ShopSales.clearShopSelection()" title="Clear Shop Selection"
+                        class="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95" aria-label="Clear Shop">
+                  <i data-lucide="x" class="w-4 h-4 text-rose-600"></i>
+                </button>
+              ` : ''}
             </div>
 
             <!-- Shop Info & Previous Khata -->
@@ -202,99 +203,112 @@ window.ShopSales = {
               <h3 class="font-black text-sm text-slate-900">Delivery Cartons &amp; Returns Breakdown</h3>
               <p class="text-[11px] text-slate-500 font-medium">Specify ordered cartons, actual cartons delivered, and choose what happens to returned cartons.</p>
             </div>
-            <button type="button" onclick="ShopSales.addNewRow()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Another Item
+            <button type="button" onclick="ShopSales.addNewRow()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> ${this.items.length === 0 ? '+ Add First Item' : '+ Add Another Item'}
             </button>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs border-collapse border border-slate-200">
-              <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
-                <tr>
-                  <th class="py-2 px-3 border-r border-slate-200">Item / Carton Product</th>
-                  <th class="py-2 px-2 text-center w-24 border-r border-slate-200">Ordered</th>
-                  <th class="py-2 px-2 text-center w-24 text-emerald-800 bg-emerald-50/70 border-r border-slate-200">Delivered</th>
-                  <th class="py-2 px-2 text-center w-24 text-rose-800 bg-rose-50/70 border-r border-slate-200">Returned</th>
-                  <th class="py-2 px-3 text-center border-r border-slate-200">Returned Cartons Destination</th>
-                  <th class="py-2 px-2 text-right w-28 border-r border-slate-200">Rate / Ctn</th>
-                  <th class="py-2 px-3 text-right w-32 border-r border-slate-200">Total (Rs.)</th>
-                  <th class="py-2 px-2 text-center w-10"></th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 font-semibold text-slate-700" id="ss-items-tbody">
-                ${this.items.map((it, idx) => `
-                  <tr class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-1.5 px-3 border-r border-slate-200">
-                      <select onchange="ShopSales.onItemProductChange(${idx}, this.value)"
-                              class="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-amber-400">
-                        ${(() => {
-                          const otherSelectedCartons = new Set(this.items.filter((_, i) => i !== idx).map(x => x.carton_id));
-                          return this.cartons.map(c => {
-                            const isCurrent = c.id === it.carton_id;
-                            const isAlreadyAdded = otherSelectedCartons.has(c.id);
-                            return `
-                              <option value="${c.id}" ${isCurrent ? 'selected' : ''} ${isAlreadyAdded ? 'disabled' : ''}>
-                                ${c.carton_name} ${isAlreadyAdded ? '(Already Added)' : `(Rate: Rs. ${c.carton_sale_price})`}
-                              </option>
-                            `;
-                          }).join('');
-                        })()}
-                      </select>
-                    </td>
-
-                    <!-- Ordered Cartons -->
-                    <td class="py-1.5 px-2 text-center border-r border-slate-200">
-                      <input type="number" min="0" value="${it.ordered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'ordered', this.value)"
-                             class="w-20 px-2 py-1 text-center font-bold text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none tabular-nums focus:bg-white focus:border-amber-400">
-                    </td>
-
-                    <!-- Delivered Cartons -->
-                    <td class="py-1.5 px-2 text-center bg-emerald-50/30 border-r border-slate-200">
-                      <input type="number" min="0" value="${it.delivered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'delivered', this.value)"
-                             class="w-20 px-2 py-1 text-center font-black text-xs text-emerald-800 bg-emerald-50 border-2 border-emerald-400 rounded-lg outline-none tabular-nums focus:bg-white">
-                    </td>
-
-                    <!-- Returned Cartons -->
-                    <td class="py-1.5 px-2 text-center bg-rose-50/30 border-r border-slate-200">
-                      <input type="number" min="0" value="${it.returned_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'returned', this.value)"
-                             class="w-20 px-2 py-1 text-center font-black text-xs text-rose-700 bg-rose-50 border border-rose-300 rounded-lg outline-none tabular-nums focus:bg-white">
-                    </td>
-
-                    <!-- Return Destination Option (Keep in Car vs Factory Stock) -->
-                    <td class="py-1.5 px-3 text-center border-r border-slate-200">
-                      <div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px] font-black">
-                        <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'car')"
-                                class="px-2 py-0.5 rounded-md transition-all cursor-pointer ${it.return_destination === 'car' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
-                          🔘 Keep in Car
-                        </button>
-                        <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'stock')"
-                                class="px-2 py-0.5 rounded-md transition-all cursor-pointer ${it.return_destination === 'stock' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
-                          ⚪ Return to Stock
-                        </button>
-                      </div>
-                    </td>
-
-                    <!-- Carton Price -->
-                    <td class="py-1.5 px-2 text-right border-r border-slate-200">
-                      <input type="number" step="any" min="0" value="${it.carton_price}" oninput="ShopSales.onRowPriceChange(${idx}, this.value)"
-                             class="w-24 px-2 py-1 text-right font-black text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none tabular-nums focus:bg-white focus:border-amber-400">
-                    </td>
-
-                    <!-- Line Total -->
-                    <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
-                      Rs. ${Math.round(it.line_total || 0).toLocaleString()}
-                    </td>
-
-                    <!-- Remove Row -->
-                    <td class="py-1.5 px-2 text-center">
-                      <button type="button" onclick="ShopSales.removeRow(${idx})" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Remove Item">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                      </button>
-                    </td>
+          <div class="overflow-x-auto min-h-[160px]">
+            ${this.items.length === 0 ? `
+              <div class="p-10 text-center text-slate-400 flex flex-col items-center justify-center min-h-[160px]">
+                <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 mb-2 shadow-2xs">
+                  <i data-lucide="package-plus" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-black text-sm text-slate-800">No Cartons Added Yet</h4>
+                <p class="text-xs text-slate-400 max-w-sm mt-0.5 mb-3.5 font-medium">Click "+ Add First Item" above to add carton products and record delivery quantities.</p>
+                <button type="button" onclick="ShopSales.addNewRow()" class="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+                  <i data-lucide="plus" class="w-4 h-4"></i> Add Item
+                </button>
+              </div>
+            ` : `
+              <table class="w-full text-left text-xs border-collapse border border-slate-200">
+                <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+                  <tr>
+                    <th class="py-2.5 px-3.5 border-r border-slate-200">Item / Carton Product</th>
+                    <th class="py-2.5 px-2 text-center w-28 border-r border-slate-200">Ordered</th>
+                    <th class="py-2.5 px-2 text-center w-28 text-emerald-800 bg-emerald-50/70 border-r border-slate-200">Delivered</th>
+                    <th class="py-2.5 px-2 text-center w-28 text-rose-800 bg-rose-50/70 border-r border-slate-200">Returned</th>
+                    <th class="py-2.5 px-3 text-center border-r border-slate-200">Returned Cartons Destination</th>
+                    <th class="py-2.5 px-2 text-right w-32 border-r border-slate-200">Rate / Ctn</th>
+                    <th class="py-2.5 px-3 text-right w-36 border-r border-slate-200">Total (Rs.)</th>
+                    <th class="py-2.5 px-2 text-center w-12"></th>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-semibold text-slate-700" id="ss-items-tbody">
+                  ${this.items.map((it, idx) => `
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                      <td class="py-2.5 px-3.5 border-r border-slate-200">
+                        <select onchange="ShopSales.onItemProductChange(${idx}, this.value)"
+                                class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 shadow-2xs">
+                          ${(() => {
+                            const otherSelectedCartons = new Set(this.items.filter((_, i) => i !== idx).map(x => x.carton_id));
+                            return this.cartons.map(c => {
+                              const isCurrent = c.id === it.carton_id;
+                              const isAlreadyAdded = otherSelectedCartons.has(c.id);
+                              return `
+                                <option value="${c.id}" ${isCurrent ? 'selected' : ''} ${isAlreadyAdded ? 'disabled' : ''}>
+                                  ${c.carton_name} ${isAlreadyAdded ? '(Already Added)' : `(Rate: Rs. ${c.carton_sale_price})`}
+                                </option>
+                              `;
+                            }).join('');
+                          })()}
+                        </select>
+                      </td>
+
+                      <!-- Ordered Cartons -->
+                      <td class="py-2.5 px-2 text-center border-r border-slate-200">
+                        <input type="number" min="0" value="${it.ordered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'ordered', this.value)"
+                               class="w-24 px-2 py-1.5 text-center font-black text-sm bg-slate-50 border border-slate-300 rounded-xl outline-none tabular-nums focus:bg-white focus:border-amber-400 shadow-2xs">
+                      </td>
+
+                      <!-- Delivered Cartons -->
+                      <td class="py-2.5 px-2 text-center bg-emerald-50/30 border-r border-slate-200">
+                        <input type="number" min="0" value="${it.delivered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'delivered', this.value)"
+                               class="w-24 px-2 py-1.5 text-center font-black text-sm text-emerald-800 bg-emerald-50 border-2 border-emerald-400 rounded-xl outline-none tabular-nums focus:bg-white focus:border-emerald-600 shadow-2xs">
+                      </td>
+
+                      <!-- Returned Cartons -->
+                      <td class="py-2.5 px-2 text-center bg-rose-50/30 border-r border-slate-200">
+                        <input type="number" min="0" value="${it.returned_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'returned', this.value)"
+                               class="w-24 px-2 py-1.5 text-center font-black text-sm text-rose-700 bg-rose-50 border border-rose-300 rounded-xl outline-none tabular-nums focus:bg-white focus:border-rose-500 shadow-2xs">
+                      </td>
+
+                      <!-- Return Destination Option (Keep in Car vs Factory Stock) -->
+                      <td class="py-2.5 px-3 text-center border-r border-slate-200">
+                        <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-black">
+                          <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'car')"
+                                  class="px-3 py-1 rounded-lg transition-all cursor-pointer ${it.return_destination === 'car' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                            🔘 Keep in Car
+                          </button>
+                          <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'stock')"
+                                  class="px-3 py-1 rounded-lg transition-all cursor-pointer ${it.return_destination === 'stock' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                            ⚪ Return to Stock
+                          </button>
+                        </div>
+                      </td>
+
+                      <!-- Carton Price -->
+                      <td class="py-2.5 px-2 text-right border-r border-slate-200">
+                        <input type="number" step="any" min="0" value="${it.carton_price}" oninput="ShopSales.onRowPriceChange(${idx}, this.value)"
+                               class="w-28 px-2.5 py-1.5 text-right font-black text-xs bg-slate-50 border border-slate-300 rounded-xl outline-none tabular-nums focus:bg-white focus:border-amber-400 shadow-2xs">
+                      </td>
+
+                      <!-- Line Total -->
+                      <td class="py-2.5 px-3 text-right font-black text-slate-900 text-sm tabular-nums border-r border-slate-200">
+                        Rs. ${Math.round(it.line_total || 0).toLocaleString()}
+                      </td>
+
+                      <!-- Remove Row -->
+                      <td class="py-2.5 px-2 text-center">
+                        <button type="button" onclick="ShopSales.removeRow(${idx})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer" title="Remove Item">
+                          <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `}
           </div>
         </div>
 
@@ -410,11 +424,11 @@ window.ShopSales = {
 
   onShopChange(shopId) {
     this.selectedShopId = shopId ? Number(shopId) : null;
-    const shop = this.shops.find(s => s.id === this.selectedShopId);
-    const shopNameInput = document.getElementById('ss-shop-name');
-    if (shopNameInput && shop) {
-      shopNameInput.value = shop.name;
-    }
+    this.renderUI();
+  },
+
+  clearShopSelection() {
+    this.selectedShopId = null;
     this.renderUI();
   },
 
@@ -478,10 +492,6 @@ window.ShopSales = {
   },
 
   removeRow(index) {
-    if (this.items.length <= 1) {
-      app.showAlert({ title: 'Cannot Remove', message: 'At least one item must remain in the delivery order.' });
-      return;
-    }
     this.items.splice(index, 1);
     this.renderUI();
   },
@@ -516,7 +526,7 @@ window.ShopSales = {
     this.discount = 0;
     this.receivedAmount = 0;
     this.paymentMethod = 'Cash';
-    this.addItemRow();
+    this.selectedShopId = null;
     this.renderUI();
   },
 
@@ -598,14 +608,15 @@ window.ShopSales = {
   },
 
   async submitSaleAndPrint() {
-    const activeCar = this.cars.find(c => c.id === this.selectedCarId);
-    const shopName = document.getElementById('ss-shop-name')?.value || 'Counter Walk-in';
-    const notes = document.getElementById('ss-notes')?.value || '';
-
     if (this.items.length === 0) {
       app.showAlert({ title: 'No Items', message: 'Please add at least one carton product to the delivery.' });
       return;
     }
+
+    const activeCar = this.cars.find(c => c.id === this.selectedCarId);
+    const activeShop = this.shops.find(s => s.id === this.selectedShopId);
+    const shopName = activeShop ? activeShop.name : 'Counter Walk-in Customer';
+    const notes = '';
 
     const validItems = this.items.filter(it => (it.delivered_cartons || 0) > 0 || (it.returned_cartons || 0) > 0);
     if (validItems.length === 0) {
@@ -634,10 +645,10 @@ window.ShopSales = {
     }
 
     const payload = {
-      shop_id: this.selectedShopId,
+      shop_id: this.selectedShopId || null,
       shop_name: shopName,
-      shop_phone: this.shops.find(s => s.id === this.selectedShopId)?.phone || '',
-      shop_address: this.shops.find(s => s.id === this.selectedShopId)?.address || '',
+      shop_phone: activeShop?.phone || '',
+      shop_address: activeShop?.address || '',
       car_id: this.selectedCarId,
       discount: this.discount,
       received_amount: this.receivedAmount,

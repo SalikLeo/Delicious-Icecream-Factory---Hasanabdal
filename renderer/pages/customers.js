@@ -204,9 +204,14 @@ window.Customers = {
             </div>
 
             <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Cash Payment Received (Rs.) *</label>
+              <div class="flex justify-between items-center mb-1">
+                <label class="block text-[11px] font-black uppercase text-slate-500">Cash Payment Received (Rs.) *</label>
+                <span id="pf-max-hint" class="text-[10px] font-bold text-slate-400"></span>
+              </div>
               <input type="number" step="any" min="1" id="pf-amount" required placeholder="Enter amount..."
+                     oninput="Customers.onPaymentAmountInput(this.value)"
                      class="w-full px-3 py-2 text-base font-black text-slate-900 bg-white border-2 border-emerald-400 rounded-xl outline-none focus:ring-2 focus:ring-emerald-200 tabular-nums">
+              <p id="pf-amount-error" class="text-[11px] font-bold text-rose-600 mt-1.5 hidden flex items-center gap-1"></p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -235,7 +240,7 @@ window.Customers = {
               <button type="button" onclick="Customers.closePaymentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
                 Cancel
               </button>
-              <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5">
+              <button type="submit" id="pf-submit-btn" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-all">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> Record &amp; Print Receipt
               </button>
             </div>
@@ -422,10 +427,17 @@ window.Customers = {
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-          <button type="button" onclick="Customers.openPaymentModal(${shop.id})"
-                  class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
-            <i data-lucide="hand-coins" class="w-3.5 h-3.5"></i> Receive Cash
-          </button>
+          ${currentBal > 0 ? `
+            <button type="button" onclick="Customers.openPaymentModal(${shop.id})"
+                    class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+              <i data-lucide="hand-coins" class="w-3.5 h-3.5"></i> Receive Cash
+            </button>
+          ` : `
+            <button type="button" disabled title="Khata balance is already Rs. 0 (all clear)"
+                    class="px-3 py-1.5 bg-slate-100 text-slate-400 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 cursor-not-allowed opacity-75">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i> Balance Clear
+            </button>
+          `}
           <button type="button" onclick="Customers.printShopStatement(${shop.id})"
                   class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
             <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Khata
@@ -624,24 +636,99 @@ window.Customers = {
     const shop = this.shops.find(s => s.id === shopId);
     if (!shop) return;
 
+    this.activePaymentShop = shop;
+    const currentBalance = Number(shop.amount) || 0;
+
     const modal = document.getElementById('shop-payment-modal');
     const sId = document.getElementById('pf-shop-id');
     const sName = document.getElementById('pf-shop-name');
     const sBal = document.getElementById('pf-current-balance');
     const sAmt = document.getElementById('pf-amount');
     const sDate = document.getElementById('pf-date');
+    const sMaxHint = document.getElementById('pf-max-hint');
 
     if (sId) sId.value = shop.id;
     if (sName) sName.textContent = shop.name;
-    if (sBal) sBal.textContent = `Rs. ${Math.round(shop.amount || 0).toLocaleString()}`;
-    if (sAmt) sAmt.value = shop.amount > 0 ? shop.amount : '';
+    if (sBal) sBal.textContent = `Rs. ${Math.round(currentBalance).toLocaleString()}`;
     if (sDate) sDate.value = new Date().toISOString().split('T')[0];
+    if (sMaxHint) sMaxHint.textContent = `Max: Rs. ${Math.round(currentBalance).toLocaleString()}`;
+
+    if (sAmt) {
+      sAmt.max = currentBalance;
+      sAmt.value = currentBalance > 0 ? currentBalance : '';
+      sAmt.disabled = currentBalance <= 0;
+    }
 
     if (modal) {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
+
+    this.onPaymentAmountInput(sAmt ? sAmt.value : 0);
+
     if (window.lucide) lucide.createIcons();
+  },
+
+  onPaymentAmountInput(val) {
+    const shop = this.activePaymentShop;
+    const currentBalance = shop ? Number(shop.amount) || 0 : 0;
+    const amount = Number(val) || 0;
+    const sAmt = document.getElementById('pf-amount');
+    const errText = document.getElementById('pf-amount-error');
+    const submitBtn = document.getElementById('pf-submit-btn');
+
+    if (currentBalance <= 0) {
+      if (errText) {
+        errText.textContent = 'This shop has no outstanding balance in khata (Rs. 0).';
+        errText.classList.remove('hidden');
+      }
+      if (sAmt) {
+        sAmt.className = "w-full px-3 py-2 text-base font-black text-slate-900 bg-slate-100 border-2 border-slate-300 rounded-xl outline-none tabular-nums";
+      }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.className = "px-5 py-2 bg-slate-200 text-slate-400 font-black text-xs rounded-xl shadow-xs cursor-not-allowed flex items-center gap-1.5 opacity-60";
+      }
+      return;
+    }
+
+    if (amount > currentBalance) {
+      if (errText) {
+        errText.textContent = `Received payment cannot be more than khata balance of Rs. ${Math.round(currentBalance).toLocaleString()}`;
+        errText.classList.remove('hidden');
+      }
+      if (sAmt) {
+        sAmt.className = "w-full px-3 py-2 text-base font-black text-rose-700 bg-rose-50 border-2 border-rose-500 rounded-xl outline-none focus:ring-2 focus:ring-rose-200 tabular-nums";
+      }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.className = "px-5 py-2 bg-slate-200 text-slate-400 font-black text-xs rounded-xl shadow-xs cursor-not-allowed flex items-center gap-1.5 opacity-60";
+      }
+    } else if (amount <= 0) {
+      if (errText) {
+        errText.textContent = 'Please enter an amount greater than Rs. 0';
+        errText.classList.remove('hidden');
+      }
+      if (sAmt) {
+        sAmt.className = "w-full px-3 py-2 text-base font-black text-slate-900 bg-white border-2 border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-200 tabular-nums";
+      }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.className = "px-5 py-2 bg-slate-200 text-slate-400 font-black text-xs rounded-xl shadow-xs cursor-not-allowed flex items-center gap-1.5 opacity-60";
+      }
+    } else {
+      if (errText) {
+        errText.textContent = '';
+        errText.classList.add('hidden');
+      }
+      if (sAmt) {
+        sAmt.className = "w-full px-3 py-2 text-base font-black text-slate-900 bg-white border-2 border-emerald-400 rounded-xl outline-none focus:ring-2 focus:ring-emerald-200 tabular-nums";
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.className = "px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-all";
+      }
+    }
   },
 
   closePaymentModal() {
@@ -655,9 +742,30 @@ window.Customers = {
   async savePaymentForm(e) {
     e.preventDefault();
     try {
-      app.showLoading();
       const shopId = Number(document.getElementById('pf-shop-id')?.value);
       const amount = Number(document.getElementById('pf-amount')?.value);
+      const shop = this.shops.find(s => s.id === shopId) || this.activePaymentShop;
+      const currentBalance = shop ? Number(shop.amount) || 0 : 0;
+
+      if (currentBalance <= 0) {
+        app.showAlert({ title: 'No Balance', message: 'This shop has no outstanding khata balance to receive payment for.' });
+        return;
+      }
+
+      if (amount > currentBalance) {
+        app.showAlert({
+          title: 'Amount Exceeds Khata Balance',
+          message: `Received payment (Rs. ${amount.toLocaleString()}) cannot be more than the balance in shop's khata (Rs. ${currentBalance.toLocaleString()}).`
+        });
+        return;
+      }
+
+      if (amount <= 0) {
+        app.showAlert({ title: 'Invalid Amount', message: 'Payment amount must be greater than Rs. 0' });
+        return;
+      }
+
+      app.showLoading();
       const paymentMethod = document.getElementById('pf-method')?.value || 'Cash';
       const date = document.getElementById('pf-date')?.value || new Date().toISOString().split('T')[0];
       const notes = document.getElementById('pf-notes')?.value || '';

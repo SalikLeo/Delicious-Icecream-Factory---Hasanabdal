@@ -359,12 +359,18 @@ window.ShopSales = {
               </div>
 
               <div class="pt-2 border-t border-slate-800/80">
-                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Received Amount (Rs.)</label>
-                <div class="relative">
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">Rs.</span>
-                  <input type="number" min="0" step="any" value="${this.receivedAmount}" oninput="ShopSales.onReceivedChange(this.value)" placeholder="0"
-                         class="w-full pl-9 pr-3 py-2 bg-slate-800 border-2 border-emerald-500 rounded-xl text-xl font-black text-emerald-400 outline-none tabular-nums focus:bg-slate-750">
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-[10px] font-black uppercase text-slate-400 tracking-wider">Received Amount (Rs.)</label>
+                  <span class="text-[10px] font-bold ${this.receivedAmount > totalAmount ? 'text-rose-400 font-black' : 'text-slate-400'}">Max: Rs. ${Math.round(totalAmount).toLocaleString()}</span>
                 </div>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black ${this.receivedAmount > totalAmount ? 'text-rose-400' : 'text-slate-400'}">Rs.</span>
+                  <input type="number" min="0" max="${totalAmount}" step="any" value="${this.receivedAmount}" oninput="ShopSales.onReceivedChange(this.value)" placeholder="0"
+                         class="w-full pl-9 pr-3 py-2 bg-slate-800 border-2 ${this.receivedAmount > totalAmount ? 'border-rose-500 text-rose-300 focus:ring-2 focus:ring-rose-500' : 'border-emerald-500 text-emerald-400'} rounded-xl text-xl font-black outline-none tabular-nums focus:bg-slate-750">
+                </div>
+                ${this.receivedAmount > totalAmount ? `
+                  <p class="text-[11px] font-bold text-rose-400 mt-1">Received amount cannot exceed net bill total (Rs. ${Math.round(totalAmount).toLocaleString()}).</p>
+                ` : ''}
               </div>
 
               <div class="p-3 bg-slate-800/80 rounded-xl space-y-1 text-xs">
@@ -385,7 +391,8 @@ window.ShopSales = {
 
             <!-- Big Action Button -->
             <button type="button" onclick="ShopSales.submitSaleAndPrint()"
-                    class="mt-4 w-full py-3.5 px-5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-[0.99] text-slate-950 font-black text-sm rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer">
+                    ${this.receivedAmount > totalAmount ? 'disabled' : ''}
+                    class="mt-4 w-full py-3.5 px-5 ${this.receivedAmount > totalAmount ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60' : 'bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-[0.99] text-slate-950 shadow-xl shadow-amber-500/20 cursor-pointer'} font-black text-sm rounded-2xl flex items-center justify-center gap-2 transition-all">
               <i data-lucide="printer" class="w-5 h-5"></i>
               <span>Complete Sale &amp; Print Bill</span>
             </button>
@@ -606,12 +613,23 @@ window.ShopSales = {
     }
 
     const seenCartonIds = new Set();
+    let subtotal = 0;
     for (const it of validItems) {
       if (seenCartonIds.has(it.carton_id)) {
         app.showAlert({ title: 'Duplicate Item', message: 'The same carton product cannot be selected multiple times in one delivery.' });
         return;
       }
       seenCartonIds.add(it.carton_id);
+      subtotal += (Number(it.delivered_cartons) || 0) * (Number(it.carton_price) || 0);
+    }
+
+    const netBillTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+    if (this.receivedAmount > netBillTotal) {
+      app.showAlert({
+        title: 'Amount Exceeds Bill',
+        message: `Received amount (Rs. ${this.receivedAmount.toLocaleString()}) cannot be more than the net bill total (Rs. ${Math.round(netBillTotal).toLocaleString()}).`
+      });
+      return;
     }
 
     const payload = {

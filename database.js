@@ -2986,6 +2986,9 @@ function saveShopDelivery(data) {
   });
 
   const totalAmount = Math.max(0, subtotal - discount);
+  if (receivedAmount > totalAmount) {
+    return { error: `Received amount (Rs. ${receivedAmount.toLocaleString()}) cannot be more than the net bill total (Rs. ${totalAmount.toLocaleString()})` };
+  }
   const previousBalance = shop ? Number(shop.amount || 0) : 0;
   const remainingBillBalance = Math.max(0, totalAmount - receivedAmount);
   const newShopBalance = previousBalance + remainingBillBalance;
@@ -3166,6 +3169,14 @@ function receiveShopPayment(data) {
   const shop = db.prepare('SELECT * FROM shops WHERE id = ?').get(data.shop_id);
   if (!shop) return { error: 'Shop not found' };
 
+  const currentBalance = Number(shop.amount) || 0;
+  if (currentBalance <= 0) {
+    return { error: 'This shop has no outstanding balance in khata' };
+  }
+  if (amount > currentBalance) {
+    return { error: `Received payment (Rs. ${amount.toLocaleString()}) cannot be more than the balance in shop's khata (Rs. ${currentBalance.toLocaleString()})` };
+  }
+
   const date = data.date || new Date().toISOString().split('T')[0];
   const todayStr = date.replace(/-/g, '');
   const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_payments WHERE date = ?').get(date)?.c || 0;
@@ -3186,7 +3197,7 @@ function receiveShopPayment(data) {
       data.notes || ''
     );
     paymentId = res.lastInsertRowid;
-    newBalance = Math.max(0, (shop.amount || 0) - amount);
+    newBalance = Math.max(0, currentBalance - amount);
     db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newBalance, data.shop_id);
   })();
 
@@ -3197,7 +3208,7 @@ function receiveShopPayment(data) {
     shop_id: data.shop_id,
     shop_name: shop.name,
     amount_paid: amount,
-    previous_balance: shop.amount || 0,
+    previous_balance: currentBalance,
     new_balance: newBalance,
     date,
     payment_method: data.payment_method || 'Cash',

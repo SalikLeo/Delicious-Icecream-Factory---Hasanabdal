@@ -308,14 +308,14 @@ window.RawMaterials = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-3 px-4 border-r border-slate-200">Material Name</th>
-              <th class="py-3 px-4 border-r border-slate-200">Category</th>
-              <th class="py-3 px-4 border-r border-slate-200">Unit</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Current Stock (Left Behind)</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Cost Price / Unit</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Total Stock Value</th>
-              <th class="py-3 px-4 text-center border-r border-slate-200">Status</th>
-              <th class="py-3 px-4 text-right">Actions</th>
+              <th class="py-2 px-3 border-r border-slate-200">Material Name</th>
+              <th class="py-2 px-3 border-r border-slate-200">Category</th>
+              <th class="py-2 px-3 border-r border-slate-200">Unit</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Current Stock (Left Behind)</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Total Stock Value</th>
+              <th class="py-2 px-3 text-center border-r border-slate-200">Status</th>
+              <th class="py-2 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -324,34 +324,34 @@ window.RawMaterials = {
               const val = Math.round(m.current_stock * m.cost_price);
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-3 px-4 border-r border-slate-200">
-                    <div class="font-black text-slate-900 text-sm">${m.name}</div>
-                    ${m.notes ? `<div class="text-[10px] text-slate-400 font-normal">${m.notes}</div>` : ''}
+                  <td class="py-1.5 px-3 border-r border-slate-200">
+                    <div class="font-black text-slate-900 text-xs">${m.name}</div>
+                    ${m.notes ? `<div class="text-[10px] text-slate-400 font-normal leading-tight">${m.notes}</div>` : ''}
                   </td>
-                  <td class="py-3 px-4 border-r border-slate-200">
+                  <td class="py-1.5 px-3 border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px] uppercase">${m.category || 'General'}</span>
                   </td>
-                  <td class="py-3 px-4 font-mono font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
-                  <td class="py-3 px-4 text-right font-black text-base tabular-nums border-r border-slate-200 ${isLow ? 'text-rose-600' : 'text-emerald-700'}">
-                    ${Number(m.current_stock).toFixed(1).replace(/\.0$/, '')} <span class="text-xs font-normal text-slate-400">${m.unit}</span>
+                  <td class="py-1.5 px-3 font-mono font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-sm tabular-nums border-r border-slate-200 ${isLow ? 'text-rose-600' : 'text-emerald-700'}">
+                    ${Number(m.current_stock).toFixed(1).replace(/\.0$/, '')} <span class="text-[10px] font-normal text-slate-400">${m.unit}</span>
                   </td>
-                  <td class="py-3 px-4 text-right font-mono font-bold text-slate-700 tabular-nums border-r border-slate-200">Rs. ${Number(m.cost_price).toFixed(2).replace(/\.00$/, '')}</td>
-                  <td class="py-3 px-4 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${val.toLocaleString()}</td>
-                  <td class="py-3 px-4 text-center border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-mono font-bold text-slate-700 tabular-nums border-r border-slate-200">Rs. ${Number(m.cost_price).toFixed(2).replace(/\.00$/, '')}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${val.toLocaleString()}</td>
+                  <td class="py-1.5 px-3 text-center border-r border-slate-200">
                     ${isLow 
                       ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-black text-[10px] border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> Low Stock</span>`
                       : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200">In Stock</span>`
                     }
                   </td>
-                  <td class="py-3 px-4 text-right">
+                  <td class="py-1.5 px-3 text-right">
                     <div class="flex items-center justify-end gap-1">
-                      <button onclick="RawMaterials.openPurchaseModal(${m.id})" title="Stock-In / Add Purchase" class="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors cursor-pointer">
+                      <button onclick="RawMaterials.openPurchaseModal(${m.id})" title="Stock-In / Add Purchase" class="p-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors cursor-pointer">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="RawMaterials.openEditModal(${m.id})" title="Edit Material" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer">
+                      <button onclick="RawMaterials.openEditModal(${m.id})" title="Edit Material" class="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer">
                         <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="RawMaterials.deleteMaterial(${m.id})" title="Delete" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer">
+                      <button onclick="RawMaterials.deleteMaterial(${m.id})" title="Delete" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </div>
@@ -382,13 +382,13 @@ window.RawMaterials = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-3 px-4 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
-              <th class="py-3 px-4 border-r border-slate-200">Action</th>
-              <th class="py-3 px-4 border-r border-slate-200">Material</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Change (+ / -)</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Stock Before</th>
-              <th class="py-3 px-4 text-right font-black text-slate-800 border-r border-slate-200">Stock Left Behind</th>
-              <th class="py-3 px-4">Details / Notes</th>
+              <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
+              <th class="py-2 px-3 border-r border-slate-200">Action</th>
+              <th class="py-2 px-3 border-r border-slate-200">Material</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Change (+ / -)</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Stock Before</th>
+              <th class="py-2 px-3 text-right font-black text-slate-800 border-r border-slate-200">Stock Left Behind</th>
+              <th class="py-2 px-3">Details / Notes</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -396,20 +396,20 @@ window.RawMaterials = {
               const isAdd = (log.qty_change || 0) > 0;
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-2.5 px-4 font-mono text-[11px] text-slate-600 whitespace-nowrap">${app.formatDateTime(log.date, log.created_at)}</td>
-                  <td class="py-2.5 px-4">
+                  <td class="py-1.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(log.date, log.created_at)}</td>
+                  <td class="py-1.5 px-3 border-r border-slate-200">
                     ${log.action === 'PURCHASE' 
                       ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px]">PURCHASE</span>`
                       : `<span class="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-800 font-black text-[10px]">PRODUCTION</span>`
                     }
                   </td>
-                  <td class="py-2.5 px-4 font-black text-slate-900">${log.material_name}</td>
-                  <td class="py-2.5 px-4 text-right font-black tabular-nums ${isAdd ? 'text-emerald-600' : 'text-rose-600'}">
+                  <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${log.material_name}</td>
+                  <td class="py-1.5 px-3 text-right font-black tabular-nums border-r border-slate-200 ${isAdd ? 'text-emerald-600' : 'text-rose-600'}">
                     ${isAdd ? '+' : ''}${log.qty_change}
                   </td>
-                  <td class="py-2.5 px-4 text-right font-mono text-slate-400 tabular-nums">${log.stock_before}</td>
-                  <td class="py-2.5 px-4 text-right font-black text-slate-900 tabular-nums">${log.stock_after}</td>
-                  <td class="py-2.5 px-4 text-slate-500 text-[11px]">${log.notes || ''}</td>
+                  <td class="py-1.5 px-3 text-right font-mono text-slate-400 tabular-nums border-r border-slate-200">${log.stock_before}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">${log.stock_after}</td>
+                  <td class="py-1.5 px-3 text-slate-500 text-[11px]">${log.notes || ''}</td>
                 </tr>
               `;
             }).join('')}

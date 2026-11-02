@@ -277,32 +277,32 @@ window.Reports = {
           <table class="w-full text-left text-xs border-collapse border border-slate-200">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2.5 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
-                <th class="py-2.5 px-3 border-r border-slate-200">Invoice #</th>
-                <th class="py-2.5 px-3 border-r border-slate-200">Vehicle &amp; Driver</th>
-                <th class="py-2.5 px-3 border-r border-slate-200">Shop / Customer</th>
-                <th class="py-2.5 px-2 text-center border-r border-slate-200">Cartons</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Total (Rs.)</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Cash (Rs.)</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Khata Due</th>
-                <th class="py-2.5 px-3 text-center">Action</th>
+                <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
+                <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
+                <th class="py-2 px-3 border-r border-slate-200">Vehicle &amp; Driver</th>
+                <th class="py-2 px-3 border-r border-slate-200">Shop / Customer</th>
+                <th class="py-2 px-2 text-center border-r border-slate-200">Cartons</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Total (Rs.)</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Cash (Rs.)</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Khata Due</th>
+                <th class="py-2 px-3 text-center">Action</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${filtered.length > 0 ? filtered.map(d => `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-2 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
-                  <td class="py-2 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
-                  <td class="py-2 px-3 text-slate-800 font-bold border-r border-slate-200">${d.car_number}<br><span class="text-[10px] text-slate-400">${d.driver_name || ''}</span></td>
-                  <td class="py-2 px-3 font-bold text-slate-900 border-r border-slate-200">${d.shop_name}</td>
-                  <td class="py-2 px-2 text-center font-black text-blue-700 bg-blue-50/40 border-r border-slate-200">${d.total_cartons_delivered || 0}</td>
-                  <td class="py-2 px-3 text-right font-black text-slate-900 border-r border-slate-200">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
-                  <td class="py-2 px-3 text-right font-black text-emerald-700 border-r border-slate-200">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
-                  <td class="py-2 px-3 text-right font-black ${d.remaining_balance > 0 ? 'text-rose-600' : 'text-slate-400'} border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
+                  <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
+                  <td class="py-1.5 px-3 text-slate-800 font-bold border-r border-slate-200 text-xs">${d.car_number}<br><span class="text-[10px] text-slate-400 font-normal leading-tight">${d.driver_name || ''}</span></td>
+                  <td class="py-1.5 px-3 font-bold text-slate-900 border-r border-slate-200 text-xs">${d.shop_name}</td>
+                  <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/40 border-r border-slate-200">${d.total_cartons_delivered || 0}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs border-r border-slate-200">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-emerald-700 text-xs border-r border-slate-200">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-xs ${d.remaining_balance > 0 ? 'text-rose-600' : 'text-slate-400'} border-r border-slate-200">
                     Rs. ${Math.round(d.remaining_balance).toLocaleString()}
                   </td>
-                  <td class="py-2 px-3 text-center">
-                    <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-lg cursor-pointer flex items-center gap-1 mx-auto">
+                  <td class="py-1.5 px-3 text-center">
+                    <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-md cursor-pointer flex items-center gap-1 mx-auto">
                       <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
                     </button>
                   </td>
@@ -478,13 +478,13 @@ window.Reports = {
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2.5 px-3 border-r border-slate-200">Material Name</th>
-                <th class="py-2.5 px-3 border-r border-slate-200">Category</th>
-                <th class="py-2.5 px-2 text-center border-r border-slate-200">Unit</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Remaining Stock Balance</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Total Value (Rs.)</th>
-                <th class="py-2.5 px-3 text-center">Stock Alert Status</th>
+                <th class="py-2 px-3 border-r border-slate-200">Material Name</th>
+                <th class="py-2 px-3 border-r border-slate-200">Category</th>
+                <th class="py-2 px-2 text-center border-r border-slate-200">Unit</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Remaining Stock Balance</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Total Value (Rs.)</th>
+                <th class="py-2 px-3 text-center">Stock Alert Status</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -492,17 +492,17 @@ window.Reports = {
                 const isLow = m.current_stock <= m.min_stock_alert;
                 return `
                   <tr class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-2.5 px-3 font-black text-slate-900 border-r border-slate-200">${m.name}</td>
-                    <td class="py-2.5 px-3 text-slate-500 border-r border-slate-200">${m.category}</td>
-                    <td class="py-2.5 px-2 text-center font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
-                    <td class="py-2.5 px-3 text-right font-black text-sm text-slate-900 tabular-nums border-r border-slate-200">
+                    <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${m.name}</td>
+                    <td class="py-1.5 px-3 text-slate-500 text-xs border-r border-slate-200">${m.category}</td>
+                    <td class="py-1.5 px-2 text-center font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
+                    <td class="py-1.5 px-3 text-right font-black text-xs text-slate-900 tabular-nums border-r border-slate-200">
                       ${m.current_stock} <span class="text-[10px] text-slate-400 font-bold">${m.unit}</span>
                     </td>
-                    <td class="py-2.5 px-3 text-right text-slate-600 tabular-nums border-r border-slate-200">Rs. ${m.cost_price}</td>
-                    <td class="py-2.5 px-3 text-right font-black text-emerald-800 tabular-nums border-r border-slate-200">
+                    <td class="py-1.5 px-3 text-right text-slate-600 tabular-nums border-r border-slate-200">Rs. ${m.cost_price}</td>
+                    <td class="py-1.5 px-3 text-right font-black text-emerald-800 tabular-nums border-r border-slate-200">
                       Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}
                     </td>
-                    <td class="py-2.5 px-3 text-center">
+                    <td class="py-1.5 px-3 text-center">
                       ${isLow ? `
                         <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black">
                           ⚠️ Low Stock (Alert &le; ${m.min_stock_alert})
@@ -601,13 +601,13 @@ window.Reports = {
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2.5 px-3 border-r border-slate-200">Product / Carton Name</th>
-                <th class="py-2.5 px-2 text-center border-r border-slate-200">Pcs / Ctn</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Carton Cost (Rs.)</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Sale Price (Rs.)</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Margin / Ctn</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Warehouse Stock</th>
-                <th class="py-2.5 px-3 text-right">Total Sale Worth</th>
+                <th class="py-2 px-3 border-r border-slate-200">Product / Carton Name</th>
+                <th class="py-2 px-2 text-center border-r border-slate-200">Pcs / Ctn</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Carton Cost (Rs.)</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Sale Price (Rs.)</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Margin / Ctn</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Warehouse Stock</th>
+                <th class="py-2 px-3 text-right">Total Sale Worth</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -616,15 +616,15 @@ window.Reports = {
                 const stockWorth = (c.factory_carton_stock || 0) * (c.carton_sale_price || 0);
                 return `
                   <tr class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-2.5 px-3 font-black text-slate-900 border-r border-slate-200">${c.carton_name}</td>
-                    <td class="py-2.5 px-2 text-center font-bold text-purple-700 border-r border-slate-200">${c.pieces_per_carton} pcs</td>
-                    <td class="py-2.5 px-3 text-right text-slate-600 border-r border-slate-200">Rs. ${c.carton_cost_price}</td>
-                    <td class="py-2.5 px-3 text-right font-black text-slate-900 border-r border-slate-200">Rs. ${c.carton_sale_price}</td>
-                    <td class="py-2.5 px-3 text-right font-bold text-emerald-700 border-r border-slate-200">+Rs. ${margin}</td>
-                    <td class="py-2.5 px-3 text-right font-black text-base text-purple-800 border-r border-slate-200">
+                    <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${c.carton_name}</td>
+                    <td class="py-1.5 px-2 text-center font-bold text-purple-700 border-r border-slate-200 text-xs">${c.pieces_per_carton} pcs</td>
+                    <td class="py-1.5 px-3 text-right text-slate-600 border-r border-slate-200 text-xs">Rs. ${c.carton_cost_price}</td>
+                    <td class="py-1.5 px-3 text-right font-black text-slate-900 border-r border-slate-200 text-xs">Rs. ${c.carton_sale_price}</td>
+                    <td class="py-1.5 px-3 text-right font-bold text-emerald-700 border-r border-slate-200 text-xs">+Rs. ${margin}</td>
+                    <td class="py-1.5 px-3 text-right font-black text-xs text-purple-800 border-r border-slate-200">
                       ${c.factory_carton_stock} <span class="text-[10px] text-slate-400 font-bold">ctns</span>
                     </td>
-                    <td class="py-2.5 px-3 text-right font-black text-emerald-800">
+                    <td class="py-1.5 px-3 text-right font-black text-emerald-800 text-xs">
                       Rs. ${Math.round(stockWorth).toLocaleString()}
                     </td>
                   </tr>
@@ -784,19 +784,19 @@ window.Reports = {
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2.5 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
-                <th class="py-2.5 px-3 border-r border-slate-200">Category</th>
-                <th class="py-2.5 px-3 border-r border-slate-200">Description / Remarks</th>
-                <th class="py-2.5 px-3 text-right">Amount (Rs.)</th>
+                <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
+                <th class="py-2 px-3 border-r border-slate-200">Category</th>
+                <th class="py-2 px-3 border-r border-slate-200">Description / Remarks</th>
+                <th class="py-2 px-3 text-right">Amount (Rs.)</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${filtExp.length > 0 ? filtExp.map(e => `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-2 px-3 text-slate-600 font-bold border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
-                  <td class="py-2 px-3 font-black text-slate-800 border-r border-slate-200">${e.category}</td>
-                  <td class="py-2 px-3 text-slate-600 border-r border-slate-200">${e.description || e.notes || 'Expense entry'}</td>
-                  <td class="py-2 px-3 text-right font-black text-slate-900 tabular-nums">
+                  <td class="py-1.5 px-3 text-slate-600 font-bold border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
+                  <td class="py-1.5 px-3 font-black text-slate-800 text-xs border-r border-slate-200">${e.category}</td>
+                  <td class="py-1.5 px-3 text-slate-600 text-xs border-r border-slate-200">${e.description || e.notes || 'Expense entry'}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums">
                     Rs. ${Math.round(e.amount).toLocaleString()}
                   </td>
                 </tr>

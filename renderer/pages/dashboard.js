@@ -234,27 +234,27 @@ window.Dashboard = {
                 <table class="w-full text-left text-xs border-collapse border border-slate-200">
                   <thead>
                     <tr class="text-[10px] font-black uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
-                      <th class="py-2.5 px-3 border-r border-slate-200">Invoice #</th>
-                      <th class="py-2.5 px-3 border-r border-slate-200">Shop</th>
-                      <th class="py-2.5 px-3 border-r border-slate-200">Vehicle</th>
-                      <th class="py-2.5 px-3 text-right border-r border-slate-200">Cartons</th>
-                      <th class="py-2.5 px-3 text-right border-r border-slate-200">Total</th>
-                      <th class="py-2.5 px-3 text-center">Action</th>
+                      <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
+                      <th class="py-2 px-3 border-r border-slate-200">Shop</th>
+                      <th class="py-2 px-3 border-r border-slate-200">Vehicle</th>
+                      <th class="py-2 px-3 text-right border-r border-slate-200">Cartons</th>
+                      <th class="py-2 px-3 text-right border-r border-slate-200">Total</th>
+                      <th class="py-2 px-3 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
                     ${this.recentDeliveries.slice(0, 6).map(d => `
                       <tr class="hover:bg-slate-50">
-                        <td class="py-2 px-3 border-r border-slate-200">
-                          <div class="font-mono font-bold text-slate-900">${d.invoice_no}</div>
-                          <div class="text-[10px] text-slate-400 font-bold whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</div>
+                        <td class="py-1.5 px-3 border-r border-slate-200">
+                          <div class="font-mono font-bold text-slate-900 text-xs">${d.invoice_no}</div>
+                          <div class="text-[10px] text-slate-400 font-bold whitespace-nowrap leading-tight">${app.formatDateTime(d.date, d.created_at)}</div>
                         </td>
-                        <td class="py-2 px-3 font-black text-slate-900 border-r border-slate-200">${d.shop_name}</td>
-                        <td class="py-2 px-3 text-slate-500 text-[11px] border-r border-slate-200">${d.car_number || 'Direct'}</td>
-                        <td class="py-2 px-3 text-right font-black text-blue-700 tabular-nums border-r border-slate-200">${d.total_cartons_delivered || 0} ctns</td>
-                        <td class="py-2 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
-                        <td class="py-2 px-3 text-center">
-                          <button onclick="ShopSales.printDeliveryInvoice(${d.id})" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-black cursor-pointer flex items-center gap-1 mx-auto">
+                        <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${d.shop_name}</td>
+                        <td class="py-1.5 px-3 text-slate-500 text-[11px] border-r border-slate-200">${d.car_number || 'Direct'}</td>
+                        <td class="py-1.5 px-3 text-right font-black text-blue-700 text-xs tabular-nums border-r border-slate-200">${d.total_cartons_delivered || 0} ctns</td>
+                        <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
+                        <td class="py-1.5 px-3 text-center">
+                          <button onclick="ShopSales.printDeliveryInvoice(${d.id})" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-[10px] font-black cursor-pointer flex items-center gap-1 mx-auto">
                             <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
                           </button>
                         </td>

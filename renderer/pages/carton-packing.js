@@ -317,15 +317,15 @@ window.CartonPacking = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-3 px-4 border-r border-slate-200">Carton Item</th>
-              <th class="py-3 px-4 text-center border-r border-slate-200">Packing Spec</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Factory Warehouse Stock</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Loaded in Cars</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Carton Cost</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Carton Sale Price</th>
-              <th class="py-3 px-4 text-right font-black text-slate-800 border-r border-slate-200">Warehouse Value</th>
-              <th class="py-3 px-4 text-center border-r border-slate-200">Loose Pcs in Pool</th>
-              <th class="py-3 px-4 text-right">Actions</th>
+              <th class="py-2 px-3 border-r border-slate-200">Carton Item</th>
+              <th class="py-2 px-3 text-center border-r border-slate-200">Packing Spec</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Factory Warehouse Stock</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Loaded in Cars</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Carton Cost</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Carton Sale Price</th>
+              <th class="py-2 px-3 text-right font-black text-slate-800 border-r border-slate-200">Warehouse Value</th>
+              <th class="py-2 px-3 text-center border-r border-slate-200">Loose Pcs in Pool</th>
+              <th class="py-2 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -337,48 +337,48 @@ window.CartonPacking = {
 
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-3.5 px-4 border-r border-slate-200">
-                    <div class="font-black text-slate-900 text-sm">${c.carton_name}</div>
-                    <div class="text-[11px] text-slate-400">Base: ${c.base_item_name}</div>
+                  <td class="py-1.5 px-3 border-r border-slate-200">
+                    <div class="font-black text-slate-900 text-xs">${c.carton_name}</div>
+                    <div class="text-[10px] text-slate-400 leading-tight">Base: ${c.base_item_name}</div>
                   </td>
-                  <td class="py-3.5 px-4 text-center border-r border-slate-200">
-                    <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 font-mono text-[11px] font-black border border-purple-200">
+                  <td class="py-1.5 px-3 text-center border-r border-slate-200">
+                    <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 font-mono text-[10px] font-black border border-purple-200 whitespace-nowrap">
                       ${c.pieces_per_carton} pcs/ctn
                     </span>
                   </td>
-                  <td class="py-3.5 px-4 text-right border-r border-slate-200">
-                    <span class="text-base font-black ${stock > 0 ? 'text-purple-700' : 'text-slate-400'} tabular-nums">
+                  <td class="py-1.5 px-3 text-right border-r border-slate-200">
+                    <span class="text-sm font-black ${stock > 0 ? 'text-purple-700' : 'text-slate-400'} tabular-nums">
                       ${stock.toLocaleString()}
                     </span>
-                    <span class="text-xs font-bold text-slate-400">ctns</span>
+                    <span class="text-[10px] font-bold text-slate-400">ctns</span>
                   </td>
-                  <td class="py-3.5 px-4 text-right border-r border-slate-200">
-                    <span class="text-sm font-black ${loaded > 0 ? 'text-blue-600' : 'text-slate-400'} tabular-nums">
+                  <td class="py-1.5 px-3 text-right border-r border-slate-200">
+                    <span class="text-xs font-black ${loaded > 0 ? 'text-blue-600' : 'text-slate-400'} tabular-nums">
                       ${loaded.toLocaleString()}
                     </span>
-                    <span class="text-xs font-bold text-slate-400">ctns</span>
+                    <span class="text-[10px] font-bold text-slate-400">ctns</span>
                   </td>
-                  <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-600 tabular-nums border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-mono font-bold text-slate-600 tabular-nums border-r border-slate-200">
                     Rs. ${c.carton_cost_price}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">
                     Rs. ${c.carton_sale_price}
                   </td>
-                  <td class="py-3.5 px-4 text-right font-black text-emerald-700 tabular-nums border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-black text-emerald-700 tabular-nums border-r border-slate-200">
                     Rs. ${val.toLocaleString()}
                   </td>
-                  <td class="py-3.5 px-4 text-center border-r border-slate-200">
-                    <span class="px-2 py-0.5 rounded-full ${pcsAvailable >= c.pieces_per_carton ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-rose-50 text-rose-700 border border-rose-200'} text-[10px] font-black">
+                  <td class="py-1.5 px-3 text-center border-r border-slate-200">
+                    <span class="px-2 py-0.5 rounded-full ${pcsAvailable >= c.pieces_per_carton ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-rose-50 text-rose-700 border border-rose-200'} text-[10px] font-black whitespace-nowrap">
                       ${pcsAvailable} pcs available
                     </span>
                   </td>
-                  <td class="py-3.5 px-4 text-right">
-                    <div class="flex items-center justify-end gap-1.5">
-                      <button onclick="CartonPacking.openPackModal(${c.id})" class="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 active:scale-95 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer">
-                        <i data-lucide="package" class="w-3.5 h-3.5"></i> Pack
+                  <td class="py-1.5 px-3 text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button onclick="CartonPacking.openPackModal(${c.id})" class="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:scale-95 text-white font-black text-[10px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="package" class="w-3 h-3"></i> Pack
                       </button>
-                      <button onclick="CartonPacking.openCartonConfigModal(${c.id})" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Edit Pricing/Spec">
-                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                      <button onclick="CartonPacking.openCartonConfigModal(${c.id})" class="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors cursor-pointer" title="Edit Pricing/Spec">
+                        <i data-lucide="edit-2" class="w-3 h-3"></i>
                       </button>
                     </div>
                   </td>
@@ -408,34 +408,34 @@ window.CartonPacking = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-3 px-4 border-r border-slate-200">Packing #</th>
-              <th class="py-3 px-4 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
-              <th class="py-3 px-4 border-r border-slate-200">Item Packed</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Cartons Packed</th>
-              <th class="py-3 px-4 text-center border-r border-slate-200">Spec</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Single Pcs Consumed</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Carton Cost</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Total Cost</th>
-              <th class="py-3 px-4 text-right border-r border-slate-200">Sale Price</th>
-              <th class="py-3 px-4 text-right">Action</th>
+              <th class="py-2 px-3 border-r border-slate-200">Packing #</th>
+              <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
+              <th class="py-2 px-3 border-r border-slate-200">Item Packed</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Cartons Packed</th>
+              <th class="py-2 px-3 text-center border-r border-slate-200">Spec</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Single Pcs Consumed</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Carton Cost</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Total Cost</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Sale Price</th>
+              <th class="py-2 px-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
             ${batches.map(b => `
               <tr class="hover:bg-slate-50/60 transition-colors">
-                <td class="py-3 px-4 font-mono font-bold text-purple-800 border-r border-slate-200">${b.packing_number}</td>
-                <td class="py-3 px-4 font-mono text-slate-600 text-[11px] whitespace-nowrap border-r border-slate-200">${app.formatDateTime(b.date, b.created_at)}</td>
-                <td class="py-3 px-4 font-black text-slate-900 border-r border-slate-200">${b.item_name}</td>
-                <td class="py-3 px-4 text-right font-black text-purple-700 text-sm tabular-nums border-r border-slate-200">
+                <td class="py-1.5 px-3 font-mono font-bold text-purple-800 border-r border-slate-200">${b.packing_number}</td>
+                <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] whitespace-nowrap border-r border-slate-200">${app.formatDateTime(b.date, b.created_at)}</td>
+                <td class="py-1.5 px-3 font-black text-slate-900 border-r border-slate-200">${b.item_name}</td>
+                <td class="py-1.5 px-3 text-right font-black text-purple-700 text-xs tabular-nums border-r border-slate-200">
                   +${b.cartons_packed} ctns
                 </td>
-                <td class="py-3 px-4 text-center font-mono text-[11px] text-slate-500 border-r border-slate-200">${b.pieces_per_carton} pcs/ctn</td>
-                <td class="py-3 px-4 text-right font-mono font-bold text-rose-600 tabular-nums border-r border-slate-200">-${b.total_pieces_consumed} pcs</td>
-                <td class="py-3 px-4 text-right font-mono text-slate-700 tabular-nums border-r border-slate-200">Rs. ${b.carton_cost}</td>
-                <td class="py-3 px-4 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(b.total_cost).toLocaleString()}</td>
-                <td class="py-3 px-4 text-right font-black text-emerald-700 tabular-nums border-r border-slate-200">Rs. ${b.carton_sale_price}</td>
-                <td class="py-3 px-4 text-right">
-                  <button onclick="CartonPacking.deleteBatch(${b.id})" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer" title="Delete &amp; Reverse Stock">
+                <td class="py-1.5 px-3 text-center font-mono text-[11px] text-slate-500 border-r border-slate-200">${b.pieces_per_carton} pcs/ctn</td>
+                <td class="py-1.5 px-3 text-right font-mono font-bold text-rose-600 tabular-nums border-r border-slate-200">-${b.total_pieces_consumed} pcs</td>
+                <td class="py-1.5 px-3 text-right font-mono text-slate-700 tabular-nums border-r border-slate-200">Rs. ${b.carton_cost}</td>
+                <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(b.total_cost).toLocaleString()}</td>
+                <td class="py-1.5 px-3 text-right font-black text-emerald-700 tabular-nums border-r border-slate-200">Rs. ${b.carton_sale_price}</td>
+                <td class="py-1.5 px-3 text-right">
+                  <button onclick="CartonPacking.deleteBatch(${b.id})" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer" title="Delete &amp; Reverse Stock">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                   </button>
                 </td>

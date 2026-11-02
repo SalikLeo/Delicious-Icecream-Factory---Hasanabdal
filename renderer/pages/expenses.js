@@ -758,8 +758,8 @@ const Expenses = {
         <td class="px-4 py-1 text-right font-bold tabular-nums text-slate-800 border-r border-slate-200 text-xs">${app.formatCurrency(e.amount)}</td>
         <td class="px-4 py-1 text-right font-medium no-print">
           <div class="flex items-center justify-end gap-1.5 transition-opacity">
-            <button onclick="Expenses.openFormById(${e.id})" class="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all cursor-pointer" title="Edit Expense"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-            <button onclick="Expenses.deleteExpense(${e.id})" class="p-1.5 text-red-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all cursor-pointer" title="Delete Expense"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            <button onclick="Expenses.openFormById(${e.id})" class="p-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all cursor-pointer" title="Edit Expense"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+            <button onclick="Expenses.deleteExpense(${e.id})" class="p-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all cursor-pointer" title="Delete Expense"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </div>
         </td>
       </tr>

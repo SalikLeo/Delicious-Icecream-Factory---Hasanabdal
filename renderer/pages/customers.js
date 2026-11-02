@@ -355,15 +355,15 @@ window.Customers = {
       const bal = Number(s.amount) || 0;
       return `
         <div onclick="Customers.selectShop(${s.id})"
-             class="p-3.5 transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}">
+             class="py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}">
           <div class="min-w-0">
             <h4 class="font-black text-xs text-slate-900 truncate">${s.name}</h4>
-            <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
+            <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 leading-tight">
               <span>${s.owner_name || 'No Owner'}</span>
               <span>•</span>
               <span>${s.city || 'Wah Cantt'}</span>
             </div>
-            ${s.phone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5">${s.phone}</div>` : ''}
+            ${s.phone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">${s.phone}</div>` : ''}
           </div>
 
           <div class="text-right shrink-0">
@@ -469,13 +469,13 @@ window.Customers = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
             <tr>
-              <th class="py-2.5 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
-              <th class="py-2.5 px-3 border-r border-slate-200">Ref / Invoice</th>
-              <th class="py-2.5 px-3 border-r border-slate-200">Type &amp; Remarks</th>
-              <th class="py-2.5 px-2 text-center border-r border-slate-200">Cartons</th>
-              <th class="py-2.5 px-3 text-right border-r border-slate-200">Debit / Billed</th>
-              <th class="py-2.5 px-3 text-right border-r border-slate-200">Credit / Paid</th>
-              <th class="py-2.5 px-3 text-center">Action</th>
+              <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
+              <th class="py-2 px-3 border-r border-slate-200">Ref / Invoice</th>
+              <th class="py-2 px-3 border-r border-slate-200">Type &amp; Remarks</th>
+              <th class="py-2 px-2 text-center border-r border-slate-200">Cartons</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Debit / Billed</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Credit / Paid</th>
+              <th class="py-2 px-3 text-center">Action</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -483,32 +483,32 @@ window.Customers = {
               const isDelivery = e.record_type === 'delivery';
               return `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-2 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
-                  <td class="py-2 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${e.invoice_no}</td>
-                  <td class="py-2 px-3 border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
+                  <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${e.invoice_no}</td>
+                  <td class="py-1.5 px-3 border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isDelivery ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}">
                       ${isDelivery ? '📦 Delivery Order' : '💵 Cash Received'}
                     </span>
-                    <div class="text-[10px] text-slate-400 mt-0.5">${e.notes || e.car_number || ''}</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">${e.notes || e.car_number || ''}</div>
                   </td>
-                  <td class="py-2 px-2 text-center font-bold text-blue-700 border-r border-slate-200">
+                  <td class="py-1.5 px-2 text-center font-bold text-blue-700 border-r border-slate-200 text-xs">
                     ${isDelivery ? (e.cartons_count || 0) : '-'}
                   </td>
-                  <td class="py-2 px-3 text-right font-black ${isDelivery ? 'text-slate-900' : 'text-slate-400'} tabular-nums border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-black ${isDelivery ? 'text-slate-900' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
                     ${isDelivery ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}
                   </td>
-                  <td class="py-2 px-3 text-right font-black ${!isDelivery || e.received_amount > 0 ? 'text-emerald-700' : 'text-slate-400'} tabular-nums border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-black ${!isDelivery || e.received_amount > 0 ? 'text-emerald-700' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
                     Rs. ${Math.round(e.received_amount).toLocaleString()}
                   </td>
-                  <td class="py-2 px-3 text-center">
+                  <td class="py-1.5 px-3 text-center">
                     ${isDelivery ? `
                       <button type="button" onclick="ShopSales.printDeliveryInvoice(${e.id})"
-                              class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-lg flex items-center gap-1 mx-auto cursor-pointer">
+                              class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-md flex items-center gap-1 mx-auto cursor-pointer">
                         <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print Bill
                       </button>
                     ` : `
                       <button type="button" onclick="Customers.printPaymentReceipt(${e.id})"
-                              class="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black rounded-lg flex items-center gap-1 mx-auto cursor-pointer">
+                              class="px-2 py-0.5 bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black rounded-md flex items-center gap-1 mx-auto cursor-pointer">
                         <i data-lucide="printer" class="w-3 h-3 text-emerald-300"></i> Print Receipt
                       </button>
                     `}

@@ -300,21 +300,21 @@ window.CarLoading = {
           <table class="w-full text-left text-xs border-collapse border border-slate-200">
             <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500">
               <tr>
-                <th class="py-2.5 px-3">Item / Flavor</th>
-                <th class="py-2.5 px-3 text-center">Spec</th>
-                <th class="py-2.5 px-3 text-right">Loaded Qty</th>
-                <th class="py-2.5 px-3 text-right">Rate</th>
-                <th class="py-2.5 px-3 text-right">Total Value</th>
+                <th class="py-2 px-3 border-r border-slate-200">Item / Flavor</th>
+                <th class="py-2 px-3 text-center border-r border-slate-200">Spec</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Loaded Qty</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Rate</th>
+                <th class="py-2 px-3 text-right">Total Value</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${loadedItems.map(it => `
                 <tr class="hover:bg-slate-50">
-                  <td class="py-2.5 px-3 font-black text-slate-900">${it.carton_name}</td>
-                  <td class="py-2.5 px-3 text-center font-mono text-[11px] text-slate-500">${it.pieces_per_carton} pcs</td>
-                  <td class="py-2.5 px-3 text-right font-black text-blue-700 text-sm tabular-nums">${it.cartons_loaded} ctns</td>
-                  <td class="py-2.5 px-3 text-right font-mono text-slate-600 tabular-nums">Rs. ${it.carton_sale_price}</td>
-                  <td class="py-2.5 px-3 text-right font-black text-emerald-700 tabular-nums">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
+                  <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${it.carton_name}</td>
+                  <td class="py-1.5 px-3 text-center font-mono text-[10px] text-slate-500 border-r border-slate-200">${it.pieces_per_carton} pcs</td>
+                  <td class="py-1.5 px-3 text-right font-black text-blue-700 text-xs tabular-nums border-r border-slate-200">${it.cartons_loaded} ctns</td>
+                  <td class="py-1.5 px-3 text-right font-mono text-slate-600 text-xs tabular-nums border-r border-slate-200">Rs. ${it.carton_sale_price}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -369,12 +369,12 @@ window.CarLoading = {
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th class="py-3 px-4 border-r border-slate-200">Carton Item</th>
-                  <th class="py-3 px-4 text-center border-r border-slate-200">Spec</th>
-                  <th class="py-3 px-4 text-right border-r border-slate-200">Already In Car</th>
-                  <th class="py-3 px-4 text-right border-r border-slate-200">Factory Warehouse Stock</th>
-                  <th class="py-3 px-4 text-right w-44 border-r border-slate-200">Cartons to Load</th>
-                  <th class="py-3 px-4 text-right">Total in Car After</th>
+                  <th class="py-2 px-3 border-r border-slate-200">Carton Item</th>
+                  <th class="py-2 px-3 text-center border-r border-slate-200">Spec</th>
+                  <th class="py-2 px-3 text-right border-r border-slate-200">Already In Car</th>
+                  <th class="py-2 px-3 text-right border-r border-slate-200">Factory Warehouse Stock</th>
+                  <th class="py-2 px-3 text-right w-44 border-r border-slate-200">Cartons to Load</th>
+                  <th class="py-2 px-3 text-right">Total in Car After</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-700" id="dsp-table-body">
@@ -420,23 +420,23 @@ window.CarLoading = {
 
       return `
         <tr class="hover:bg-slate-50">
-          <td class="py-3 px-4 border-r border-slate-200">
-            <div class="font-black text-slate-900">${c.carton_name}</div>
-            <div class="text-[10px] text-slate-400">Rate: Rs. ${c.carton_sale_price}</div>
+          <td class="py-1.5 px-3 border-r border-slate-200">
+            <div class="font-black text-slate-900 text-xs">${c.carton_name}</div>
+            <div class="text-[10px] text-slate-400 leading-tight">Rate: Rs. ${c.carton_sale_price}</div>
           </td>
-          <td class="py-3 px-4 text-center font-mono text-[11px] text-slate-500 border-r border-slate-200">${c.pieces_per_carton} pcs</td>
-          <td class="py-3 px-4 text-right font-mono font-bold text-blue-600 tabular-nums border-r border-slate-200">${inCar} ctns</td>
-          <td class="py-3 px-4 text-right font-black ${warehouse > 0 ? 'text-purple-700' : 'text-slate-400'} tabular-nums border-r border-slate-200">
+          <td class="py-1.5 px-3 text-center font-mono text-[10px] text-slate-500 border-r border-slate-200">${c.pieces_per_carton} pcs</td>
+          <td class="py-1.5 px-3 text-right font-mono font-bold text-blue-600 text-xs tabular-nums border-r border-slate-200">${inCar} ctns</td>
+          <td class="py-1.5 px-3 text-right font-black ${warehouse > 0 ? 'text-purple-700' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
             ${warehouse} ctns
           </td>
-          <td class="py-3 px-4 text-right border-r border-slate-200">
+          <td class="py-1.5 px-3 text-right border-r border-slate-200">
             <div class="flex items-center justify-end gap-1.5">
               <input type="number" min="0" max="${warehouse}" data-carton-id="${c.id}" data-in-car="${inCar}" data-warehouse="${warehouse}"
                      placeholder="0" oninput="CarLoading.onLoadQtyChange(this)"
-                     class="dsp-qty-input w-24 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-center font-black text-sm text-slate-900 outline-none focus:border-blue-500 tabular-nums">
+                     class="dsp-qty-input w-20 px-2 py-1 bg-white border border-slate-300 rounded-lg text-center font-black text-xs text-slate-900 outline-none focus:border-blue-500 tabular-nums">
             </div>
           </td>
-          <td class="py-3 px-4 text-right font-black text-slate-900 tabular-nums dsp-total-after" id="dsp-after-${c.id}">
+          <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums dsp-total-after" id="dsp-after-${c.id}">
             ${inCar} ctns
           </td>
         </tr>
@@ -556,27 +556,27 @@ window.CarLoading = {
         <table class="w-full text-left text-xs">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-3 px-4">Dispatch #</th>
-              <th class="py-3 px-4">Date</th>
-              <th class="py-3 px-4">Vehicle</th>
-              <th class="py-3 px-4">Driver</th>
-              <th class="py-3 px-4 text-right">Total Cartons Loaded</th>
-              <th class="py-3 px-4">Notes</th>
-              <th class="py-3 px-4 text-right">Gate Pass</th>
+              <th class="py-2 px-3 border-r border-slate-200">Dispatch #</th>
+              <th class="py-2 px-3 border-r border-slate-200">Date</th>
+              <th class="py-2 px-3 border-r border-slate-200">Vehicle</th>
+              <th class="py-2 px-3 border-r border-slate-200">Driver</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Total Cartons Loaded</th>
+              <th class="py-2 px-3 border-r border-slate-200">Notes</th>
+              <th class="py-2 px-3 text-center">Gate Pass</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
             ${this.dispatches.map(d => `
               <tr class="hover:bg-slate-50/60 transition-colors">
-                <td class="py-3 px-4 font-mono font-bold text-blue-800 border-r border-slate-200 whitespace-nowrap">${d.dispatch_no}</td>
-                <td class="py-3 px-4 font-mono text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
-                <td class="py-3 px-4 font-black text-slate-900 border-r border-slate-200">${d.car_number}</td>
-                <td class="py-3 px-4 font-bold text-slate-700 border-r border-slate-200">${d.driver_name}</td>
-                <td class="py-3 px-4 text-right font-black text-blue-700 tabular-nums border-r border-slate-200">${d.total_cartons} ctns</td>
-                <td class="py-3 px-4 text-slate-400 text-[11px] border-r border-slate-200">${d.notes || ''}</td>
-                <td class="py-3 px-4 text-center">
-                  <button onclick="CarLoading.printLoadingGatePass(${d.id})" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 mx-auto cursor-pointer">
-                    <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print
+                <td class="py-1.5 px-3 font-mono font-bold text-blue-800 text-xs border-r border-slate-200 whitespace-nowrap">${d.dispatch_no}</td>
+                <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
+                <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${d.car_number}</td>
+                <td class="py-1.5 px-3 font-bold text-slate-700 text-xs border-r border-slate-200">${d.driver_name}</td>
+                <td class="py-1.5 px-3 text-right font-black text-blue-700 text-xs tabular-nums border-r border-slate-200">${d.total_cartons} ctns</td>
+                <td class="py-1.5 px-3 text-slate-400 text-[10px] border-r border-slate-200">${d.notes || ''}</td>
+                <td class="py-1.5 px-3 text-center">
+                  <button onclick="CarLoading.printLoadingGatePass(${d.id})" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-[10px] font-bold transition-all flex items-center gap-1 mx-auto cursor-pointer">
+                    <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
                   </button>
                 </td>
               </tr>

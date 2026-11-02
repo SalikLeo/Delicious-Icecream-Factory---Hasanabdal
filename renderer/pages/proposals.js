@@ -135,16 +135,16 @@ window.Proposals = {
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
               <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
-                  <th class="py-3 px-3 border-r border-slate-200 whitespace-nowrap">Date</th>
-                  <th class="py-3 px-3 border-r border-slate-200">Invoice #</th>
-                  <th class="py-3 px-3 border-r border-slate-200">Car &amp; Driver</th>
-                  <th class="py-3 px-3 border-r border-slate-200">Shop / Customer</th>
-                  <th class="py-3 px-2 text-center border-r border-slate-200">Cartons</th>
-                  <th class="py-3 px-3 text-right border-r border-slate-200">Total (Rs.)</th>
-                  <th class="py-3 px-3 text-right border-r border-slate-200">Cash Received</th>
-                  <th class="py-3 px-3 text-right border-r border-slate-200">Khata Remaining</th>
-                  <th class="py-3 px-2 text-center border-r border-slate-200">Method</th>
-                  <th class="py-3 px-3 text-center">Actions</th>
+                  <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap">Date</th>
+                  <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
+                  <th class="py-2 px-3 border-r border-slate-200">Car &amp; Driver</th>
+                  <th class="py-2 px-3 border-r border-slate-200">Shop / Customer</th>
+                  <th class="py-2 px-2 text-center border-r border-slate-200">Cartons</th>
+                  <th class="py-2 px-3 text-right border-r border-slate-200">Total (Rs.)</th>
+                  <th class="py-2 px-3 text-right border-r border-slate-200">Cash Received</th>
+                  <th class="py-2 px-3 text-right border-r border-slate-200">Khata Remaining</th>
+                  <th class="py-2 px-2 text-center border-r border-slate-200">Method</th>
+                  <th class="py-2 px-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody id="prop-table-body" class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -348,37 +348,37 @@ window.Proposals = {
 
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
-          <td class="py-2.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
-          <td class="py-2.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
-          <td class="py-2.5 px-3 border-r border-slate-200">
-            <div class="font-bold text-slate-800">${d.car_number}</div>
-            <div class="text-[10px] text-slate-400 font-medium">${d.driver_name || ''}</div>
+          <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
+          <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
+          <td class="py-1.5 px-3 border-r border-slate-200">
+            <div class="font-bold text-slate-800 text-xs">${d.car_number}</div>
+            <div class="text-[10px] text-slate-400 font-medium leading-tight">${d.driver_name || ''}</div>
           </td>
-          <td class="py-2.5 px-3 border-r border-slate-200">
-            <div class="font-black text-slate-900">${d.shop_name}</div>
-            <div class="text-[10px] text-slate-400">${d.shop_phone || d.shop_address || ''}</div>
+          <td class="py-1.5 px-3 border-r border-slate-200">
+            <div class="font-black text-slate-900 text-xs">${d.shop_name}</div>
+            <div class="text-[10px] text-slate-400 leading-tight">${d.shop_phone || d.shop_address || ''}</div>
           </td>
-          <td class="py-2.5 px-2 text-center font-black text-sm text-blue-700 bg-blue-50/30 border-r border-slate-200">
+          <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/30 border-r border-slate-200">
             ${d.total_cartons_delivered || 0}
           </td>
-          <td class="py-2.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
+          <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
             Rs. ${Math.round(d.total_amount).toLocaleString()}
           </td>
-          <td class="py-2.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums border-r border-slate-200">
+          <td class="py-1.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums border-r border-slate-200">
             Rs. ${Math.round(d.received_amount).toLocaleString()}
           </td>
-          <td class="py-2.5 px-3 text-right font-black text-xs tabular-nums border-r border-slate-200 ${d.remaining_balance > 0 ? 'text-rose-600' : 'text-slate-400'}">
+          <td class="py-1.5 px-3 text-right font-black text-xs tabular-nums border-r border-slate-200 ${d.remaining_balance > 0 ? 'text-rose-600' : 'text-slate-400'}">
             Rs. ${Math.round(d.remaining_balance).toLocaleString()}
           </td>
-          <td class="py-2.5 px-2 text-center border-r border-slate-200">
+          <td class="py-1.5 px-2 text-center border-r border-slate-200">
             <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${badgeClass}">
               ${d.payment_method || 'Cash'}
             </span>
           </td>
-          <td class="py-2.5 px-3 text-center">
+          <td class="py-1.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1.5">
               <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})"
-                      class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black rounded-lg flex items-center gap-1 shadow-2xs transition-all cursor-pointer">
+                      class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-md flex items-center gap-1 shadow-2xs transition-all cursor-pointer">
                 <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
               </button>
               <button type="button" onclick="Proposals.deleteDeliveryOrder(${d.id}, '${d.invoice_no}')"

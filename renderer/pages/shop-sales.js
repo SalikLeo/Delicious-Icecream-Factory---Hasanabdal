@@ -211,22 +211,22 @@ window.ShopSales = {
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
               <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th class="py-3 px-3 border-r border-slate-200">Item / Carton Product</th>
-                  <th class="py-3 px-2 text-center w-24 border-r border-slate-200">Ordered</th>
-                  <th class="py-3 px-2 text-center w-24 text-emerald-800 bg-emerald-50/70 border-r border-slate-200">Delivered</th>
-                  <th class="py-3 px-2 text-center w-24 text-rose-800 bg-rose-50/70 border-r border-slate-200">Returned</th>
-                  <th class="py-3 px-3 text-center border-r border-slate-200">Returned Cartons Destination</th>
-                  <th class="py-3 px-2 text-right w-28 border-r border-slate-200">Rate / Ctn</th>
-                  <th class="py-3 px-3 text-right w-32 border-r border-slate-200">Total (Rs.)</th>
-                  <th class="py-3 px-2 text-center w-10"></th>
+                  <th class="py-2 px-3 border-r border-slate-200">Item / Carton Product</th>
+                  <th class="py-2 px-2 text-center w-24 border-r border-slate-200">Ordered</th>
+                  <th class="py-2 px-2 text-center w-24 text-emerald-800 bg-emerald-50/70 border-r border-slate-200">Delivered</th>
+                  <th class="py-2 px-2 text-center w-24 text-rose-800 bg-rose-50/70 border-r border-slate-200">Returned</th>
+                  <th class="py-2 px-3 text-center border-r border-slate-200">Returned Cartons Destination</th>
+                  <th class="py-2 px-2 text-right w-28 border-r border-slate-200">Rate / Ctn</th>
+                  <th class="py-2 px-3 text-right w-32 border-r border-slate-200">Total (Rs.)</th>
+                  <th class="py-2 px-2 text-center w-10"></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-700" id="ss-items-tbody">
                 ${this.items.map((it, idx) => `
                   <tr class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-2.5 px-3 border-r border-slate-200">
+                    <td class="py-1.5 px-3 border-r border-slate-200">
                       <select onchange="ShopSales.onItemProductChange(${idx}, this.value)"
-                              class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-amber-400">
+                              class="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-amber-400">
                         ${(() => {
                           const otherSelectedCartons = new Set(this.items.filter((_, i) => i !== idx).map(x => x.carton_id));
                           return this.cartons.map(c => {
@@ -243,51 +243,51 @@ window.ShopSales = {
                     </td>
 
                     <!-- Ordered Cartons -->
-                    <td class="py-2.5 px-2 text-center border-r border-slate-200">
+                    <td class="py-1.5 px-2 text-center border-r border-slate-200">
                       <input type="number" min="0" value="${it.ordered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'ordered', this.value)"
-                             class="w-20 px-2 py-1.5 text-center font-bold text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none tabular-nums focus:bg-white focus:border-amber-400">
+                             class="w-20 px-2 py-1 text-center font-bold text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none tabular-nums focus:bg-white focus:border-amber-400">
                     </td>
 
                     <!-- Delivered Cartons -->
-                    <td class="py-2.5 px-2 text-center bg-emerald-50/30 border-r border-slate-200">
+                    <td class="py-1.5 px-2 text-center bg-emerald-50/30 border-r border-slate-200">
                       <input type="number" min="0" value="${it.delivered_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'delivered', this.value)"
-                             class="w-20 px-2 py-1.5 text-center font-black text-xs text-emerald-800 bg-emerald-50 border-2 border-emerald-400 rounded-lg outline-none tabular-nums focus:bg-white">
+                             class="w-20 px-2 py-1 text-center font-black text-xs text-emerald-800 bg-emerald-50 border-2 border-emerald-400 rounded-lg outline-none tabular-nums focus:bg-white">
                     </td>
 
                     <!-- Returned Cartons -->
-                    <td class="py-2.5 px-2 text-center bg-rose-50/30 border-r border-slate-200">
+                    <td class="py-1.5 px-2 text-center bg-rose-50/30 border-r border-slate-200">
                       <input type="number" min="0" value="${it.returned_cartons}" oninput="ShopSales.onRowQtyChange(${idx}, 'returned', this.value)"
-                             class="w-20 px-2 py-1.5 text-center font-black text-xs text-rose-700 bg-rose-50 border border-rose-300 rounded-lg outline-none tabular-nums focus:bg-white">
+                             class="w-20 px-2 py-1 text-center font-black text-xs text-rose-700 bg-rose-50 border border-rose-300 rounded-lg outline-none tabular-nums focus:bg-white">
                     </td>
 
                     <!-- Return Destination Option (Keep in Car vs Factory Stock) -->
-                    <td class="py-2.5 px-3 text-center border-r border-slate-200">
-                      <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-[11px] font-black">
+                    <td class="py-1.5 px-3 text-center border-r border-slate-200">
+                      <div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px] font-black">
                         <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'car')"
-                                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer ${it.return_destination === 'car' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                                class="px-2 py-0.5 rounded-md transition-all cursor-pointer ${it.return_destination === 'car' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
                           🔘 Keep in Car
                         </button>
                         <button type="button" onclick="ShopSales.setReturnDestination(${idx}, 'stock')"
-                                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer ${it.return_destination === 'stock' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                                class="px-2 py-0.5 rounded-md transition-all cursor-pointer ${it.return_destination === 'stock' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
                           ⚪ Return to Stock
                         </button>
                       </div>
                     </td>
 
                     <!-- Carton Price -->
-                    <td class="py-2.5 px-2 text-right border-r border-slate-200">
+                    <td class="py-1.5 px-2 text-right border-r border-slate-200">
                       <input type="number" step="any" min="0" value="${it.carton_price}" oninput="ShopSales.onRowPriceChange(${idx}, this.value)"
-                             class="w-24 px-2 py-1.5 text-right font-black text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none tabular-nums focus:bg-white focus:border-amber-400">
+                             class="w-24 px-2 py-1 text-right font-black text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none tabular-nums focus:bg-white focus:border-amber-400">
                     </td>
 
                     <!-- Line Total -->
-                    <td class="py-2.5 px-3 text-right font-black text-slate-900 text-sm tabular-nums border-r border-slate-200">
+                    <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
                       Rs. ${Math.round(it.line_total || 0).toLocaleString()}
                     </td>
 
                     <!-- Remove Row -->
-                    <td class="py-2.5 px-2 text-center">
-                      <button type="button" onclick="ShopSales.removeRow(${idx})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Remove Item">
+                    <td class="py-1.5 px-2 text-center">
+                      <button type="button" onclick="ShopSales.removeRow(${idx})" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Remove Item">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </td>

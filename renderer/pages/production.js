@@ -500,7 +500,7 @@ window.Production = {
                 <tr class="hover:bg-slate-50/60 transition-colors">
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="font-black text-slate-900 text-xs">${it.name}</div>
-                    <div class="text-[10px] text-slate-400 font-medium leading-tight">${it.flavor || 'Standard Flavor'}</div>
+                    ${it.flavor && it.flavor.trim() && it.flavor.trim().toLowerCase() !== 'standard flavor' ? `<div class="text-[10px] text-slate-400 font-medium leading-tight">${it.flavor.trim()}</div>` : ''}
                   </td>
                   <td class="py-1.5 px-3 text-center border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-800 font-mono text-[10px] font-black border border-cyan-200 whitespace-nowrap">
@@ -984,8 +984,8 @@ window.Production = {
     const id = document.getElementById('ii-id').value;
     const data = {
       id: id ? Number(id) : null,
-      name: document.getElementById('ii-name').value,
-      flavor: document.getElementById('ii-flavor').value,
+      name: (document.getElementById('ii-name').value || '').trim(),
+      flavor: (document.getElementById('ii-flavor').value || '').trim(),
       unit_cost: Number(document.getElementById('ii-cost').value) || 0,
       retail_piece_price: Number(document.getElementById('ii-retail').value) || 0,
       current_single_stock: Number(document.getElementById('ii-stock').value) || 0,
@@ -1130,7 +1130,7 @@ window.Production = {
             ${this.items.map((it, idx) => `
               <tr>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${it.name} <span style="font-weight: 500;">(${it.flavor || ''})</span></td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${it.name}${it.flavor && it.flavor.trim() && it.flavor.trim().toLowerCase() !== 'standard flavor' ? ` <span style="font-weight: 500;">(${it.flavor.trim()})</span>` : ''}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.current_single_stock} pcs</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.unit_cost}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.current_single_stock * it.unit_cost).toLocaleString()}</td>

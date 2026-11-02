@@ -28,7 +28,7 @@ const Expenses = {
           <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
             <i data-lucide="receipt" class="w-5 h-5"></i>
           </div>
-          <h2 class="text-3xl font-bold text-slate-800">Expenses</h2>
+          <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Factory Expenses</h2>
         </div>
         <div class="flex items-center gap-2">
           <button onclick="Expenses.toggleStats()" id="exp-stats-toggle-btn" class="h-10 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer">

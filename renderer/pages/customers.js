@@ -11,7 +11,7 @@ window.Customers = {
     this.container = container;
     
     container.innerHTML = `
-      <div class="h-full flex flex-col gap-4 max-w-7xl mx-auto p-4 md:p-6 overflow-hidden">
+      <div class="h-full flex flex-col gap-3.5 w-full overflow-hidden">
         
         <!-- Header -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
@@ -20,7 +20,7 @@ window.Customers = {
               <i data-lucide="store" class="w-6 h-6"></i>
             </div>
             <div>
-              <h2 class="text-2xl font-black text-slate-900 tracking-tight">Shops &amp; Khata Accounts</h2>
+              <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Shops &amp; Khata Accounts</h2>
               <p class="text-xs text-slate-500 font-medium">Manage customer shops, track credit balances, collect cash payments, and print A5 ledger statements.</p>
             </div>
           </div>
@@ -28,7 +28,7 @@ window.Customers = {
           <div class="flex items-center gap-2">
             <button type="button" onclick="Customers.openShopModal()"
                     class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-4 h-4"></i> + Add New Shop
+              <i data-lucide="plus" class="w-4 h-4"></i> Add New Shop
             </button>
           </div>
         </div>
@@ -64,7 +64,7 @@ window.Customers = {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
           
           <!-- Left 5 Cols: Shop List -->
-          <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-2xs flex flex-col min-h-0 overflow-hidden">
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col min-h-0 overflow-hidden">
             <!-- Search & Filters -->
             <div class="p-3 border-b border-slate-100 bg-slate-50 flex flex-col gap-2 shrink-0">
               <div class="relative w-full">
@@ -98,7 +98,7 @@ window.Customers = {
           </div>
 
           <!-- Right 7 Cols: Shop Details & Ledger Statement -->
-          <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-2xs flex flex-col min-h-0 overflow-hidden" id="shop-detail-panel">
+          <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col min-h-0 overflow-hidden" id="shop-detail-panel">
             <!-- Injected by renderShopDetail() -->
           </div>
 
@@ -108,7 +108,7 @@ window.Customers = {
 
       <!-- Shop Add/Edit Modal -->
       <div id="shop-edit-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 flex flex-col">
           <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
             <h3 class="font-black text-sm text-white flex items-center gap-2" id="shop-modal-title">
               <i data-lucide="store" class="w-4 h-4 text-amber-400"></i> Add New Shop
@@ -179,7 +179,7 @@ window.Customers = {
 
       <!-- Receive Payment Modal -->
       <div id="shop-payment-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200 flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200 flex flex-col">
           <div class="p-4 bg-emerald-800 text-white flex justify-between items-center">
             <h3 class="font-black text-sm text-white flex items-center gap-2">
               <i data-lucide="hand-coins" class="w-4 h-4 text-emerald-300"></i> Receive Cash Payment

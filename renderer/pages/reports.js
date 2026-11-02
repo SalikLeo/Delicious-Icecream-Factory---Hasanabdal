@@ -22,10 +22,10 @@ window.Reports = {
     this.cars = await window.api.getCars() || [];
 
     container.innerHTML = `
-      <div class="h-full flex flex-col gap-4 max-w-7xl mx-auto p-4 md:p-6 overflow-y-auto custom-scrollbar">
+      <div class="h-full flex flex-col gap-3.5 w-full overflow-y-auto custom-scrollbar">
         
         <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white p-5 rounded-3xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-slate-700 shrink-0">
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border border-slate-700 shrink-0">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-black">REPORTS HUB</span>
@@ -161,7 +161,7 @@ window.Reports = {
 
     container.innerHTML = `
       <!-- Filter Controls -->
-      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3 flex-wrap">
           <div>
             <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Select Vehicle / Car</label>
@@ -241,7 +241,7 @@ window.Reports = {
       </div>
 
       <!-- Deliveries Table -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
         <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
           <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Vehicle Delivery Log (${filtered.length} entries)</h4>
           <span class="text-[11px] font-bold text-slate-400">All amounts in PKR</span>
@@ -325,7 +325,7 @@ window.Reports = {
 
     container.innerHTML = `
       <!-- Top Action Bar -->
-      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
         <div>
           <h3 class="font-black text-sm text-slate-900">Raw Materials Inventory &amp; Remaining Balance</h3>
           <p class="text-[11px] text-slate-500 font-medium">Clear breakdown of what raw material is left behind in factory stock and current financial valuation.</p>
@@ -358,7 +358,7 @@ window.Reports = {
       </div>
 
       <!-- Raw Materials Table -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
         <div class="overflow-x-auto flex-1">
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
@@ -437,7 +437,7 @@ window.Reports = {
 
     container.innerHTML = `
       <!-- Action Bar -->
-      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
         <div>
           <h3 class="font-black text-sm text-slate-900">Finished Goods &amp; Ready Warehouse Inventory</h3>
           <p class="text-[11px] text-slate-500 font-medium">Ready packed cartons in factory warehouse and loaded inside delivery vehicles.</p>
@@ -476,7 +476,7 @@ window.Reports = {
       </div>
 
       <!-- Cartons Inventory Table -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
         <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
           <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Packed Cartons Product Catalog</h4>
           <span class="text-[11px] font-bold text-slate-400">${cartons.length} Products</span>
@@ -561,7 +561,7 @@ window.Reports = {
 
     container.innerHTML = `
       <!-- Filters -->
-      <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3 flex-wrap">
           <div>
             <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Financial Period</label>
@@ -630,7 +630,7 @@ window.Reports = {
       </div>
 
       <!-- Expenses Breakdown Table -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
         <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
           <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Recorded Expenses Log (${filtExp.length} items)</h4>
           <span class="text-[11px] font-bold text-slate-400">Total Expenses: Rs. ${Math.round(totalExpenses).toLocaleString()}</span>

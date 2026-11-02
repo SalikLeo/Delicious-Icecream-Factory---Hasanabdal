@@ -84,7 +84,7 @@ const MasterDB = {
             <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
               <i data-lucide="database" class="w-5 h-5"></i>
             </div>
-            <h1 class="text-3xl font-bold text-slate-800">Stock</h1>
+            <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Stock Inventory</h2>
           </div>
           <div class="relative flex-1 group no-print">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-accent transition-colors"></i>
@@ -516,7 +516,7 @@ const MasterDB = {
 
       <!-- Custom / Batch Stock Print Modal -->
       <div id="db-custom-print-modal" onclick="if(event.target === this) MasterDB.closeCustomPrintModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-xl w-full mx-4 transform transition-all scale-95 flex flex-col max-h-[90vh]" id="db-custom-print-card">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-xl w-full mx-4 transform transition-all scale-95 flex flex-col max-h-[90vh]" id="db-custom-print-card">
           <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3 shrink-0">
             <div class="flex items-center gap-2.5">
               <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">

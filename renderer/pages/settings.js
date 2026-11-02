@@ -22,7 +22,7 @@ const Settings = {
           <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
             <i data-lucide="settings" class="w-5 h-5"></i>
           </div>
-          <h2 class="text-3xl font-bold text-slate-800">Settings</h2>
+          <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Factory Settings</h2>
         </div>
         <div>
           <button type="submit" form="settings-form" id="btn-save-profile" class="h-10 px-5 bg-accent hover:bg-amber-500 text-slate-950 font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 border border-amber-400/50 cursor-pointer">

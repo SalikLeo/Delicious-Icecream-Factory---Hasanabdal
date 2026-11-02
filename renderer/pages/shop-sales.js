@@ -90,10 +90,10 @@ window.ShopSales = {
     const loadedCarItems = this.carInventory.filter(it => (it.cartons_loaded || 0) > 0);
 
     this.container.innerHTML = `
-      <div class="h-full flex flex-col gap-4 max-w-7xl mx-auto p-4 md:p-6 overflow-y-auto custom-scrollbar">
+      <div class="h-full flex flex-col gap-3.5 w-full overflow-y-auto custom-scrollbar">
         
         <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-slate-900 text-white p-5 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-amber-800/40 shrink-0">
+        <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-slate-900 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border border-amber-800/40 shrink-0">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-black">STAGE 5</span>
@@ -115,7 +115,7 @@ window.ShopSales = {
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
           
           <!-- Car Selection (5 cols) -->
-          <div class="md:col-span-6 bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+          <div class="md:col-span-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
               <label class="text-xs font-black uppercase text-slate-700 flex items-center gap-1.5">
                 <i data-lucide="truck" class="w-4 h-4 text-blue-600"></i> Delivering Vehicle / Car *
@@ -153,13 +153,13 @@ window.ShopSales = {
           </div>
 
           <!-- Shop Selection (6 cols) -->
-          <div class="md:col-span-6 bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+          <div class="md:col-span-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
               <label class="text-xs font-black uppercase text-slate-700 flex items-center gap-1.5">
                 <i data-lucide="store" class="w-4 h-4 text-amber-600"></i> Shop / Customer *
               </label>
               <button type="button" onclick="ShopSales.openQuickAddShopModal()" class="text-[11px] font-black text-amber-600 hover:text-amber-700 cursor-pointer flex items-center gap-1">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i> + Add Shop
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Shop
               </button>
             </div>
 
@@ -196,14 +196,14 @@ window.ShopSales = {
         </div>
 
         <!-- Middle: Delivery Items & Returns Table -->
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
           <div class="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
               <h3 class="font-black text-sm text-slate-900">Delivery Cartons &amp; Returns Breakdown</h3>
               <p class="text-[11px] text-slate-500 font-medium">Specify ordered cartons, actual cartons delivered, and choose what happens to returned cartons.</p>
             </div>
             <button type="button" onclick="ShopSales.addNewRow()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> + Add Another Item
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Another Item
             </button>
           </div>
 
@@ -302,7 +302,7 @@ window.ShopSales = {
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pb-6">
           
           <!-- Notes & Payment Method (7 cols) -->
-          <div class="md:col-span-7 bg-white p-5 rounded-3xl border border-slate-200 shadow-2xs space-y-4">
+          <div class="md:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
             <h4 class="text-xs font-black uppercase text-slate-500 tracking-wider">Payment Method &amp; Delivery Notes</h4>
             
             <div class="flex items-center gap-2">
@@ -340,7 +340,7 @@ window.ShopSales = {
           </div>
 
           <!-- Total Due & Settlement Card (5 cols) -->
-          <div class="md:col-span-5 bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between">
+          <div class="md:col-span-5 bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between">
             <div class="space-y-3">
               <div class="flex justify-between items-center text-xs text-slate-300">
                 <span>Subtotal (${totalDeliveredCartons} Cartons):</span>
@@ -518,7 +518,7 @@ window.ShopSales = {
 
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) ShopSales.closeShopModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
           <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
             <h3 class="text-base font-black tracking-tight">Quick Add New Shop</h3>
             <button onclick="ShopSales.closeShopModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>

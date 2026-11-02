@@ -37,21 +37,21 @@ window.Dashboard = {
     const company = settings.company_name || 'Ice Cream Factory';
 
     this.container.innerHTML = `
-      <div class="h-full flex flex-col gap-6 max-w-7xl mx-auto overflow-y-auto custom-scrollbar p-1">
+      <div class="h-full flex flex-col gap-3.5 w-full overflow-y-auto custom-scrollbar">
         
         <!-- Welcome & Factory Header -->
-        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-indigo-800/40">
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border border-indigo-800/40">
           <div>
             <div class="flex items-center gap-2 mb-1.5">
               <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[10px] font-black uppercase tracking-wider">FACTORY HUB</span>
               <span class="text-xs text-slate-400 font-mono font-bold">${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</span>
             </div>
-            <h2 class="text-2xl md:text-3xl font-black tracking-tight text-white">${company} Management</h2>
+            <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">${company} Management</h2>
             <p class="text-xs text-slate-300 font-medium mt-1">Complete 5-stage production, packing, vehicle dispatch, and shop deliveries control center.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button onclick="app.navigate('shop-sales')" class="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="shopping-cart" class="w-4 h-4"></i> + New Shop Delivery
+              <i data-lucide="shopping-cart" class="w-4 h-4"></i> New Shop Delivery
             </button>
             <button onclick="Dashboard.loadStats()" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-all cursor-pointer" title="Refresh Dashboard">
               <i data-lucide="refresh-cw" class="w-4 h-4"></i>
@@ -71,7 +71,7 @@ window.Dashboard = {
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
             
             <!-- Stage 1 Card: Raw Materials -->
-            <div onclick="app.navigate('raw-materials')" class="bg-white p-4 rounded-2xl border-2 border-emerald-300/80 hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+            <div onclick="app.navigate('raw-materials')" class="bg-white p-4 rounded-xl border-2 border-emerald-300/80 hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[9px]">STAGE 1</span>
@@ -92,7 +92,7 @@ window.Dashboard = {
             </div>
 
             <!-- Stage 2 Card: Single Items Production -->
-            <div onclick="app.navigate('production')" class="bg-white p-4 rounded-2xl border-2 border-cyan-300/80 hover:border-cyan-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+            <div onclick="app.navigate('production')" class="bg-white p-4 rounded-xl border-2 border-cyan-300/80 hover:border-cyan-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-800 font-black text-[9px]">STAGE 2</span>
@@ -113,7 +113,7 @@ window.Dashboard = {
             </div>
 
             <!-- Stage 3 Card: Carton Packing -->
-            <div onclick="app.navigate('carton-packing')" class="bg-white p-4 rounded-2xl border-2 border-purple-300/80 hover:border-purple-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+            <div onclick="app.navigate('carton-packing')" class="bg-white p-4 rounded-xl border-2 border-purple-300/80 hover:border-purple-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 font-black text-[9px]">STAGE 3</span>
@@ -134,7 +134,7 @@ window.Dashboard = {
             </div>
 
             <!-- Stage 4 Card: Cars & Delivery Loading -->
-            <div onclick="app.navigate('car-loading')" class="bg-white p-4 rounded-2xl border-2 border-blue-300/80 hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+            <div onclick="app.navigate('car-loading')" class="bg-white p-4 rounded-xl border-2 border-blue-300/80 hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-black text-[9px]">STAGE 4</span>
@@ -155,7 +155,7 @@ window.Dashboard = {
             </div>
 
             <!-- Stage 5 Card: Shop Deliveries -->
-            <div onclick="app.navigate('shop-sales')" class="bg-white p-4 rounded-2xl border-2 border-amber-300/80 hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
+            <div onclick="app.navigate('shop-sales')" class="bg-white p-4 rounded-xl border-2 border-amber-300/80 hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black text-[9px]">STAGE 5</span>
@@ -182,7 +182,7 @@ window.Dashboard = {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
           <!-- Left: Active Delivery Cars on Route (5 cols) -->
-          <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+          <div class="lg:col-span-5 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
               <div class="flex items-center gap-2">
                 <i data-lucide="truck" class="w-4 h-4 text-blue-600"></i>
@@ -213,7 +213,7 @@ window.Dashboard = {
           </div>
 
           <!-- Right: Today's Shop Invoices & Deliveries (7 cols) -->
-          <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+          <div class="lg:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
               <div class="flex items-center gap-2">
                 <i data-lucide="receipt" class="w-4 h-4 text-amber-500"></i>

@@ -39,10 +39,10 @@ window.RawMaterials = {
     });
 
     this.container.innerHTML = `
-      <div class="h-full flex flex-col gap-5 max-w-7xl mx-auto">
+      <div class="h-full flex flex-col gap-3.5 w-full">
         
         <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-emerald-800/40">
+        <div class="bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border border-emerald-800/40">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-black border border-emerald-500/30">STAGE 1</span>
@@ -52,10 +52,10 @@ window.RawMaterials = {
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button onclick="RawMaterials.openAddModal()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="plus-circle" class="w-4 h-4"></i> + Add New Material
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Material
             </button>
             <button onclick="RawMaterials.openPurchaseModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-900 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> + Purchase / Stock-In
+              <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Purchase / Stock-In
             </button>
             <button onclick="RawMaterials.printReport()" class="px-3.5 py-2.5 bg-slate-800/90 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer" title="Print Stock Sheet">
               <i data-lucide="printer" class="w-4 h-4"></i> Print
@@ -64,8 +64,8 @@ window.RawMaterials = {
         </div>
 
         <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Raw Materials</p>
               <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalMaterials} <span class="text-xs font-bold text-slate-400">items</span></h3>
@@ -99,7 +99,7 @@ window.RawMaterials = {
         </div>
 
         <!-- Navigation Tabs & Search & Date Filters -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
+        <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
           <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
             <button onclick="RawMaterials.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Current Stock Inventory
@@ -171,7 +171,7 @@ window.RawMaterials = {
         })()}
 
         <!-- Content Area -->
-        <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
           ${this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderLogsTable()}
         </div>
 
@@ -392,7 +392,7 @@ window.RawMaterials = {
 
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) RawMaterials.closeModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
           <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
             <h3 class="text-base font-black tracking-tight">${isEdit ? 'Edit Raw Material' : 'Add New Raw Material'}</h3>
             <button onclick="RawMaterials.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -460,7 +460,7 @@ window.RawMaterials = {
 
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) RawMaterials.closeModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
           <div class="bg-emerald-950 py-3.5 px-6 text-white flex justify-between items-center border-b border-emerald-800">
             <div>
               <h3 class="text-base font-black tracking-tight">Stock-In / Purchase Raw Material</h3>

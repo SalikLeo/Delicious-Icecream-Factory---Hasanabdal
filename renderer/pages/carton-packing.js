@@ -43,10 +43,10 @@ window.CartonPacking = {
     });
 
     this.container.innerHTML = `
-      <div class="h-full flex flex-col gap-5 max-w-7xl mx-auto">
+      <div class="h-full flex flex-col gap-3.5 w-full">
         
         <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-purple-950 via-slate-900 to-slate-900 text-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-purple-800/40">
+        <div class="bg-gradient-to-r from-purple-950 via-slate-900 to-slate-900 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border border-purple-800/40">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono text-[11px] font-black border border-purple-500/30">STAGE 3</span>
@@ -56,10 +56,10 @@ window.CartonPacking = {
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button onclick="CartonPacking.openPackModal()" class="px-5 py-2.5 bg-purple-500 hover:bg-purple-400 active:scale-95 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="package-plus" class="w-4 h-4"></i> + Pack Cartons Now
+              <i data-lucide="package-plus" class="w-4 h-4"></i> Pack Cartons Now
             </button>
             <button onclick="CartonPacking.openCartonConfigModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer">
-              <i data-lucide="settings" class="w-4 h-4 text-purple-400"></i> + New Carton Type
+              <i data-lucide="settings" class="w-4 h-4 text-purple-400"></i> New Carton Type
             </button>
             <button onclick="CartonPacking.printReport()" class="px-3.5 py-2.5 bg-slate-800/90 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer" title="Print Warehouse Stock Sheet">
               <i data-lucide="printer" class="w-4 h-4"></i> Print
@@ -68,8 +68,8 @@ window.CartonPacking = {
         </div>
 
         <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Warehouse Cartons</p>
               <h3 class="text-2xl font-black text-purple-700 mt-1 tabular-nums">${totalWarehouseCartons.toLocaleString()} <span class="text-xs font-bold text-slate-400">cartons</span></h3>
@@ -79,7 +79,7 @@ window.CartonPacking = {
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Loaded in Cars</p>
               <h3 class="text-2xl font-black text-blue-600 mt-1 tabular-nums">${totalInCars.toLocaleString()} <span class="text-xs font-bold text-slate-400">cartons</span></h3>
@@ -89,7 +89,7 @@ window.CartonPacking = {
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Finished Cartons</p>
               <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalFinishedStock.toLocaleString()} <span class="text-xs font-bold text-slate-400">total</span></h3>
@@ -99,7 +99,7 @@ window.CartonPacking = {
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Warehouse Sale Value</p>
               <h3 class="text-2xl font-black text-emerald-700 mt-1 tabular-nums">Rs. ${Math.round(totalWarehouseValue).toLocaleString()}</h3>
@@ -111,7 +111,7 @@ window.CartonPacking = {
         </div>
 
         <!-- Navigation Tabs & Search & Date Filters -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
+        <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
           <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
             <button onclick="CartonPacking.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Ready-to-Sell Carton Stock
@@ -184,7 +184,7 @@ window.CartonPacking = {
         })()}
 
         <!-- Content Area -->
-        <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
           ${this.activeTab === 'inventory' ? this.renderInventoryTable(filtered) : this.renderBatchesTable()}
         </div>
 
@@ -403,7 +403,7 @@ window.CartonPacking = {
 
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
           <div class="bg-purple-950 py-4 px-6 text-white flex justify-between items-center border-b border-purple-800">
             <div>
               <div class="flex items-center gap-2">
@@ -593,7 +593,7 @@ window.CartonPacking = {
 
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
           <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
             <h3 class="text-base font-black tracking-tight">${c.id ? 'Edit Carton Product' : 'New Carton Product'}</h3>
             <button onclick="CartonPacking.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>

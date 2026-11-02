@@ -19,7 +19,7 @@ window.Proposals = {
     this.selectedMonth = String(now.getMonth() + 1);
 
     container.innerHTML = `
-      <div class="h-full flex flex-col gap-4 max-w-7xl mx-auto p-4 md:p-6 overflow-y-auto custom-scrollbar">
+      <div class="h-full flex flex-col gap-3.5 w-full overflow-y-auto custom-scrollbar">
         
         <!-- Header -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
@@ -28,7 +28,7 @@ window.Proposals = {
               <i data-lucide="history" class="w-6 h-6"></i>
             </div>
             <div>
-              <h2 class="text-2xl font-black text-slate-900 tracking-tight">Delivery &amp; Sales History</h2>
+              <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Delivery &amp; Sales History</h2>
               <p class="text-xs text-slate-500 font-medium">All vehicle dispatch orders, delivered cartons, cash collected, and generated A5 bills.</p>
             </div>
           </div>
@@ -36,7 +36,7 @@ window.Proposals = {
           <div class="flex items-center gap-2">
             <button type="button" onclick="app.navigate('shop-sales')"
                     class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-4 h-4"></i> + New Shop Delivery
+              <i data-lucide="plus" class="w-4 h-4"></i> New Shop Delivery
             </button>
           </div>
         </div>
@@ -75,7 +75,7 @@ window.Proposals = {
         </div>
 
         <!-- Filter Controls Bar -->
-        <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div class="flex items-center gap-3 flex-wrap flex-1 min-w-[300px]">
             <!-- Search -->
             <div class="relative flex-1 min-w-[200px]">
@@ -126,7 +126,7 @@ window.Proposals = {
         </div>
 
         <!-- Deliveries Table -->
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col min-h-0">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col min-h-0">
           <div class="overflow-x-auto flex-1">
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
               <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">

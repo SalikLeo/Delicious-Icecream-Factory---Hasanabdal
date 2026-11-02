@@ -299,7 +299,7 @@ window.Companies = {
 
       <!-- Add/Edit Modal -->
       <div id="company-modal" onclick="if(event.target === this) Companies.hideModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md animate-in fade-in duration-200">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200">
           <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
             <h3 id="modal-title" class="text-xl font-bold text-slate-800">Add New Company</h3>
             <button onclick="Companies.hideModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -345,7 +345,7 @@ window.Companies = {
 
       <!-- Transaction Modal (Purchase/Pay) -->
       <div id="txn-modal" onclick="if(event.target === this) Companies.hideTxnModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[510] backdrop-blur-md animate-in fade-in duration-200">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200">
           <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div id="txn-icon-bg" class="w-10 h-10 rounded-xl flex items-center justify-center">
@@ -382,7 +382,7 @@ window.Companies = {
 
       <!-- History Modal -->
       <div id="history-modal" onclick="if(event.target === this) Companies.hideHistoryModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[520] backdrop-blur-md animate-in fade-in duration-200">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl lg:max-w-6xl mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200 max-h-[88vh] flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl lg:max-w-6xl mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200 max-h-[88vh] flex flex-col">
           <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3 shrink-0">
             <div class="flex justify-between items-center">
               <div>
@@ -489,7 +489,7 @@ window.Companies = {
 
       <!-- New Purchase Modal (Dynamic Rows) -->
       <div id="new-purchase-modal" onclick="if(event.target === this) Companies.hideNewPurchaseModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[530] backdrop-blur-md animate-in fade-in duration-200 no-print">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl mx-4 lg:mx-8 overflow-hidden transform animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl mx-4 lg:mx-8 overflow-hidden transform animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
               <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-slate-900 text-accent flex items-center justify-center">
@@ -578,7 +578,7 @@ window.Companies = {
 
       <!-- All Transactions Modal -->
       <div id="all-txns-modal" onclick="if(event.target === this) Companies.hideAllTxnsModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[540] backdrop-blur-md animate-in fade-in duration-200">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
           <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
             <div class="flex-1">
                 <h3 id="all-txns-title" class="text-xl font-bold text-slate-800">All Transactions</h3>

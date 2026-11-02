@@ -38,10 +38,10 @@ window.CarLoading = {
     const totalCartonsLoaded = this.cars.reduce((sum, c) => sum + (c.total_loaded_cartons || 0), 0);
 
     this.container.innerHTML = `
-      <div class="h-full flex flex-col gap-5 max-w-7xl mx-auto">
+      <div class="h-full flex flex-col gap-3.5 w-full">
         
         <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-900 text-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-blue-800/40">
+        <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-900 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border border-blue-800/40">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-mono text-[11px] font-black border border-blue-500/30">STAGE 4</span>
@@ -51,17 +51,17 @@ window.CarLoading = {
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button onclick="CarLoading.switchTab('dispatch')" class="px-5 py-2.5 bg-blue-500 hover:bg-blue-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="package-check" class="w-4 h-4"></i> + Load Stock into Car
+              <i data-lucide="package-check" class="w-4 h-4"></i> Load Stock into Car
             </button>
             <button onclick="CarLoading.openCarModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer">
-              <i data-lucide="truck" class="w-4 h-4 text-blue-400"></i> + Add Car / Van
+              <i data-lucide="truck" class="w-4 h-4 text-blue-400"></i> Add Car / Van
             </button>
           </div>
         </div>
 
         <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Registered Delivery Cars</p>
               <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalCars} <span class="text-xs font-bold text-slate-400">vehicles</span></h3>
@@ -71,7 +71,7 @@ window.CarLoading = {
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Cartons in Cars</p>
               <h3 class="text-2xl font-black text-blue-700 mt-1 tabular-nums">${totalCartonsLoaded.toLocaleString()} <span class="text-xs font-bold text-slate-400">cartons on road</span></h3>
@@ -81,7 +81,7 @@ window.CarLoading = {
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Available in Factory Stock</p>
               <h3 class="text-2xl font-black text-purple-700 mt-1 tabular-nums">
@@ -95,7 +95,7 @@ window.CarLoading = {
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+        <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
             <button onclick="CarLoading.switchTab('cars')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'cars' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Delivery Cars &amp; Loaded Stock
@@ -110,7 +110,7 @@ window.CarLoading = {
         </div>
 
         <!-- Content Area -->
-        <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
           ${this.renderActiveTabContent()}
         </div>
 
@@ -619,7 +619,7 @@ window.CarLoading = {
 
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CarLoading.closeModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
           <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
             <h3 class="text-base font-black tracking-tight">${car.id ? 'Edit Delivery Car' : 'Add New Delivery Car'}</h3>
             <button onclick="CarLoading.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>

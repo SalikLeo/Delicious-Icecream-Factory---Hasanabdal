@@ -213,14 +213,14 @@
 
   <!-- Main Content -->
   <main class="flex-1 relative flex flex-col overflow-y-auto print-full-width">
-    <div id="app-content" class="p-8 flex-1">
+    <div id="app-content" class="p-3 md:p-3.5 flex-1 flex flex-col min-h-0 w-full overflow-hidden">
       <!-- Dynamic content injected here -->
     </div>
   </main>
 
   <!-- Custom Confirm Modal -->
   <div id="confirm-modal" onclick="if(event.target === this) app.hideConfirm()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1000] no-print p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col md:flex-row max-h-[92vh]" id="confirm-card">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col md:flex-row max-h-[92vh]" id="confirm-card">
       
       <!-- Left Column: Receipt / Document Preview (hidden by default, shown when previewHtml provided) -->
       <div id="confirm-preview-col" class="hidden flex-col bg-slate-100 border-r border-slate-200 p-4 w-full md:w-[420px] lg:w-[450px] shrink-0 min-h-0">
@@ -266,7 +266,7 @@
 
   <!-- Quick Price Inquiry Modal (F6 Price Checker) -->
   <div id="price-checker-modal" onclick="if(event.target === this) app.closePriceChecker()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs hidden items-center justify-center z-[1200] no-print p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col border border-slate-200" id="price-checker-card">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col border border-slate-200" id="price-checker-card">
       <!-- Header -->
       <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800">
         <div class="flex items-center gap-3">
@@ -490,7 +490,7 @@
   
   <!-- Barcode Sticker & Label Printer Modal (Speed-X SP-650UL Optimized) -->
   <div id="barcode-sticker-modal" onclick="if(event.target === this) app.closeBarcodeStickerModal()" class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs hidden items-center justify-center z-[1300] no-print p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col overflow-hidden border border-slate-200" id="barcode-sticker-card">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col overflow-hidden border border-slate-200" id="barcode-sticker-card">
       <!-- Modal Header -->
       <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800 shrink-0">
         <div class="flex items-center gap-3">

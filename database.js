@@ -2227,19 +2227,19 @@ function seedIcecreamFactoryData() {
       items.forEach(item => {
         const spec = cartonSpecs[item.name] || { pcs: item.default_pcs_per_carton || 20, sale: 250, wholesale: 240, stock: 5 };
         const cost = (item.unit_cost || 10) * spec.pcs;
-        const autoBarcode = String(890000000000 + Number(item.id));
+        const autoBarcode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
         insertCarton.run(item.id, item.name, `${item.name} Carton (${spec.pcs} Pcs)`, spec.pcs, cost, spec.sale, spec.wholesale, spec.stock, autoBarcode);
       });
     }
 
-    // Ensure all packed cartons have a unique 12-digit barcode for thermal sticker printing & scanning
+    // Ensure all packed cartons have a unique random 12-digit barcode for thermal sticker printing & scanning
     try {
-      const unbarcoded = db.prepare("SELECT id FROM packed_cartons WHERE barcode IS NULL OR TRIM(barcode) = ''").all();
+      const unbarcoded = db.prepare("SELECT id FROM packed_cartons WHERE barcode IS NULL OR TRIM(barcode) = '' OR barcode LIKE '8900000000%'").all();
       if (unbarcoded && unbarcoded.length > 0) {
         const updateBc = db.prepare("UPDATE packed_cartons SET barcode = ? WHERE id = ?");
         unbarcoded.forEach(c => {
-          const autoCode = String(890000000000 + Number(c.id));
-          updateBc.run(autoCode, c.id);
+          const randCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+          updateBc.run(randCode, c.id);
         });
       }
     } catch (e) {

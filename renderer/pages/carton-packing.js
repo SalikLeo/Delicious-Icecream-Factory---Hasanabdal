@@ -1009,7 +1009,7 @@ window.CartonPacking = {
   generateConfigBarcode() {
     const inp = document.getElementById('cfg-barcode');
     if (inp) {
-      const code = String(890000000000 + Math.floor(Math.random() * 9000000000));
+      const code = Math.floor(100000000000 + Math.random() * 900000000000).toString();
       inp.value = code;
       inp.focus();
     }

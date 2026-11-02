@@ -1670,7 +1670,7 @@ const app = {
       targetItem = this.barcodeStickerState.allProducts[0] || {
         id: 0,
         item_name: 'Ice Cream Carton',
-        barcode: '890000000001',
+        barcode: '582910482915',
         retail_price: 250,
         category_label: '20 pcs/ctn',
         current_stock: 10,
@@ -1777,8 +1777,8 @@ const app = {
     const item = this.barcodeStickerState.activeItem;
     if (!item || !item.id) return;
 
-    // Generate unique 12-digit barcode: 890000000000 + id
-    const randCode = String(890000000000 + Number(item.id));
+    // Generate random 12-digit barcode (Barcode General Store format)
+    const randCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
     item.barcode = randCode;
 
     try {

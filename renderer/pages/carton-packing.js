@@ -130,7 +130,7 @@ window.CartonPacking = {
                      class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-400">
             </div>
 
-            <!-- Period Switcher: Daily | Monthly | All -->
+            <!-- Period Switcher: Daily | Monthly | Annual | All -->
             <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
               <button type="button" onclick="CartonPacking.setPeriod('day')" id="pck-tab-day"
                       class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
@@ -140,19 +140,32 @@ window.CartonPacking = {
                       class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
                 Monthly
               </button>
+              <button type="button" onclick="CartonPacking.setPeriod('year')" id="pck-tab-year"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                Annual
+              </button>
               <button type="button" onclick="CartonPacking.setPeriod('all')" id="pck-tab-all"
                       class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
                 All
               </button>
             </div>
 
-            <!-- Date Picker for Day/Month -->
+            <!-- Date Picker for Day/Month/Year -->
             ${this.periodType !== 'all' ? `
               <div id="pck-date-picker-wrap" class="shrink-0">
-                <input type="${this.periodType === 'month' ? 'month' : 'date'}" id="pck-date-input" 
-                       value="${this.periodType === 'month' ? this.selectedDate.slice(0, 7) : this.selectedDate}" 
-                       onchange="CartonPacking.onDateChange(this.value)"
-                       class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-500">
+                ${this.periodType === 'year' ? `
+                  <select id="pck-date-input" onchange="CartonPacking.onDateChange(this.value)"
+                          class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-500 cursor-pointer">
+                    ${this.getAvailableYears().map(y => `
+                      <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
+                    `).join('')}
+                  </select>
+                ` : `
+                  <input type="${this.periodType === 'month' ? 'month' : 'date'}" id="pck-date-input" 
+                         value="${this.periodType === 'month' ? this.selectedDate.slice(0, 7) : this.selectedDate}" 
+                         onchange="CartonPacking.onDateChange(this.value)"
+                         class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-500 cursor-pointer">
+                `}
               </div>
             ` : ''}
           </div>
@@ -162,12 +175,17 @@ window.CartonPacking = {
         ${(() => {
           if (this.periodType === 'all') return '';
           const stats = this.getPeriodStats();
-          const periodLabel = this.periodType === 'day' ? `Today (${this.selectedDate})` : `Month (${this.selectedDate.slice(0, 7)})`;
+          const periodLabel = this.periodType === 'day' 
+            ? `Today (${this.selectedDate})` 
+            : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(0, 7)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
+          const badgeText = this.periodType === 'day' 
+            ? 'Daily Packing' 
+            : (this.periodType === 'month' ? 'Monthly Packing' : 'Annual Packing');
           return `
             <div class="bg-purple-50/70 border border-purple-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
               <div class="flex items-center gap-2">
                 <span class="px-2.5 py-0.5 rounded-lg bg-purple-700 text-white font-black text-[10px] uppercase tracking-wider">
-                  ${this.periodType === 'day' ? 'Daily Packing' : 'Monthly Packing'}
+                  ${badgeText}
                 </span>
                 <span class="font-bold text-slate-700">
                   Period: <span class="font-mono font-black text-slate-900">${periodLabel}</span>
@@ -207,6 +225,18 @@ window.CartonPacking = {
     this.renderUI();
   },
 
+  getAvailableYears() {
+    const curYear = new Date().getFullYear();
+    const years = new Set([curYear, curYear - 1, curYear + 1]);
+    (this.batches || []).forEach(b => {
+      if (b.date) {
+        const y = parseInt(b.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  },
+
   getFilteredBatches() {
     let list = this.batches || [];
     if (this.periodType === 'day' && this.selectedDate) {
@@ -214,6 +244,9 @@ window.CartonPacking = {
     } else if (this.periodType === 'month' && this.selectedDate) {
       const ym = this.selectedDate.slice(0, 7);
       list = list.filter(b => b.date && b.date.startsWith(ym));
+    } else if (this.periodType === 'year' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      list = list.filter(b => b.date && b.date.startsWith(y));
     }
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();

@@ -101,7 +101,7 @@ window.Proposals = {
               </select>
             </div>
 
-            <!-- Period Switcher -->
+            <!-- Period Switcher: Daily | Monthly | Annual | All -->
             <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
               <button type="button" onclick="Proposals.setPeriod('day')" id="prop-tab-day"
                       class="px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer bg-white text-slate-900 shadow-2xs">
@@ -110,6 +110,10 @@ window.Proposals = {
               <button type="button" onclick="Proposals.setPeriod('month')" id="prop-tab-month"
                       class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900">
                 Monthly
+              </button>
+              <button type="button" onclick="Proposals.setPeriod('year')" id="prop-tab-year"
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900">
+                Annual
               </button>
               <button type="button" onclick="Proposals.setPeriod('all')" id="prop-tab-all"
                       class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900">
@@ -203,9 +207,21 @@ window.Proposals = {
     this.applyFilters();
   },
 
+  getAvailableYears() {
+    const curYear = new Date().getFullYear();
+    const years = new Set([curYear, curYear - 1, curYear + 1]);
+    (this.deliveries || []).forEach(d => {
+      if (d.date) {
+        const y = parseInt(d.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  },
+
   setPeriod(period) {
     this.periodType = period;
-    ['day', 'month', 'all'].forEach(p => {
+    ['day', 'month', 'year', 'all'].forEach(p => {
       const btn = document.getElementById(`prop-tab-${p}`);
       if (!btn) return;
       if (p === period) {
@@ -222,6 +238,14 @@ window.Proposals = {
       } else if (period === 'month') {
         const ym = this.selectedDate ? this.selectedDate.slice(0, 7) : new Date().toISOString().slice(0, 7);
         wrap.innerHTML = `<input type="month" id="prop-date-input" value="${ym}" onchange="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">`;
+      } else if (period === 'year') {
+        const years = this.getAvailableYears();
+        const selY = this.selectedDate ? this.selectedDate.slice(0, 4) : String(new Date().getFullYear());
+        wrap.innerHTML = `
+          <select id="prop-date-input" onchange="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none cursor-pointer">
+            ${years.map(y => `<option value="${y}" ${String(selY) === String(y) ? 'selected' : ''}>${y}</option>`).join('')}
+          </select>
+        `;
       } else {
         wrap.innerHTML = '';
       }
@@ -249,6 +273,9 @@ window.Proposals = {
     } else if (this.periodType === 'month' && this.selectedDate) {
       const ym = this.selectedDate.slice(0, 7);
       list = list.filter(d => d.date && d.date.startsWith(ym));
+    } else if (this.periodType === 'year' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      list = list.filter(d => d.date && d.date.startsWith(y));
     }
 
     // Search query

@@ -123,6 +123,9 @@ window.Reports = {
     } else if (this.periodType === 'monthly' && this.selectedDate) {
       const ym = this.selectedDate.slice(0, 7);
       filtered = filtered.filter(d => d.date && d.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filtered = filtered.filter(d => d.date && d.date.startsWith(y));
     }
 
     let totalDeliveredCartons = 0;
@@ -187,6 +190,10 @@ window.Reports = {
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 Monthly
               </button>
+              <button type="button" onclick="Reports.setPeriod('annual')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Annual
+              </button>
               <button type="button" onclick="Reports.setPeriod('all')"
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 All Time
@@ -196,11 +203,21 @@ window.Reports = {
 
           ${this.periodType !== 'all' ? `
             <div>
-              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Date</label>
-              <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
-                     value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
-                     onchange="Reports.onDateChange(this.value)"
-                     class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
+              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                ${this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date')}
+              </label>
+              ${this.periodType === 'annual' ? `
+                <select onchange="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                  ${this.getAvailableYears().map(y => `
+                    <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
+                  `).join('')}
+                </select>
+              ` : `
+                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
+                       value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
+                       onchange="Reports.onDateChange(this.value)"
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              `}
             </div>
           ` : ''}
         </div>
@@ -291,6 +308,18 @@ window.Reports = {
         </div>
       </div>
     `;
+  },
+
+  getAvailableYears() {
+    const curYear = new Date().getFullYear();
+    const years = new Set([curYear, curYear - 1, curYear + 1]);
+    (this.deliveries || []).forEach(d => {
+      if (d.date) {
+        const y = parseInt(d.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a);
   },
 
   onCarChange(val) {
@@ -540,6 +569,14 @@ window.Reports = {
       const ym = this.selectedDate.slice(0, 7);
       filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(ym));
       filtExp = filtExp.filter(e => e.date && e.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
+      filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
+      filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
     }
 
     let totalSales = 0;
@@ -574,6 +611,10 @@ window.Reports = {
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 Monthly
               </button>
+              <button type="button" onclick="Reports.setPeriod('annual')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Annual
+              </button>
               <button type="button" onclick="Reports.setPeriod('all')"
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 All Time
@@ -583,11 +624,21 @@ window.Reports = {
 
           ${this.periodType !== 'all' ? `
             <div>
-              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Date</label>
-              <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
-                     value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
-                     onchange="Reports.onDateChange(this.value)"
-                     class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
+              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                ${this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date')}
+              </label>
+              ${this.periodType === 'annual' ? `
+                <select onchange="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                  ${this.getAvailableYears().map(y => `
+                    <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
+                  `).join('')}
+                </select>
+              ` : `
+                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" 
+                       value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
+                       onchange="Reports.onDateChange(this.value)"
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              `}
             </div>
           ` : ''}
         </div>
@@ -689,6 +740,9 @@ window.Reports = {
     else if (this.periodType === 'monthly' && this.selectedDate) {
       const ym = this.selectedDate.slice(0, 7);
       filtered = filtered.filter(d => d.date && d.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filtered = filtered.filter(d => d.date && d.date.startsWith(y));
     }
 
     let totalCartons = 0;
@@ -951,6 +1005,10 @@ window.Reports = {
       const ym = this.selectedDate.slice(0, 7);
       filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(ym));
       filtExp = filtExp.filter(e => e.date && e.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
+      filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
     }
 
     let totalSales = 0;

@@ -130,6 +130,45 @@ window.CarLoading = {
     return '';
   },
 
+  setPeriod(period) {
+    this.periodType = period;
+    this.renderUI();
+  },
+
+  onDateChange(val) {
+    this.selectedDate = val;
+    this.renderUI();
+  },
+
+  getFilteredBatches() {
+    let list = this.batches || [];
+    if (this.periodType === 'day' && this.selectedDate) {
+      list = list.filter(b => b.date === this.selectedDate);
+    } else if (this.periodType === 'month' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      list = list.filter(b => b.date && b.date.startsWith(ym));
+    }
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(b =>
+        (b.dispatch_no || '').toLowerCase().includes(q) ||
+        (b.car_number || '').toLowerCase().includes(q) ||
+        (b.driver_name || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  },
+
+  getPeriodStats() {
+    const list = this.getFilteredBatches();
+    const totalDispatches = list.length;
+    const totalCartonsLoaded = list.reduce((sum, b) => sum + (b.total_cartons || 0), 0);
+    return {
+      totalDispatches,
+      totalCartonsLoaded
+    };
+  },
+
   renderCarsView() {
     if (this.cars.length === 0) {
       return `

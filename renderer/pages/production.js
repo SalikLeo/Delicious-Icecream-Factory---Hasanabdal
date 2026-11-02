@@ -5,6 +5,8 @@ window.Production = {
   batches: [],
   activeTab: 'catalog', // 'catalog' | 'batches'
   searchQuery: '',
+  periodType: 'day', // 'day' | 'month' | 'all'
+  selectedDate: new Date().toISOString().slice(0, 10),
 
   async render(container) {
     this.container = container;
@@ -96,9 +98,9 @@ window.Production = {
           </div>
         </div>
 
-        <!-- Navigation Tabs & Search -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row justify-between items-center gap-3">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+        <!-- Navigation Tabs & Search & Date Filters -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
             <button onclick="Production.switchTab('catalog')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'catalog' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Single Pieces Catalog &amp; Pool
             </button>
@@ -107,12 +109,66 @@ window.Production = {
             </button>
           </div>
 
-          <div class="relative w-full sm:w-72">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" placeholder="Search ice cream item..." value="${this.searchQuery}" oninput="Production.onSearch(this.value)"
-                   class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-cyan-400">
+          <!-- Controls: Search + Time Filters -->
+          <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
+            <!-- Search -->
+            <div class="relative w-full sm:w-52">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" placeholder="Search item or batch..." value="${this.searchQuery}" oninput="Production.onSearch(this.value)"
+                     class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-cyan-400">
+            </div>
+
+            <!-- Period Switcher: Daily | Monthly | All -->
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+              <button type="button" onclick="Production.setPeriod('day')" id="prd-tab-day"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                Daily
+              </button>
+              <button type="button" onclick="Production.setPeriod('month')" id="prd-tab-month"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                Monthly
+              </button>
+              <button type="button" onclick="Production.setPeriod('all')" id="prd-tab-all"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                All
+              </button>
+            </div>
+
+            <!-- Date Picker for Day/Month -->
+            ${this.periodType !== 'all' ? `
+              <div id="prd-date-picker-wrap" class="shrink-0">
+                <input type="${this.periodType === 'month' ? 'month' : 'date'}" id="prd-date-input" 
+                       value="${this.periodType === 'month' ? this.selectedDate.slice(0, 7) : this.selectedDate}" 
+                       onchange="Production.onDateChange(this.value)"
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-cyan-500">
+              </div>
+            ` : ''}
           </div>
         </div>
+
+        <!-- Period Production Stats Bar -->
+        ${(() => {
+          if (this.periodType === 'all') return '';
+          const stats = this.getPeriodStats();
+          const periodLabel = this.periodType === 'day' ? `Today (${this.selectedDate})` : `Month (${this.selectedDate.slice(0, 7)})`;
+          return `
+            <div class="bg-cyan-50/70 border border-cyan-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg bg-cyan-700 text-white font-black text-[10px] uppercase tracking-wider">
+                  ${this.periodType === 'day' ? 'Daily Production' : 'Monthly Production'}
+                </span>
+                <span class="font-bold text-slate-700">
+                  Period: <span class="font-mono font-black text-slate-900">${periodLabel}</span>
+                </span>
+              </div>
+              <div class="flex items-center gap-4 flex-wrap font-bold text-slate-600">
+                <div>Batches Run: <span class="font-black text-slate-900 font-mono">${stats.totalBatches} runs</span></div>
+                <div>Pieces Produced: <span class="font-black text-cyan-800 font-mono">+${stats.totalPiecesProduced.toLocaleString()} pcs</span></div>
+                <div>Total Making Cost: <span class="font-black text-slate-900 font-mono">Rs. ${Math.round(stats.totalCost).toLocaleString()}</span></div>
+              </div>
+            </div>
+          `;
+        })()}
 
         <!-- Content Area -->
         <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
@@ -126,6 +182,47 @@ window.Production = {
     `;
 
     if (window.lucide) lucide.createIcons({ root: this.container });
+  },
+
+  setPeriod(period) {
+    this.periodType = period;
+    this.renderUI();
+  },
+
+  onDateChange(val) {
+    this.selectedDate = val;
+    this.renderUI();
+  },
+
+  getFilteredBatches() {
+    let list = this.batches || [];
+    if (this.periodType === 'day' && this.selectedDate) {
+      list = list.filter(b => b.date === this.selectedDate);
+    } else if (this.periodType === 'month' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      list = list.filter(b => b.date && b.date.startsWith(ym));
+    }
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(b =>
+        (b.batch_number || '').toLowerCase().includes(q) ||
+        (b.item_name || '').toLowerCase().includes(q) ||
+        (b.raw_materials_summary || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  },
+
+  getPeriodStats() {
+    const list = this.getFilteredBatches();
+    const totalBatches = list.length;
+    const totalPiecesProduced = list.reduce((sum, b) => sum + (b.produced_pieces || 0), 0);
+    const totalCost = list.reduce((sum, b) => sum + (b.total_cost || 0), 0);
+    return {
+      totalBatches,
+      totalPiecesProduced,
+      totalCost
+    };
   },
 
   renderCatalogGrid(items) {
@@ -208,7 +305,8 @@ window.Production = {
   },
 
   renderBatchesTable() {
-    if (this.batches.length === 0) {
+    const batches = this.getFilteredBatches();
+    if (batches.length === 0) {
       return `
         <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
           <i data-lucide="history" class="w-12 h-12 mb-3 text-slate-300"></i>
@@ -234,7 +332,7 @@ window.Production = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${this.batches.map(b => `
+            ${batches.map(b => `
               <tr class="hover:bg-slate-50/60 transition-colors">
                 <td class="py-3 px-4 font-mono font-bold text-cyan-800 text-xs border-r border-slate-200">${b.batch_number}</td>
                 <td class="py-3 px-4 font-mono text-slate-500 text-[11px] whitespace-nowrap border-r border-slate-200">${b.date}</td>

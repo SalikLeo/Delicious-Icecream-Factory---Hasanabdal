@@ -4,6 +4,8 @@ window.RawMaterials = {
   logs: [],
   activeTab: 'inventory', // 'inventory' | 'purchase' | 'logs'
   searchQuery: '',
+  periodType: 'day', // 'day' | 'month' | 'all'
+  selectedDate: new Date().toISOString().slice(0, 10),
 
   async render(container) {
     this.container = container;
@@ -96,9 +98,9 @@ window.RawMaterials = {
           </div>
         </div>
 
-        <!-- Navigation Tabs & Search -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row justify-between items-center gap-3">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+        <!-- Navigation Tabs & Search & Date Filters -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
             <button onclick="RawMaterials.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Current Stock Inventory
             </button>
@@ -107,12 +109,66 @@ window.RawMaterials = {
             </button>
           </div>
 
-          <div class="relative w-full sm:w-72">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" placeholder="Search raw material..." value="${this.searchQuery}" oninput="RawMaterials.onSearch(this.value)"
-                   class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-400">
+          <!-- Controls: Search + Time Filters -->
+          <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
+            <!-- Search -->
+            <div class="relative w-full sm:w-52">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" placeholder="Search raw material..." value="${this.searchQuery}" oninput="RawMaterials.onSearch(this.value)"
+                     class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-400">
+            </div>
+
+            <!-- Period Switcher: Daily | Monthly | All -->
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+              <button type="button" onclick="RawMaterials.setPeriod('day')" id="rm-tab-day"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                Daily
+              </button>
+              <button type="button" onclick="RawMaterials.setPeriod('month')" id="rm-tab-month"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                Monthly
+              </button>
+              <button type="button" onclick="RawMaterials.setPeriod('all')" id="rm-tab-all"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                All
+              </button>
+            </div>
+
+            <!-- Date Picker for Day/Month -->
+            ${this.periodType !== 'all' ? `
+              <div id="rm-date-picker-wrap" class="shrink-0">
+                <input type="${this.periodType === 'month' ? 'month' : 'date'}" id="rm-date-input" 
+                       value="${this.periodType === 'month' ? this.selectedDate.slice(0, 7) : this.selectedDate}" 
+                       onchange="RawMaterials.onDateChange(this.value)"
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
+              </div>
+            ` : ''}
           </div>
         </div>
+
+        <!-- Period Stats Bar (Shown for Daily & Monthly) -->
+        ${(() => {
+          if (this.periodType === 'all') return '';
+          const stats = this.getPeriodStats();
+          const periodLabel = this.periodType === 'day' ? `Today (${this.selectedDate})` : `Month (${this.selectedDate.slice(0, 7)})`;
+          return `
+            <div class="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg bg-emerald-700 text-white font-black text-[10px] uppercase tracking-wider">
+                  ${this.periodType === 'day' ? 'Daily Stats' : 'Monthly Stats'}
+                </span>
+                <span class="font-bold text-slate-700">
+                  Period: <span class="font-mono font-black text-slate-900">${periodLabel}</span>
+                </span>
+              </div>
+              <div class="flex items-center gap-4 flex-wrap font-bold text-slate-600">
+                <div>Movements: <span class="font-black text-slate-900 font-mono">${stats.totalMovements}</span></div>
+                <div>Purchased: <span class="font-black text-emerald-700 font-mono">+${stats.totalAdded} units</span> (${stats.purchasesCount} orders)</div>
+                <div>Factory Consumed: <span class="font-black text-rose-700 font-mono">-${stats.totalConsumed} units</span> (${stats.productionCount} batches)</div>
+              </div>
+            </div>
+          `;
+        })()}
 
         <!-- Content Area -->
         <div class="flex-1 bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
@@ -126,6 +182,51 @@ window.RawMaterials = {
     `;
 
     if (window.lucide) lucide.createIcons({ root: this.container });
+  },
+
+  setPeriod(period) {
+    this.periodType = period;
+    this.renderUI();
+  },
+
+  onDateChange(val) {
+    this.selectedDate = val;
+    this.renderUI();
+  },
+
+  getFilteredLogs() {
+    let list = this.logs || [];
+    if (this.periodType === 'day' && this.selectedDate) {
+      list = list.filter(l => l.date === this.selectedDate);
+    } else if (this.periodType === 'month' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      list = list.filter(l => l.date && l.date.startsWith(ym));
+    }
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(l =>
+        (l.material_name || '').toLowerCase().includes(q) ||
+        (l.action || '').toLowerCase().includes(q) ||
+        (l.details || '').toLowerCase().includes(q) ||
+        (l.notes || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  },
+
+  getPeriodStats() {
+    const list = this.getFilteredLogs();
+    const purchaseLogs = list.filter(l => l.action === 'PURCHASE');
+    const prodLogs = list.filter(l => l.action === 'PRODUCTION' || (l.qty_change || 0) < 0);
+    const totalAdded = purchaseLogs.reduce((sum, l) => sum + Math.max(0, l.qty_change || 0), 0);
+    const totalConsumed = prodLogs.reduce((sum, l) => sum + Math.abs(l.qty_change || 0), 0);
+    return {
+      totalMovements: list.length,
+      purchasesCount: purchaseLogs.length,
+      productionCount: prodLogs.length,
+      totalAdded: Math.round(totalAdded * 10) / 10,
+      totalConsumed: Math.round(totalConsumed * 10) / 10
+    };
   },
 
   renderInventoryTable(items) {
@@ -202,7 +303,8 @@ window.RawMaterials = {
   },
 
   renderLogsTable() {
-    if (this.logs.length === 0) {
+    const logs = this.getFilteredLogs();
+    if (logs.length === 0) {
       return `
         <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
           <i data-lucide="history" class="w-12 h-12 mb-3 text-slate-300"></i>
@@ -227,7 +329,7 @@ window.RawMaterials = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${this.logs.map(log => {
+            ${logs.map(log => {
               const isAdd = (log.qty_change || 0) > 0;
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">

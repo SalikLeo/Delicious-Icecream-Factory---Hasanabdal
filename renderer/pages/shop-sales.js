@@ -635,30 +635,30 @@ window.ShopSales = {
     const totalReturned = items.reduce((sum, it) => sum + it.returned_cartons, 0);
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box; line-height: 1.35;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 2px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 10px;">
         
         <!-- Factory Header -->
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">${company}</h1>
-          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 600;">${tagline}</p>
-          <p style="font-size: 8.5px; color: #64748b; margin: 1px 0 0 0;">${address} • Phone: ${phone}</p>
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${tagline}</p>
+          <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">${address} • Phone: ${phone}</p>
         </div>
 
-        <!-- Document Title Banner -->
-        <div style="background: #0f172a; color: #fff; text-align: center; padding: 3px 0; border-radius: 4px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;">
-          DELIVERY INVOICE &amp; BILL / چالان و بل
+        <!-- Document Title -->
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          DELIVERY INVOICE &amp; BILL
         </div>
 
         <!-- Invoice Details Meta Grid -->
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 8px; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 6px; background: #f8fafc;">
-          <div style="line-height: 1.4;">
-            <div><strong>Invoice #:</strong> <span style="font-family: monospace; font-weight: 800;">${delivery.invoice_no}</span></div>
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
+          <div style="line-height: 1.45;">
+            <div><strong>Invoice #:</strong> <span style="font-family: -apple-system, monospace; font-weight: 700;">${delivery.invoice_no}</span></div>
             <div><strong>Date:</strong> ${delivery.date}</div>
             <div><strong>Vehicle:</strong> ${delivery.car_number || 'Direct Warehouse'}</div>
             <div><strong>Driver / Salesman:</strong> ${delivery.driver_name || 'N/A'}</div>
           </div>
-          <div style="text-align: right; line-height: 1.4;">
-            <div><strong>Shop / Customer:</strong> <span style="font-weight: 900; font-size: 10.5px;">${delivery.shop_name}</span></div>
+          <div style="text-align: right; line-height: 1.45;">
+            <div><strong>Shop / Customer:</strong> <span style="font-weight: 800;">${delivery.shop_name}</span></div>
             <div><strong>Contact:</strong> ${delivery.shop_phone || 'Walk-in'}</div>
             <div><strong>Area / Address:</strong> ${delivery.shop_address || 'Wah / Taxila'}</div>
             <div><strong>Payment Mode:</strong> ${delivery.payment_method || 'Cash'}</div>
@@ -666,97 +666,97 @@ window.ShopSales = {
         </div>
 
         <!-- Itemized Table -->
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left; width: 22px;">S#</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Item Description / Flavor</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center; width: 45px;">Pack</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center; width: 40px;">Order</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center; width: 45px; background: #e2e8f0; font-weight: 900;">Deliv.</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center; width: 40px;">Ret.</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; width: 55px;">Rate/Ctn</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; width: 65px;">Total (Rs.)</th>
+            <tr>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 22px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item Description / Flavor</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 45px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pack</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 38px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Order</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 42px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Deliv.</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 38px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Ret.</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 55px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Rate/Ctn</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 68px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             ${items.map((it, idx) => `
               <tr>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${idx + 1}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 800;">
-                  ${it.carton_name}
-                  ${it.returned_cartons > 0 ? `<span style="font-size: 8px; color: #475569; display: block;">(Ret: ${it.returned_cartons} ctns ${it.return_destination === 'car' ? 'kept in car' : 'sent to stock'})</span>` : ''}
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">
+                  <span style="font-weight: 800;">${it.carton_name}</span>
+                  ${it.returned_cartons > 0 ? `<span style="font-size: 8.5px; font-weight: 500; display: block;">(Ret: ${it.returned_cartons} ctns ${it.return_destination === 'car' ? 'kept in car' : 'sent to stock'})</span>` : ''}
                 </td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${it.pieces_per_carton} pcs</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${it.ordered_cartons}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center; font-weight: 900; background: #f8fafc;">${it.delivered_cartons}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center; color: ${it.returned_cartons > 0 ? '#b91c1c' : '#64748b'};">${it.returned_cartons || 0}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right;">Rs. ${it.carton_price}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 900;">Rs. ${Math.round(it.line_total).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.pieces_per_carton} pcs</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.ordered_cartons}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: 800; font-size: 9.5px; color: #000;">${it.delivered_cartons}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: ${it.returned_cartons > 0 ? '800' : '400'}; font-size: 9.5px; color: #000;">${it.returned_cartons || 0}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.carton_price}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.line_total).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
         <!-- Summary & Settlement Box -->
-        <div style="margin-top: 8px; display: flex; justify-content: space-between; gap: 8px;">
+        <div style="margin-top: 6px; display: flex; justify-content: space-between; gap: 8px;">
           <!-- Left: Return Note -->
-          <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; font-size: 9px; color: #475569; background: #fafafa;">
+          <div style="flex: 1; border: 1px solid #000; padding: 5px 8px; font-size: 9.5px; color: #000; background: #fff; line-height: 1.4;">
             <div><strong>Cartons Summary:</strong> Total Delivered: <strong>${totalDelivered} Cartons</strong></div>
             ${totalReturned > 0 ? `<div>Returned: <strong>${totalReturned} Cartons</strong></div>` : ''}
-            ${delivery.notes ? `<div style="margin-top: 3px;"><strong>Notes:</strong> ${delivery.notes}</div>` : ''}
-            <div style="margin-top: 5px; font-style: italic; color: #64748b;">مال موقع پر چیک کر کے وصول کریں۔ ٹھنڈی حالت میں وصولی لازمی ہے۔</div>
+            ${delivery.notes ? `<div style="margin-top: 2px;"><strong>Notes:</strong> ${delivery.notes}</div>` : ''}
+            <div style="margin-top: 4px; font-size: 8.5px; font-weight: 600;">* Please inspect all cartons upon delivery. Cold chain maintenance is required.</div>
           </div>
 
           <!-- Right: Bill Financials -->
-          <div style="width: 200px; border: 1.5px solid #0f172a; border-radius: 6px; padding: 6px 8px; font-size: 9.5px; background: #f8fafc;">
+          <div style="width: 210px; border: 1.5px solid #000; padding: 5px 8px; font-size: 9.5px; background: #fff; color: #000;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
               <span>Subtotal:</span>
-              <span style="font-weight: 800;">Rs. ${Math.round(delivery.subtotal || delivery.total_amount).toLocaleString()}</span>
+              <span style="font-weight: 700; font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.subtotal || delivery.total_amount).toLocaleString()}</span>
             </div>
             ${delivery.discount > 0 ? `
-              <div style="display: flex; justify-content: space-between; color: #b91c1c; margin-bottom: 2px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                 <span>Discount:</span>
-                <span>- Rs. ${Math.round(delivery.discount).toLocaleString()}</span>
+                <span style="font-family: -apple-system, monospace;">- Rs. ${Math.round(delivery.discount).toLocaleString()}</span>
               </div>
             ` : ''}
-            <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 11px; border-top: 1px solid #cbd5e1; padding-top: 2px; margin-bottom: 2px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 800; border-top: 1px solid #000; padding-top: 2px; margin-bottom: 2px;">
               <span>Net Bill Total:</span>
-              <span>Rs. ${Math.round(delivery.total_amount).toLocaleString()}</span>
+              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.total_amount).toLocaleString()}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; color: #047857; font-weight: 800; margin-bottom: 2px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 2px;">
               <span>Received (${delivery.payment_method || 'Cash'}):</span>
-              <span>Rs. ${Math.round(delivery.received_amount || 0).toLocaleString()}</span>
+              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.received_amount || 0).toLocaleString()}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; color: #b91c1c; font-weight: 800; margin-bottom: 2px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 2px;">
               <span>Current Bill Due:</span>
-              <span>Rs. ${Math.round(delivery.remaining_balance || 0).toLocaleString()}</span>
+              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.remaining_balance || 0).toLocaleString()}</span>
             </div>
             ${delivery.previous_balance > 0 ? `
-              <div style="display: flex; justify-content: space-between; color: #475569; font-size: 9px; margin-bottom: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
                 <span>Previous Balance:</span>
-                <span>Rs. ${Math.round(delivery.previous_balance).toLocaleString()}</span>
+                <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.previous_balance).toLocaleString()}</span>
               </div>
             ` : ''}
-            <div style="display: flex; justify-content: space-between; font-weight: 900; border-top: 1.5px solid #0f172a; padding-top: 2px; color: #0f172a; font-size: 10.5px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 900; border-top: 1.5px solid #000; padding-top: 3px; font-size: 11px; margin-top: 2px;">
               <span>Net Total Due:</span>
-              <span>Rs. ${Math.round((delivery.previous_balance || 0) + (delivery.remaining_balance || 0)).toLocaleString()}</span>
+              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round((delivery.previous_balance || 0) + (delivery.remaining_balance || 0)).toLocaleString()}</span>
             </div>
           </div>
         </div>
 
         <!-- Authorized Signatures -->
         <div class="a5-signatures" style="margin-top: 28px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1px dashed #475569; width: 42%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 700;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Shopkeeper / Receiver Signature &amp; Stamp
           </div>
-          <div class="a5-sig-line" style="border-top: 1px dashed #475569; width: 42%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 700;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Driver / Salesman Signature
           </div>
         </div>
 
         <!-- Footer -->
-        <div style="text-align: center; margin-top: 14px; font-size: 8px; color: #64748b; border-top: 1px dotted #cbd5e1; padding-top: 4px;">
+        <div style="text-align: center; margin-top: 10px; font-size: 8.5px; color: #000; border-top: 1px dotted #000; padding-top: 3px; font-weight: 500;">
           Computer Generated A5 Invoice • Software by PrimeSoft (0309-5369472)
         </div>
       </div>

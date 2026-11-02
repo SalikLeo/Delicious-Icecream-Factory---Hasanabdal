@@ -613,51 +613,54 @@ window.CartonPacking = {
 
     const html = `
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0;">${company}</h1>
-          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 700;">STAGE 3: FINISHED GOODS &amp; CARTON INVENTORY REPORT</p>
-          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Date: ${date} | Warehouse Finished Stock &amp; Cars Loaded Stock</p>
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${date} | Warehouse Finished Stock &amp; Cars Loaded Stock</p>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px;">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          STAGE 3: FINISHED GOODS &amp; CARTON INVENTORY REPORT
+        </div>
+
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">S#</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Carton Product</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">Packing</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Warehouse Stock</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">In Delivery Cars</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Total Cartons</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Sale Rate</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Warehouse Value</th>
+            <tr>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Carton Product</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 55px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Packing</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 70px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Warehouse</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">In Cars</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Ctns</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Sale Rate</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Stock Value</th>
             </tr>
           </thead>
           <tbody>
             ${this.cartons.map((c, idx) => `
               <tr>
-                <td style="border: 1px solid #e2e8f0; padding: 4px;">${idx + 1}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 800;">${c.carton_name}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${c.pieces_per_carton} pcs</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800; color: #7e22ce;">${c.factory_carton_stock} ctns</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; color: #1d4ed8;">${c.total_loaded_in_cars || 0} ctns</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">${(c.factory_carton_stock || 0) + (c.total_loaded_in_cars || 0)} ctns</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right;">Rs. ${c.carton_sale_price}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800; color: #047857;">Rs. ${Math.round((c.factory_carton_stock || 0) * c.carton_sale_price).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${c.carton_name}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${c.pieces_per_carton} pcs</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${c.factory_carton_stock} ctns</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 9.5px; color: #000;">${c.total_loaded_in_cars || 0} ctns</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${(c.factory_carton_stock || 0) + (c.total_loaded_in_cars || 0)} ctns</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${c.carton_sale_price}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round((c.factory_carton_stock || 0) * c.carton_sale_price).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #0f172a; padding-top: 6px; font-size: 10px; font-weight: 800;">
+        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 0; font-size: 10px; font-weight: 900; color: #000;">
           <span>WAREHOUSE CARTONS: ${totalWarehouseCartons} | IN CARS: ${totalLoaded}</span>
-          <span>WAREHOUSE STOCK VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
+          <span style="font-family: -apple-system, monospace;">WAREHOUSE STOCK VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 25px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Finished Goods Warehouse Incharge
           </div>
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Managing Director Signature
           </div>
         </div>

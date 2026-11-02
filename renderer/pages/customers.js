@@ -708,49 +708,50 @@ window.Customers = {
 
     const html = `
       <div class="a5-container">
-        <div class="a5-header">
-          <div class="a5-title">${settings.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle">${settings.address || 'Wah Cantt / Taxila'} • Phones: ${settings.phone || '0309-5369472'}</div>
-          <div class="a5-doc-title" style="background:#0f172a; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
-            SHOP KHATA ACCOUNT STATEMENT (A5)
-          </div>
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Wah Cantt / Taxila'} • Phone: ${settings.phone || '0309-5369472'}</div>
         </div>
 
-        <div class="a5-meta-box">
-          <div>
-            <div><strong>Shop Name:</strong> ${shop.name}</div>
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          SHOP KHATA ACCOUNT STATEMENT
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
+          <div style="line-height: 1.45;">
+            <div><strong>Shop Name:</strong> <span style="font-weight: 800;">${shop.name}</span></div>
             <div><strong>Owner / Contact:</strong> ${shop.owner_name || 'N/A'} • ${shop.phone || 'N/A'}</div>
             <div><strong>Area / Address:</strong> ${shop.city || ''} ${shop.address || ''}</div>
           </div>
-          <div style="text-align: right;">
-            <div><strong>Statement Date:</strong> ${new Date().toLocaleDateString()}</div>
+          <div style="text-align: right; line-height: 1.45;">
+            <div><strong>Statement Date:</strong> ${new Date().toLocaleDateString('en-GB')}</div>
             <div><strong>Total Transactions:</strong> ${entries.length} Records</div>
-            <div style="font-size: 13px; font-weight: 900; color: #b91c1c; margin-top: 2px;">
-              Balance Due: Rs. ${Math.round(shop.amount || 0).toLocaleString()}
+            <div style="font-size: 11px; font-weight: 900; color: #000; margin-top: 2px;">
+              Outstanding Balance: Rs. ${Math.round(shop.amount || 0).toLocaleString()}
             </div>
           </div>
         </div>
 
-        <table class="a5-table">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Ref / Inv #</th>
-              <th>Type / Description</th>
-              <th style="text-align:center;">Ctns</th>
-              <th style="text-align:right;">Debit (Rs.)</th>
-              <th style="text-align:right;">Credit (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Ref / Inv #</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Type / Description</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 45px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Ctns</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Debit Billed (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Credit Paid (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             ${entries.map(e => `
               <tr>
-                <td>${e.date}</td>
-                <td style="font-weight:700;">${e.invoice_no}</td>
-                <td>${e.record_type === 'delivery' ? `Delivery (${e.car_number || 'Van'})` : 'Cash Payment Received'}</td>
-                <td style="text-align:center;">${e.record_type === 'delivery' ? (e.cartons_count || 0) : '-'}</td>
-                <td style="text-align:right; font-weight:700;">${e.record_type === 'delivery' ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}</td>
-                <td style="text-align:right; font-weight:700; color:#047857;">Rs. ${Math.round(e.received_amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${e.date}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 700; font-family: -apple-system, monospace; color: #000;">${e.invoice_no}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? `Delivery (${e.car_number || 'Van'})` : 'Cash Payment Received'}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? (e.cartons_count || 0) : '-'}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(e.received_amount).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -804,43 +805,44 @@ window.Customers = {
 
     const html = `
       <div class="a5-container">
-        <div class="a5-header">
-          <div class="a5-title">${settings.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle">${settings.address || 'Wah Cantt / Taxila'} • Phones: ${settings.phone || '0309-5369472'}</div>
-          <div class="a5-doc-title" style="background:#047857; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
-            OFFICIAL CASH PAYMENT RECEIPT VOUCHER (A5)
-          </div>
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Wah Cantt / Taxila'} • Phone: ${settings.phone || '0309-5369472'}</div>
         </div>
 
-        <div class="a5-meta-box">
-          <div>
-            <div><strong>Receipt No:</strong> <span style="font-weight:900; font-family:monospace;">${data.receipt_no}</span></div>
-            <div><strong>Received From:</strong> ${data.shop_name}</div>
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          OFFICIAL CASH PAYMENT RECEIPT VOUCHER
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
+          <div style="line-height: 1.45;">
+            <div><strong>Receipt No:</strong> <span style="font-family: -apple-system, monospace; font-weight: 800;">${data.receipt_no}</span></div>
+            <div><strong>Received From:</strong> <span style="font-weight: 800;">${data.shop_name}</span></div>
           </div>
-          <div style="text-align: right;">
+          <div style="text-align: right; line-height: 1.45;">
             <div><strong>Payment Date:</strong> ${data.date}</div>
             <div><strong>Payment Mode:</strong> ${data.payment_method}</div>
           </div>
         </div>
 
-        <div class="a5-summary-box" style="margin-top:20px; font-size:13px;">
-          <div class="a5-summary-row a5-total" style="font-size:15px; color:#047857;">
+        <div class="a5-summary-box" style="margin-top: 12px; border: 1.5px solid #000; padding: 8px 10px; font-size: 10px; background: #fff; color: #000;">
+          <div class="a5-summary-row a5-total" style="font-size: 13px; font-weight: 900; color: #000; display: flex; justify-content: space-between;">
             <span>Amount Received:</span>
-            <span>Rs. ${Math.round(data.amount_paid).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(data.amount_paid).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; font-weight: 700; color: #000;">
             <span>Remaining Khata Balance:</span>
-            <span style="font-weight:800; color:#b91c1c;">Rs. ${Math.round(data.new_balance).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(data.new_balance).toLocaleString()}</span>
           </div>
           ${data.notes ? `
-            <div class="a5-summary-row" style="font-size:11px; color:#64748b;">
+            <div class="a5-summary-row" style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 9.5px; color: #000;">
               <span>Remarks / Notes:</span>
               <span>${data.notes}</span>
             </div>
           ` : ''}
         </div>
 
-        <div style="margin-top: 30px; font-size: 11px; color: #475569; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+        <div style="margin-top: 25px; font-size: 9px; color: #000; text-align: center; border-top: 1px dotted #000; padding-top: 6px; font-weight: 500;">
           Thank you for your payment. This voucher is an official computer-generated receipt.
         </div>
 

@@ -658,60 +658,63 @@ window.CarLoading = {
 
     const html = `
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0;">${company}</h1>
-          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 700;">STAGE 4: CAR LOADED STOCK INVENTORY SHEET</p>
-          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Date: ${date} | Vehicle: ${car.car_number}</p>
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${date} | Vehicle: ${car.car_number}</p>
         </div>
 
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 8px; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #f8fafc;">
-          <div>
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          STAGE 4: CAR LOADED STOCK INVENTORY SHEET
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
+          <div style="line-height: 1.45;">
             <div><strong>Car / Van:</strong> ${car.car_number}</div>
             <div><strong>Driver / Salesman:</strong> ${car.driver_name}</div>
           </div>
-          <div style="text-align: right;">
+          <div style="text-align: right; line-height: 1.45;">
             <div><strong>Contact:</strong> ${car.phone || 'N/A'}</div>
             <div><strong>Route / Area:</strong> ${car.area || 'All Areas'}</div>
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">S#</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Carton Product</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">Spec</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Loaded Qty</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Carton Rate</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Total Amount</th>
+            <tr>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Carton Product</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 60px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Spec</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Loaded Qty</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Carton Rate</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Amount</th>
             </tr>
           </thead>
           <tbody>
             ${loadedItems.length === 0 ? `
-              <tr><td colspan="6" style="padding: 12px; text-align: center; color: #64748b;">No cartons currently loaded in this vehicle.</td></tr>
+              <tr><td colspan="6" style="padding: 12px; text-align: center; color: #000;">No cartons currently loaded in this vehicle.</td></tr>
             ` : loadedItems.map((it, idx) => `
               <tr>
-                <td style="border: 1px solid #e2e8f0; padding: 4px;">${idx + 1}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 800;">${it.carton_name}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${it.pieces_per_carton} pcs</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800; color: #1d4ed8;">${it.cartons_loaded} ctns</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right;">Rs. ${it.carton_sale_price}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${it.carton_name}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${it.pieces_per_carton} pcs</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.cartons_loaded} ctns</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.carton_sale_price}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #0f172a; padding-top: 6px; font-size: 10px; font-weight: 800;">
+        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 0; font-size: 10px; font-weight: 900; color: #000;">
           <span>TOTAL CARTONS IN VEHICLE: ${totalCartons}</span>
-          <span>ESTIMATED VALUE: Rs. ${Math.round(totalValue).toLocaleString()}</span>
+          <span style="font-family: -apple-system, monospace;">ESTIMATED VALUE: Rs. ${Math.round(totalValue).toLocaleString()}</span>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Driver / Salesman Signature
           </div>
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Dispatch Officer Signature
           </div>
         </div>
@@ -731,58 +734,61 @@ window.CarLoading = {
 
     const html = `
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0;">${company}</h1>
-          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 700;">CAR LOADING DISPATCH GATE PASS / گیٹ پاس</p>
-          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Pass #: ${batch.dispatch_no} | Date: ${batch.date}</p>
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Pass #: ${batch.dispatch_no} | Date: ${batch.date}</p>
         </div>
 
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 8px; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #f8fafc;">
-          <div>
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          VEHICLE DISPATCH GATE PASS
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
+          <div style="line-height: 1.45;">
             <div><strong>Vehicle:</strong> ${batch.car_number}</div>
             <div><strong>Driver:</strong> ${batch.driver_name}</div>
           </div>
-          <div style="text-align: right;">
+          <div style="text-align: right; line-height: 1.45;">
             <div><strong>Driver Phone:</strong> ${batch.phone || 'N/A'}</div>
             <div><strong>Route / Area:</strong> ${batch.area || 'All Routes'}</div>
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">S#</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Carton Description</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">Packing</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Cartons Loaded</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Unit Rate</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Total Value</th>
+            <tr>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Carton Description</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 60px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Packing</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Cartons Loaded</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Unit Rate</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Value</th>
             </tr>
           </thead>
           <tbody>
             ${(batch.items || []).map((it, idx) => `
               <tr>
-                <td style="border: 1px solid #e2e8f0; padding: 4px;">${idx + 1}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 800;">${it.carton_name}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${it.pieces_per_carton} pcs</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800; color: #1d4ed8;">${it.cartons_loaded} ctns</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right;">Rs. ${it.sale_price}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">Rs. ${Math.round(it.cartons_loaded * (it.sale_price || 0)).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${it.carton_name}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${it.pieces_per_carton} pcs</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.cartons_loaded} ctns</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.sale_price}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.cartons_loaded * (it.sale_price || 0)).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #0f172a; padding-top: 6px; font-size: 10px; font-weight: 800;">
+        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 0; font-size: 10px; font-weight: 900; color: #000;">
           <span>TOTAL CARTONS DISPATCHED: ${batch.total_cartons}</span>
-          <span>ESTIMATED VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
+          <span style="font-family: -apple-system, monospace;">ESTIMATED VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Driver / Receiver Signature
           </div>
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Factory Gate / Security Officer
           </div>
         </div>

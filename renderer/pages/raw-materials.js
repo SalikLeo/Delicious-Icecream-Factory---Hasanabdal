@@ -536,47 +536,50 @@ window.RawMaterials = {
 
     const html = `
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">${company}</h1>
-          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 600;">STAGE 1: RAW MATERIALS STOCK INVENTORY REPORT</p>
-          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Generated Date: ${date} | Total Raw Stock Value: Rs. ${Math.round(totalVal).toLocaleString()}</p>
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Generated Date: ${date} | Total Raw Stock Value: Rs. ${Math.round(totalVal).toLocaleString()}</p>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px;">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          STAGE 1: RAW MATERIALS STOCK INVENTORY REPORT
+        </div>
+
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">S#</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Material</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">Unit</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">In-Stock Left</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Cost/Unit</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Total Value</th>
+            <tr>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Material Name</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 60px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">In-Stock Left</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Cost/Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Value</th>
             </tr>
           </thead>
           <tbody>
             ${this.materials.map((m, idx) => `
               <tr>
-                <td style="border: 1px solid #e2e8f0; padding: 4px;">${idx + 1}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 700;">${m.name}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: center;">${m.unit}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">${m.current_stock}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right;">Rs. ${m.cost_price}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">Rs. ${Math.round(m.current_stock * m.cost_price).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${m.name}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${m.unit}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${m.current_stock}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${m.cost_price}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(m.current_stock * m.cost_price).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #0f172a; padding-top: 6px; font-size: 10px; font-weight: 800;">
+        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 0; font-size: 10px; font-weight: 900; color: #000;">
           <span>TOTAL MATERIALS: ${this.materials.length}</span>
-          <span>GRAND TOTAL VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
+          <span style="font-family: -apple-system, monospace;">GRAND TOTAL VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 25px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Store Incharge Signature
           </div>
-          <div class="a5-sig-line" style="border-top: 1px dashed #64748b; width: 40%; text-align: center; font-size: 9px; padding-top: 4px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Factory Manager Signature
           </div>
         </div>

@@ -795,9 +795,9 @@ window.Reports = {
         <div class="a5-header">
           <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
           <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
-          <div class="a5-doc-title" style="background:#059669; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
-            RAW MATERIALS STOCK &amp; REMAINING BALANCE SHEET (A5)
-          </div>
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          RAW MATERIALS STOCK &amp; REMAINING BALANCE SHEET
+        </div>
         </div>
 
         <div class="a5-meta-box">
@@ -869,9 +869,9 @@ window.Reports = {
         <div class="a5-header">
           <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
           <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
-          <div class="a5-doc-title" style="background:#7c3aed; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
-            FINISHED GOODS WAREHOUSE INVENTORY SHEET (A5)
-          </div>
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          FINISHED GOODS WAREHOUSE INVENTORY SHEET
+        </div>
         </div>
 
         <div class="a5-meta-box">
@@ -966,9 +966,9 @@ window.Reports = {
         <div class="a5-header">
           <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
           <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
-          <div class="a5-doc-title" style="background:#b45309; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
-            FACTORY PROFIT &amp; LOSS FINANCIAL STATEMENT (A5)
-          </div>
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          FACTORY PROFIT &amp; LOSS FINANCIAL STATEMENT
+        </div>
         </div>
 
         <div class="a5-meta-box">
@@ -989,19 +989,19 @@ window.Reports = {
           </div>
           <div class="a5-summary-row">
             <span>Estimated Cost of Goods Sold (Raw Materials &amp; Packaging):</span>
-            <span style="color: #b91c1c;">- Rs. ${Math.round(estCogs).toLocaleString()}</span>
+            <span style="font-weight: 700;">- Rs. ${Math.round(estCogs).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row" style="border-top: 1px dashed #cbd5e1; padding-top: 4px;">
+          <div class="a5-summary-row" style="border-top: 1px dashed #000; padding-top: 4px;">
             <span>Gross Manufacturing Profit:</span>
-            <span style="font-weight: 800; color: #047857;">Rs. ${Math.round(grossProfit).toLocaleString()}</span>
+            <span style="font-weight: 800;">Rs. ${Math.round(grossProfit).toLocaleString()}</span>
           </div>
           <div class="a5-summary-row">
             <span>Factory Operating &amp; Delivery Expenses:</span>
-            <span style="color: #b91c1c;">- Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
+            <span style="font-weight: 700;">- Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row a5-total" style="font-size: 14px; margin-top: 8px;">
+          <div class="a5-summary-row a5-total" style="font-size: 13px; margin-top: 6px; font-weight: 900;">
             <span>Net Factory Profit / (Loss):</span>
-            <span style="color: ${netProfit >= 0 ? '#047857' : '#b91c1c'};">Rs. ${Math.round(netProfit).toLocaleString()}</span>
+            <span>Rs. ${Math.round(netProfit).toLocaleString()}</span>
           </div>
         </div>
 

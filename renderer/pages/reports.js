@@ -705,78 +705,80 @@ window.Reports = {
 
     const html = `
       <div class="a5-container">
-        <div class="a5-header">
-          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
-          <div class="a5-doc-title" style="background:#0f172a; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
-            DELIVERY VEHICLE SALES &amp; PERFORMANCE REPORT (A5)
-          </div>
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
         </div>
 
-        <div class="a5-meta-box">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          DELIVERY VEHICLE SALES &amp; PERFORMANCE REPORT
+        </div>
+
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
-            <div><strong>Vehicle / Route:</strong> ${carName}</div>
+            <div><strong>Vehicle / Route:</strong> <span style="font-weight: 800;">${carName}</span></div>
             <div><strong>Driver Phone:</strong> ${car?.phone || 'N/A'}</div>
           </div>
           <div style="text-align: right;">
             <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.selectedDate || 'All Time'})</div>
-            <div><strong>Printed On:</strong> ${new Date().toLocaleString()}</div>
+            <div><strong>Printed On:</strong> ${app.formatDateTime(new Date())}</div>
           </div>
         </div>
 
-        <table class="a5-table">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Inv #</th>
-              <th>Shop / Customer</th>
-              <th style="text-align:center;">Ctns</th>
-              <th style="text-align:right;">Total (Rs.)</th>
-              <th style="text-align:right;">Cash (Rs.)</th>
-              <th style="text-align:right;">Khata Due</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 68px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 80px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Inv #</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Shop / Customer</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Ctns</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 60px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cash (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Khata Due</th>
             </tr>
           </thead>
           <tbody>
             ${filtered.map(d => `
               <tr>
-                <td style="white-space: nowrap;">${app.formatDateTime(d.date, d.created_at)}</td>
-                <td style="font-weight:700;">${d.invoice_no}</td>
-                <td>${d.shop_name}</td>
-                <td style="text-align:center; font-weight:800;">${d.total_cartons_delivered || 0}</td>
-                <td style="text-align:right;">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
-                <td style="text-align:right; font-weight:700;">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
-                <td style="text-align:right;">Rs. ${Math.round(d.remaining_balance).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000; white-space: nowrap;">${app.formatDateTime(d.date, d.created_at)}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 700; font-family: -apple-system, monospace; color: #000; white-space: nowrap;">${d.invoice_no}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 600; color: #000;">${d.shop_name}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; font-weight: 800; color: #000; white-space: nowrap;">${d.total_cartons_delivered || 0}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.remaining_balance).toLocaleString()}</td>
               </tr>
             `).join('')}
+            ${filtered.length === 0 ? '<tr><td colspan="7" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No delivery orders found for this selection.</td></tr>' : ''}
           </tbody>
         </table>
 
-        <div class="a5-summary-box">
-          <div class="a5-summary-row">
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Total Deliveries Completed:</span>
-            <span>${filtered.length} Orders</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">${filtered.length} Orders</span>
           </div>
-          <div class="a5-summary-row">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Total Cartons Delivered to Shops:</span>
-            <span>${totalCartons} Cartons</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">${totalCartons} Cartons</span>
           </div>
-          <div class="a5-summary-row">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Gross Sales Value:</span>
-            <span>Rs. ${Math.round(totalSales).toLocaleString()}</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Cash Collected by Driver:</span>
-            <span>Rs. ${Math.round(totalCash).toLocaleString()}</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalCash).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row a5-total">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 900; font-size: 10.5px;">
             <span>Outstanding Khata Added:</span>
-            <span>Rs. ${Math.round(totalDue).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(totalDue).toLocaleString()}</span>
           </div>
         </div>
 
-        <div class="a5-signatures">
-          <div class="a5-sig-line">Driver Signature</div>
-          <div class="a5-sig-line">Cashier / Manager</div>
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Driver Signature</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Cashier / Manager</div>
         </div>
       </div>
     `;
@@ -792,60 +794,62 @@ window.Reports = {
 
     const html = `
       <div class="a5-container">
-        <div class="a5-header">
-          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
-          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          RAW MATERIALS STOCK &amp; REMAINING BALANCE SHEET
-        </div>
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
         </div>
 
-        <div class="a5-meta-box">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          RAW MATERIALS STOCK &amp; REMAINING BALANCE SHEET
+        </div>
+
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
             <div><strong>Factory Stage:</strong> Stage 1: Raw Materials Inventory</div>
             <div><strong>Total Materials:</strong> ${rawList.length} Items</div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</div>
+            <div><strong>Report Date:</strong> ${app.formatDateTime(new Date())}</div>
             <div><strong>Valuation Method:</strong> Purchase Cost Average</div>
           </div>
         </div>
 
-        <table class="a5-table">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th>Material</th>
-              <th>Category</th>
-              <th style="text-align:center;">Unit</th>
-              <th style="text-align:right;">Remaining Balance</th>
-              <th style="text-align:right;">Cost / Unit</th>
-              <th style="text-align:right;">Value (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Material</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 45px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Remaining Balance</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cost / Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Value (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             ${rawList.map(m => `
               <tr>
-                <td style="font-weight:700;">${m.name}</td>
-                <td>${m.category}</td>
-                <td style="text-align:center;">${m.unit}</td>
-                <td style="text-align:right; font-weight:800;">${m.current_stock} ${m.unit}</td>
-                <td style="text-align:right;">Rs. ${m.cost_price}</td>
-                <td style="text-align:right; font-weight:700;">Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 700; color: #000;">${m.name}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000;">${m.category}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; color: #000;">${m.unit}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; font-weight: 800; color: #000;">${m.current_stock} ${m.unit}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${m.cost_price}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}</td>
               </tr>
             `).join('')}
+            ${rawList.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No raw materials found.</td></tr>' : ''}
           </tbody>
         </table>
 
-        <div class="a5-summary-box">
-          <div class="a5-summary-row a5-total">
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; font-weight: 900; font-size: 10.5px;">
             <span>Total Raw Material Valuation:</span>
-            <span>Rs. ${Math.round(totalVal).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(totalVal).toLocaleString()}</span>
           </div>
         </div>
 
-        <div class="a5-signatures">
-          <div class="a5-sig-line">Store Keeper</div>
-          <div class="a5-sig-line">Factory Supervisor</div>
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Store Keeper</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Supervisor</div>
         </div>
       </div>
     `;
@@ -866,64 +870,66 @@ window.Reports = {
 
     const html = `
       <div class="a5-container">
-        <div class="a5-header">
-          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
-          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          FINISHED GOODS WAREHOUSE INVENTORY SHEET
-        </div>
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
         </div>
 
-        <div class="a5-meta-box">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          FINISHED GOODS WAREHOUSE INVENTORY SHEET
+        </div>
+
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
             <div><strong>Inventory Location:</strong> Main Cold Storage Warehouse</div>
             <div><strong>Catalog Variants:</strong> ${cartons.length} Products</div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</div>
+            <div><strong>Report Date:</strong> ${app.formatDateTime(new Date())}</div>
             <div><strong>Status:</strong> Ready Packed Cartons</div>
           </div>
         </div>
 
-        <table class="a5-table">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th>Carton Product</th>
-              <th style="text-align:center;">Pcs/Ctn</th>
-              <th style="text-align:right;">Cost (Rs.)</th>
-              <th style="text-align:right;">Sale (Rs.)</th>
-              <th style="text-align:right;">Warehouse Stock</th>
-              <th style="text-align:right;">Total Value</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Carton Product</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Pcs/Ctn</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cost (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Sale (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Warehouse Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Value</th>
             </tr>
           </thead>
           <tbody>
             ${cartons.map(c => `
               <tr>
-                <td style="font-weight:700;">${c.carton_name}</td>
-                <td style="text-align:center;">${c.pieces_per_carton}</td>
-                <td style="text-align:right;">Rs. ${c.carton_cost_price}</td>
-                <td style="text-align:right; font-weight:700;">Rs. ${c.carton_sale_price}</td>
-                <td style="text-align:right; font-weight:800;">${c.factory_carton_stock} ctns</td>
-                <td style="text-align:right; font-weight:700;">Rs. ${Math.round((c.factory_carton_stock || 0) * (c.carton_sale_price || 0)).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 700; color: #000;">${c.carton_name}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; color: #000;">${c.pieces_per_carton}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${c.carton_cost_price}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${c.carton_sale_price}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; font-weight: 800; color: #000;">${c.factory_carton_stock} ctns</td>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${Math.round((c.factory_carton_stock || 0) * (c.carton_sale_price || 0)).toLocaleString()}</td>
               </tr>
             `).join('')}
+            ${cartons.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No packed cartons in warehouse.</td></tr>' : ''}
           </tbody>
         </table>
 
-        <div class="a5-summary-box">
-          <div class="a5-summary-row">
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Total Packed Cartons in Stock:</span>
-            <span>${totalStock} Cartons</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">${totalStock} Cartons</span>
           </div>
-          <div class="a5-summary-row a5-total">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 900; font-size: 10.5px;">
             <span>Total Warehouse Realizable Value:</span>
-            <span>Rs. ${Math.round(totalWorth).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(totalWorth).toLocaleString()}</span>
           </div>
         </div>
 
-        <div class="a5-signatures">
-          <div class="a5-sig-line">Cold Storage Incharge</div>
-          <div class="a5-sig-line">Factory Manager</div>
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Cold Storage Incharge</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Manager</div>
         </div>
       </div>
     `;
@@ -963,74 +969,75 @@ window.Reports = {
 
     const html = `
       <div class="a5-container">
-        <div class="a5-header">
-          <div class="a5-title">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
-          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          FACTORY PROFIT &amp; LOSS FINANCIAL STATEMENT
-        </div>
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
         </div>
 
-        <div class="a5-meta-box">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          FACTORY PROFIT &amp; LOSS FINANCIAL STATEMENT
+        </div>
+
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
             <div><strong>Financial Period:</strong> ${this.periodType.toUpperCase()} (${this.selectedDate || 'All Time'})</div>
             <div><strong>Currency:</strong> Pakistani Rupee (PKR)</div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
+            <div><strong>Generated:</strong> ${app.formatDateTime(new Date())}</div>
             <div><strong>Audited By:</strong> Management</div>
           </div>
         </div>
 
-        <div class="a5-summary-box" style="margin-top: 15px;">
-          <div class="a5-summary-row">
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 6px 10px; margin-top: 10px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Gross Ice Cream Sales Revenue:</span>
-            <span style="font-weight: 800;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Estimated Cost of Goods Sold (Raw Materials &amp; Packaging):</span>
-            <span style="font-weight: 700;">- Rs. ${Math.round(estCogs).toLocaleString()}</span>
+            <span style="font-weight: 700; font-family: -apple-system, monospace;">- Rs. ${Math.round(estCogs).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row" style="border-top: 1px dashed #000; padding-top: 4px;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; border-top: 1px dashed #000; padding: 3px 0; margin-top: 2px;">
             <span>Gross Manufacturing Profit:</span>
-            <span style="font-weight: 800;">Rs. ${Math.round(grossProfit).toLocaleString()}</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(grossProfit).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Factory Operating &amp; Delivery Expenses:</span>
-            <span style="font-weight: 700;">- Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
+            <span style="font-weight: 700; font-family: -apple-system, monospace;">- Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row a5-total" style="font-size: 13px; margin-top: 6px; font-weight: 900;">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; font-size: 11.5px; margin-top: 4px; padding-top: 4px; font-weight: 900;">
             <span>Net Factory Profit / (Loss):</span>
-            <span>Rs. ${Math.round(netProfit).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(netProfit).toLocaleString()}</span>
           </div>
         </div>
 
-        <div style="margin-top: 15px;">
-          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 5px;">Key Operating Expenses Summary</div>
-          <table class="a5-table">
+        <div style="margin-top: 12px;">
+          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; color: #000;">Key Operating Expenses Summary</div>
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; background: #fff;">
             <thead>
               <tr>
-                <th>Category</th>
-                <th>Remarks</th>
-                <th style="text-align:right;">Amount (Rs.)</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Remarks</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Amount (Rs.)</th>
               </tr>
             </thead>
             <tbody>
               ${filtExp.slice(0, 8).map(e => `
                 <tr>
-                  <td style="font-weight:700;">${e.category}</td>
-                  <td>${e.description || e.notes || 'Operating expense'}</td>
-                  <td style="text-align:right; font-weight:700;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; font-weight: 700; color: #000;">${e.category}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; color: #000;">${e.description || e.notes || 'Operating expense'}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
                 </tr>
               `).join('')}
-              ${filtExp.length === 0 ? '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">No operating expenses recorded.</td></tr>' : ''}
+              ${filtExp.length === 0 ? '<tr><td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center; color: #000;">No operating expenses recorded.</td></tr>' : ''}
             </tbody>
           </table>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 40px;">
-          <div class="a5-sig-line">Accountant</div>
-          <div class="a5-sig-line">Factory Owner / Director</div>
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Accountant</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Owner / Director</div>
         </div>
       </div>
     `;

@@ -865,24 +865,24 @@ window.Customers = {
           </tbody>
         </table>
 
-        <div class="a5-summary-box">
-          <div class="a5-summary-row">
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Total Goods Billed (Debits):</span>
-            <span>Rs. ${Math.round(totalBilled).toLocaleString()}</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalBilled).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Total Payments Received (Credits):</span>
-            <span>Rs. ${Math.round(totalPaid).toLocaleString()}</span>
+            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalPaid).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row a5-total">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 900; font-size: 10.5px;">
             <span>Current Outstanding Khata Balance:</span>
-            <span>Rs. ${Math.round(shop.amount || 0).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(shop.amount || 0).toLocaleString()}</span>
           </div>
         </div>
 
-        <div class="a5-signatures">
-          <div class="a5-sig-line">Shop Owner Signature</div>
-          <div class="a5-sig-line">Factory Accountant</div>
+        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Shop Owner Signature</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Accountant</div>
         </div>
       </div>
     `;
@@ -954,9 +954,9 @@ window.Customers = {
           Thank you for your payment. This voucher is an official computer-generated receipt.
         </div>
 
-        <div class="a5-signatures" style="margin-top: 50px;">
-          <div class="a5-sig-line">Payer / Shopkeeper</div>
-          <div class="a5-sig-line">Authorized Collector</div>
+        <div class="a5-signatures" style="margin-top: 45px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Payer / Shopkeeper</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Authorized Collector</div>
         </div>
       </div>
     `;

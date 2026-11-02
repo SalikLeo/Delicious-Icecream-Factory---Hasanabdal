@@ -636,41 +636,20 @@ const Expenses = {
     });
     const catKeys = Object.keys(catTotals);
 
-    const rowsHtml = list.length === 0 ? `
-      <tr>
-        <td colspan="4" style="text-align: center; padding: 8px 0; font-style: italic; color: #444;">No expenses found</td>
-      </tr>
-    ` : list.map((e, idx, arr) => `
-      <tr style="border-bottom: ${idx === arr.length - 1 ? 'none' : '1px solid #000'}; font-size: 9.5px;">
-        <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000; vertical-align: top;">${idx + 1}</td>
-        <td style="padding: 2.5px 4px; text-align: left; vertical-align: top; border-right: 1px solid #000;">
-          <div style="font-weight: 800; word-break: break-word; line-height: 1.2;">${e.description || e.category || 'Expense'}</div>
-          <div style="font-size: 8px; color: #444; margin-top: 1px;">
-            ${app.formatDateTime(e.date, e.created_at)}${e.paid_by ? ` &bull; By: ${e.paid_by}` : ''}
-          </div>
-        </td>
-        <td style="padding: 2.5px 3px; text-align: left; font-weight: 600; vertical-align: top; border-right: 1px solid #000;">
-          ${e.category || 'General'}
-        </td>
-        <td style="padding: 2.5px 4px; text-align: right; font-weight: 800; vertical-align: top; white-space: nowrap;">
-          ${app.formatCurrency(e.amount)}
-        </td>
-      </tr>
-    `).join('');
-
     const a5Html = `
       <div class="a5-container">
-        <div class="a5-header">
-          <div class="a5-title">${settings.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle">${settings.address || 'Wah Cantt / Taxila'} • Phones: ${settings.phone || '0309-5369472'}</div>
-          <div class="a5-doc-title" style="background:#0f172a; color:#fff; display:inline-block; padding:3px 14px; border-radius:12px; margin-top:4px; font-size:13px; font-weight:900;">
-            FACTORY EXPENSES REPORT (A5)
-          </div>
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'ICE CREAM FACTORY'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Wah Cantt / Taxila'} • Phones: ${settings.phone || '0309-5369472'}</div>
         </div>
 
-        <div class="a5-meta-box">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          FACTORY EXPENSES REPORT
+        </div>
+
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
-            <div><strong>Period:</strong> ${period}</div>
+            <div><strong>Period:</strong> <span style="font-weight: 800;">${period}</span></div>
             <div><strong>Category:</strong> ${cat}</div>
           </div>
           <div style="text-align: right;">
@@ -679,47 +658,51 @@ const Expenses = {
           </div>
         </div>
 
-        <table class="a5-table">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th style="width:7%; text-align:center;">#</th>
-              <th>Expense / Description</th>
-              <th>Category</th>
-              <th style="text-align:right;">Amount (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; width: 6%; text-align: center; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Expense / Description</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; width: 22%; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; width: 22%; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Amount (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             ${list.map((e, idx) => `
               <tr>
-                <td style="text-align:center;">${idx + 1}</td>
-                <td>
-                  <div style="font-weight:700;">${e.description || e.category || 'Expense'}</div>
-                  <div style="font-size:10px; color:#64748b;">${app.formatDateTime(e.date, e.created_at)}${e.paid_by ? ` • By: ${e.paid_by}` : ''}</div>
+                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; font-weight: 700; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 6px; font-size: 9px; color: #000;">
+                  <div style="font-weight: 800; line-height: 1.25;">${e.description || e.category || 'Expense'}</div>
+                  <div style="font-size: 8px; color: #334155; margin-top: 1px;">
+                    ${app.formatDateTime(e.date, e.created_at)}${e.paid_by ? ` • By: ${e.paid_by}` : ''}
+                  </div>
                 </td>
-                <td style="font-weight:600;">${e.category || 'General'}</td>
-                <td style="text-align:right; font-weight:800;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 6px; font-size: 8.5px; font-weight: 600; color: #000;">${e.category || 'General'}</td>
+                <td style="border: 1px solid #000; padding: 3.5px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000; white-space: nowrap;">
+                  Rs. ${Math.round(e.amount).toLocaleString()}
+                </td>
               </tr>
             `).join('')}
-            ${list.length === 0 ? '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No expenses recorded.</td></tr>' : ''}
+            ${list.length === 0 ? '<tr><td colspan="4" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No expenses recorded.</td></tr>' : ''}
           </tbody>
         </table>
 
-        <div class="a5-summary-box">
-          <div class="a5-summary-row a5-total">
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; font-weight: 900; font-size: 11px;">
             <span>TOTAL EXPENSES:</span>
-            <span>Rs. ${Math.round(total).toLocaleString()}</span>
+            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(total).toLocaleString()}</span>
           </div>
         </div>
 
         ${(catKeys.length > 1 && list.length > 1) ? `
-          <div style="margin-top: 15px;">
-            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 5px;">Category Breakdown</div>
-            <table class="a5-table">
+          <div style="margin-top: 10px;">
+            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; color: #000;">Category Breakdown</div>
+            <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; background: #fff;">
               <tbody>
                 ${catKeys.map(catName => `
                   <tr>
-                    <td style="font-weight:700;">${catName}</td>
-                    <td style="text-align:right; font-weight:800;">Rs. ${Math.round(catTotals[catName]).toLocaleString()}</td>
+                    <td style="border: 1px solid #000; padding: 3px 6px; font-weight: 700; color: #000;">${catName}</td>
+                    <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; color: #000; white-space: nowrap;">Rs. ${Math.round(catTotals[catName]).toLocaleString()}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -727,9 +710,9 @@ const Expenses = {
           </div>
         ` : ''}
 
-        <div class="a5-signatures">
-          <div class="a5-sig-line">Prepared By</div>
-          <div class="a5-sig-line">Approved By</div>
+        <div class="a5-signatures" style="margin-top: 28px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Prepared By</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Approved By</div>
         </div>
       </div>
     `;

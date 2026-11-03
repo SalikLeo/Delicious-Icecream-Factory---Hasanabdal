@@ -3124,11 +3124,34 @@ function saveShopDelivery(data) {
   const receivedAmount = Number(data.received_amount) || 0;
   const paymentMethod = data.payment_method || 'Cash';
 
+  // Validate stock in delivery vehicle before processing
+  if (car) {
+    for (const it of data.items) {
+      const ci = db.prepare('SELECT cartons_loaded FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(car.id, it.carton_id);
+      const loaded = ci ? Number(ci.cartons_loaded) || 0 : 0;
+      const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
+      if (qty > loaded) {
+        const pc = db.prepare('SELECT carton_name FROM packed_cartons WHERE id = ?').get(it.carton_id);
+        const name = pc ? pc.carton_name : 'Carton';
+        return { error: `Quantity (${qty} ctns) exceeds stock in ${car.car_number} (${loaded} ctns available for "${name}").` };
+      }
+    }
+  }
+
   let subtotal = 0;
   data.items.forEach(it => {
     const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
     const price = Number(it.carton_price) || 0;
-    subtotal += qty * price;
+    const discNum = parseFloat(it.discount) || 0;
+    let itemDiscAmt = 0;
+    if (it.discountType === 'percent') {
+      itemDiscAmt = (qty * price * discNum) / 100;
+    } else {
+      itemDiscAmt = discNum * qty;
+    }
+    const lineTotal = it.line_total !== undefined ? Number(it.line_total) : Math.max(0, (qty * price) - itemDiscAmt);
+    it.line_total = lineTotal;
+    subtotal += lineTotal;
   });
 
   const totalAmount = Math.max(0, subtotal - discount);

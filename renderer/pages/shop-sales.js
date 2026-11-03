@@ -6,7 +6,10 @@ window.ShopSales = {
   selectedCarId: null,
   selectedShopId: null,
   carInventory: [],
-  items: [], // [{ carton_id, carton_name, ordered_cartons, delivered_cartons, returned_cartons, return_destination, carton_price, line_total }]
+  items: [], // [{ carton_id, carton_name, barcode, pieces_per_carton, quantity, delivered_cartons, ordered_cartons, carton_price, original_price, discount, discountType, line_total }]
+  searchQuery: '',
+  searchResults: [],
+  highlightedSearchIndex: 0,
   discount: 0,
   receivedAmount: 0,
   paymentMethod: 'Cash',
@@ -67,6 +70,12 @@ window.ShopSales = {
         this._isScanning = true;
       }
 
+      if (e.key === 'F2') {
+        e.preventDefault();
+        ShopSales.focusSearchInput();
+        return;
+      }
+
       if (e.key === 'Enter') {
         if (this._scanBuffer.length >= 3) {
           const scannedCode = this._scanBuffer.trim();
@@ -115,22 +124,57 @@ window.ShopSales = {
       return false;
     }
 
-    // Add or increment in this.items
-    const existing = this.items.find(x => x.carton_id === carton.id);
-    if (existing) {
-      const q = (Number(existing.quantity || existing.delivered_cartons) || 1) + 1;
-      existing.quantity = q;
-      existing.delivered_cartons = q;
-      existing.ordered_cartons = q;
-      existing.line_total = q * existing.carton_price;
-      this.renderUI();
-      app.playBeep('success');
-      app.showToast(`Scanned: ${carton.carton_name} (+1 ctn, Total: ${q})`, 'success');
+    this.addToCart(carton);
+    setTimeout(() => {
+      const scanInput = document.getElementById('ss-fast-carton-search');
+      if (scanInput) {
+        scanInput.value = '';
+        scanInput.focus();
+      }
+    }, 60);
+    return true;
+  },
+
+  getItemStock(cartonId) {
+    if (!this.carInventory || this.carInventory.length === 0) return 0;
+    const match = this.carInventory.find(x => x.carton_id === Number(cartonId));
+    return match ? (Number(match.cartons_loaded) || 0) : 0;
+  },
+
+  addToCart(carton) {
+    if (!carton) return;
+    const maxStock = this.getItemStock(carton.id);
+    if (maxStock <= 0) {
+      app.playBeep('warning');
+      app.showAlert({
+        title: 'Out of Stock in Car',
+        message: '<b>' + (carton.carton_name || 'Carton') + '</b> is not loaded in this vehicle (0 cartons available in car).'
+      });
+      return;
+    }
+
+    const existingIdx = this.items.findIndex(i => i.carton_id === carton.id);
+    if (existingIdx !== -1) {
+      const existing = this.items[existingIdx];
+      if (existing.quantity < maxStock) {
+        existing.quantity++;
+        existing.delivered_cartons = existing.quantity;
+        existing.ordered_cartons = existing.quantity;
+        this.updateLineTotal(existingIdx);
+        this.updateFinancialSummary();
+        this.renderCartTable();
+        app.showToast('Added ' + carton.carton_name + ' (Total: ' + existing.quantity + ' ctns)', 'success');
+      } else {
+        app.playBeep('warning');
+        app.showToast('Cannot add more. Vehicle only has ' + maxStock + ' cartons loaded.', 'warning');
+      }
+      setTimeout(() => this.focusCartField(existingIdx, 'qty'), 40);
     } else {
       const price = carton.carton_sale_price || 0;
       this.items.push({
         carton_id: carton.id,
         carton_name: carton.carton_name,
+        barcode: carton.barcode || '',
         pieces_per_carton: carton.pieces_per_carton || 20,
         quantity: 1,
         ordered_cartons: 1,
@@ -138,41 +182,29 @@ window.ShopSales = {
         returned_cartons: 0,
         return_destination: 'car',
         carton_price: price,
-        line_total: 1 * price
+        original_price: price,
+        discount: '',
+        discountType: 'flat',
+        line_total: price
       });
-      this.renderUI();
+      const newIdx = this.items.length - 1;
+      this.renderCartTable();
+      this.updateFinancialSummary();
       app.playBeep('success');
-      app.showToast(`Scanned: ${carton.carton_name} (1 ctn added)`, 'success');
+      setTimeout(() => this.focusCartField(newIdx, 'qty'), 40);
     }
-
-    setTimeout(() => {
-      const scanInput = document.getElementById('ss-barcode-scan-input');
-      if (scanInput) {
-        scanInput.value = '';
-        scanInput.focus();
-      }
-    }, 60);
-
-    return true;
   },
 
   addItemRow(defaultCartonId = null) {
     const selectedCartonIds = new Set(this.items.map(it => it.carton_id));
-    const cId = defaultCartonId || (this.cartons.find(c => !selectedCartonIds.has(c.id))?.id || this.cartons[0]?.id || null);
-    const carton = this.cartons.find(c => c.id === cId);
-    const price = carton ? (carton.carton_sale_price || 0) : 250;
-    this.items.push({
-      carton_id: cId,
-      carton_name: carton ? carton.carton_name : '',
-      pieces_per_carton: carton ? carton.pieces_per_carton : 20,
-      quantity: 1,
-      ordered_cartons: 1,
-      delivered_cartons: 1,
-      returned_cartons: 0,
-      return_destination: 'car', // 'car' | 'stock'
-      carton_price: price,
-      line_total: 1 * price
-    });
+    const availableCartons = (this.cartons || []).filter(c => !selectedCartonIds.has(c.id));
+    const loadedAvailable = availableCartons.filter(c => this.getItemStock(c.id) > 0);
+    const chosenCarton = (loadedAvailable.length > 0 ? loadedAvailable[0] : availableCartons[0]);
+    if (chosenCarton) {
+      this.addToCart(chosenCarton);
+    } else {
+      app.showToast('All available carton products have already been added.', 'info');
+    }
   },
 
   renderUI() {
@@ -315,114 +347,111 @@ window.ShopSales = {
 
         </div>
 
-        <!-- Middle: Sales Cartons List Table -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
-          <div class="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-            <div>
-              <h3 class="font-black text-sm text-slate-900">Sale Cartons List</h3>
-              <p class="text-[11px] text-slate-500 font-medium">Specify carton products, quantities sold to shop, and carton rates.</p>
-            </div>
-            <div class="flex items-center gap-2.5 flex-1 max-w-lg justify-end w-full">
-              <!-- Barcode Scanner Input -->
-              <div class="relative flex-1 min-w-[240px]">
-                <i data-lucide="scan-barcode" class="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="ss-barcode-scan-input"
-                       onkeydown="if(event.key==='Enter'){event.preventDefault(); ShopSales.handleManualBarcodeScan(this.value); this.value='';}"
-                       placeholder="Scan carton barcode or enter code..."
-                       class="w-full pl-10 pr-28 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-400 shadow-2xs">
-                <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
-                  <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shadow-2xs select-none">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Scanner Ready
-                  </span>
-                </div>
+        <!-- Middle: Product Fast Search & Al-Baari Style Invoice Items Table -->
+        <div class="space-y-3">
+          
+          <!-- Product Search Box with Instant Autocomplete Dropdown & Barcode Ready -->
+          <div class="relative shrink-0 z-20" id="ss-search-container">
+            <div class="relative bg-white rounded-xl shadow-xs border-2 border-amber-400 focus-within:ring-3 focus-within:ring-amber-100 transition-all">
+              <i data-lucide="scan-barcode" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500"></i>
+              <input type="text" 
+                     id="ss-fast-carton-search" 
+                     autocomplete="off"
+                     oninput="ShopSales.handleSearchInput(this.value)"
+                     onfocus="ShopSales.handleSearchFocus()"
+                     onclick="ShopSales.handleSearchFocus()"
+                     onkeydown="ShopSales.handleSearchKeyDown(event)"
+                     placeholder="Scan carton barcode or search product..." 
+                     class="w-full pl-10 pr-48 py-2 bg-transparent text-slate-900 font-bold text-sm outline-none placeholder:text-slate-400">
+              <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <span class="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-2xs select-none">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Scanner Ready
+                </span>
+                <button type="button" 
+                        id="ss-search-clear-btn" 
+                        onclick="ShopSales.clearSearchInput()" 
+                        title="Clear search text"
+                        class="w-5 h-5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer hidden">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+                <kbd class="px-1.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[9px] font-black shadow-2xs pointer-events-none select-none">F2</kbd>
+                <button type="button" onclick="ShopSales.addNewRow()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer active:scale-95">
+                  <i data-lucide="plus" class="w-3 h-3"></i> Add Item
+                </button>
               </div>
+            </div>
 
-              <button type="button" onclick="ShopSales.addNewRow()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i> ${this.items.length === 0 ? '+ Add First Item' : '+ Add Item'}
-              </button>
+            <!-- Autocomplete Dropdown List -->
+            <div id="ss-search-dropdown" class="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-[360px] overflow-y-auto z-50">
+              <!-- Injected dynamically via renderSearchDropdown() -->
             </div>
           </div>
 
-          <div class="overflow-x-auto min-h-[160px]">
-            ${this.items.length === 0 ? `
-              <div class="p-10 text-center text-slate-400 flex flex-col items-center justify-center min-h-[160px]">
-                <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 mb-2 shadow-2xs">
-                  <i data-lucide="package-plus" class="w-6 h-6"></i>
-                </div>
-                <h4 class="font-black text-sm text-slate-800">No Cartons Added Yet</h4>
-                <p class="text-xs text-slate-400 max-w-sm mt-0.5 mb-3.5 font-medium">Click "+ Add First Item" above to add carton products and record delivery quantities.</p>
-                <button type="button" onclick="ShopSales.addNewRow()" class="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
-                  <i data-lucide="plus" class="w-4 h-4"></i> Add Item
-                </button>
+          <!-- Items Table (Al-Baari Design) -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+            
+            <!-- Table Header Bar -->
+            <div class="px-3.5 py-2 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0 flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="shopping-cart" class="w-4 h-4 text-amber-500"></i>
+                <h3 class="font-black text-sm text-slate-800 tracking-tight" id="ss-cart-header-title">Invoice Items (${this.items.length})</h3>
               </div>
-            ` : `
-              <table class="w-full text-left text-xs border-collapse border border-slate-200">
-                <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
+              
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Clear Bill Button -->
+                <button type="button" 
+                        onclick="ShopSales.clearBill()" 
+                        class="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-rose-600 rounded-lg transition-all flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95" 
+                        title="Clear all added items and start a fresh bill">
+                  <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                  <span>Clear Bill</span>
+                </button>
+
+                <!-- Invoice Number Field -->
+                <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shadow-2xs">
+                  <span class="text-slate-400 text-[10px] uppercase font-black tracking-wider">INV:</span>
+                  <span class="text-slate-900 font-black text-xs uppercase tabular-nums font-mono">AUTO</span>
+                </div>
+
+                <!-- Payment Method (Cash / Online) -->
+                <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 shadow-2xs">
+                  <span class="text-xs font-bold text-slate-600">Method:</span>
+                  <div class="flex bg-slate-100 p-0.5 rounded-md border border-slate-200">
+                    <button type="button" id="btn-method-cash" onclick="ShopSales.setPaymentMethod('Cash')" class="px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer ${this.paymentMethod === 'Cash' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">CASH</button>
+                    <button type="button" id="btn-method-online" onclick="ShopSales.setPaymentMethod('Online')" class="px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-indigo-600'}">ONLINE</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table Body -->
+            <div class="overflow-x-auto min-h-[160px]">
+              <table class="w-full text-left border-collapse" id="ss-cart-table">
+                <thead class="bg-slate-100 sticky top-0 z-10 border-b border-slate-300 text-[10px] font-black text-slate-600 uppercase tracking-wider">
                   <tr>
-                    <th class="py-2.5 px-3.5 border-r border-slate-200">Item / Carton Product</th>
-                    <th class="py-2.5 px-3 text-center w-36 border-r border-slate-200">Quantity (Cartons)</th>
-                    <th class="py-2.5 px-3 text-right w-32 border-r border-slate-200">Rate / Ctn (Rs.)</th>
-                    <th class="py-2.5 px-3 text-right w-36 border-r border-slate-200">Total (Rs.)</th>
-                    <th class="py-2.5 px-2 text-center w-12"></th>
+                    <th class="py-1.5 px-2 w-10 text-center border-r border-slate-300">#</th>
+                    <th class="py-1.5 px-3 border-r border-slate-300">Item Description</th>
+                    <th class="py-1.5 px-2 w-28 text-center border-r border-slate-300">Qty</th>
+                    <th class="py-1.5 px-2 w-28 text-right border-r border-slate-300">Rate (Rs.)</th>
+                    <th class="py-1.5 px-2 w-32 text-center border-r border-slate-300">Discount</th>
+                    <th class="py-1.5 px-3 w-28 text-right border-r border-slate-300">Line Total</th>
+                    <th class="py-1.5 px-2 w-16 text-center">Action</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 font-semibold text-slate-700" id="ss-items-tbody">
-                  ${this.items.map((it, idx) => `
-                    <tr class="hover:bg-slate-50/70 transition-colors">
-                      <td class="py-2.5 px-3.5 border-r border-slate-200">
-                        <select onchange="ShopSales.onItemProductChange(${idx}, this.value)"
-                                class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 shadow-2xs">
-                          ${(() => {
-                            const otherSelectedCartons = new Set(this.items.filter((_, i) => i !== idx).map(x => x.carton_id));
-                            return this.cartons.map(c => {
-                              const isCurrent = c.id === it.carton_id;
-                              const isAlreadyAdded = otherSelectedCartons.has(c.id);
-                              return `
-                                <option value="${c.id}" ${isCurrent ? 'selected' : ''} ${isAlreadyAdded ? 'disabled' : ''}>
-                                  ${c.carton_name} ${isAlreadyAdded ? '(Already Added)' : `(Rate: Rs. ${c.carton_sale_price}${c.barcode ? ' | #' + c.barcode : ''})`}
-                                </option>
-                              `;
-                            }).join('');
-                          })()}
-                        </select>
-                      </td>
-
-                      <!-- Quantity (Cartons) with [-] [input] [+] -->
-                      <td class="py-2.5 px-3 text-center border-r border-slate-200">
-                        <div class="inline-flex items-center justify-center gap-1.5">
-                          <button type="button" onclick="ShopSales.stepRowQty(${idx}, -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all">
-                            <i data-lucide="minus" class="w-3.5 h-3.5"></i>
-                          </button>
-                          <input type="number" min="1" id="ss-qty-${idx}" value="${it.quantity || it.delivered_cartons || 1}" oninput="ShopSales.onRowQtyChange(${idx}, this.value)"
-                                 class="w-16 px-2 py-1 text-center font-black text-sm text-emerald-800 bg-emerald-50/60 border-2 border-emerald-400 rounded-xl outline-none tabular-nums focus:bg-white focus:border-emerald-600 shadow-2xs">
-                          <button type="button" onclick="ShopSales.stepRowQty(${idx}, 1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all">
-                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                          </button>
-                        </div>
-                      </td>
-
-                      <!-- Carton Price -->
-                      <td class="py-2.5 px-3 text-right border-r border-slate-200">
-                        <input type="number" step="any" min="0" id="ss-price-${idx}" value="${it.carton_price}" oninput="ShopSales.onRowPriceChange(${idx}, this.value)"
-                               class="w-28 px-2.5 py-1 text-right font-black text-xs bg-slate-50 border border-slate-300 rounded-xl outline-none tabular-nums focus:bg-white focus:border-amber-400 shadow-2xs">
-                      </td>
-
-                      <!-- Line Total -->
-                      <td class="py-2.5 px-3 text-right font-black text-slate-900 text-sm tabular-nums border-r border-slate-200" id="ss-row-total-${idx}">
-                        Rs. ${Math.round(it.line_total || 0).toLocaleString()}
-                      </td>
-
-                      <!-- Remove Row -->
-                      <td class="py-2.5 px-2 text-center">
-                        <button type="button" onclick="ShopSales.removeRow(${idx})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer" title="Remove Item">
-                          <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  `).join('')}
+                <tbody id="ss-cart-tbody" class="divide-y divide-slate-200 border-b border-slate-200">
+                  <!-- Injected via renderCartTable() -->
                 </tbody>
               </table>
-            `}
+
+              <div id="ss-cart-empty-state" class="p-12 text-center flex flex-col items-center justify-center text-slate-400 ${this.items.length > 0 ? 'hidden' : ''}">
+                <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 border border-amber-200/80 flex items-center justify-center mb-3 shadow-2xs">
+                  <i data-lucide="scan-barcode" class="w-8 h-8"></i>
+                </div>
+                <p class="font-bold text-slate-700 text-sm">No items in cart</p>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm">Type any carton name or scan barcode in the search box above, or press <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 font-mono text-[11px]">F2</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 font-mono text-[11px]">Enter</kbd> to add items.</p>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -511,6 +540,7 @@ window.ShopSales = {
     `;
 
     if (window.lucide) lucide.createIcons({ root: this.container });
+    this.renderCartTable();
   },
 
   onCarChange(carId) {
@@ -528,82 +558,508 @@ window.ShopSales = {
     this.renderUI();
   },
 
-  onItemProductChange(index, cartonId) {
-    const c = this.cartons.find(x => x.id === Number(cartonId));
-    if (c && this.items[index]) {
-      this.items[index].carton_id = c.id;
-      this.items[index].carton_name = c.carton_name;
-      this.items[index].pieces_per_carton = c.pieces_per_carton;
-      this.items[index].carton_price = c.carton_sale_price;
-      const q = Number(this.items[index].quantity || this.items[index].delivered_cartons) || 1;
-      this.items[index].quantity = q;
-      this.items[index].delivered_cartons = q;
-      this.items[index].ordered_cartons = q;
-      this.items[index].line_total = q * c.carton_sale_price;
-      this.renderUI();
+  renderCartTable() {
+    const tbody = document.getElementById('ss-cart-tbody');
+    const emptyState = document.getElementById('ss-cart-empty-state');
+    const headerTitle = document.getElementById('ss-cart-header-title');
+
+    if (headerTitle) {
+      headerTitle.textContent = `Invoice Items (${this.items.length})`;
     }
-  },
 
-  onRowQtyChange(index, value) {
-    const item = this.items[index];
-    if (!item) return;
+    if (!tbody) return;
 
-    const val = Math.max(1, parseInt(value) || 1);
-    item.quantity = val;
-    item.delivered_cartons = val;
-    item.ordered_cartons = val;
-    item.returned_cartons = 0;
-    item.line_total = val * item.carton_price;
-
-    const totEl = document.getElementById(`ss-row-total-${index}`);
-    if (totEl) totEl.textContent = `Rs. ${Math.round(item.line_total).toLocaleString()}`;
-    this.updateFinancialSummary();
-  },
-
-  stepRowQty(index, delta) {
-    const item = this.items[index];
-    if (!item) return;
-
-    const cur = Number(item.quantity || item.delivered_cartons) || 1;
-    const next = Math.max(1, cur + delta);
-    item.quantity = next;
-    item.delivered_cartons = next;
-    item.ordered_cartons = next;
-    item.returned_cartons = 0;
-    item.line_total = next * item.carton_price;
-
-    const inp = document.getElementById(`ss-qty-${index}`);
-    if (inp) inp.value = next;
-    const totEl = document.getElementById(`ss-row-total-${index}`);
-    if (totEl) totEl.textContent = `Rs. ${Math.round(item.line_total).toLocaleString()}`;
-    this.updateFinancialSummary();
-  },
-
-  onRowPriceChange(index, value) {
-    if (this.items[index]) {
-      this.items[index].carton_price = Number(value) || 0;
-      const q = Number(this.items[index].quantity || this.items[index].delivered_cartons) || 1;
-      this.items[index].line_total = q * this.items[index].carton_price;
-      const totEl = document.getElementById(`ss-row-total-${index}`);
-      if (totEl) totEl.textContent = `Rs. ${Math.round(this.items[index].line_total).toLocaleString()}`;
+    if (this.items.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
       this.updateFinancialSummary();
+      return;
     }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    tbody.innerHTML = this.items.map((item, idx) => {
+      const stock = this.getItemStock(item.carton_id);
+      const subtotal = (Number(item.quantity) || 0) * (Number(item.carton_price) || 0);
+      const discNum = parseFloat(item.discount) || 0;
+      const discountVal = item.discountType === 'percent' 
+        ? (subtotal * discNum / 100) 
+        : (discNum * (Number(item.quantity) || 0));
+      const lineTotal = Math.max(0, subtotal - discountVal);
+      item.line_total = lineTotal;
+
+      return `
+        <tr class="hover:bg-amber-50/40 transition-colors group">
+          <!-- Row Number -->
+          <td class="py-1 px-2 text-center text-xs font-bold text-slate-500 tabular-nums border-r border-slate-200">
+            ${idx + 1}
+          </td>
+
+          <!-- Item Description & Barcode & In-Car Stock -->
+          <td class="py-1 px-3 border-r border-slate-200">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-black text-slate-900 text-xs truncate max-w-[280px]">${item.carton_name}</span>
+              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
+              ${item.pieces_per_carton ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
+              <span class="text-[9px] font-bold ${stock > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-1.5 py-0.2 rounded border tabular-nums ml-auto sm:ml-0">${stock} in stock</span>
+            </div>
+          </td>
+
+          <!-- Qty Input with CTN Unit & Strict Max Stock Clamping -->
+          <td class="py-1 px-2 text-center border-r border-slate-200">
+            <div class="inline-flex items-center justify-center gap-1">
+              <input type="number" 
+                     id="cart-qty-input-${idx}"
+                     value="${item.quantity}"
+                     min="1"
+                     max="${stock}"
+                     step="1"
+                     onkeydown="ShopSales.handleCartKeyDown(event, ${idx}, 'qty')"
+                     oninput="ShopSales.updateCartQty(${idx}, this.value, this)"
+                     onblur="ShopSales.onCartQtyBlur(${idx}, this)"
+                     class="w-14 bg-white/60 focus:bg-amber-100 border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-center font-black text-slate-900 text-xs outline-none transition-all tabular-nums py-0.5 px-1 rounded shadow-2xs">
+              <span class="w-10 text-left text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate shrink-0">CTN</span>
+            </div>
+          </td>
+
+          <!-- Rate (Rs.) Input -->
+          <td class="py-1 px-2 text-right border-r border-slate-200">
+            <div class="inline-flex items-center justify-end">
+              <span class="text-[10px] font-bold text-slate-400 mr-1">Rs.</span>
+              <input type="number" 
+                     id="cart-price-input-${idx}"
+                     value="${item.carton_price}"
+                     step="any"
+                     min="0"
+                     onkeydown="ShopSales.handleCartKeyDown(event, ${idx}, 'price')"
+                     oninput="ShopSales.updateCartPrice(${idx}, this.value)"
+                     class="w-20 bg-white/60 focus:bg-amber-100 border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-right font-black text-slate-900 text-xs outline-none transition-all tabular-nums py-0.5 px-1 rounded shadow-2xs">
+            </div>
+          </td>
+
+          <!-- Item Discount (RS. / %) -->
+          <td class="py-1 px-2 border-r border-slate-200">
+            <div class="flex items-center gap-1 justify-center">
+              <div class="flex p-0.5 shrink-0 gap-0.5">
+                <button type="button" onclick="ShopSales.toggleItemDiscountType(${idx}, 'flat')" class="px-1 py-0.2 text-[9px] font-black rounded ${item.discountType === 'flat' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">RS.</button>
+                <button type="button" onclick="ShopSales.toggleItemDiscountType(${idx}, 'percent')" class="px-1 py-0.2 text-[9px] font-black rounded ${item.discountType === 'percent' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">%</button>
+              </div>
+              <input type="number" 
+                     id="cart-discount-input-${idx}"
+                     value="${item.discount || ''}"
+                     placeholder="0"
+                     min="0"
+                     step="any"
+                     onkeydown="ShopSales.handleCartKeyDown(event, ${idx}, 'discount')"
+                     oninput="ShopSales.updateItemDiscount(${idx}, this.value)"
+                     class="w-14 bg-white/60 focus:bg-amber-100 border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-right font-black text-slate-900 text-xs outline-none transition-all tabular-nums py-0.5 px-1 rounded shadow-2xs">
+            </div>
+          </td>
+
+          <!-- Line Total -->
+          <td class="py-1 px-3 text-right border-r border-slate-200">
+            <p id="cart-line-discount-${idx}" class="text-[9px] font-bold text-rose-500 leading-none mb-0.5" style="display: ${discountVal > 0 ? 'block' : 'none'}">- Rs. ${Math.round(discountVal).toLocaleString()}</p>
+            <p class="text-xs font-black text-slate-900 tabular-nums leading-none" id="cart-line-total-${idx}">Rs. ${Math.round(lineTotal).toLocaleString()}</p>
+          </td>
+
+          <!-- Actions -->
+          <td class="py-1 px-2 text-center">
+            <div class="flex items-center justify-center gap-1">
+              <button type="button" onclick="ShopSales.resetCartPrice(${idx})" class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer" title="Reset Rate to Default">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              </button>
+              <button type="button" onclick="ShopSales.removeRow(${idx})" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Remove Item">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons({ root: tbody });
+    this.updateFinancialSummary();
+  },
+
+  focusCartField(index, fieldName) {
+    const id = `cart-${fieldName}-input-${index}`;
+    const el = document.getElementById(id);
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  },
+
+  focusSearchInput() {
+    const searchInput = document.getElementById('ss-fast-carton-search');
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+  },
+
+  handleCartKeyDown(e, rowIdx, fieldName) {
+    const numRows = this.items.length;
+
+    if (e.key === 'Tab') {
+      return;
+    }
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (fieldName === 'qty') {
+        this.focusCartField(rowIdx, 'price');
+      } else if (fieldName === 'price') {
+        this.focusCartField(rowIdx, 'discount');
+      } else if (fieldName === 'discount') {
+        if (rowIdx < numRows - 1) {
+          this.focusCartField(rowIdx + 1, 'qty');
+        } else {
+          this.focusSearchInput();
+        }
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (fieldName === 'discount') {
+        this.focusCartField(rowIdx, 'price');
+      } else if (fieldName === 'price') {
+        this.focusCartField(rowIdx, 'qty');
+      } else if (fieldName === 'qty') {
+        if (rowIdx > 0) {
+          this.focusCartField(rowIdx - 1, 'discount');
+        } else {
+          this.focusSearchInput();
+        }
+      }
+    } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault();
+      if (rowIdx < numRows - 1) {
+        this.focusCartField(rowIdx + 1, fieldName);
+      } else {
+        this.focusSearchInput();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (rowIdx > 0) {
+        this.focusCartField(rowIdx - 1, fieldName);
+      } else {
+        this.focusSearchInput();
+      }
+    }
+  },
+
+  updateCartQty(index, qty, inputEl) {
+    const item = this.items[index];
+    if (!item) return;
+    const maxStock = this.getItemStock(item.carton_id);
+
+    if (qty === '' || qty === null || qty === undefined) {
+      item.quantity = 0;
+      item.delivered_cartons = 0;
+      item.ordered_cartons = 0;
+      this.updateLineTotal(index);
+      this.updateFinancialSummary();
+      return;
+    }
+
+    let parsed = parseInt(qty, 10);
+    if (isNaN(parsed)) parsed = 1;
+
+    // Strict stock check: qty cannot exceed car stock!
+    if (maxStock > 0 && parsed > maxStock) {
+      parsed = maxStock;
+      if (inputEl) inputEl.value = maxStock;
+      app.showToast(`Quantity limited to vehicle stock (${maxStock} ctns)`, 'warning');
+    } else if (parsed < 1) {
+      parsed = 1;
+      if (inputEl) inputEl.value = 1;
+    }
+
+    item.quantity = parsed;
+    item.delivered_cartons = parsed;
+    item.ordered_cartons = parsed;
+    this.updateLineTotal(index);
+    this.updateFinancialSummary();
+  },
+
+  onCartQtyBlur(index, inputEl) {
+    const item = this.items[index];
+    if (!item) return;
+    const maxStock = this.getItemStock(item.carton_id);
+    let parsed = parseInt(inputEl.value, 10);
+
+    if (isNaN(parsed) || parsed <= 0) {
+      parsed = maxStock > 0 ? 1 : 0;
+      inputEl.value = parsed;
+    } else if (maxStock > 0 && parsed > maxStock) {
+      parsed = maxStock;
+      inputEl.value = maxStock;
+      app.showToast(`Quantity limited to vehicle stock (${maxStock} ctns)`, 'warning');
+    }
+
+    item.quantity = parsed;
+    item.delivered_cartons = parsed;
+    item.ordered_cartons = parsed;
+    this.updateLineTotal(index);
+    this.updateFinancialSummary();
+  },
+
+  updateCartPrice(index, price) {
+    const item = this.items[index];
+    if (!item) return;
+    item.carton_price = parseFloat(price) || 0;
+    this.updateLineTotal(index);
+    this.updateFinancialSummary();
+  },
+
+  resetCartPrice(index) {
+    const item = this.items[index];
+    if (!item) return;
+    item.carton_price = item.original_price || item.carton_sale_price || 0;
+    item.discount = '';
+    item.discountType = 'flat';
+    this.renderCartTable();
+  },
+
+  toggleItemDiscountType(index, type) {
+    if (!this.items[index]) return;
+    this.items[index].discountType = type;
+    this.renderCartTable();
+  },
+
+  updateItemDiscount(index, val) {
+    const item = this.items[index];
+    if (!item) return;
+
+    if (val === '' || val === null || val === undefined || parseFloat(val) === 0) {
+      item.discount = '';
+      const input = document.getElementById(`cart-discount-input-${index}`);
+      if (input && input.value !== '') input.value = '';
+      this.updateLineTotal(index);
+      this.updateFinancialSummary();
+      return;
+    }
+
+    let disc = parseFloat(val);
+    if (isNaN(disc)) disc = 0;
+    const maxVal = item.discountType === 'percent' ? 100 : item.carton_price;
+    if (disc > maxVal) {
+      disc = maxVal;
+      const input = document.getElementById(`cart-discount-input-${index}`);
+      if (input) input.value = disc;
+      item.discount = disc;
+    } else if (disc < 0) {
+      disc = 0;
+      item.discount = '';
+    } else {
+      item.discount = val;
+    }
+
+    this.updateLineTotal(index);
+    this.updateFinancialSummary();
+  },
+
+  updateLineTotal(index) {
+    const item = this.items[index];
+    if (!item) return;
+    const sub = (Number(item.quantity) || 0) * (Number(item.carton_price) || 0);
+    let discAmt = 0;
+    const discNum = parseFloat(item.discount) || 0;
+    if (item.discountType === 'percent') {
+      discAmt = (sub * discNum) / 100;
+    } else {
+      discAmt = discNum * (Number(item.quantity) || 0);
+    }
+    const lineTotal = Math.max(0, sub - discAmt);
+    item.line_total = lineTotal;
+
+    const el = document.getElementById(`cart-line-total-${index}`);
+    const discEl = document.getElementById(`cart-line-discount-${index}`);
+    if (el) el.textContent = `Rs. ${Math.round(lineTotal).toLocaleString()}`;
+    if (discEl) {
+      discEl.textContent = discAmt > 0 ? `- Rs. ${Math.round(discAmt).toLocaleString()}` : '';
+      discEl.style.display = discAmt > 0 ? 'block' : 'none';
+    }
+  },
+
+  clearBill() {
+    if (this.items.length === 0) return;
+    app.showConfirm({
+      title: 'Clear Bill?',
+      message: 'Are you sure you want to clear all items from this bill?',
+      confirmText: 'Clear Items',
+      confirmColor: 'red',
+      onConfirm: () => {
+        this.items = [];
+        this.renderCartTable();
+        this.focusSearchInput();
+      }
+    });
   },
 
   addNewRow() {
-    const selectedCartonIds = new Set(this.items.map(it => it.carton_id));
-    const availableCarton = this.cartons.find(c => !selectedCartonIds.has(c.id));
-    if (!availableCarton) {
-      app.showToast('All available carton products have already been added.', 'info');
-      return;
-    }
-    this.addItemRow(availableCarton.id);
-    this.renderUI();
+    this.addItemRow();
   },
 
   removeRow(index) {
     this.items.splice(index, 1);
-    this.renderUI();
+    this.renderCartTable();
+  },
+
+  handleSearchInput(val) {
+    this.searchQuery = (val || '').trim();
+    const dropdown = document.getElementById('ss-search-dropdown');
+    const clearBtn = document.getElementById('ss-search-clear-btn');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !this.searchQuery);
+
+    if (!this.searchQuery) {
+      if (dropdown) dropdown.classList.add('hidden');
+      this.searchResults = [];
+      return;
+    }
+
+    const q = this.searchQuery.toLowerCase();
+    this.searchResults = (this.cartons || []).filter(c => 
+      (c.carton_name || '').toLowerCase().includes(q) ||
+      (c.barcode || '').toLowerCase().includes(q)
+    );
+
+    this.highlightedSearchIndex = 0;
+    this.renderSearchDropdown();
+  },
+
+  handleSearchFocus() {
+    if (this.searchQuery) {
+      this.handleSearchInput(this.searchQuery);
+    } else {
+      this.searchResults = [...(this.cartons || [])];
+      this.highlightedSearchIndex = 0;
+      this.renderSearchDropdown();
+    }
+  },
+
+  renderSearchDropdown() {
+    const dropdown = document.getElementById('ss-search-dropdown');
+    if (!dropdown) return;
+
+    if (!this.searchResults || this.searchResults.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-4 text-center text-slate-400 text-xs">
+          No carton products match "${this.searchQuery}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    dropdown.innerHTML = this.searchResults.map((item, idx) => {
+      const isAlreadyInCart = this.items.some(c => c.carton_id === item.id);
+      const isHighlighted = idx === this.highlightedSearchIndex && !isAlreadyInCart;
+      const stock = this.getItemStock(item.id);
+      const price = item.carton_sale_price || 0;
+
+      if (isAlreadyInCart) {
+        return `
+          <div class="px-3.5 py-2 flex items-center justify-between border-b border-slate-100 last:border-0 bg-slate-50/80 text-slate-400 cursor-not-allowed select-none opacity-60">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <span class="w-5.5 h-5.5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black shrink-0 font-mono">✓</span>
+              <span class="text-xs font-bold text-slate-500 truncate line-through">${item.carton_name}</span>
+              ${item.pieces_per_carton ? `<span class="text-[10px] text-slate-400 shrink-0">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
+            </div>
+            <div class="flex items-center gap-2.5 shrink-0 text-right">
+              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-600">In Bill</span>
+              <span class="text-xs font-bold tabular-nums text-slate-400">Rs. ${price}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div onmousedown="ShopSales.selectSearchItem(${idx})"
+             class="px-3.5 py-2 flex items-center justify-between border-b border-slate-100 last:border-0 cursor-pointer transition-all ${isHighlighted ? 'bg-amber-600 text-white font-bold shadow-xs' : 'hover:bg-slate-50 text-slate-800'}">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <span class="w-5.5 h-5.5 rounded ${isHighlighted ? 'bg-white/25 text-white border border-white/30' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-black shrink-0 font-mono">${idx + 1}</span>
+            <span class="text-xs font-black truncate ${isHighlighted ? 'text-white' : 'text-slate-900'}">${item.carton_name}</span>
+            ${item.barcode ? `<span class="text-[9px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60 border-amber-400/40' : 'text-slate-600 bg-slate-100 border-slate-300'} px-1 py-0.2 rounded border">#${item.barcode}</span>` : ''}
+            ${item.pieces_per_carton ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
+          </div>
+          <div class="flex items-center gap-3 shrink-0 text-right">
+            <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-emerald-700') : (isHighlighted ? 'text-rose-200' : 'text-rose-600')} tabular-nums">
+              ${stock} in car stock
+            </span>
+            <span class="text-xs font-black tabular-nums ${isHighlighted ? 'text-white' : 'text-slate-900'} min-w-[65px] text-right">
+              Rs. ${price}
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  },
+
+  handleSearchKeyDown(e) {
+    const dropdown = document.getElementById('ss-search-dropdown');
+    const isDropdownOpen = dropdown && !dropdown.classList.contains('hidden');
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!isDropdownOpen) {
+        this.handleSearchFocus();
+        return;
+      }
+      if (this.searchResults && this.searchResults.length > 0) {
+        this.highlightedSearchIndex = (this.highlightedSearchIndex + 1) % this.searchResults.length;
+        this.renderSearchDropdown();
+      } else if (this.items.length > 0) {
+        this.focusCartField(0, 'qty');
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (this.searchResults && this.searchResults.length > 0) {
+        this.highlightedSearchIndex = (this.highlightedSearchIndex - 1 + this.searchResults.length) % this.searchResults.length;
+        this.renderSearchDropdown();
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isDropdownOpen && this.searchResults && this.searchResults[this.highlightedSearchIndex]) {
+        this.selectSearchItem(this.highlightedSearchIndex);
+      } else {
+        const inp = document.getElementById('ss-fast-carton-search');
+        if (inp && inp.value.trim()) {
+          this.handleBarcodeScan(inp.value.trim());
+        }
+      }
+    } else if (e.key === 'Escape') {
+      if (dropdown) dropdown.classList.add('hidden');
+    }
+  },
+
+  selectSearchItem(idx) {
+    const carton = this.searchResults[idx];
+    if (!carton) return;
+    const dropdown = document.getElementById('ss-search-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+    this.searchQuery = '';
+    const inp = document.getElementById('ss-fast-carton-search');
+    if (inp) inp.value = '';
+    const clearBtn = document.getElementById('ss-search-clear-btn');
+    if (clearBtn) clearBtn.classList.add('hidden');
+
+    this.addToCart(carton);
+  },
+
+  clearSearchInput() {
+    this.searchQuery = '';
+    const inp = document.getElementById('ss-fast-carton-search');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+    }
+    const dropdown = document.getElementById('ss-search-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+    const clearBtn = document.getElementById('ss-search-clear-btn');
+    if (clearBtn) clearBtn.classList.add('hidden');
   },
 
   onDiscountChange(val) {
@@ -788,6 +1244,23 @@ window.ShopSales = {
     const shopName = activeShop ? activeShop.name : 'Counter Walk-in Customer';
     const notes = '';
 
+    // Validate quantities against vehicle stock
+    for (const it of this.items) {
+      const stock = this.getItemStock(it.carton_id);
+      const q = Number(it.quantity) || 0;
+      if (q <= 0) {
+        app.showAlert({ title: 'Invalid Quantity', message: `Quantity for <b>${it.carton_name}</b> must be at least 1.` });
+        return;
+      }
+      if (q > stock) {
+        app.showAlert({
+          title: 'Stock Limit Exceeded',
+          message: `Quantity for <b>${it.carton_name}</b> is ${q} ctns, but only <b>${stock} ctns</b> are loaded in ${activeCar ? activeCar.car_number : 'this vehicle'}. Please adjust quantity to ${stock} or less.`
+        });
+        return;
+      }
+    }
+
     const validItems = this.items.map(it => {
       const q = Math.max(1, Number(it.quantity || it.delivered_cartons) || 1);
       return {
@@ -796,7 +1269,10 @@ window.ShopSales = {
         delivered_cartons: q,
         ordered_cartons: q,
         returned_cartons: 0,
-        return_destination: 'car'
+        return_destination: 'car',
+        discount: it.discount || '',
+        discountType: it.discountType || 'flat',
+        line_total: it.line_total
       };
     });
 

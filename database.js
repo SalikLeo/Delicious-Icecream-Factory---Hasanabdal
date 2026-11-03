@@ -3013,6 +3013,57 @@ function loadCarStock(data) {
   }
 }
 
+function unloadCarStock(data) {
+  const carId = Number(data.car_id);
+  const cartonId = Number(data.carton_id);
+  const qty = Number(data.cartons_to_unload);
+
+  if (!carId || !cartonId || isNaN(qty) || qty <= 0) {
+    return { error: 'Invalid car, carton, or quantity specified.' };
+  }
+
+  const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
+  if (!car) return { error: 'Car / Vehicle not found.' };
+
+  const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(cartonId);
+  if (!pc) return { error: 'Packed carton flavor not found.' };
+
+  const ci = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(carId, cartonId);
+  const currentLoaded = ci ? Number(ci.cartons_loaded) : 0;
+  if (!ci || currentLoaded < qty) {
+    return { error: `Cannot unload ${qty} cartons. This vehicle only has ${currentLoaded} loaded.` };
+  }
+
+  const tx = db.transaction(() => {
+    // 1. Deduct from car inventory
+    const newLoaded = currentLoaded - qty;
+    if (newLoaded <= 0) {
+      db.prepare('DELETE FROM car_inventory WHERE car_id = ? AND carton_id = ?').run(carId, cartonId);
+    } else {
+      db.prepare('UPDATE car_inventory SET cartons_loaded = ?, updated_at = CURRENT_TIMESTAMP WHERE car_id = ? AND carton_id = ?')
+        .run(newLoaded, carId, cartonId);
+    }
+
+    // 2. Add back to factory warehouse stock
+    db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+      .run(qty, cartonId);
+  });
+
+  try {
+    tx();
+    return {
+      success: true,
+      carId,
+      cartonId,
+      qtyUnloaded: qty,
+      carton_name: pc.carton_name,
+      car_number: car.car_number
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
 function getCarLoadingBatches(carId = null) {
   let query = `
     SELECT clb.*, c.car_number, c.driver_name
@@ -3616,7 +3667,7 @@ module.exports = {
   // Stage 3: Packed Cartons
   getPackedCartons, getPackedCarton, findCartonByBarcode, savePackedCarton, deletePackedCarton, runCartonPacking, getPackingBatches, deletePackingBatch,
   // Stage 4: Cars & Delivery Loading
-  getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, getCarLoadingBatches, getCarLoadingBatch,
+  getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns
   saveShopDelivery, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
   processShopReturn, getShopReturns, getShopReturn,

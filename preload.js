@@ -124,6 +124,7 @@ contextBridge.exposeInMainWorld('api', {
   deleteCar: (id) => ipcRenderer.invoke('delete-car', id),
   getCarInventory: (carId) => ipcRenderer.invoke('get-car-inventory', carId),
   loadCarStock: (data) => ipcRenderer.invoke('load-car-stock', data),
+  unloadCarStock: (data) => ipcRenderer.invoke('unload-car-stock', data),
   getCarLoadingBatches: (carId) => ipcRenderer.invoke('get-car-loading-batches', carId),
   getCarLoadingBatch: (id) => ipcRenderer.invoke('get-car-loading-batch', id),
 

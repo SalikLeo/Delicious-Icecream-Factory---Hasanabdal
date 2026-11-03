@@ -213,6 +213,7 @@ ipcMain.handle('save-car', (event, data) => db.saveCar(data));
 ipcMain.handle('delete-car', (event, id) => db.deleteCar(id));
 ipcMain.handle('get-car-inventory', (event, carId) => db.getCarInventory(carId));
 ipcMain.handle('load-car-stock', (event, data) => db.loadCarStock(data));
+ipcMain.handle('unload-car-stock', (event, data) => db.unloadCarStock(data));
 ipcMain.handle('get-car-loading-batches', (event, carId) => db.getCarLoadingBatches(carId));
 ipcMain.handle('get-car-loading-batch', (event, id) => db.getCarLoadingBatch(id));
 

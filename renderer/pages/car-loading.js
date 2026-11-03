@@ -586,12 +586,13 @@ window.CarLoading = {
                     ${this.getCarInvSortIcon('carton_sale_price')}
                   </div>
                 </th>
-                <th onclick="CarLoading.toggleCarInvSort('loaded_value')" class="py-2 px-3 text-right cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <th onclick="CarLoading.toggleCarInvSort('loaded_value')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                   <div class="flex items-center justify-end gap-1">
                     <span>Total Value</span>
                     ${this.getCarInvSortIcon('loaded_value')}
                   </div>
                 </th>
+                <th class="py-2 px-3 text-center w-28">Action</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -601,7 +602,15 @@ window.CarLoading = {
                   <td class="py-1.5 px-3 text-center font-mono text-[10px] text-slate-500 border-r border-slate-200">${it.pieces_per_carton} pcs</td>
                   <td class="py-1.5 px-3 text-right font-black text-blue-700 text-xs tabular-nums border-r border-slate-200">${it.cartons_loaded} ctns</td>
                   <td class="py-1.5 px-3 text-right font-mono text-slate-600 text-xs tabular-nums border-r border-slate-200">Rs. ${it.carton_sale_price}</td>
-                  <td class="py-1.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums border-r border-slate-200">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
+                  <td class="py-1.5 px-3 text-center">
+                    <button type="button" onclick="CarLoading.openUnloadModal(${it.carton_id})" 
+                            class="px-2.5 py-1 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-rose-600 rounded-lg text-xs font-bold transition-all inline-flex items-center justify-center gap-1 cursor-pointer shadow-2xs hover:shadow"
+                            title="Remove & Move back to Factory Stock">
+                      <i data-lucide="corner-up-left" class="w-3.5 h-3.5"></i>
+                      <span>Remove</span>
+                    </button>
+                  </td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1048,6 +1057,153 @@ window.CarLoading = {
       await this.loadData();
     } else {
       app.showAlert({ title: 'Error', message: res.error || 'Failed to save car.' });
+    }
+  },
+
+  async openUnloadModal(cartonId) {
+    const activeCar = this.cars.find(c => c.id === this.selectedCarId);
+    if (!activeCar) return;
+
+    const modalEl = document.getElementById('car-modal-container');
+    if (!modalEl) return;
+
+    const inv = await window.api.getCarInventory(activeCar.id) || [];
+    const it = inv.find(x => x.carton_id === cartonId);
+    if (!it || (it.cartons_loaded || 0) <= 0) {
+      app.showAlert({ title: 'Not Loaded', message: 'This carton flavor is no longer loaded in this vehicle.' });
+      return;
+    }
+
+    const carton = (this.cartons || []).find(c => c.id === cartonId);
+    const cartonName = it.carton_name || (carton ? carton.carton_name : 'Carton');
+    const loadedQty = it.cartons_loaded || 0;
+    const warehouseStock = (carton ? carton.factory_carton_stock : it.factory_carton_stock) || 0;
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CarLoading.closeModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
+                <i data-lucide="package-minus" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-black tracking-tight text-white">Remove Cartons from Car</h3>
+                <p class="text-[10px] text-slate-400 font-medium">Return cartons back to factory warehouse stock</p>
+              </div>
+            </div>
+            <button onclick="CarLoading.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          
+          <form onsubmit="CarLoading.handleUnloadSubmit(event)" class="p-6 space-y-4">
+            <input type="hidden" id="unload-car-id" value="${activeCar.id}">
+            <input type="hidden" id="unload-carton-id" value="${cartonId}">
+            
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 font-bold">Delivery Vehicle:</span>
+                <span class="font-black text-slate-900">${activeCar.car_number}</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 font-bold">Item / Flavor:</span>
+                <span class="font-black text-blue-700">${cartonName}</span>
+              </div>
+              <div class="flex justify-between items-center text-xs pt-1.5 border-t border-slate-200">
+                <span class="text-slate-500 font-bold">Currently in Car:</span>
+                <span class="font-black text-blue-800 tabular-nums">${loadedQty} ctns</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 font-bold">Factory Warehouse Stock:</span>
+                <span class="font-black text-purple-700 tabular-nums">${warehouseStock} ctns</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1.5">
+                Cartons to Move Back to Factory Stock *
+              </label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="unload-qty" required min="1" max="${loadedQty}" value="${loadedQty}"
+                       oninput="CarLoading.updateUnloadPreview(${loadedQty}, ${warehouseStock})"
+                       class="flex-1 px-3.5 py-2.5 bg-white border-2 border-rose-300 rounded-xl text-base font-black text-slate-900 outline-none focus:border-rose-500 font-mono text-center">
+                <button type="button" onclick="document.getElementById('unload-qty').value = ${loadedQty}; CarLoading.updateUnloadPreview(${loadedQty}, ${warehouseStock})"
+                        class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black cursor-pointer transition-colors"
+                        title="Unload all cartons">
+                  All (${loadedQty})
+                </button>
+              </div>
+              <p class="text-[10px] text-slate-400 font-medium mt-1">Specify how many cartons to remove from this car and restore to factory inventory.</p>
+            </div>
+
+            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
+              <div class="flex justify-between text-slate-600 font-bold">
+                <span>Car stock after remove:</span>
+                <span class="font-black text-slate-800 tabular-nums" id="unload-car-after">0 ctns</span>
+              </div>
+              <div class="flex justify-between text-slate-600 font-bold">
+                <span>Factory warehouse after:</span>
+                <span class="font-black text-emerald-800 tabular-nums" id="unload-factory-after">${warehouseStock + loadedQty} ctns</span>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button type="button" onclick="CarLoading.closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="submit" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-2 transition-all">
+                <i data-lucide="corner-up-left" class="w-4 h-4"></i> Move Back to Inventory Stock
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+    setTimeout(() => {
+      const inp = document.getElementById('unload-qty');
+      if (inp) { inp.focus(); inp.select(); }
+    }, 50);
+  },
+
+  updateUnloadPreview(loadedQty, warehouseStock) {
+    const qty = Number(document.getElementById('unload-qty')?.value) || 0;
+    const carAfter = Math.max(0, loadedQty - qty);
+    const factoryAfter = warehouseStock + qty;
+    const carAfterEl = document.getElementById('unload-car-after');
+    const factoryAfterEl = document.getElementById('unload-factory-after');
+    if (carAfterEl) carAfterEl.textContent = `${carAfter} ctns`;
+    if (factoryAfterEl) factoryAfterEl.textContent = `${factoryAfter} ctns`;
+  },
+
+  async handleUnloadSubmit(e) {
+    e.preventDefault();
+    const carId = Number(document.getElementById('unload-car-id')?.value);
+    const cartonId = Number(document.getElementById('unload-carton-id')?.value);
+    const qty = Number(document.getElementById('unload-qty')?.value);
+
+    if (!carId || !cartonId || isNaN(qty) || qty <= 0) {
+      app.showAlert({ title: 'Invalid Quantity', message: 'Please enter a valid quantity of cartons to unload.' });
+      return;
+    }
+
+    app.showLoading();
+    try {
+      const res = await window.api.unloadCarStock({
+        car_id: carId,
+        carton_id: cartonId,
+        cartons_to_unload: qty
+      });
+
+      if (res && res.success) {
+        this.closeModal();
+        app.showToast(`Moved ${qty} carton(s) back to factory stock!`, 'success');
+        await this.loadData();
+      } else {
+        app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to unload cartons.' });
+      }
+    } catch (err) {
+      console.error('Unload stock error:', err);
+      app.showAlert({ title: 'Error', message: err.message || 'An unexpected error occurred.' });
+    } finally {
+      app.hideLoading();
     }
   },
 

@@ -69,8 +69,13 @@ const Settings = {
               <!-- Fields -->
               <div class="grid grid-cols-1 gap-4">
                 <div>
-                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Factory / Company Name *</label>
-                  <input type="text" id="set-name" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none">
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold text-slate-400 uppercase">Factory / Company Name *</label>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                      <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> Locked
+                    </span>
+                  </div>
+                  <input type="text" id="set-name" disabled readonly class="w-full bg-slate-100/90 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-600 cursor-not-allowed select-none outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>

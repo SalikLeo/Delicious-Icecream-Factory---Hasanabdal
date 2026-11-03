@@ -129,8 +129,11 @@ contextBridge.exposeInMainWorld('api', {
 
   // Stage 5: Shop Deliveries, Sales & Returns
   saveShopDelivery: (data) => ipcRenderer.invoke('save-shop-delivery', data),
+  processShopReturn: (data) => ipcRenderer.invoke('process-shop-return', data),
   getShopDeliveries: (filters) => ipcRenderer.invoke('get-shop-deliveries', filters),
+  getShopReturns: (deliveryId) => ipcRenderer.invoke('get-shop-returns', deliveryId),
   getShopDelivery: (id) => ipcRenderer.invoke('get-shop-delivery', id),
+  getShopReturn: (id) => ipcRenderer.invoke('get-shop-return', id),
   deleteShopDelivery: (id) => ipcRenderer.invoke('delete-shop-delivery', id),
   receiveShopPayment: (data) => ipcRenderer.invoke('receive-shop-payment', data),
   getShopLedger: (shopId) => ipcRenderer.invoke('get-shop-ledger', shopId),

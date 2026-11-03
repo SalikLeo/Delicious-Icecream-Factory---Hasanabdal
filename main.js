@@ -218,8 +218,11 @@ ipcMain.handle('get-car-loading-batch', (event, id) => db.getCarLoadingBatch(id)
 
 // Stage 5: Shop Deliveries, Sales & Returns
 ipcMain.handle('save-shop-delivery', (event, data) => db.saveShopDelivery(data));
+ipcMain.handle('process-shop-return', (event, data) => db.processShopReturn(data));
 ipcMain.handle('get-shop-deliveries', (event, filters) => db.getShopDeliveries(filters));
+ipcMain.handle('get-shop-returns', (event, deliveryId) => db.getShopReturns(deliveryId));
 ipcMain.handle('get-shop-delivery', (event, id) => db.getShopDelivery(id));
+ipcMain.handle('get-shop-return', (event, id) => db.getShopReturn(id));
 ipcMain.handle('delete-shop-delivery', (event, id) => db.deleteShopDelivery(id));
 ipcMain.handle('receive-shop-payment', (event, data) => db.receiveShopPayment(data));
 ipcMain.handle('get-shop-ledger', (event, shopId) => db.getShopLedger(shopId));

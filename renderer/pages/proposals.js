@@ -559,7 +559,12 @@ window.Proposals = {
             <div class="text-[10px] text-slate-400 leading-tight">${d.shop_phone || d.shop_address || ''}</div>
           </td>
           <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/30 border-r border-slate-200">
-            ${d.total_cartons_delivered || 0}
+            <div>${d.total_cartons_delivered || 0}</div>
+            ${(d.total_cartons_returned || 0) > 0 ? `
+              <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${d.total_cartons_returned} cartons returned">
+                -${d.total_cartons_returned} ret
+              </span>
+            ` : ''}
           </td>
           <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
             Rs. ${Math.round(d.total_amount).toLocaleString()}
@@ -577,6 +582,10 @@ window.Proposals = {
           </td>
           <td class="py-1.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1.5">
+              <button type="button" onclick="ShopSales.openReturnModal(${d.id})"
+                      class="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-[10px] font-black rounded-md flex items-center gap-1 shadow-2xs transition-all cursor-pointer" title="Process Return for this Sale (Stay in car or return to stock)">
+                <i data-lucide="rotate-ccw" class="w-3 h-3 text-slate-950"></i> Return
+              </button>
               <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})"
                       class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-md flex items-center gap-1 shadow-2xs transition-all cursor-pointer">
                 <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print

@@ -2171,6 +2171,35 @@ function createIcecreamFactoryTables() {
       carton_price REAL NOT NULL,
       line_total REAL NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS shop_returns (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      return_no TEXT UNIQUE,
+      delivery_id INTEGER REFERENCES shop_deliveries(id),
+      invoice_no TEXT,
+      shop_id INTEGER REFERENCES shops(id),
+      shop_name TEXT,
+      car_id INTEGER REFERENCES cars(id),
+      car_number TEXT,
+      date TEXT NOT NULL,
+      total_cartons_returned INTEGER DEFAULT 0,
+      total_refund_amount REAL DEFAULT 0,
+      return_destination TEXT DEFAULT 'car',
+      adjustment_type TEXT DEFAULT 'khata',
+      reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS shop_return_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      return_id INTEGER NOT NULL REFERENCES shop_returns(id) ON DELETE CASCADE,
+      delivery_item_id INTEGER,
+      carton_id INTEGER NOT NULL,
+      carton_name TEXT NOT NULL,
+      pieces_per_carton INTEGER DEFAULT 20,
+      returned_cartons INTEGER NOT NULL,
+      carton_price REAL NOT NULL,
+      refund_amount REAL NOT NULL,
+      return_destination TEXT DEFAULT 'car'
+    );
     CREATE TABLE IF NOT EXISTS shop_payments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       shop_id INTEGER NOT NULL REFERENCES shops(id),
@@ -3035,9 +3064,9 @@ function saveShopDelivery(data) {
 
   let subtotal = 0;
   data.items.forEach(it => {
-    const delivered = Number(it.delivered_cartons) || 0;
+    const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
     const price = Number(it.carton_price) || 0;
-    subtotal += delivered * price;
+    subtotal += qty * price;
   });
 
   const totalAmount = Math.max(0, subtotal - discount);
@@ -3079,17 +3108,14 @@ function saveShopDelivery(data) {
     );
     deliveryId = res.lastInsertRowid;
 
-    // 2. Process each item and returns
+    // 2. Process each item (clean normal sale)
     for (const it of data.items) {
       const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(it.carton_id);
       const cartonName = pc ? pc.carton_name : (it.carton_name || 'Ice Cream Carton');
       const pcsPerCarton = pc ? pc.pieces_per_carton : (Number(it.pieces_per_carton) || 20);
-      const ordered = Number(it.ordered_cartons) || Number(it.delivered_cartons) || 0;
-      const delivered = Number(it.delivered_cartons) || 0;
-      const returned = Number(it.returned_cartons) || 0;
-      const returnDest = (it.return_destination || 'car').toLowerCase(); // 'car' or 'stock'
+      const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
       const price = Number(it.carton_price) || 0;
-      const lineTotal = delivered * price;
+      const lineTotal = qty * price;
 
       // Insert item
       db.prepare(`
@@ -3097,49 +3123,31 @@ function saveShopDelivery(data) {
           delivery_id, carton_id, carton_name, pieces_per_carton,
           ordered_cartons, delivered_cartons, returned_cartons, return_destination,
           carton_price, line_total
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, 0, 'car', ?, ?)
       `).run(
         deliveryId,
         it.carton_id,
         cartonName,
         pcsPerCarton,
-        ordered,
-        delivered,
-        returned,
-        returnDest,
+        qty,
+        qty,
         price,
         lineTotal
       );
 
       // Handle stock and car inventory deduction:
       if (car) {
-        if (returnDest === 'car') {
-          // Returned cartons stay loaded inside the car!
-          // Therefore, only the actual delivered/sold cartons are deducted from car!
-          db.prepare(`
-            UPDATE car_inventory 
-            SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
-            WHERE car_id = ? AND carton_id = ?
-          `).run(delivered, car.id, it.carton_id);
-        } else {
-          // Returned cartons are unloaded from car and returned to factory warehouse stock!
-          // All taken out of car is (delivered + returned)
-          db.prepare(`
-            UPDATE car_inventory 
-            SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
-            WHERE car_id = ? AND carton_id = ?
-          `).run(delivered + returned, car.id, it.carton_id);
-
-          // Add returned cartons back into factory warehouse stock!
-          if (returned > 0) {
-            db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
-              .run(returned, it.carton_id);
-          }
-        }
+        db.prepare(`
+          UPDATE car_inventory 
+          SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
+          WHERE car_id = ? AND carton_id = ?
+        `).run(qty, car.id, it.carton_id);
       } else {
-        // Direct warehouse sale: deduct delivered from factory stock
-        db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
-          .run(delivered, it.carton_id);
+        db.prepare(`
+          UPDATE packed_cartons 
+          SET factory_carton_stock = MAX(0, factory_carton_stock - ?)
+          WHERE id = ?
+        `).run(qty, it.carton_id);
       }
     }
 
@@ -3162,11 +3170,144 @@ function saveShopDelivery(data) {
   };
 }
 
+function processShopReturn(data) {
+  if (!data.delivery_id) return { error: 'Delivery ID is required' };
+  if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+    return { error: 'No items specified for return' };
+  }
+
+  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(data.delivery_id);
+  if (!delivery) return { error: 'Sale record not found' };
+
+  const validItems = data.items.filter(it => (Number(it.return_quantity) || 0) > 0);
+  if (validItems.length === 0) {
+    return { error: 'Please enter a return quantity greater than 0 for at least one item' };
+  }
+
+  const date = data.date || new Date().toISOString().split('T')[0];
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_returns WHERE date = ?').get(date).c + 1;
+  const returnNo = `RET-${todayStr}-${String(countToday).padStart(3, '0')}`;
+  const returnDest = (data.return_destination || 'car').toLowerCase(); // 'car' or 'stock'
+  const adjType = data.adjustment_type || 'khata'; // 'khata' or 'cash'
+
+  let totalCartonsReturned = 0;
+  let totalRefund = 0;
+
+  validItems.forEach(it => {
+    const qty = Number(it.return_quantity) || 0;
+    const price = Number(it.carton_price) || 0;
+    totalCartonsReturned += qty;
+    totalRefund += qty * price;
+  });
+
+  let returnId;
+
+  const tx = db.transaction(() => {
+    // 1. Insert return header
+    const res = db.prepare(`
+      INSERT INTO shop_returns (
+        return_no, delivery_id, invoice_no, shop_id, shop_name,
+        car_id, car_number, date, total_cartons_returned, total_refund_amount,
+        return_destination, adjustment_type, reason
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      returnNo,
+      delivery.id,
+      delivery.invoice_no,
+      delivery.shop_id,
+      delivery.shop_name,
+      delivery.car_id,
+      delivery.car_number,
+      date,
+      totalCartonsReturned,
+      totalRefund,
+      returnDest,
+      adjType,
+      data.reason || ''
+    );
+    returnId = res.lastInsertRowid;
+
+    // 2. Process each returned item
+    for (const it of validItems) {
+      const qty = Number(it.return_quantity) || 0;
+      const price = Number(it.carton_price) || 0;
+      const itemRefund = qty * price;
+
+      db.prepare(`
+        INSERT INTO shop_return_items (
+          return_id, carton_id, carton_name, pieces_per_carton,
+          returned_cartons, carton_price, refund_amount, return_destination
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        returnId,
+        it.carton_id,
+        it.carton_name,
+        it.pieces_per_carton || 20,
+        qty,
+        price,
+        itemRefund,
+        returnDest
+      );
+
+      // Update delivery item returned count if matching
+      if (it.delivery_item_id) {
+        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ? WHERE id = ?')
+          .run(qty, it.delivery_item_id);
+      } else {
+        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ? WHERE delivery_id = ? AND carton_id = ?')
+          .run(qty, delivery.id, it.carton_id);
+      }
+
+      // Add inventory back to either the CAR or FACTORY STOCK!
+      if (returnDest === 'car' && delivery.car_id) {
+        // Stays in car: add back to car inventory
+        const existingCarInv = db.prepare('SELECT id FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(delivery.car_id, it.carton_id);
+        if (existingCarInv) {
+          db.prepare('UPDATE car_inventory SET cartons_loaded = cartons_loaded + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+            .run(qty, existingCarInv.id);
+        } else {
+          db.prepare('INSERT INTO car_inventory (car_id, carton_id, cartons_loaded) VALUES (?, ?, ?)')
+            .run(delivery.car_id, it.carton_id, qty);
+        }
+      } else {
+        // Return to factory warehouse stock
+        db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+          .run(qty, it.carton_id);
+      }
+    }
+
+    // 3. Balance / Khata adjustment
+    if (adjType === 'khata' && delivery.shop_id) {
+      db.prepare('UPDATE shops SET amount = MAX(0, amount - ?) WHERE id = ?')
+        .run(totalRefund, delivery.shop_id);
+    }
+  });
+
+  tx();
+  return { success: true, returnId, returnNo, totalRefund, totalCartonsReturned, returnDest };
+}
+
+function getShopReturns(deliveryId = null) {
+  if (deliveryId) {
+    return db.prepare('SELECT * FROM shop_returns WHERE delivery_id = ? ORDER BY id DESC').all(deliveryId);
+  }
+  return db.prepare('SELECT * FROM shop_returns ORDER BY id DESC').all();
+}
+
+function getShopReturn(id) {
+  const ret = db.prepare('SELECT * FROM shop_returns WHERE id = ?').get(id);
+  if (!ret) return null;
+  ret.items = db.prepare('SELECT * FROM shop_return_items WHERE return_id = ?').all(id);
+  return ret;
+}
+
 function getShopDeliveries(filters = {}) {
   let query = `
     SELECT sd.*, 
            (SELECT COUNT(*) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_items_count,
-           (SELECT SUM(sdi.delivered_cartons) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_cartons_delivered
+           (SELECT SUM(sdi.delivered_cartons) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_cartons_delivered,
+           (SELECT SUM(sdi.returned_cartons) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_cartons_returned
     FROM shop_deliveries sd
     WHERE 1=1
   `;
@@ -3448,6 +3589,7 @@ module.exports = {
   getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, getCarLoadingBatches, getCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns
   saveShopDelivery, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
+  processShopReturn, getShopReturns, getShopReturn,
 
   init, getDbPath, getDbPathForBranch, close, backupDatabase, clearAllData,
     addProductStock, getRateHistory, deleteRateHistory, getAllRatesList, markProposalPaid,

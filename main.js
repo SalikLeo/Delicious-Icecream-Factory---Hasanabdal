@@ -23,6 +23,25 @@ function createWindow() {
   mainWindow.maximize();
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
+  const getSavedAppZoom = () => {
+    try {
+      const s = db.getSettings();
+      if (s && s.app_zoom) {
+        const z = parseFloat(s.app_zoom);
+        if (!isNaN(z) && z >= 0.5 && z <= 1.5) return z;
+      }
+    } catch (e) {}
+    return 0.82; // ~18% reduction (ideal 15-20% for laptops)
+  };
+
+  mainWindow.webContents.on('dom-ready', () => {
+    try { mainWindow.webContents.setZoomFactor(getSavedAppZoom()); } catch (e) {}
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    try { mainWindow.webContents.setZoomFactor(getSavedAppZoom()); } catch (e) {}
+  });
+
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
     console.log(`[Renderer] ${message} (${sourceId}:${line})`);
   });
@@ -56,6 +75,16 @@ function createWindow() {
 
     e.preventDefault();
     isQuitting = true;
+
+    // Save final zoom factor on close so next launch remembers exact scale
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        const z = mainWindow.webContents.getZoomFactor();
+        if (z && !isNaN(z) && z >= 0.5 && z <= 1.5) {
+          db.saveSettings({ app_zoom: z.toFixed(2) });
+        }
+      }
+    } catch (err) {}
 
     try {
       // Sync any unsaved localStorage into SQLite store before backup
@@ -473,7 +502,12 @@ ipcMain.handle('print-receipt', async (event, options = {}) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return { success: false, error: 'No active window' };
 
+  const currentZoom = win.webContents.getZoomFactor();
+
   try {
+    if (currentZoom !== 1.0) {
+      win.webContents.setZoomFactor(1.0);
+    }
     const printers = await win.webContents.getPrintersAsync();
     let targetPrinter = options.deviceName;
     
@@ -508,10 +542,16 @@ ipcMain.handle('print-receipt', async (event, options = {}) => {
 
     return new Promise((resolve) => {
       win.webContents.print(printOptions, (success, failureReason) => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.setZoomFactor(currentZoom);
+        }
         resolve({ success, failureReason });
       });
     });
   } catch (err) {
+    if (win && !win.isDestroyed()) {
+      win.webContents.setZoomFactor(currentZoom);
+    }
     console.error('print-receipt error:', err);
     return { success: false, error: err.message };
   }
@@ -521,7 +561,12 @@ ipcMain.handle('print-barcode-stickers', async (event, options = {}) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return { success: false, error: 'No active window' };
 
+  const currentZoom = win.webContents.getZoomFactor();
+
   try {
+    if (currentZoom !== 1.0) {
+      win.webContents.setZoomFactor(1.0);
+    }
     const printers = await win.webContents.getPrintersAsync();
     // Prioritize 4BARCODE 3B-365B / sticker printer first, avoid POS80 receipt printer
     const labelPrinter = options.deviceName || 
@@ -556,12 +601,55 @@ ipcMain.handle('print-barcode-stickers', async (event, options = {}) => {
 
     return new Promise((resolve) => {
       win.webContents.print(printOptions, (success, failureReason) => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.setZoomFactor(currentZoom);
+        }
         resolve({ success, failureReason, deviceName: printOptions.deviceName });
       });
     });
   } catch (err) {
+    if (win && !win.isDestroyed()) {
+      win.webContents.setZoomFactor(currentZoom);
+    }
     console.error('print-barcode-stickers error:', err);
     return { success: false, error: err.message };
   }
 });
 
+// App Zoom Controls IPC
+ipcMain.handle('get-zoom-factor', (event) => {
+  try {
+    const s = db.getSettings();
+    if (s && s.app_zoom) {
+      const z = parseFloat(s.app_zoom);
+      if (!isNaN(z) && z >= 0.5 && z <= 1.5) return z;
+    }
+  } catch (e) {}
+  const win = BrowserWindow.fromWebContents(event.sender);
+  return win ? win.webContents.getZoomFactor() : 0.82;
+});
+
+ipcMain.handle('set-zoom-factor', (event, factor) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const z = Math.min(1.4, Math.max(0.6, parseFloat(factor) || 0.82));
+  if (win && !win.isDestroyed()) {
+    win.webContents.setZoomFactor(z);
+  }
+  try {
+    db.saveSettings({ app_zoom: z.toFixed(2) });
+  } catch (e) {}
+  return z;
+});
+
+ipcMain.handle('restore-app-zoom', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  let z = 0.82;
+  try {
+    const s = db.getSettings();
+    if (s && s.app_zoom) z = parseFloat(s.app_zoom) || 0.82;
+  } catch (e) {}
+  if (win && !win.isDestroyed()) {
+    win.webContents.setZoomFactor(z);
+  }
+  return z;
+});

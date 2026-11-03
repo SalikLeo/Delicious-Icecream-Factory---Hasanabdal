@@ -151,6 +151,64 @@ const Settings = {
             </div>
           </div>
 
+          <!-- Screen Scale & Display Size -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="laptop" class="w-5 h-5 text-blue-600"></i>
+                <div>
+                  <h3 class="font-bold text-base text-slate-800">Screen Scale & Display Size</h3>
+                  <p class="text-[11px] text-slate-400">Scale the app UI to comfortably fit laptop or desktop screens</p>
+                </div>
+              </div>
+              <span id="settings-zoom-display" class="px-2.5 py-1 bg-blue-50 text-blue-700 font-mono font-black text-xs rounded-lg border border-blue-200">
+                82%
+              </span>
+            </div>
+            <div class="p-4 space-y-4">
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Reduces the overall interface size by <b>15% to 20%</b> so that factory tables, production stages, and delivery loading fit without vertical scrolling on smaller laptop displays.
+              </p>
+
+              <!-- Quick Presets -->
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Display Scale Presets</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <button type="button" onclick="app.setZoom(0.80)" data-zoom="0.80" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                    80% <span class="block text-[9.5px] font-normal opacity-80">(Compact Laptop)</span>
+                  </button>
+                  <button type="button" onclick="app.setZoom(0.82)" data-zoom="0.82" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                    82% <span class="block text-[9.5px] font-normal opacity-80">(Laptop Ideal)</span>
+                  </button>
+                  <button type="button" onclick="app.setZoom(0.85)" data-zoom="0.85" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                    85% <span class="block text-[9.5px] font-normal opacity-80">(15% Smaller)</span>
+                  </button>
+                  <button type="button" onclick="app.setZoom(0.90)" data-zoom="0.90" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                    90% <span class="block text-[9.5px] font-normal opacity-80">(Medium)</span>
+                  </button>
+                  <button type="button" onclick="app.setZoom(1.00)" data-zoom="1.00" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer sm:col-span-2">
+                    100% <span class="block text-[9.5px] font-normal opacity-80">(Full Size Desktop Monitor)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fine Tuning Stepper -->
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span class="text-xs text-slate-500 font-medium">Fine adjust (- / +):</span>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="app.adjustZoom(-0.05)" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-lg text-sm cursor-pointer transition-colors">-</button>
+                  <button type="button" onclick="app.adjustZoom(0.05)" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-lg text-sm cursor-pointer transition-colors">+</button>
+                </div>
+              </div>
+
+              <!-- Safe Receipts Notice -->
+              <div class="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-emerald-800 text-xs">
+                <i data-lucide="printer" class="w-4 h-4 shrink-0 text-emerald-600"></i>
+                <span><b>Receipts & Invoices Protected:</b> Thermal receipts and PDF exports always print at 100% normal physical size.</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Backup & Restore -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
@@ -327,6 +385,7 @@ const Settings = {
 
     // Populate Barcode Sticker Printer settings
     await this.refreshPrinters();
+    if (window.app && app.updateZoomUI) app.updateZoomUI(app.currentZoom || 0.82);
     const savedSize = window.storage ? window.storage.get('label_sticker_size') || '38x28' : '38x28';
     const savedMode = window.storage ? window.storage.get('label_print_mode') || 'silent' : 'silent';
     const savedStore = window.storage ? window.storage.get('label_store_name') : null;

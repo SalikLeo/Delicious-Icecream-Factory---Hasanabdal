@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   // Settings
@@ -151,6 +151,14 @@ contextBridge.exposeInMainWorld('api', {
   printReceipt: (options) => ipcRenderer.invoke('print-receipt', options),
   printBarcodeStickers: (options) => ipcRenderer.invoke('print-barcode-stickers', options),
   getPrinters: () => ipcRenderer.invoke('get-printers'),
+
+  // App Zoom & Scale
+  getZoomFactor: () => ipcRenderer.invoke('get-zoom-factor'),
+  setZoomFactor: (factor) => {
+    try { webFrame.setZoomFactor(factor); } catch (e) {}
+    return ipcRenderer.invoke('set-zoom-factor', factor);
+  },
+  restoreAppZoom: () => ipcRenderer.invoke('restore-app-zoom'),
 
   // Global Shortcuts Event
   onTriggerPriceChecker: (callback) => {

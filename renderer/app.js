@@ -24,6 +24,7 @@ const app = {
     this.bindEvents();
     this.initCalculator();
     await this.loadSettings();
+    await this.initZoom();
     this.updateSaleModeUI();
     if (window.lucide) lucide.createIcons();
 
@@ -2475,6 +2476,110 @@ const app = {
         hist.classList.remove('text-emerald-400');
       }, 1200);
     }
+  },
+
+  // App Zoom & Scale Management
+  currentZoom: 0.82,
+  async initZoom() {
+    let savedZoom = null;
+    try {
+      const localVal = localStorage.getItem('app_zoom');
+      if (localVal) {
+        const parsed = parseFloat(localVal);
+        if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 1.5) savedZoom = parsed;
+      }
+    } catch (e) {}
+
+    if (!savedZoom && window.api && window.api.getZoomFactor) {
+      try {
+        savedZoom = await window.api.getZoomFactor();
+      } catch (e) {
+        savedZoom = 0.82;
+      }
+    }
+    if (!savedZoom || isNaN(savedZoom)) savedZoom = 0.82;
+    await this.setZoom(savedZoom, false);
+
+    // Global keyboard shortcuts for zoom (Ctrl +, Ctrl -, Ctrl 0)
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === '=' || e.key === '+' || e.code === 'NumpadAdd') {
+          e.preventDefault();
+          this.adjustZoom(0.05);
+        } else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
+          e.preventDefault();
+          this.adjustZoom(-0.05);
+        } else if (e.key === '0' || e.code === 'Numpad0') {
+          e.preventDefault();
+          this.setZoom(0.82, true);
+        }
+      }
+    });
+  },
+
+  async setZoom(factor, save = true) {
+    const z = Math.min(1.4, Math.max(0.6, Math.round(factor * 100) / 100));
+    this.currentZoom = z;
+    try {
+      localStorage.setItem('app_zoom', z.toFixed(2));
+      if (window.storage && window.storage.set) {
+        window.storage.set('app_zoom', z.toFixed(2));
+      }
+    } catch (e) {}
+
+    if (window.api && window.api.setZoomFactor) {
+      try {
+        await window.api.setZoomFactor(z);
+      } catch (e) {}
+    }
+    this.updateZoomUI(z);
+    if (save) {
+      this.showZoomNotification(z);
+    }
+  },
+
+  async adjustZoom(delta) {
+    await this.setZoom((this.currentZoom || 0.82) + delta, true);
+  },
+
+  updateZoomUI(z) {
+    const percent = Math.round(z * 100);
+    const label = document.getElementById('sidebar-zoom-label');
+    if (label) {
+      label.textContent = `${percent}%`;
+    }
+    const settingsZoomDisplay = document.getElementById('settings-zoom-display');
+    if (settingsZoomDisplay) {
+      settingsZoomDisplay.textContent = `${percent}%`;
+    }
+    document.querySelectorAll('.zoom-preset-btn').forEach(btn => {
+      const bZ = parseFloat(btn.getAttribute('data-zoom'));
+      if (Math.round(bZ * 100) === percent) {
+        btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-sm');
+        btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-200');
+      } else {
+        btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-sm');
+        btn.classList.add('bg-white', 'text-slate-700', 'border-slate-200');
+      }
+    });
+  },
+
+  showZoomNotification(z) {
+    let notif = document.getElementById('zoom-toast-indicator');
+    if (!notif) {
+      notif = document.createElement('div');
+      notif.id = 'zoom-toast-indicator';
+      notif.className = 'fixed bottom-6 right-6 z-[99999] bg-slate-900/95 text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-2xl backdrop-blur-md pointer-events-none transition-opacity duration-300 flex items-center gap-2 border border-slate-700/60';
+      document.body.appendChild(notif);
+    }
+    const percent = Math.round(z * 100);
+    const tag = percent === 82 ? '(Laptop Ideal - 18% smaller)' : (percent === 85 ? '(15% smaller)' : (percent === 100 ? '(Standard Desktop)' : ''));
+    notif.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> App Size: <b class="text-blue-400 font-mono">${percent}%</b> <span class="text-slate-400 font-normal">${tag}</span>`;
+    notif.style.opacity = '1';
+    clearTimeout(this._zoomTimer);
+    this._zoomTimer = setTimeout(() => {
+      if (notif) notif.style.opacity = '0';
+    }, 1600);
   }
 };
 

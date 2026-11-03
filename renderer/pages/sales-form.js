@@ -153,7 +153,7 @@ window.SalesForm = {
             <div class="flex items-center gap-2.5">
               <span class="w-3.5 h-3.5 rounded-full bg-amber-400 shadow-sm"></span>
               <h2 class="text-xl font-black tracking-wide uppercase text-white flex items-center gap-2">
-                ${this.editingSaleId ? `<span class="text-blue-400">EDIT INVOICE</span> #${this.saleNumber}` : (this.settings?.company_name || 'Delicious Ice Cream Factory').replace(/\s*\(Branch \d+\)/i, '').trim()}
+                ${this.editingSaleId ? `<span class="text-blue-400">EDIT INVOICE</span> #${this.saleNumber}` : (this.settings?.company_name || 'Delicious Superstar Foods').replace(/\s*\(Branch \d+\)/i, '').trim()}
               </h2>
             </div>
             <div class="h-4 w-[1px] bg-slate-700"></div>
@@ -2599,11 +2599,10 @@ window.SalesForm = {
         
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 4px;">
-          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${(this.settings.company_name || 'Delicious Ice Cream Factory').replace(/\s*\(Branch \d+\)/i, '').trim()}</h1>
-          <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${this.settings.address || 'Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt'}</div>
+          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${(this.settings.company_name || 'Delicious Superstar Foods').replace(/\s*\(Branch \d+\)/i, '').trim()}</h1>
+          <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${this.settings.address || 'Hasan Abdal'}</div>
           <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
-            <div>M.Ishaq: 0301-2630481</div>
-            <div>Ch. Shakir: 0300-5074410</div>
+            <div>Phone: ${this.settings.phone || '0315-6795995'}</div>
           </div>
           <div style="margin-top: 5px;">
             <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 12px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">SALES INVOICE</span>

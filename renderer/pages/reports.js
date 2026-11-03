@@ -895,8 +895,8 @@ window.Reports = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
@@ -984,8 +984,8 @@ window.Reports = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
@@ -1060,8 +1060,8 @@ window.Reports = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
@@ -1163,8 +1163,8 @@ window.Reports = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Wah Cantt / Taxila'} • Phones: ${s.phone || '0309-5369472'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">

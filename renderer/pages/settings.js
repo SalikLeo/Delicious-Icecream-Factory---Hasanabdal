@@ -75,16 +75,16 @@ const Settings = {
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Contact Phone Numbers</label>
-                    <input type="text" id="set-phone" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none" placeholder="0309-5369472">
+                    <input type="text" id="set-phone" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none" placeholder="0315-6795995">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Website / Tagline</label>
-                    <input type="text" id="set-web" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Quality Ice Cream">
+                    <input type="text" id="set-web" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Delicious Superstar Foods">
                   </div>
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Factory Address</label>
-                  <textarea id="set-address" rows="2" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Industrial Area, Near Barrier 3, Main GT Road, Wah Cantt"></textarea>
+                  <textarea id="set-address" rows="2" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Hasan Abdal"></textarea>
                 </div>
               </div>
             </form>
@@ -313,10 +313,10 @@ const Settings = {
 
   async reloadSettings() {
     const s = await window.api.getSettings();
-    if (document.getElementById('set-name')) document.getElementById('set-name').value = s.company_name || 'Ice Cream Factory';
+    if (document.getElementById('set-name')) document.getElementById('set-name').value = s.company_name || 'Delicious Superstar Foods';
     if (document.getElementById('set-web')) document.getElementById('set-web').value = s.website || '';
-    if (document.getElementById('set-address')) document.getElementById('set-address').value = s.address || 'Industrial Area, Wah Cantt';
-    if (document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone || '0309-5369472';
+    if (document.getElementById('set-address')) document.getElementById('set-address').value = s.address || 'Hasan Abdal';
+    if (document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone || '0315-6795995';
     this.originalLogo = s.logo_path || '';
     this.updateLogoPreview(this.originalLogo);
 
@@ -331,7 +331,7 @@ const Settings = {
 
     if (sizeSelect) sizeSelect.value = savedSize;
     if (modeSelect) modeSelect.value = savedMode;
-    if (storeInput) storeInput.value = savedStore !== null ? savedStore : (s.company_name || 'ISHAQ JADOON TRADERS');
+    if (storeInput) storeInput.value = savedStore !== null ? savedStore : (s.company_name || 'DELICIOUS SUPERSTAR FOODS');
 
 
     const stockPassword = window.storage.get('stock_password') || '';
@@ -452,10 +452,10 @@ const Settings = {
     try {
       const currentSettings = (await window.api.getSettings()) || {};
       const data = {
-        company_name: document.getElementById('set-name')?.value || currentSettings.company_name || 'Ishaq Jadoon Traders',
+        company_name: document.getElementById('set-name')?.value || currentSettings.company_name || 'Delicious Superstar Foods',
         website: document.getElementById('set-web')?.value || '',
-        address: document.getElementById('set-address')?.value || currentSettings.address || 'Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt',
-        phone: document.getElementById('set-phone')?.value || currentSettings.phone || '03095369472, 03299934620',
+        address: document.getElementById('set-address')?.value || currentSettings.address || 'Hasan Abdal',
+        phone: document.getElementById('set-phone')?.value || currentSettings.phone || '0315-6795995',
         logo_path: document.getElementById('set-logo-path')?.value || '',
         qr_path: '',
         qr_text: ''

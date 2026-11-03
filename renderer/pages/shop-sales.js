@@ -754,7 +754,7 @@ window.ShopSales = {
             </div>
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Address / Area</label>
-              <input type="text" id="qs-address" placeholder="e.g. Main GT Road, Wah Cantt..."
+              <input type="text" id="qs-address" placeholder="e.g. Main GT Road, Hasan Abdal..."
                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
             </div>
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -866,10 +866,10 @@ window.ShopSales = {
     if (!delivery) return;
 
     const settings = app.settings || {};
-    const company = settings.company_name || 'Ice Cream Factory';
-    const phone = settings.phone || '0301-2630481';
-    const address = settings.address || 'Near CB Plaza, Barrier 3, GT Road, Wah Cantt';
-    const tagline = settings.tagline || 'Fresh & Pure Ice Cream Production & Wholesale Distribution';
+    const company = settings.company_name || 'Delicious Superstar Foods';
+    const phone = settings.phone || '0315-6795995';
+    const address = settings.address || 'Hasan Abdal';
+    const tagline = settings.tagline || 'Delicious Superstar Foods & Ice Cream Products';
 
     const items = delivery.items || [];
     const totalDelivered = items.reduce((sum, it) => sum + it.delivered_cartons, 0);
@@ -901,7 +901,7 @@ window.ShopSales = {
           <div style="text-align: right; line-height: 1.45;">
             <div><strong>Shop / Customer:</strong> <span style="font-weight: 800;">${delivery.shop_name}</span></div>
             <div><strong>Contact:</strong> ${delivery.shop_phone || 'Walk-in'}</div>
-            <div><strong>Area / Address:</strong> ${delivery.shop_address || 'Wah / Taxila'}</div>
+            <div><strong>Area / Address:</strong> ${delivery.shop_address || 'Hasan Abdal'}</div>
             <div><strong>Payment Mode:</strong> ${delivery.payment_method || 'Cash'}</div>
           </div>
         </div>

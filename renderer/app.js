@@ -233,7 +233,7 @@ const app = {
     if (settings.company_name) {
       title.textContent = settings.company_name.replace(/\s*\(Branch \d+\)/i, '').trim();
     } else {
-      title.textContent = 'Delicious Ice Cream Factory';
+      title.textContent = 'Delicious Superstar Foods';
     }
   },
 
@@ -1600,7 +1600,7 @@ const app = {
     sizePreset: '38x28',
     widthMm: 38.1,
     heightMm: 27.94,
-    storeName: 'ISHAQ JADOON TRADERS',
+    storeName: 'DELICIOUS SUPERSTAR FOODS',
     showStore: true,
     showName: true,
     showPrice: true,
@@ -1622,9 +1622,9 @@ const app = {
     if (!storeTitle) {
       try {
         const settings = await window.api.getSettings();
-        storeTitle = (settings?.company_name || 'Delicious Ice Cream Factory').replace(/\s*\(Branch \d+\)/i, '').trim();
+        storeTitle = (settings?.company_name || 'Delicious Superstar Foods').replace(/\s*\(Branch \d+\)/i, '').trim();
       } catch (e) {
-        storeTitle = 'Delicious Ice Cream Factory';
+        storeTitle = 'Delicious Superstar Foods';
       }
     }
 
@@ -1905,7 +1905,7 @@ const app = {
     const showPrice = document.getElementById('bsm-toggle-price')?.checked ?? true;
     const showBc = document.getElementById('bsm-toggle-barcode')?.checked ?? true;
 
-    const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || 'ISHAQ JADOON TRADERS';
+    const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || 'DELICIOUS SUPERSTAR FOODS';
     if (window.storage) window.storage.set('label_store_name', storeName);
 
     const storeEl = document.getElementById('bsm-pv-store');
@@ -2076,7 +2076,7 @@ const app = {
     const showName = document.getElementById('bsm-toggle-item-name')?.checked ?? true;
     const showPrice = document.getElementById('bsm-toggle-price')?.checked ?? true;
     const showBc = document.getElementById('bsm-toggle-barcode')?.checked ?? true;
-    const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || 'ISHAQ JADOON TRADERS';
+    const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || 'DELICIOUS SUPERSTAR FOODS';
     const price = Number(item.retail_price || item.sale_price || 0);
 
     // 1. Immediately hide the modal and remove any toasts so Chromium NEVER prints them

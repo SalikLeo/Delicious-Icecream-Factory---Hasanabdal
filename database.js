@@ -5,14 +5,46 @@ const { app } = require('electron');
 
 let db;
 function getDbPath() {
-  const filename = 'ishaq_jadoon.db';
+  const newFilename = 'delicious_superstar_foods.db';
+  let targetDir;
   if (app && typeof app.getPath === 'function') {
-    return path.join(app.getPath('userData'), filename);
+    targetDir = app.getPath('userData');
+  } else {
+    const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library/Application Support') : path.join(process.env.HOME, '.config'));
+    targetDir = path.join(appData, 'delicious-superstar-foods');
   }
-  const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library/Application Support') : path.join(process.env.HOME, '.config'));
-  const dir = path.join(appData, 'ishaq-jadoon-traders');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return path.join(dir, filename);
+  if (!fs.existsSync(targetDir)) {
+    try { fs.mkdirSync(targetDir, { recursive: true }); } catch (e) {}
+  }
+
+  const targetPath = path.join(targetDir, newFilename);
+
+  // Automatic Migration from old location to ensure no data loss
+  if (!fs.existsSync(targetPath)) {
+    const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library/Application Support') : path.join(process.env.HOME, '.config'));
+    const oldDbPath = path.join(appData, 'ishaq-jadoon-traders', 'ishaq_jadoon.db');
+    const sameDirLegacy = path.join(targetDir, 'ishaq_jadoon.db');
+    
+    if (fs.existsSync(oldDbPath)) {
+      try {
+        fs.copyFileSync(oldDbPath, targetPath);
+        if (fs.existsSync(oldDbPath + '-wal')) fs.copyFileSync(oldDbPath + '-wal', targetPath + '-wal');
+        if (fs.existsSync(oldDbPath + '-shm')) fs.copyFileSync(oldDbPath + '-shm', targetPath + '-shm');
+        console.log('[Database] Seamlessly migrated database from ishaq-jadoon-traders to', targetPath);
+      } catch (err) {
+        console.warn('[Database] Migration copy warning, using old path:', err);
+        return oldDbPath;
+      }
+    } else if (fs.existsSync(sameDirLegacy)) {
+      try {
+        fs.copyFileSync(sameDirLegacy, targetPath);
+      } catch (err) {
+        return sameDirLegacy;
+      }
+    }
+  }
+
+  return targetPath;
 }
 
 function getDbPathForBranch() {
@@ -343,7 +375,7 @@ function createTables() {
     owner_name TEXT, 
     phone TEXT, 
     address TEXT, 
-    city TEXT DEFAULT 'Wah Cantt', 
+    city TEXT DEFAULT 'Hasan Abdal', 
     amount REAL DEFAULT 0, 
     notes TEXT, 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -353,7 +385,7 @@ function createTables() {
   try {
     const shopCols = db.prepare("PRAGMA table_info(shops)").all().map(c => c.name);
     if (!shopCols.includes('owner_name')) db.exec('ALTER TABLE shops ADD COLUMN owner_name TEXT');
-    if (!shopCols.includes('city')) db.exec("ALTER TABLE shops ADD COLUMN city TEXT DEFAULT 'Wah Cantt'");
+    if (!shopCols.includes('city')) db.exec("ALTER TABLE shops ADD COLUMN city TEXT DEFAULT 'Hasan Abdal'");
     if (!shopCols.includes('notes')) db.exec('ALTER TABLE shops ADD COLUMN notes TEXT');
     if (!shopCols.includes('amount')) db.exec('ALTER TABLE shops ADD COLUMN amount REAL DEFAULT 0');
   } catch(e) {}
@@ -383,21 +415,17 @@ function createTables() {
 
 function seedInitialData() {
   try {
-    const defaultCompanyName = 'Delicious Ice Cream Factory - Hasanabdal';
+    const defaultCompanyName = 'Delicious Superstar Foods';
+    const defaultAddress = 'Hasan Abdal';
+    const defaultPhone = '0315-6795995';
+    const defaultTagline = 'Delicious Superstar Foods & Ice Cream Products';
 
-    // Ensure default company settings
-    const existingCompany = db.prepare("SELECT value FROM settings WHERE key = 'company_name'").get();
-    if (!existingCompany || !existingCompany.value || existingCompany.value === 'Ultimate Marketing' || existingCompany.value === 'Ishaq Jadoon Traders' || existingCompany.value.toLowerCase().includes('baba') || existingCompany.value.toLowerCase().includes('waziristan') || /\(Branch \d+\)/i.test(existingCompany.value)) {
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_name', ?)").run(defaultCompanyName);
-    }
+    // Update settings table with new branding
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_name', ?)").run(defaultCompanyName);
     db.prepare("DELETE FROM settings WHERE key IN ('branch_id', 'branch_name')").run();
-    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('address', ?)").run('Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt');
-    
-    // Check phone
-    const existingPhone = db.prepare("SELECT value FROM settings WHERE key = 'phone'").get();
-    if (!existingPhone || !existingPhone.value || existingPhone.value.includes('0312') || existingPhone.value.includes('Kaleem') || existingPhone.value.includes('03095369472')) {
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('phone', ?)").run('M.Ishaq 0301-2630481, Ch. Shakir 0300-5074410');
-    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('address', ?)").run(defaultAddress);
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('phone', ?)").run(defaultPhone);
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('tagline', ?)").run(defaultTagline);
 
     // Clean up stale logo if it belongs to Baba Waziristan or temporary downloads
     const existingLogo = db.prepare("SELECT value FROM settings WHERE key = 'logo_path'").get();
@@ -410,14 +438,12 @@ function seedInitialData() {
       db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('logo_path', ?)").run('');
     }
 
-    db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('tagline', ?)").run('Wholesale & Retail General Merchants');
-
     // Default auto backup directory in Documents
     const defaultBackupDir = (app && typeof app.getPath === 'function') 
-      ? path.join(app.getPath('documents'), 'Ishaq Jadoon Traders Backups')
-      : path.join(require('os').homedir(), 'Documents', 'Ishaq Jadoon Traders Backups');
+      ? path.join(app.getPath('documents'), 'Delicious Superstar Foods Backups')
+      : path.join(require('os').homedir(), 'Documents', 'Delicious Superstar Foods Backups');
     const existingBackupDir = db.prepare("SELECT value FROM settings WHERE key = 'auto_backup_dir'").get();
-    if (!existingBackupDir || !existingBackupDir.value) {
+    if (!existingBackupDir || !existingBackupDir.value || existingBackupDir.value.includes('Ishaq Jadoon') || existingBackupDir.value.includes('Ice Cream Factory')) {
       db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('auto_backup_dir', ?)").run(defaultBackupDir);
     }
     try {

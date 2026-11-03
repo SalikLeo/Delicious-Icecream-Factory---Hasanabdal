@@ -1,7 +1,7 @@
 {
-  "name": "delicious-icecream-factory",
+  "name": "delicious-superstar-foods",
   "version": "1.0.0",
-  "description": "Delicious Ice Cream Factory Management System - Hasanabdal",
+  "description": "Delicious Superstar Foods Management System - Hasan Abdal",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -22,8 +22,8 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.delicious.icecreamfactory",
-    "productName": "Delicious Ice Cream Factory",
+    "appId": "com.delicious.superstarfoods",
+    "productName": "Delicious Superstar Foods",
     "win": {
       "target": "nsis"
     },

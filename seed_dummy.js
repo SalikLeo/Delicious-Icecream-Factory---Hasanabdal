@@ -30,9 +30,9 @@ app.whenReady().then(() => {
 
   // 2. Settings
   db.exec(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`);
-  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_name', ?)").run('Ishaq Jadoon Traders');
-  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('address', ?)").run('Near CB Plaza, Barrier 3, Main GT Road, Wah Cantt');
-  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('phone', ?)").run('M.Ishaq 0301-2630481, Ch. Shakir 0300-5074410');
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('company_name', ?)").run('Delicious Superstar Foods');
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('address', ?)").run('Hasan Abdal');
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('phone', ?)").run('0315-6795995');
 
   // 3. Employees
   db.exec(`CREATE TABLE IF NOT EXISTS employees (

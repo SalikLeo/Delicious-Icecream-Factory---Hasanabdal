@@ -1002,7 +1002,7 @@ window.CarLoading = {
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Delivery Route / Area</label>
-                <input type="text" id="car-area" value="${car.area || ''}" placeholder="e.g. Wah & Taxila..."
+                <input type="text" id="car-area" value="${car.area || ''}" placeholder="e.g. Hasan Abdal & Attock..."
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
               </div>
             </div>
@@ -1082,7 +1082,7 @@ window.CarLoading = {
     const totalValue = loadedItems.reduce((sum, it) => sum + (it.loaded_value || 0), 0);
 
     const settings = app.settings || {};
-    const company = settings.company_name || 'Ice Cream Factory';
+    const company = settings.company_name || 'Delicious Superstar Foods';
     const date = new Date().toLocaleDateString('en-GB');
 
     const html = `
@@ -1158,7 +1158,7 @@ window.CarLoading = {
     if (!batch) return;
 
     const settings = app.settings || {};
-    const company = settings.company_name || 'Ice Cream Factory';
+    const company = settings.company_name || 'Delicious Superstar Foods';
     const totalVal = (batch.items || []).reduce((sum, it) => sum + (it.cartons_loaded * (it.sale_price || 0)), 0);
 
     const html = `

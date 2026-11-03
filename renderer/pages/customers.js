@@ -143,7 +143,7 @@ window.Customers = {
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">City / Area</label>
-                <input type="text" id="sf-city" placeholder="e.g. Wah Cantt, Taxila"
+                <input type="text" id="sf-city" placeholder="e.g. Hasan Abdal, Attock"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
               </div>
               <div>
@@ -560,7 +560,7 @@ window.Customers = {
       if (fName) fName.value = '';
       if (fOwner) fOwner.value = '';
       if (fPhone) fPhone.value = '';
-      if (fCity) fCity.value = 'Wah Cantt';
+      if (fCity) fCity.value = 'Hasan Abdal';
       if (fAmount) fAmount.value = '0';
       if (fAddress) fAddress.value = '';
       if (fNotes) fNotes.value = '';
@@ -590,7 +590,7 @@ window.Customers = {
         name: document.getElementById('sf-name')?.value?.trim(),
         owner_name: document.getElementById('sf-owner')?.value?.trim(),
         phone: document.getElementById('sf-phone')?.value?.trim(),
-        city: document.getElementById('sf-city')?.value?.trim() || 'Wah Cantt',
+        city: document.getElementById('sf-city')?.value?.trim() || 'Hasan Abdal',
         amount: Number(document.getElementById('sf-amount')?.value) || 0,
         address: document.getElementById('sf-address')?.value?.trim(),
         notes: document.getElementById('sf-notes')?.value?.trim()
@@ -817,8 +817,8 @@ window.Customers = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Wah Cantt / Taxila'} • Phone: ${settings.phone || '0309-5369472'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Hasan Abdal'} • Phone: ${settings.phone || '0315-6795995'}</div>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
@@ -914,8 +914,8 @@ window.Customers = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'ICE CREAM FACTORY'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Wah Cantt / Taxila'} • Phone: ${settings.phone || '0309-5369472'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Hasan Abdal'} • Phone: ${settings.phone || '0315-6795995'}</div>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">

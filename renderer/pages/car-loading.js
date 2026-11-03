@@ -152,7 +152,7 @@ window.CarLoading = {
             <p class="text-xs text-slate-300 font-medium">Load packed cartons into delivery cars/vans. Always know what is loaded in each car right now.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
-            <button onclick="CarLoading.switchTab('dispatch')" class="px-5 py-2.5 bg-blue-500 hover:bg-blue-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+            <button onclick="CarLoading.switchTab('dispatch')" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
               <i data-lucide="package-check" class="w-4 h-4"></i> Load Stock into Car
             </button>
             <button onclick="CarLoading.openCarModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer">

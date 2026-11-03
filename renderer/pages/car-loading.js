@@ -592,7 +592,7 @@ window.CarLoading = {
                     ${this.getCarInvSortIcon('loaded_value')}
                   </div>
                 </th>
-                <th class="py-2 px-3 text-center w-28">Action</th>
+                <th class="py-2 px-2 text-center w-14">Action</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -603,12 +603,11 @@ window.CarLoading = {
                   <td class="py-1.5 px-3 text-right font-black text-blue-700 text-xs tabular-nums border-r border-slate-200">${it.cartons_loaded} ctns</td>
                   <td class="py-1.5 px-3 text-right font-mono text-slate-600 text-xs tabular-nums border-r border-slate-200">Rs. ${it.carton_sale_price}</td>
                   <td class="py-1.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums border-r border-slate-200">Rs. ${Math.round(it.loaded_value).toLocaleString()}</td>
-                  <td class="py-1.5 px-3 text-center">
-                    <button type="button" onclick="CarLoading.openUnloadModal(${it.carton_id})" 
-                            class="px-2.5 py-1 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-rose-600 rounded-lg text-xs font-bold transition-all inline-flex items-center justify-center gap-1 cursor-pointer shadow-2xs hover:shadow"
-                            title="Remove & Move back to Factory Stock">
-                      <i data-lucide="corner-up-left" class="w-3.5 h-3.5"></i>
-                      <span>Remove</span>
+                  <td class="py-1.5 px-2 text-center">
+                    <button type="button" onclick="CarLoading.openUnloadModal(${it.carton_id})"
+                            class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
+                            title="Remove carton from car & move back to factory stock">
+                      <i data-lucide="package-minus" class="w-3.5 h-3.5"></i>
                     </button>
                   </td>
                 </tr>
@@ -1123,11 +1122,19 @@ window.CarLoading = {
                 Cartons to Move Back to Factory Stock *
               </label>
               <div class="flex items-center gap-2">
+                <button type="button" onclick="CarLoading.stepUnloadQty(-1, ${loadedQty}, ${warehouseStock})"
+                        class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all border border-slate-200 shadow-2xs">
+                  <i data-lucide="minus" class="w-4 h-4"></i>
+                </button>
                 <input type="number" id="unload-qty" required min="1" max="${loadedQty}" value="${loadedQty}"
                        oninput="CarLoading.updateUnloadPreview(${loadedQty}, ${warehouseStock})"
                        class="flex-1 px-3.5 py-2.5 bg-white border-2 border-rose-300 rounded-xl text-base font-black text-slate-900 outline-none focus:border-rose-500 font-mono text-center">
+                <button type="button" onclick="CarLoading.stepUnloadQty(1, ${loadedQty}, ${warehouseStock})"
+                        class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all border border-slate-200 shadow-2xs">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
                 <button type="button" onclick="document.getElementById('unload-qty').value = ${loadedQty}; CarLoading.updateUnloadPreview(${loadedQty}, ${warehouseStock})"
-                        class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black cursor-pointer transition-colors"
+                        class="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-black cursor-pointer transition-colors shadow-2xs"
                         title="Unload all cartons">
                   All (${loadedQty})
                 </button>
@@ -1161,6 +1168,16 @@ window.CarLoading = {
       const inp = document.getElementById('unload-qty');
       if (inp) { inp.focus(); inp.select(); }
     }, 50);
+  },
+
+  stepUnloadQty(delta, maxQty, warehouseStock) {
+    const inp = document.getElementById('unload-qty');
+    if (!inp) return;
+    let val = (parseInt(inp.value, 10) || 0) + delta;
+    if (val < 1) val = 1;
+    if (val > maxQty) val = maxQty;
+    inp.value = val;
+    this.updateUnloadPreview(maxQty, warehouseStock);
   },
 
   updateUnloadPreview(loadedQty, warehouseStock) {

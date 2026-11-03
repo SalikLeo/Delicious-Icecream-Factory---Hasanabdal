@@ -3016,48 +3016,59 @@ function loadCarStock(data) {
 function unloadCarStock(data) {
   const carId = Number(data.car_id);
   const cartonId = Number(data.carton_id);
-  const qty = Number(data.cartons_to_unload);
-
-  if (!carId || !cartonId || isNaN(qty) || qty <= 0) {
-    return { error: 'Invalid car, carton, or quantity specified.' };
-  }
+  const qty = Math.max(1, parseInt(data.cartons_to_unload) || 1);
 
   const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
-  if (!car) return { error: 'Car / Vehicle not found.' };
+  if (!car) return { error: 'Vehicle not found' };
 
   const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(cartonId);
-  if (!pc) return { error: 'Packed carton flavor not found.' };
+  if (!pc) return { error: 'Carton product not found' };
 
-  const ci = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(carId, cartonId);
-  const currentLoaded = ci ? Number(ci.cartons_loaded) : 0;
-  if (!ci || currentLoaded < qty) {
-    return { error: `Cannot unload ${qty} cartons. This vehicle only has ${currentLoaded} loaded.` };
+  const inv = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(carId, cartonId);
+  if (!inv || (inv.cartons_loaded || 0) < qty) {
+    return { error: `Cannot unload ${qty} cartons. Vehicle only has ${inv ? inv.cartons_loaded : 0} cartons loaded.` };
   }
+
+  const date = data.date || new Date().toISOString().split('T')[0];
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
+  const unloadNo = `UNLOAD-${todayStr}-${String(countToday).padStart(3, '0')}`;
 
   const tx = db.transaction(() => {
     // 1. Deduct from car inventory
-    const newLoaded = currentLoaded - qty;
-    if (newLoaded <= 0) {
-      db.prepare('DELETE FROM car_inventory WHERE car_id = ? AND carton_id = ?').run(carId, cartonId);
-    } else {
-      db.prepare('UPDATE car_inventory SET cartons_loaded = ?, updated_at = CURRENT_TIMESTAMP WHERE car_id = ? AND carton_id = ?')
-        .run(newLoaded, carId, cartonId);
-    }
+    db.prepare(`
+      UPDATE car_inventory 
+      SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP 
+      WHERE car_id = ? AND carton_id = ?
+    `).run(qty, carId, cartonId);
 
-    // 2. Add back to factory warehouse stock
+    // 2. Add back to packed_cartons factory warehouse stock
     db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
       .run(qty, cartonId);
+
+    // 3. Log unloading batch for audit trail
+    const batchRes = db.prepare(`
+      INSERT INTO car_loading_batches (dispatch_no, car_id, date, total_cartons, notes)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(unloadNo, carId, date, -qty, data.notes || `Moved ${qty} ctns of ${pc.carton_name} back to factory stock`);
+
+    db.prepare(`
+      INSERT INTO car_loading_items (dispatch_id, carton_id, carton_name, pieces_per_carton, cartons_loaded, sale_price)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(batchRes.lastInsertRowid, pc.id, pc.carton_name, pc.pieces_per_carton, -qty, pc.carton_sale_price);
   });
 
   try {
     tx();
-    return {
-      success: true,
-      carId,
-      cartonId,
-      qtyUnloaded: qty,
-      carton_name: pc.carton_name,
-      car_number: car.car_number
+    return { 
+      success: true, 
+      carId, 
+      cartonId, 
+      qty, 
+      carton_name: pc.carton_name, 
+      car_number: car.car_number,
+      new_car_stock: Math.max(0, inv.cartons_loaded - qty),
+      new_warehouse_stock: (pc.factory_carton_stock || 0) + qty
     };
   } catch (err) {
     return { error: err.message };

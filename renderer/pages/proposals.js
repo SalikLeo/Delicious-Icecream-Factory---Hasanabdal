@@ -481,7 +481,7 @@ window.Proposals = {
       if (sf === 'invoice') return so * (a.invoice_no || '').localeCompare(b.invoice_no || '');
       if (sf === 'car_driver') return so * ((a.car_number || '') + (a.driver_name || '')).localeCompare((b.car_number || '') + (b.driver_name || ''));
       if (sf === 'shop') return so * (a.shop_name || '').localeCompare(b.shop_name || '');
-      if (sf === 'cartons') return so * ((a.total_cartons_delivered || 0) - (b.total_cartons_delivered || 0));
+      if (sf === 'cartons') return so * (((a.total_cartons_delivered || 0) - (a.total_cartons_returned || 0)) - ((b.total_cartons_delivered || 0) - (b.total_cartons_returned || 0)));
       if (sf === 'total') return so * ((a.total_amount || 0) - (b.total_amount || 0));
       if (sf === 'received') return so * ((a.received_amount || 0) - (b.received_amount || 0));
       if (sf === 'balance') return so * ((a.remaining_balance || 0) - (b.remaining_balance || 0));
@@ -502,7 +502,7 @@ window.Proposals = {
     let totalDue = 0;
 
     this.filteredDeliveries.forEach(d => {
-      totalCartons += (d.total_cartons_delivered || 0);
+      totalCartons += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
       totalSales += (d.total_amount || 0);
       totalCash += (d.received_amount || 0);
       totalDue += (d.remaining_balance || 0);
@@ -559,9 +559,9 @@ window.Proposals = {
             <div class="text-[10px] text-slate-400 leading-tight">${d.shop_phone || d.shop_address || ''}</div>
           </td>
           <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/30 border-r border-slate-200">
-            <div>${d.total_cartons_delivered || 0}</div>
+            <div>${Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0))}</div>
             ${(d.total_cartons_returned || 0) > 0 ? `
-              <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${d.total_cartons_returned} cartons returned">
+              <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${d.total_cartons_returned} cartons returned (orig: ${d.total_cartons_delivered})">
                 -${d.total_cartons_returned} ret
               </span>
             ` : ''}

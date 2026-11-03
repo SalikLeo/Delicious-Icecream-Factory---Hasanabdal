@@ -3250,13 +3250,13 @@ function processShopReturn(data) {
         returnDest
       );
 
-      // Update delivery item returned count if matching
+      // Update delivery item returned count and line total
       if (it.delivery_item_id) {
-        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ? WHERE id = ?')
-          .run(qty, it.delivery_item_id);
+        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ?, line_total = MAX(0, line_total - ?) WHERE id = ?')
+          .run(qty, itemRefund, it.delivery_item_id);
       } else {
-        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ? WHERE delivery_id = ? AND carton_id = ?')
-          .run(qty, delivery.id, it.carton_id);
+        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ?, line_total = MAX(0, line_total - ?) WHERE delivery_id = ? AND carton_id = ?')
+          .run(qty, itemRefund, delivery.id, it.carton_id);
       }
 
       // Add inventory back to either the CAR or FACTORY STOCK!
@@ -3277,15 +3277,45 @@ function processShopReturn(data) {
       }
     }
 
-    // 3. Balance / Khata adjustment
-    if (adjType === 'khata' && delivery.shop_id) {
-      db.prepare('UPDATE shops SET amount = MAX(0, amount - ?) WHERE id = ?')
-        .run(totalRefund, delivery.shop_id);
+    // 3. Reduce sale amount from shop_deliveries
+    const discount = Number(delivery.discount) || 0;
+    const newSubtotal = Math.max(0, (Number(delivery.subtotal) || Number(delivery.total_amount)) - totalRefund);
+    const newTotalAmount = Math.max(0, newSubtotal - discount);
+
+    let newReceivedAmount = Number(delivery.received_amount) || 0;
+    let newRemainingBalance = Number(delivery.remaining_balance) || 0;
+
+    if (adjType === 'cash') {
+      // Cash refund given back to customer from sale proceeds
+      newReceivedAmount = Math.max(0, newReceivedAmount - totalRefund);
+      newRemainingBalance = Math.max(0, newTotalAmount - newReceivedAmount);
+    } else {
+      // Khata adjustment: reduce bill debt balance first
+      newRemainingBalance = Math.max(0, newRemainingBalance - totalRefund);
+      // Reduce the shop's ledger balance
+      if (delivery.shop_id) {
+        db.prepare('UPDATE shops SET amount = MAX(0, amount - ?) WHERE id = ?')
+          .run(totalRefund, delivery.shop_id);
+      }
     }
+
+    db.prepare(`
+      UPDATE shop_deliveries 
+      SET subtotal = ?, total_amount = ?, received_amount = ?, remaining_balance = ? 
+      WHERE id = ?
+    `).run(newSubtotal, newTotalAmount, newReceivedAmount, newRemainingBalance, delivery.id);
   });
 
   tx();
-  return { success: true, returnId, returnNo, totalRefund, totalCartonsReturned, returnDest };
+  return { 
+    success: true, 
+    returnId, 
+    returnNo, 
+    totalRefund, 
+    totalCartonsReturned, 
+    returnDest,
+    newTotalAmount: Math.max(0, (delivery.total_amount || 0) - totalRefund)
+  };
 }
 
 function getShopReturns(deliveryId = null) {
@@ -3487,7 +3517,7 @@ function getCarSalesReport(carId, fromDate = null, toDate = null) {
   deliveries.forEach(d => {
     totalSales += d.total_amount || 0;
     totalReceived += d.received_amount || 0;
-    const cartons = db.prepare('SELECT SUM(delivered_cartons) as s FROM shop_delivery_items WHERE delivery_id = ?').get(d.id).s || 0;
+    const cartons = db.prepare('SELECT SUM(delivered_cartons - returned_cartons) as s FROM shop_delivery_items WHERE delivery_id = ?').get(d.id).s || 0;
     d.cartons_delivered = cartons;
     totalCartons += cartons;
   });
@@ -3556,7 +3586,7 @@ function getIcecreamFactorySummary() {
   `).get(today);
 
   const todayCartons = db.prepare(`
-    SELECT COALESCE(SUM(sdi.delivered_cartons), 0) as cartons_sold_today
+    SELECT COALESCE(SUM(sdi.delivered_cartons - sdi.returned_cartons), 0) as cartons_sold_today
     FROM shop_delivery_items sdi
     JOIN shop_deliveries sd ON sd.id = sdi.delivery_id
     WHERE sd.date = ?

@@ -1306,12 +1306,18 @@ window.ShopSales = {
     const res = await window.api.processShopReturn(payload);
     if (res && res.success) {
       app.playBeep('success');
-      app.showToast(`Return ${res.returnNo} recorded successfully! (${res.totalCartonsReturned} cartons returned to ${res.returnDest === 'car' ? 'Car' : 'Factory Stock'})`, 'success');
+      app.showToast(`Return ${res.returnNo} processed! Sale reduced by Rs. ${Math.round(res.totalRefund).toLocaleString()} (${res.totalCartonsReturned} cartons returned to ${res.returnDest === 'car' ? 'Car' : 'Factory Stock'}).`, 'success');
       this.closeReturnModal();
 
       // Refresh whichever page is active
       if (window.Proposals && typeof window.Proposals.loadData === 'function' && app.currentPage === 'proposals') {
         window.Proposals.loadData();
+      }
+      if (window.Reports && typeof window.Reports.loadData === 'function' && app.currentPage === 'reports') {
+        window.Reports.loadData();
+      }
+      if (window.Customers && typeof window.Customers.loadData === 'function' && app.currentPage === 'customers') {
+        window.Customers.loadData();
       }
       if (app.currentPage === 'shop-sales') {
         this.loadData();

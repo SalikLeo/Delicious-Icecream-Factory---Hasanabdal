@@ -134,7 +134,7 @@ window.Reports = {
     let totalRemainingKhata = 0;
 
     filtered.forEach(d => {
-      totalDeliveredCartons += (d.total_cartons_delivered || 0);
+      totalDeliveredCartons += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
       totalSales += (d.total_amount || 0);
       totalCashReceived += (d.received_amount || 0);
       totalRemainingKhata += (d.remaining_balance || 0);
@@ -295,7 +295,14 @@ window.Reports = {
                   <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
                   <td class="py-1.5 px-3 text-slate-800 font-bold border-r border-slate-200 text-xs">${d.car_number}<br><span class="text-[10px] text-slate-400 font-normal leading-tight">${d.driver_name || ''}</span></td>
                   <td class="py-1.5 px-3 font-bold text-slate-900 border-r border-slate-200 text-xs">${d.shop_name}</td>
-                  <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/40 border-r border-slate-200">${d.total_cartons_delivered || 0}</td>
+                  <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/40 border-r border-slate-200">
+                    <div>${Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0))}</div>
+                    ${(d.total_cartons_returned || 0) > 0 ? `
+                      <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5">
+                        -${d.total_cartons_returned} ret
+                      </span>
+                    ` : ''}
+                  </td>
                   <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs border-r border-slate-200">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
                   <td class="py-1.5 px-3 text-right font-black text-emerald-700 text-xs border-r border-slate-200">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
                   <td class="py-1.5 px-3 text-right font-black text-xs ${d.remaining_balance > 0 ? 'text-rose-600' : 'text-slate-400'} border-r border-slate-200">
@@ -345,7 +352,7 @@ window.Reports = {
     let totalRemainingKhata = 0;
 
     filtered.forEach(d => {
-      totalDeliveredCartons += (d.total_cartons_delivered || 0);
+      totalDeliveredCartons += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
       totalSales += (d.total_amount || 0);
       totalCashReceived += (d.received_amount || 0);
       totalRemainingKhata += (d.remaining_balance || 0);

@@ -22,8 +22,8 @@ window.CarLoading = {
       this.cartons = await window.api.getPackedCartons() || [];
       this.dispatches = await window.api.getCarLoadingBatches() || [];
 
-      if (!this.selectedCarId && this.cars.length > 0) {
-        this.selectedCarId = this.cars[0].id;
+      if (this.selectedCarId && !this.cars.some(c => c.id === this.selectedCarId)) {
+        this.selectedCarId = null;
       }
 
       this.renderUI();
@@ -261,6 +261,10 @@ window.CarLoading = {
     `;
 
     if (window.lucide) lucide.createIcons({ root: this.container });
+
+    if (this.activeTab === 'cars' && this.selectedCarId) {
+      this.loadSelectedCarInventory();
+    }
   },
 
   renderActiveTabContent() {
@@ -404,7 +408,7 @@ window.CarLoading = {
       return so * (a.car_number || '').localeCompare(b.car_number || '');
     });
 
-    const activeCar = filteredCars.find(c => c.id === this.selectedCarId) || filteredCars[0] || this.cars[0];
+    const activeCar = this.selectedCarId ? filteredCars.find(c => c.id === this.selectedCarId) : null;
 
     return `
       <div class="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-200 overflow-hidden">
@@ -422,7 +426,7 @@ window.CarLoading = {
               <button onclick="CarLoading.clearSearch()" class="text-[11px] text-blue-600 font-bold mt-1.5 underline cursor-pointer">Clear Search</button>
             </div>
           ` : filteredCars.map(c => {
-            const isSelected = c.id === activeCar.id;
+            const isSelected = activeCar && c.id === activeCar.id;
             const loaded = c.total_loaded_cartons || 0;
 
             return `
@@ -461,8 +465,22 @@ window.CarLoading = {
 
         <!-- Right: Current Inventory Breakdown for Selected Car (60%) -->
         <div class="w-full md:w-7/12 p-6 flex flex-col overflow-y-auto custom-scrollbar flex-1" id="car-inventory-breakdown">
-          <!-- Rendered by loadCarDetails -->
-          <div class="flex items-center justify-center p-8 text-slate-400">Loading car inventory...</div>
+          ${!activeCar ? `
+            <div class="h-full min-h-[360px] flex flex-col items-center justify-center p-8 text-center my-auto">
+              <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 border border-blue-100 flex items-center justify-center mb-3 shadow-2xs">
+                <i data-lucide="truck" class="w-8 h-8 text-blue-600"></i>
+              </div>
+              <h4 class="text-base font-black text-slate-800 tracking-tight">Click on a car to view</h4>
+              <p class="text-xs text-slate-400 font-medium max-w-sm mt-1 leading-relaxed">
+                Select any vehicle from the list on the left to view loaded cartons, driver details, and inventory value.
+              </p>
+            </div>
+          ` : `
+            <div class="flex items-center justify-center p-8 text-slate-400">
+              <i data-lucide="loader-2" class="w-5 h-5 animate-spin mr-2 text-blue-600"></i>
+              <span>Loading car inventory...</span>
+            </div>
+          `}
         </div>
 
       </div>
@@ -500,6 +518,22 @@ window.CarLoading = {
   async loadSelectedCarInventory() {
     const target = document.getElementById('car-inventory-breakdown');
     if (!target) return;
+
+    if (!this.selectedCarId) {
+      target.innerHTML = `
+        <div class="h-full min-h-[360px] flex flex-col items-center justify-center p-8 text-center my-auto">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 border border-blue-100 flex items-center justify-center mb-3 shadow-2xs">
+            <i data-lucide="truck" class="w-8 h-8 text-blue-600"></i>
+          </div>
+          <h4 class="text-base font-black text-slate-800 tracking-tight">Click on a car to view</h4>
+          <p class="text-xs text-slate-400 font-medium max-w-sm mt-1 leading-relaxed">
+            Select any vehicle from the list on the left to view loaded cartons, driver details, and inventory value.
+          </p>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons({ root: target });
+      return;
+    }
 
     const car = this.cars.find(c => c.id === this.selectedCarId);
     if (!car) return;

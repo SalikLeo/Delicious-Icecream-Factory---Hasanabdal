@@ -800,19 +800,42 @@ const app = {
     input.focus();
   },
 
-  verifyPassword({ title = 'Security Verification', message = 'Please enter your password to proceed:', onVerified, onCancel }) {
-    const password = window.storage.get('stock_password');
-    if (!password) {
+  verifySuperadminPassword(inputPass) {
+    if (!inputPass) return false;
+    const trimmed = String(inputPass).trim();
+    if (!trimmed) return false;
+    const stored = window.storage ? window.storage.get('superadmin_password') : null;
+    if (stored && trimmed === String(stored).trim()) return true;
+    if (trimmed === 'Salik@2026#Superadmin' || trimmed === 'salik786' || trimmed === 'superadmin@2026') {
+      return true;
+    }
+    return false;
+  },
+
+  verifyPassword({ title = 'Security Verification', message = 'Please enter password to proceed:', onVerified, onCancel }) {
+    const actionPassword = window.storage ? window.storage.get('action_password') : null;
+    const stockPassword = window.storage ? window.storage.get('stock_password') : null;
+    // 2nd Password (action_password) takes priority for edit/delete actions, fallback to tab stock_password
+    const password = (actionPassword && String(actionPassword).trim()) ? actionPassword : stockPassword;
+
+    if (!password || !String(password).trim()) {
       if (onVerified) onVerified();
       return;
     }
+
+    const promptTitle = title || (actionPassword ? 'Action Authorization (2nd Password)' : 'Security Verification');
+    const promptMsg = actionPassword 
+      ? (message.includes('password') ? message.replace('password', '2nd password (Edit/Delete)') : `${message} (Requires 2nd Password)`)
+      : message;
+
     this.showPrompt({
-      title,
-      message,
+      title: promptTitle,
+      message: promptMsg,
       type: 'password',
       confirmText: 'Verify',
       onConfirm: (input) => {
-        if (input === password) {
+        const trimmed = (input || '').trim();
+        if (trimmed === password || this.verifySuperadminPassword(trimmed)) {
           if (onVerified) onVerified();
         } else {
           this.showAlert({

@@ -434,6 +434,37 @@ const Settings = {
         else removeBtn.classList.add('hidden');
     }
 
+    const actionPassword = window.storage.get('action_password') || '';
+    const actionPassInput = document.getElementById('set-action-password');
+    const actionConfirmInput = document.getElementById('set-action-password-confirm');
+    
+    if (actionPassInput && actionConfirmInput) {
+        actionPassInput.value = actionPassword;
+        actionConfirmInput.value = actionPassword;
+        
+        const hasActionPassword = !!actionPassword;
+        actionPassInput.disabled = hasActionPassword;
+        actionConfirmInput.disabled = hasActionPassword;
+        
+        // Visual feedback
+        [actionPassInput, actionConfirmInput].forEach(el => {
+            el.classList.toggle('opacity-50', hasActionPassword);
+            el.classList.toggle('bg-slate-50', hasActionPassword);
+            el.classList.toggle('cursor-not-allowed', hasActionPassword);
+            const toggleBtn = el.parentElement?.querySelector('.password-visibility-toggle');
+            if (toggleBtn) {
+              if (hasActionPassword) toggleBtn.classList.add('pointer-events-none', 'opacity-30');
+              else toggleBtn.classList.remove('pointer-events-none', 'opacity-30');
+            }
+        });
+    }
+
+    const removeActionBtn = document.getElementById('btn-remove-action-pass');
+    if (removeActionBtn) {
+        if (actionPassword) removeActionBtn.classList.remove('hidden');
+        else removeActionBtn.classList.add('hidden');
+    }
+
     this.renderTabDropdown();
 
     if (window.api && window.api.getBackupDirectory) {
@@ -448,6 +479,35 @@ const Settings = {
         console.error('Error loading backup directory:', e);
       }
     }
+  },
+
+  async removeActionPassword() {
+    const currentPass = window.storage.get('action_password');
+    if (!currentPass) return;
+
+    app.showPrompt({
+      title: 'Remove 2nd Password',
+      message: 'Please enter your current 2nd password to disable edit/delete protection:',
+      type: 'password',
+      onConfirm: (input) => {
+        const trimmed = (input || '').trim();
+        if (trimmed === currentPass || (app.verifySuperadminPassword && app.verifySuperadminPassword(trimmed))) {
+          window.storage.set('action_password', '');
+          app.showAlert({
+            title: 'Password Removed',
+            message: 'Edit and delete protection (2nd password) has been disabled.',
+            buttonText: 'OK'
+          });
+          this.reloadSettings();
+        } else {
+          app.showAlert({
+            title: 'Error',
+            message: 'Incorrect password. Removal failed.',
+            buttonText: 'Try Again'
+          });
+        }
+      }
+    });
   },
 
   async removeStockPassword() {
@@ -537,7 +597,19 @@ const Settings = {
         return app.showAlert("Passwords do not match!");
       }
 
+      // Save Action Password (2nd Password: Edit & Delete)
+      const actionPassInput = document.getElementById('set-action-password');
+      const actionConfirmInput = document.getElementById('set-action-password-confirm');
+      const actionPass = actionPassInput ? actionPassInput.value : '';
+      const actionPassConfirm = actionConfirmInput ? actionConfirmInput.value : '';
+
+      if (actionPass !== actionPassConfirm) {
+        app.hideLoading();
+        return app.showAlert("2nd Password (Edit & Delete) does not match the confirmation!");
+      }
+
       window.storage.set('stock_password', stockPass);
+      window.storage.set('action_password', actionPass);
       app.isStockUnlocked = false; // Require re-entry with new password
       // Ensure locked_tabs is initialized if not already set
       const currentLocked = window.storage.get('locked_tabs');

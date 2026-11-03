@@ -2482,21 +2482,53 @@ const app = {
   currentZoom: 0.82,
   async initZoom() {
     let savedZoom = null;
+
+    // 1. Try window.storage
     try {
-      const localVal = localStorage.getItem('app_zoom');
-      if (localVal) {
-        const parsed = parseFloat(localVal);
-        if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 1.5) savedZoom = parsed;
+      if (window.storage && window.storage.get) {
+        const stored = window.storage.get('app_zoom');
+        if (stored) {
+          const p = parseFloat(stored);
+          if (!isNaN(p) && p >= 0.5 && p <= 1.5) savedZoom = p;
+        }
       }
     } catch (e) {}
 
+    // 2. Try raw localStorage (handling raw number, string, or JSON-stringified string)
+    if (!savedZoom) {
+      try {
+        let raw = localStorage.getItem('app_zoom');
+        if (raw) {
+          try { raw = JSON.parse(raw); } catch (e) {}
+          const p = parseFloat(raw);
+          if (!isNaN(p) && p >= 0.5 && p <= 1.5) savedZoom = p;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Try DB settings
+    if (!savedZoom && window.api && window.api.getSettings) {
+      try {
+        const s = await window.api.getSettings();
+        if (s && s.app_zoom) {
+          let val = s.app_zoom;
+          try { val = JSON.parse(val); } catch (e) {}
+          const p = parseFloat(val);
+          if (!isNaN(p) && p >= 0.5 && p <= 1.5) savedZoom = p;
+        }
+      } catch (e) {}
+    }
+
+    // 4. Try Main Process Zoom Factor
     if (!savedZoom && window.api && window.api.getZoomFactor) {
       try {
-        savedZoom = await window.api.getZoomFactor();
-      } catch (e) {
-        savedZoom = 0.82;
-      }
+        const factor = await window.api.getZoomFactor();
+        if (factor && !isNaN(factor) && factor >= 0.5 && factor <= 1.5) {
+          savedZoom = factor;
+        }
+      } catch (e) {}
     }
+
     if (!savedZoom || isNaN(savedZoom)) savedZoom = 0.82;
     await this.setZoom(savedZoom, false);
 
@@ -2519,19 +2551,29 @@ const app = {
 
   async setZoom(factor, save = true) {
     const z = Math.min(1.4, Math.max(0.6, Math.round(factor * 100) / 100));
+    const zStr = z.toFixed(2);
     this.currentZoom = z;
+
     try {
-      localStorage.setItem('app_zoom', z.toFixed(2));
+      localStorage.setItem('app_zoom', zStr);
       if (window.storage && window.storage.set) {
-        window.storage.set('app_zoom', z.toFixed(2));
+        window.storage.set('app_zoom', zStr);
       }
     } catch (e) {}
+
+    // Persist immediately to SQLite settings table
+    if (window.api && window.api.saveSettings) {
+      try {
+        await window.api.saveSettings({ app_zoom: zStr });
+      } catch (e) {}
+    }
 
     if (window.api && window.api.setZoomFactor) {
       try {
         await window.api.setZoomFactor(z);
       } catch (e) {}
     }
+
     this.updateZoomUI(z);
     if (save) {
       this.showZoomNotification(z);

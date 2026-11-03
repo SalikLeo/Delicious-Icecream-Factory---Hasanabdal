@@ -8,6 +8,29 @@ const db = require('./database');
 let mainWindow;
 let isQuitting = false;
 
+const getSavedAppZoom = () => {
+  try {
+    const s = db.getSettings();
+    if (s && s.app_zoom) {
+      let val = s.app_zoom;
+      try { val = JSON.parse(val); } catch (e) {}
+      const z = parseFloat(val);
+      if (!isNaN(z) && z >= 0.5 && z <= 1.5) return z;
+    }
+  } catch (e) {}
+  try {
+    const allKv = db.getAllKv ? db.getAllKv() : [];
+    const item = allKv.find(x => x.key === 'app_zoom');
+    if (item && item.value) {
+      let val = item.value;
+      try { val = JSON.parse(val); } catch (e) {}
+      const z = parseFloat(val);
+      if (!isNaN(z) && z >= 0.5 && z <= 1.5) return z;
+    }
+  } catch (e) {}
+  return 0.82; // ~18% reduction (ideal 15-20% for laptops)
+};
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     title: 'Delicious Superstar Foods',
@@ -22,17 +45,6 @@ function createWindow() {
 
   mainWindow.maximize();
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-
-  const getSavedAppZoom = () => {
-    try {
-      const s = db.getSettings();
-      if (s && s.app_zoom) {
-        const z = parseFloat(s.app_zoom);
-        if (!isNaN(z) && z >= 0.5 && z <= 1.5) return z;
-      }
-    } catch (e) {}
-    return 0.82; // ~18% reduction (ideal 15-20% for laptops)
-  };
 
   mainWindow.webContents.on('dom-ready', () => {
     try { mainWindow.webContents.setZoomFactor(getSavedAppZoom()); } catch (e) {}
@@ -81,7 +93,9 @@ function createWindow() {
       if (mainWindow && !mainWindow.isDestroyed()) {
         const z = mainWindow.webContents.getZoomFactor();
         if (z && !isNaN(z) && z >= 0.5 && z <= 1.5) {
-          db.saveSettings({ app_zoom: z.toFixed(2) });
+          const zStr = z.toFixed(2);
+          db.saveSettings({ app_zoom: zStr });
+          if (db.setKv) db.setKv('app_zoom', JSON.stringify(zStr));
         }
       }
     } catch (err) {}
@@ -618,13 +632,8 @@ ipcMain.handle('print-barcode-stickers', async (event, options = {}) => {
 
 // App Zoom Controls IPC
 ipcMain.handle('get-zoom-factor', (event) => {
-  try {
-    const s = db.getSettings();
-    if (s && s.app_zoom) {
-      const z = parseFloat(s.app_zoom);
-      if (!isNaN(z) && z >= 0.5 && z <= 1.5) return z;
-    }
-  } catch (e) {}
+  const saved = getSavedAppZoom();
+  if (saved && !isNaN(saved)) return saved;
   const win = BrowserWindow.fromWebContents(event.sender);
   return win ? win.webContents.getZoomFactor() : 0.82;
 });
@@ -635,19 +644,21 @@ ipcMain.handle('set-zoom-factor', (event, factor) => {
   if (win && !win.isDestroyed()) {
     win.webContents.setZoomFactor(z);
   }
+  const zStr = z.toFixed(2);
   try {
-    db.saveSettings({ app_zoom: z.toFixed(2) });
+    db.saveSettings({ app_zoom: zStr });
+  } catch (e) {}
+  try {
+    if (db.setKv) {
+      db.setKv('app_zoom', JSON.stringify(zStr));
+    }
   } catch (e) {}
   return z;
 });
 
 ipcMain.handle('restore-app-zoom', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  let z = 0.82;
-  try {
-    const s = db.getSettings();
-    if (s && s.app_zoom) z = parseFloat(s.app_zoom) || 0.82;
-  } catch (e) {}
+  const z = getSavedAppZoom();
   if (win && !win.isDestroyed()) {
     win.webContents.setZoomFactor(z);
   }

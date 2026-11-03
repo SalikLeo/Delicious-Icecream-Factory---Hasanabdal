@@ -302,8 +302,10 @@ window.Reports = {
                     Rs. ${Math.round(d.remaining_balance).toLocaleString()}
                   </td>
                   <td class="py-1.5 px-3 text-center">
-                    <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-md cursor-pointer flex items-center gap-1 mx-auto">
-                      <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
+                    <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})"
+                            class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
+                            title="Print Delivery Invoice (A5)">
+                      <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                     </button>
                   </td>
                 </tr>

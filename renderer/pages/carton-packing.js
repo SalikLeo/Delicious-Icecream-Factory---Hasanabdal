@@ -558,15 +558,15 @@ window.CartonPacking = {
                     </span>
                   </td>
                   <td class="py-1.5 px-3 text-right">
-                    <div class="flex items-center justify-end gap-1">
-                      <button onclick="app.openBarcodeStickerModal(${c.id}, 'carton')" class="px-2 py-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-[10px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer" title="Print Barcode Stickers">
-                        <i data-lucide="barcode" class="w-3 h-3"></i> Sticker
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button onclick="app.openBarcodeStickerModal(${c.id}, 'carton')" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Print Barcode Stickers">
+                        <i data-lucide="barcode" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="CartonPacking.openPackModal(${c.id})" class="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:scale-95 text-white font-black text-[10px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
-                        <i data-lucide="package" class="w-3 h-3"></i> Pack
+                      <button onclick="CartonPacking.openPackModal(${c.id})" class="w-7 h-7 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Pack Loose Pieces into Cartons">
+                        <i data-lucide="package" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="CartonPacking.openCartonConfigModal(${c.id})" class="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors cursor-pointer" title="Edit Pricing/Spec">
-                        <i data-lucide="edit-2" class="w-3 h-3"></i>
+                      <button onclick="CartonPacking.openCartonConfigModal(${c.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Pricing / Spec">
+                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </div>
                   </td>
@@ -668,7 +668,7 @@ window.CartonPacking = {
                 <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(b.total_cost).toLocaleString()}</td>
                 <td class="py-1.5 px-3 text-right font-black text-emerald-700 tabular-nums border-r border-slate-200">Rs. ${b.carton_sale_price}</td>
                 <td class="py-1.5 px-3 text-right">
-                  <button onclick="CartonPacking.deleteBatch(${b.id})" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer" title="Delete &amp; Reverse Stock">
+                  <button onclick="CartonPacking.deleteBatch(${b.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs ml-auto" title="Delete &amp; Reverse Stock">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                   </button>
                 </td>

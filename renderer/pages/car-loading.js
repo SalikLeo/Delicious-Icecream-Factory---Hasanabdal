@@ -445,11 +445,11 @@ window.CarLoading = {
 
                 <div class="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-[11px]">
                   <span class="text-slate-400">${c.total_deliveries_count || 0} deliveries completed</span>
-                  <div class="flex items-center gap-1">
-                    <button onclick="event.stopPropagation(); CarLoading.openCarModal(${c.id})" class="p-1 text-slate-400 hover:text-slate-800 rounded">
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="event.stopPropagation(); CarLoading.openCarModal(${c.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Vehicle">
                       <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); CarLoading.deleteCar(${c.id})" class="p-1 text-slate-400 hover:text-rose-600 rounded">
+                    <button onclick="event.stopPropagation(); CarLoading.deleteCar(${c.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Vehicle">
                       <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
                   </div>
@@ -926,8 +926,10 @@ window.CarLoading = {
                 <td class="py-1.5 px-3 text-right font-black text-blue-700 text-xs tabular-nums border-r border-slate-200">${d.total_cartons} ctns</td>
                 <td class="py-1.5 px-3 text-slate-400 text-[10px] border-r border-slate-200">${d.notes || ''}</td>
                 <td class="py-1.5 px-3 text-center">
-                  <button onclick="CarLoading.printLoadingGatePass(${d.id})" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-[10px] font-bold transition-all flex items-center gap-1 mx-auto cursor-pointer">
-                    <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
+                  <button onclick="CarLoading.printLoadingGatePass(${d.id})"
+                          class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
+                          title="Print Loading Gate Pass (A5)">
+                    <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                   </button>
                 </td>
               </tr>

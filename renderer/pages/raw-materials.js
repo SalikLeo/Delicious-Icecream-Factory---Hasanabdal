@@ -520,14 +520,14 @@ window.RawMaterials = {
                     }
                   </td>
                   <td class="py-1.5 px-3 text-right">
-                    <div class="flex items-center justify-end gap-1">
-                      <button onclick="RawMaterials.openPurchaseModal(${m.id})" title="Stock-In / Add Purchase" class="p-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors cursor-pointer">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button onclick="RawMaterials.openPurchaseModal(${m.id})" title="Stock-In / Add Purchase" class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="RawMaterials.openEditModal(${m.id})" title="Edit Material" class="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer">
+                      <button onclick="RawMaterials.openEditModal(${m.id})" title="Edit Material" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
                         <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="RawMaterials.deleteMaterial(${m.id})" title="Delete" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer">
+                      <button onclick="RawMaterials.deleteMaterial(${m.id})" title="Delete Material" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </div>

@@ -583,15 +583,18 @@ window.Proposals = {
           <td class="py-1.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1.5">
               <button type="button" onclick="ShopSales.openReturnModal(${d.id})"
-                      class="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-[10px] font-black rounded-md flex items-center gap-1 shadow-2xs transition-all cursor-pointer" title="Process Return for this Sale (Stay in car or return to stock)">
-                <i data-lucide="rotate-ccw" class="w-3 h-3 text-slate-950"></i> Return
+                      class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                      title="Process Return (Keep in car or return to factory stock)">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
               </button>
               <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})"
-                      class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-md flex items-center gap-1 shadow-2xs transition-all cursor-pointer">
-                <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print
+                      class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                      title="Print Delivery Invoice &amp; Bill (A5)">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
               </button>
               <button type="button" onclick="Proposals.deleteDeliveryOrder(${d.id}, '${d.invoice_no}')"
-                      class="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Delete Delivery">
+                      class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                      title="Delete Delivery Order">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>

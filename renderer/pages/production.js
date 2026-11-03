@@ -531,17 +531,17 @@ window.Production = {
                     }
                   </td>
                   <td class="py-1.5 px-3 text-right">
-                    <div class="flex items-center justify-end gap-1">
-                      <button onclick="Production.openProductionModal(${it.id})" class="px-2 py-1 bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 font-black text-[10px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer" title="Produce Loose Pieces">
-                        <i data-lucide="play" class="w-3 h-3 fill-current"></i> Produce Pcs
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button onclick="Production.openProductionModal(${it.id})" class="w-7 h-7 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Produce Loose Pieces">
+                        <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
                       </button>
-                      <button onclick="app.navigate('carton-packing')" class="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-purple-200/60" title="Pack into Cartons (Stage 3)">
-                        <i data-lucide="package" class="w-3 h-3"></i> Pack
+                      <button onclick="app.navigate('carton-packing')" class="w-7 h-7 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Pack into Cartons (Stage 3)">
+                        <i data-lucide="package" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="Production.openItemModal(${it.id})" class="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer" title="Edit Item">
+                      <button onclick="Production.openItemModal(${it.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Item Details">
                         <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="Production.deleteItem(${it.id})" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer" title="Delete Item">
+                      <button onclick="Production.deleteItem(${it.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Item">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                       </button>
                     </div>
@@ -625,7 +625,7 @@ window.Production = {
                 <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(b.total_cost).toLocaleString()}</td>
                 <td class="py-1.5 px-3 text-slate-600 text-[11px] max-w-xs truncate border-r border-slate-200">${b.raw_materials_summary || 'Standard ingredients'}</td>
                 <td class="py-1.5 px-3 text-right">
-                  <button onclick="Production.deleteBatch(${b.id})" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer" title="Delete &amp; Reverse Stock">
+                  <button onclick="Production.deleteBatch(${b.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs ml-auto" title="Delete &amp; Reverse Stock">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                   </button>
                 </td>

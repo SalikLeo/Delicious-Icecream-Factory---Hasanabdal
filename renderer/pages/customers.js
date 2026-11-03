@@ -443,12 +443,12 @@ window.Customers = {
             <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Khata
           </button>
           <button type="button" onclick="Customers.openShopModal(${shop.id})"
-                  class="p-1.5 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer" title="Edit Shop Details">
-            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                  class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Shop Details">
+            <i data-lucide="pencil" class="w-4 h-4"></i>
           </button>
           <button type="button" onclick="Customers.deleteShop(${shop.id}, '${shop.name}')"
-                  class="p-1.5 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 rounded-xl cursor-pointer" title="Delete Shop">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  class="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/70 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Shop">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
       </div>
@@ -503,13 +503,15 @@ window.Customers = {
                   <td class="py-1.5 px-3 text-center">
                     ${isDelivery ? `
                       <button type="button" onclick="ShopSales.printDeliveryInvoice(${e.id})"
-                              class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-md flex items-center gap-1 mx-auto cursor-pointer">
-                        <i data-lucide="printer" class="w-3 h-3 text-amber-400"></i> Print Bill
+                              class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
+                              title="Print Delivery Bill (A5)">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                       </button>
                     ` : `
                       <button type="button" onclick="Customers.printPaymentReceipt(${e.id})"
-                              class="px-2 py-0.5 bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black rounded-md flex items-center gap-1 mx-auto cursor-pointer">
-                        <i data-lucide="printer" class="w-3 h-3 text-emerald-300"></i> Print Receipt
+                              class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
+                              title="Print Payment Receipt (A5)">
+                        <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
                       </button>
                     `}
                   </td>

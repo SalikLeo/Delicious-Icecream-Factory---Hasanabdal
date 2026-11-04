@@ -520,6 +520,10 @@ window.RawMaterials = {
       `;
     }
 
+    const totalMaterials = items.length;
+    const totalStockValue = items.reduce((sum, m) => sum + ((Number(m.current_stock) || 0) * (Number(m.cost_price) || 0)), 0);
+    const lowStockCount = items.filter(m => (Number(m.current_stock) || 0) <= (Number(m.min_stock_alert) || 0)).length;
+
     return `
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
@@ -605,6 +609,29 @@ window.RawMaterials = {
               `;
             }).join('')}
           </tbody>
+          <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+            <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left">
+                <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                  <span class="text-emerald-700 font-black">TOTAL:</span>
+                  <span>${totalMaterials} ${totalMaterials === 1 ? 'Material' : 'Materials'}</span>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-slate-400 font-bold text-center">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-500 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums bg-emerald-50/80">
+                Rs. ${Math.round(totalStockValue).toLocaleString()}
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center">
+                ${lowStockCount > 0 
+                  ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-black text-[10px] border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> ${lowStockCount} Low</span>`
+                  : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] border border-emerald-200">All In Stock</span>`
+                }
+              </td>
+              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;
@@ -621,6 +648,9 @@ window.RawMaterials = {
         </div>
       `;
     }
+
+    const totalLogs = logs.length;
+    const totalNetChange = logs.reduce((sum, l) => sum + (Number(l.qty_change) || 0), 0);
 
     return `
       <div class="overflow-x-auto flex-1">
@@ -696,6 +726,22 @@ window.RawMaterials = {
               `;
             }).join('')}
           </tbody>
+          <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+            <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="3">
+                <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                  <span class="text-emerald-700 font-black">TOTAL:</span>
+                  <span>${totalLogs} ${totalLogs === 1 ? 'Movement' : 'Movements'}</span>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black tabular-nums text-xs ${totalNetChange >= 0 ? 'text-emerald-700' : 'text-rose-700'}">
+                ${totalNetChange >= 0 ? '+' : ''}${Math.round(totalNetChange * 10) / 10}
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 text-slate-400 font-bold text-xs">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;

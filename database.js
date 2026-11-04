@@ -3145,20 +3145,6 @@ function saveShopDelivery(data) {
   const receivedAmount = Number(data.received_amount) || 0;
   const paymentMethod = data.payment_method || 'Cash';
 
-  // Validate stock in delivery vehicle before processing
-  if (car) {
-    for (const it of data.items) {
-      const ci = db.prepare('SELECT cartons_loaded FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(car.id, it.carton_id);
-      const loaded = ci ? Number(ci.cartons_loaded) || 0 : 0;
-      const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
-      if (qty > loaded) {
-        const pc = db.prepare('SELECT carton_name FROM packed_cartons WHERE id = ?').get(it.carton_id);
-        const name = pc ? pc.carton_name : 'Carton';
-        return { error: `Quantity (${qty} ctns) exceeds stock in ${car.car_number} (${loaded} ctns available for "${name}").` };
-      }
-    }
-  }
-
   let subtotal = 0;
   data.items.forEach(it => {
     const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
@@ -3243,11 +3229,33 @@ function saveShopDelivery(data) {
 
       // Handle stock and car inventory deduction:
       if (car) {
-        db.prepare(`
-          UPDATE car_inventory 
-          SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
-          WHERE car_id = ? AND carton_id = ?
-        `).run(qty, car.id, it.carton_id);
+        const ci = db.prepare('SELECT cartons_loaded FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(car.id, it.carton_id);
+        const loadedInCar = ci ? Number(ci.cartons_loaded) || 0 : 0;
+        if (loadedInCar >= qty) {
+          db.prepare(`
+            UPDATE car_inventory 
+            SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
+            WHERE car_id = ? AND carton_id = ?
+          `).run(qty, car.id, it.carton_id);
+        } else if (loadedInCar > 0) {
+          db.prepare(`
+            UPDATE car_inventory 
+            SET cartons_loaded = 0, updated_at = CURRENT_TIMESTAMP
+            WHERE car_id = ? AND carton_id = ?
+          `).run(car.id, it.carton_id);
+          const remainder = qty - loadedInCar;
+          db.prepare(`
+            UPDATE packed_cartons 
+            SET factory_carton_stock = MAX(0, factory_carton_stock - ?)
+            WHERE id = ?
+          `).run(remainder, it.carton_id);
+        } else {
+          db.prepare(`
+            UPDATE packed_cartons 
+            SET factory_carton_stock = MAX(0, factory_carton_stock - ?)
+            WHERE id = ?
+          `).run(qty, it.carton_id);
+        }
       } else {
         db.prepare(`
           UPDATE packed_cartons 

@@ -143,36 +143,16 @@ window.ShopSales = {
 
   addToCart(carton) {
     if (!carton) return;
-    const maxStock = this.getItemStock(carton.id);
-    if (maxStock <= 0) {
-      const whStock = carton.factory_carton_stock || 0;
-      if (whStock <= 0) {
-        app.playBeep('warning');
-        app.showAlert({
-          title: 'Out of Stock in Car & Warehouse',
-          message: '<b>' + (carton.carton_name || 'Carton') + '</b> is not loaded in this vehicle and has 0 cartons in Factory Warehouse.<br><br>Please produce single pieces and pack cartons first.'
-        });
-        return;
-      }
-      this.openQuickLoadCarModal(carton.id);
-      return;
-    }
-
     const existingIdx = this.items.findIndex(i => i.carton_id === carton.id);
     if (existingIdx !== -1) {
       const existing = this.items[existingIdx];
-      if (existing.quantity < maxStock) {
-        existing.quantity++;
-        existing.delivered_cartons = existing.quantity;
-        existing.ordered_cartons = existing.quantity;
-        this.updateLineTotal(existingIdx);
-        this.updateFinancialSummary();
-        this.renderCartTable();
-        app.showToast('Added ' + carton.carton_name + ' (Total: ' + existing.quantity + ' ctns)', 'success');
-      } else {
-        app.playBeep('warning');
-        app.showToast('Cannot add more. Vehicle only has ' + maxStock + ' cartons loaded.', 'warning');
-      }
+      existing.quantity++;
+      existing.delivered_cartons = existing.quantity;
+      existing.ordered_cartons = existing.quantity;
+      this.updateLineTotal(existingIdx);
+      this.updateFinancialSummary();
+      this.renderCartTable();
+      app.showToast('Added ' + carton.carton_name + ' (Total: ' + existing.quantity + ' ctns)', 'success');
       setTimeout(() => this.focusCartField(existingIdx, 'qty'), 40);
     } else {
       const price = carton.carton_sale_price || 0;
@@ -203,12 +183,10 @@ window.ShopSales = {
   addItemRow(defaultCartonId = null) {
     const selectedCartonIds = new Set(this.items.map(it => it.carton_id));
     const availableCartons = (this.cartons || []).filter(c => !selectedCartonIds.has(c.id));
-    const loadedAvailable = availableCartons.filter(c => this.getItemStock(c.id) > 0);
-    const chosenCarton = (loadedAvailable.length > 0 ? loadedAvailable[0] : availableCartons[0]);
-    if (chosenCarton) {
-      this.addToCart(chosenCarton);
+    if (availableCartons.length > 0) {
+      this.addToCart(availableCartons[0]);
     } else {
-      app.showToast('All available carton products have already been added.', 'info');
+      app.showToast('All available carton products have already been added to the bill.', 'info');
     }
   },
 
@@ -775,7 +753,7 @@ window.ShopSales = {
               <span class="font-black text-slate-900 text-xs truncate max-w-[280px]">${item.carton_name}</span>
               ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
               ${item.pieces_per_carton ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
-              <span class="text-[9px] font-bold ${stock > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-1.5 py-0.2 rounded border tabular-nums ml-auto sm:ml-0">${stock} in stock</span>
+              <span class="text-[9px] font-bold ${stock > 0 ? 'text-blue-700 bg-blue-50 border-blue-200/60' : 'text-slate-500 bg-slate-100 border-slate-200/60'} px-1.5 py-0.2 rounded border tabular-nums ml-auto sm:ml-0">${stock > 0 ? `${stock} in car` : 'Direct Factory'}</span>
             </div>
           </td>
 
@@ -786,7 +764,6 @@ window.ShopSales = {
                      id="cart-qty-input-${idx}"
                      value="${item.quantity}"
                      min="1"
-                     max="${stock}"
                      step="1"
                      onkeydown="ShopSales.handleCartKeyDown(event, ${idx}, 'qty')"
                      oninput="ShopSales.updateCartQty(${idx}, this.value, this)"
@@ -926,7 +903,6 @@ window.ShopSales = {
   updateCartQty(index, qty, inputEl) {
     const item = this.items[index];
     if (!item) return;
-    const maxStock = this.getItemStock(item.carton_id);
 
     if (qty === '' || qty === null || qty === undefined) {
       item.quantity = 0;
@@ -939,12 +915,7 @@ window.ShopSales = {
 
     let parsed = parseInt(qty, 10);
     if (isNaN(parsed)) parsed = 1;
-
-    // Strict stock check: qty cannot exceed car stock!
-    if (maxStock > 0 && parsed > maxStock) {
-      parsed = maxStock;
-      if (inputEl) inputEl.value = maxStock;
-    } else if (parsed < 1) {
+    if (parsed < 1) {
       parsed = 1;
       if (inputEl) inputEl.value = 1;
     }
@@ -959,15 +930,11 @@ window.ShopSales = {
   onCartQtyBlur(index, inputEl) {
     const item = this.items[index];
     if (!item) return;
-    const maxStock = this.getItemStock(item.carton_id);
     let parsed = parseInt(inputEl.value, 10);
 
     if (isNaN(parsed) || parsed <= 0) {
-      parsed = maxStock > 0 ? 1 : 0;
-      inputEl.value = parsed;
-    } else if (maxStock > 0 && parsed > maxStock) {
-      parsed = maxStock;
-      inputEl.value = maxStock;
+      parsed = 1;
+      inputEl.value = 1;
     }
 
     item.quantity = parsed;
@@ -1159,18 +1126,11 @@ window.ShopSales = {
           </div>
           <div class="flex items-center gap-3 shrink-0 text-right">
             <div class="text-right">
-              <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-emerald-700') : (isHighlighted ? 'text-rose-200' : 'text-rose-600')} tabular-nums block">
-                ${stock} in car stock
+              <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-blue-700') : (isHighlighted ? 'text-slate-200' : 'text-slate-500')} tabular-nums block">
+                ${stock > 0 ? `${stock} in car` : 'Direct Factory'}
               </span>
-              ${stock <= 0 ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(Wh: ${item.factory_carton_stock || 0} ctns)</span>` : ''}
+              <span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(Wh: ${item.factory_carton_stock || 0} ctns)</span>
             </div>
-            ${(stock <= 0 && (item.factory_carton_stock || 0) > 0) ? `
-              <button type="button" onmousedown="event.stopPropagation(); ShopSales.openQuickLoadCarModal(${item.id})"
-                      class="px-2 py-1 ${isHighlighted ? 'bg-white text-slate-900' : 'bg-blue-600 hover:bg-blue-500 text-white'} text-[10px] font-black rounded-lg transition-all shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
-                      title="Load cartons from factory warehouse into this car">
-                <i data-lucide="plus" class="w-3 h-3"></i> Load to Car
-              </button>
-            ` : ''}
             <span class="text-xs font-black tabular-nums ${isHighlighted ? 'text-white' : 'text-slate-900'} min-w-[65px] text-right">
               Rs. ${price}
             </span>
@@ -1746,19 +1706,11 @@ window.ShopSales = {
     const shopName = activeShop ? activeShop.name : 'Counter Walk-in Customer';
     const notes = '';
 
-    // Validate quantities against vehicle stock
+    // Validate quantities
     for (const it of this.items) {
-      const stock = this.getItemStock(it.carton_id);
       const q = Number(it.quantity) || 0;
       if (q <= 0) {
         app.showAlert({ title: 'Invalid Quantity', message: `Quantity for <b>${it.carton_name}</b> must be at least 1.` });
-        return;
-      }
-      if (q > stock) {
-        app.showAlert({
-          title: 'Stock Limit Exceeded',
-          message: `Quantity for <b>${it.carton_name}</b> is ${q} ctns, but only <b>${stock} ctns</b> are loaded in ${activeCar ? activeCar.car_number : 'this vehicle'}. Please adjust quantity to ${stock} or less.`
-        });
         return;
       }
     }

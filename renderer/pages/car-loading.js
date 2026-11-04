@@ -262,8 +262,12 @@ window.CarLoading = {
 
     if (window.lucide) lucide.createIcons({ root: this.container });
 
-    if (this.activeTab === 'cars' && this.selectedCarId) {
-      this.loadSelectedCarInventory();
+    if (this.activeTab === 'cars') {
+      if (this.selectedCarId) {
+        this.loadSelectedCarInventory();
+      }
+    } else if (this.activeTab === 'dispatch') {
+      this.renderDispatchRows();
     }
   },
 
@@ -369,7 +373,11 @@ window.CarLoading = {
       area.innerHTML = this.renderActiveTabContent();
       if (window.lucide) lucide.createIcons({ root: area });
       if (this.activeTab === 'cars') {
-        this.loadSelectedCarInventory();
+        if (this.selectedCarId) {
+          this.loadSelectedCarInventory();
+        }
+      } else if (this.activeTab === 'dispatch') {
+        this.renderDispatchRows();
       }
     } else {
       this.renderUI();
@@ -724,7 +732,7 @@ window.CarLoading = {
                 Total Cartons Being Loaded: <span class="text-blue-600 text-sm" id="dsp-total-load-count">0</span>
               </div>
               <div class="flex items-center gap-2">
-                <button type="button" onclick="CarLoading.switchTab('cars')" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 cursor-pointer">Cancel</button>
+                <button type="button" onclick="CarLoading.dispatchItems = {}; CarLoading.switchTab('cars')" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 cursor-pointer">Cancel</button>
                 <button type="button" id="dsp-submit-btn" onclick="CarLoading.submitDispatch()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
                   <i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Loading &amp; Print Sheet
                 </button>
@@ -739,6 +747,7 @@ window.CarLoading = {
 
   async onDispatchCarChange(carId) {
     this.selectedCarId = Number(carId);
+    this.dispatchItems = {};
     await this.renderDispatchRows();
   },
 
@@ -746,14 +755,33 @@ window.CarLoading = {
     const tbody = document.getElementById('dsp-table-body');
     if (!tbody) return;
 
-    const carId = Number(document.getElementById('dsp-car-select')?.value) || this.selectedCarId;
+    if (!this.cartons || this.cartons.length === 0) {
+      this.cartons = await window.api.getPackedCartons() || [];
+    }
+    if (!this.cars || this.cars.length === 0) {
+      this.cars = await window.api.getCars() || [];
+    }
+
+    const selectEl = document.getElementById('dsp-car-select');
+    const carId = Number(selectEl?.value) || this.selectedCarId || this.cars[0]?.id;
+    if (!carId) {
+      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">Please register or select a delivery vehicle.</td></tr>`;
+      return;
+    }
+
     const inv = await window.api.getCarInventory(carId) || [];
     const invMap = {};
     inv.forEach(i => invMap[i.carton_id] = i.cartons_loaded || 0);
 
+    if (this.cartons.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No carton products registered in warehouse.</td></tr>`;
+      return;
+    }
+
     tbody.innerHTML = this.cartons.map(c => {
       const inCar = invMap[c.id] || 0;
       const warehouse = c.factory_carton_stock || 0;
+      const curQty = this.dispatchItems?.[c.id] || '';
 
       return `
         <tr class="hover:bg-slate-50">
@@ -769,12 +797,12 @@ window.CarLoading = {
           <td class="py-1.5 px-3 text-right border-r border-slate-200">
             <div class="flex items-center justify-end gap-1.5">
               <input type="number" min="0" max="${warehouse}" data-carton-id="${c.id}" data-in-car="${inCar}" data-warehouse="${warehouse}"
-                     placeholder="0" oninput="CarLoading.onLoadQtyChange(this)"
+                     value="${curQty}" placeholder="0" oninput="CarLoading.onLoadQtyChange(this)"
                      class="dsp-qty-input w-20 px-2 py-1 bg-white border border-slate-300 rounded-lg text-center font-black text-xs text-slate-900 outline-none focus:border-blue-500 tabular-nums">
             </div>
           </td>
           <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums dsp-total-after" id="dsp-after-${c.id}">
-            ${inCar} ctns
+            ${inCar + (Number(curQty) || 0)} ctns
           </td>
         </tr>
       `;
@@ -784,10 +812,16 @@ window.CarLoading = {
   },
 
   onLoadQtyChange(input) {
+    if (!this.dispatchItems) this.dispatchItems = {};
     const cartonId = input.dataset.cartonId;
     const inCar = Number(input.dataset.inCar) || 0;
     const warehouse = Number(input.dataset.warehouse) || 0;
     const qty = Number(input.value) || 0;
+    if (qty > 0) {
+      this.dispatchItems[cartonId] = qty;
+    } else {
+      delete this.dispatchItems[cartonId];
+    }
     const afterEl = document.getElementById(`dsp-after-${cartonId}`);
     if (afterEl) {
       afterEl.textContent = `${inCar + qty} ctns`;
@@ -860,21 +894,64 @@ window.CarLoading = {
       return;
     }
 
-    const res = await window.api.loadCarStock({
-      car_id: carId,
-      date,
-      items
-    });
+    const targetCar = this.cars.find(c => c.id === carId);
+    const carName = targetCar ? targetCar.car_number : `Vehicle #${carId}`;
+    const driverName = targetCar ? targetCar.driver_name : '';
+    const totalCtns = items.reduce((sum, it) => sum + it.cartons_to_load, 0);
 
-    if (res && res.success) {
-      app.showToast(`Stock loaded! Dispatch No: ${res.dispatchNo}`, 'success');
-      // Generate & preview A5 Gate Pass Loading Sheet
-      await this.printLoadingGatePass(res.batchId);
-      await this.loadData();
-      this.switchTab('cars');
-    } else {
-      app.showAlert({ title: 'Loading Error', message: res.error || 'Failed to load cartons.' });
-    }
+    const itemsListHtml = items.map(it => {
+      const c = this.cartons.find(x => x.id === it.carton_id);
+      const name = c ? c.carton_name : `Carton #${it.carton_id}`;
+      return `
+        <div class="flex items-center justify-between py-1 px-2 border-b border-slate-100 last:border-0 text-xs">
+          <span class="font-bold text-slate-800">${name}</span>
+          <span class="font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md tabular-nums">${it.cartons_to_load} ctns</span>
+        </div>
+      `;
+    }).join('');
+
+    app.showConfirm({
+      title: 'Confirm Vehicle Dispatch & Loading',
+      message: `
+        <div class="text-left space-y-3">
+          <p class="text-xs text-slate-600">
+            Are you sure you want to load <b class="font-black text-blue-700 text-sm">${totalCtns} cartons</b> into vehicle <b class="font-black text-slate-900">${carName}</b>${driverName ? ` (Driver: <b>${driverName}</b>)` : ''}?
+          </p>
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-h-48 overflow-y-auto">
+            <div class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Cartons Being Transferred:</div>
+            ${itemsListHtml}
+          </div>
+          <p class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 font-medium">
+            ⚠️ Cartons will be deducted from Factory Warehouse Stock and transferred into this car's inventory.
+          </p>
+        </div>
+      `,
+      confirmText: 'Confirm & Load',
+      confirmColor: 'blue',
+      onConfirm: async () => {
+        app.showLoading?.();
+        try {
+          const res = await window.api.loadCarStock({
+            car_id: carId,
+            date,
+            items
+          });
+
+          if (res && res.success) {
+            this.dispatchItems = {};
+            app.showToast(`Stock loaded! Dispatch No: ${res.dispatchNo}`, 'success');
+            // Generate & preview A5 Gate Pass Loading Sheet
+            await this.printLoadingGatePass(res.batchId);
+            await this.loadData();
+            this.switchTab('cars');
+          } else {
+            app.showAlert({ title: 'Loading Error', message: res.error || 'Failed to load cartons.' });
+          }
+        } finally {
+          app.hideLoading?.();
+        }
+      }
+    });
   },
 
   renderHistoryView() {

@@ -1118,11 +1118,6 @@ window.CarLoading = {
               <input type="text" id="car-phone" value="${car.phone || ''}" placeholder="0300-1234567"
                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500 font-mono">
             </div>
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes</label>
-              <input type="text" id="car-notes" value="${car.notes || ''}" placeholder="Capacity, condition, remarks..."
-                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
-            </div>
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button type="button" onclick="CarLoading.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
               <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black shadow-md cursor-pointer">Save Vehicle</button>
@@ -1148,7 +1143,7 @@ window.CarLoading = {
       driver_name: document.getElementById('car-driver').value,
       phone: document.getElementById('car-phone').value,
       area: '',
-      notes: document.getElementById('car-notes').value
+      notes: ''
     };
 
     const res = await window.api.saveCar(data);

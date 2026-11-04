@@ -319,12 +319,29 @@ const app = {
 
     // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(btn => {
-      if (btn.id === `nav-${page}`) {
-        btn.classList.add('bg-accent', 'text-slate-900', 'font-bold');
-        btn.classList.remove('hover:bg-slate-800');
+      const isCurrent = btn.id === `nav-${page}`;
+      const icon = btn.querySelector('.nav-icon');
+      const text = btn.querySelector('.nav-text');
+      if (isCurrent) {
+        btn.classList.add('active');
+        if (text) {
+          text.classList.add('bg-accent', 'text-slate-950', 'font-black', 'shadow-sm');
+          text.classList.remove('text-slate-300', 'group-hover:text-white', 'group-hover:bg-slate-800/60');
+        }
+        if (icon) {
+          icon.classList.add('bg-slate-900', 'border-amber-400', 'ring-2', 'ring-amber-400/40', 'shadow-sm');
+          icon.classList.remove('bg-slate-800/80', 'border-slate-700/60');
+        }
       } else {
-        btn.classList.remove('bg-accent', 'text-slate-900', 'font-bold');
-        btn.classList.add('hover:bg-slate-800');
+        btn.classList.remove('active');
+        if (text) {
+          text.classList.remove('bg-accent', 'text-slate-950', 'font-black', 'shadow-sm');
+          text.classList.add('text-slate-300', 'group-hover:text-white', 'group-hover:bg-slate-800/60');
+        }
+        if (icon) {
+          icon.classList.remove('bg-slate-900', 'border-amber-400', 'ring-2', 'ring-amber-400/40', 'shadow-sm');
+          icon.classList.add('bg-slate-800/80', 'border-slate-700/60');
+        }
       }
     });
 

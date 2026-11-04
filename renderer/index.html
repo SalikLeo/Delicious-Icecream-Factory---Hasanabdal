@@ -292,7 +292,7 @@
 <body class="bg-gray-50 text-slate-800 font-sans h-screen flex overflow-hidden">
 
   <!-- Sidebar -->
-  <aside class="w-48 bg-slate-900 text-slate-300 flex flex-col no-print shrink-0 shadow-xl z-30">
+  <aside class="w-52 bg-slate-900 text-slate-300 flex flex-col no-print shrink-0 shadow-xl z-30">
     <div class="flex-1 flex flex-col min-h-0 overflow-y-auto sidebar-scroll">
       <!-- Logo Area -->
       <div class="pt-4 pb-2.5 px-3 flex flex-col items-center justify-center border-b border-slate-800 gap-2 shrink-0">
@@ -306,65 +306,110 @@
       </div>
   
       <!-- Nav Links -->
-      <nav class="flex-1 py-2.5 flex flex-col gap-1 px-2.5">
-        <button onclick="app.navigate('dashboard')" id="nav-dashboard" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-400"><i data-lucide="layout-dashboard" class="w-4 h-4"></i></span>
-          <span class="truncate">Dashboard</span>
+      <nav class="flex-1 py-2 flex flex-col gap-1 px-2">
+        <button onclick="app.navigate('dashboard')" id="nav-dashboard" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-amber-400 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            Dashboard
+          </span>
         </button>
 
         <div class="px-2 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400/80">Factory Stages</div>
 
-        <button onclick="app.navigate('raw-materials')" id="nav-raw-materials" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-emerald-400"><i data-lucide="boxes" class="w-4 h-4"></i></span>
-          <span class="truncate">1. Raw Materials</span>
+        <button onclick="app.navigate('raw-materials')" id="nav-raw-materials" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-emerald-400 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="boxes" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            1. Raw Materials
+          </span>
         </button>
 
-        <button onclick="app.navigate('production')" id="nav-production" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-cyan-400"><i data-lucide="layers" class="w-4 h-4"></i></span>
-          <span class="truncate">2. Production (Pcs)</span>
+        <button onclick="app.navigate('production')" id="nav-production" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-cyan-400 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="layers" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            2. Production (Pcs)
+          </span>
         </button>
 
-        <button onclick="app.navigate('carton-packing')" id="nav-carton-packing" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-purple-400"><i data-lucide="package" class="w-4 h-4"></i></span>
-          <span class="truncate">3. Carton Packing</span>
+        <button onclick="app.navigate('carton-packing')" id="nav-carton-packing" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-purple-400 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="package" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            3. Carton Packing
+          </span>
         </button>
 
-        <button onclick="app.navigate('car-loading')" id="nav-car-loading" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-blue-400"><i data-lucide="truck" class="w-4 h-4"></i></span>
-          <span class="truncate">4. Cars &amp; Loading</span>
+        <button onclick="app.navigate('car-loading')" id="nav-car-loading" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-blue-400 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="truck" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            4. Cars &amp; Loading
+          </span>
         </button>
 
-        <button onclick="app.navigate('shop-sales')" id="nav-shop-sales" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-400"><i data-lucide="shopping-cart" class="w-4 h-4"></i></span>
-          <span class="truncate">5. Shop Deliveries</span>
+        <button onclick="app.navigate('shop-sales')" id="nav-shop-sales" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-amber-400 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="shopping-cart" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            5. Shop Deliveries
+          </span>
         </button>
 
         <div class="px-2 pt-2 pb-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400/80">Records &amp; Accounts</div>
 
-        <button onclick="app.navigate('proposals')" id="nav-proposals" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="history" class="w-4 h-4"></i></span>
-          <span class="truncate">Delivery History</span>
+        <button onclick="app.navigate('proposals')" id="nav-proposals" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="history" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            Delivery History
+          </span>
         </button>
 
-        <button onclick="app.navigate('customers')" id="nav-customers" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="store" class="w-4 h-4"></i></span>
-          <span class="truncate">Shops / Khata</span>
+        <button onclick="app.navigate('customers')" id="nav-customers" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="store" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            Shops / Khata
+          </span>
         </button>
 
-        <button onclick="app.navigate('reports')" id="nav-reports" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></span>
-          <span class="truncate">Factory Reports</span>
+        <button onclick="app.navigate('reports')" id="nav-reports" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            Factory Reports
+          </span>
         </button>
 
-        <button onclick="app.navigate('expenses')" id="nav-expenses" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="receipt" class="w-4 h-4"></i></span>
-          <span class="truncate">Expenses</span>
+        <button onclick="app.navigate('expenses')" id="nav-expenses" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="receipt" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            Expenses
+          </span>
         </button>
 
-        <button onclick="app.navigate('settings')" id="nav-settings" class="nav-btn flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800 text-left transition-colors font-semibold text-xs text-slate-200">
-          <span class="w-5 h-5 flex items-center justify-center shrink-0 text-slate-400"><i data-lucide="settings" class="w-4 h-4"></i></span>
-          <span class="truncate">Settings</span>
-        </button></nav>
+        <button onclick="app.navigate('settings')" id="nav-settings" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="settings" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2.5 rounded-xl font-bold text-xs truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            Settings
+          </span>
+        </button>
+      </nav>
     </div>
 
     <!-- Zoom Controls for Laptop / PC Screens -->

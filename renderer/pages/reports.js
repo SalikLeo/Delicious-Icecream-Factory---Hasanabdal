@@ -221,6 +221,17 @@ window.Reports = {
               `}
             </div>
           ` : ''}
+
+          <!-- Red Cross Reset to Current Date/Period -->
+          <div id="rpt-cars-reset-wrap" class="shrink-0 flex items-center">
+            ${this.isFilteredFromCurrent() ? `
+              <button type="button" onclick="Reports.resetToCurrent()" 
+                      class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
+                      title="Go back to current (Today)">
+                <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+              </button>
+            ` : ''}
+          </div>
         </div>
 
         <button type="button" onclick="Reports.printCarReport()"
@@ -415,6 +426,44 @@ window.Reports = {
     this.loadTabContent();
   },
 
+  isFilteredFromCurrent() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.periodType !== 'daily') return true;
+    if (this.selectedDate && this.selectedDate !== today) return true;
+    return false;
+  },
+
+  resetToCurrent() {
+    this.periodType = 'daily';
+    this.selectedDate = new Date().toISOString().slice(0, 10);
+    this.loadTabContent();
+  },
+
+  updateResetButtons() {
+    const wrapCars = document.getElementById('rpt-cars-reset-wrap');
+    if (wrapCars) {
+      wrapCars.innerHTML = this.isFilteredFromCurrent() ? `
+        <button type="button" onclick="Reports.resetToCurrent()" 
+                class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
+                title="Go back to current (Today)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+        </button>
+      ` : '';
+      if (window.lucide) lucide.createIcons({ root: wrapCars });
+    }
+    const wrapFin = document.getElementById('rpt-finance-reset-wrap');
+    if (wrapFin) {
+      wrapFin.innerHTML = this.isFilteredFromCurrent() ? `
+        <button type="button" onclick="Reports.resetToCurrent()" 
+                class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
+                title="Go back to current (Today)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+        </button>
+      ` : '';
+      if (window.lucide) lucide.createIcons({ root: wrapFin });
+    }
+  },
+
   onDateChange(val) {
     if (!val) return;
     this.selectedDate = val;
@@ -425,6 +474,7 @@ window.Reports = {
     } else {
       this.loadTabContent();
     }
+    this.updateResetButtons();
   },
 
   setPeriod(period) {
@@ -735,6 +785,17 @@ window.Reports = {
               `}
             </div>
           ` : ''}
+
+          <!-- Red Cross Reset to Current Date/Period -->
+          <div id="rpt-finance-reset-wrap" class="shrink-0 flex items-center">
+            ${this.isFilteredFromCurrent() ? `
+              <button type="button" onclick="Reports.resetToCurrent()" 
+                      class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
+                      title="Go back to current (Today)">
+                <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+              </button>
+            ` : ''}
+          </div>
         </div>
 
         <button type="button" onclick="Reports.printFinanceReport()"

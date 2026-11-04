@@ -188,6 +188,17 @@ window.RawMaterials = {
                 `}
               </div>
             ` : ''}
+
+            <!-- Red Cross Reset to Current Date/Period -->
+            <div id="rm-reset-filter-wrap" class="shrink-0 flex items-center">
+              ${this.isFilteredFromCurrent() ? `
+                <button type="button" onclick="RawMaterials.resetToCurrent()" 
+                        class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
+                        title="Go back to current (Today)">
+                  <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+                </button>
+              ` : ''}
+            </div>
           </div>
         </div>
 
@@ -294,10 +305,38 @@ window.RawMaterials = {
     this.renderUI();
   },
 
+  isFilteredFromCurrent() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.periodType !== 'day') return true;
+    if (this.selectedDate && this.selectedDate !== today) return true;
+    return false;
+  },
+
+  resetToCurrent() {
+    this.periodType = 'day';
+    this.selectedDate = new Date().toISOString().slice(0, 10);
+    this.renderUI();
+  },
+
+  updateResetButton() {
+    const wrap = document.getElementById('rm-reset-filter-wrap');
+    if (wrap) {
+      wrap.innerHTML = this.isFilteredFromCurrent() ? `
+        <button type="button" onclick="RawMaterials.resetToCurrent()" 
+                class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
+                title="Go back to current (Today)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+        </button>
+      ` : '';
+      if (window.lucide) lucide.createIcons({ root: wrap });
+    }
+  },
+
   onDateChange(val) {
     if (!val) return;
     this.selectedDate = val;
     this.updateContentArea();
+    this.updateResetButton();
   },
 
   getAvailableYears() {

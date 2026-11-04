@@ -574,13 +574,13 @@ window.CartonPacking = {
                     <span class="text-sm font-black ${stock > 0 ? 'text-purple-700' : 'text-slate-400'} tabular-nums">
                       ${stock.toLocaleString()}
                     </span>
-                    <span class="text-[10px] font-bold text-slate-400">ctns</span>
+                    <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
                   </td>
                   <td class="py-1.5 px-3 text-right border-r border-slate-200">
                     <span class="text-xs font-black ${loaded > 0 ? 'text-blue-600' : 'text-slate-400'} tabular-nums">
                       ${loaded.toLocaleString()}
                     </span>
-                    <span class="text-[10px] font-bold text-slate-400">ctns</span>
+                    <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
                   </td>
                   <td class="py-1.5 px-3 text-right font-mono font-bold text-slate-600 tabular-nums border-r border-slate-200">
                     Rs. ${c.carton_cost_price}

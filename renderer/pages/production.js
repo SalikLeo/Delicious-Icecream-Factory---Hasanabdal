@@ -550,15 +550,15 @@ window.Production = {
                     <span class="text-sm font-black ${pieces > 0 ? 'text-cyan-700' : 'text-slate-400'} tabular-nums">
                       ${pieces.toLocaleString()}
                     </span>
-                    <span class="text-[10px] font-normal text-slate-400">pcs</span>
+                    <span class="text-xs font-black text-slate-700 ml-1 inline-block">pcs</span>
                   </td>
                   <td class="py-1.5 px-3 text-right font-mono font-bold text-slate-700 tabular-nums border-r border-slate-200">
                     Rs. ${cost}
-                    <span class="text-[10px] font-normal text-slate-400">/ pc</span>
+                    <span class="text-[11px] font-bold text-slate-500">/ pc</span>
                   </td>
                   <td class="py-1.5 px-3 text-right font-mono font-black text-emerald-700 tabular-nums border-r border-slate-200">
                     Rs. ${retail}
-                    <span class="text-[10px] font-normal text-slate-400">/ pc</span>
+                    <span class="text-[11px] font-bold text-slate-500">/ pc</span>
                   </td>
                   <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">
                     Rs. ${totalCostVal.toLocaleString()}

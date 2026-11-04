@@ -546,11 +546,13 @@ window.RawMaterials = {
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px] uppercase">${m.category || 'General'}</span>
                   </td>
-                  <td class="py-1.5 px-3 font-mono font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
-                  <td class="py-1.5 px-3 text-right font-black text-sm tabular-nums border-r border-slate-200 ${isLow ? 'text-rose-600' : 'text-emerald-700'}">
-                    ${Number(m.current_stock).toFixed(1).replace(/\.0$/, '')} <span class="text-[10px] font-normal text-slate-400">${m.unit}</span>
+                  <td class="py-1.5 px-3 border-r border-slate-200">
+                    <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-800 font-black text-xs font-mono">${m.unit}</span>
                   </td>
-                  <td class="py-1.5 px-3 text-right font-mono font-bold text-slate-700 tabular-nums border-r border-slate-200">Rs. ${Number(m.cost_price).toFixed(2).replace(/\.00$/, '')}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-sm tabular-nums border-r border-slate-200 ${isLow ? 'text-rose-600' : 'text-emerald-700'}">
+                    ${Number(m.current_stock).toFixed(1).replace(/\.0$/, '')} <span class="text-xs font-black text-slate-700 ml-1 inline-block">${m.unit}</span>
+                  </td>
+                  <td class="py-1.5 px-3 text-right font-mono font-bold text-slate-700 tabular-nums border-r border-slate-200">Rs. ${Number(m.cost_price).toFixed(2).replace(/\.00$/, '')} <span class="text-[11px] font-bold text-slate-500">/ ${m.unit}</span></td>
                   <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${val.toLocaleString()}</td>
                   <td class="py-1.5 px-3 text-center border-r border-slate-200">
                     ${isLow 
@@ -640,6 +642,8 @@ window.RawMaterials = {
             ${logs.map(log => {
               const isAdd = (log.qty_change || 0) > 0;
               const isProd = log.action === 'PRODUCTION_USED' || log.action === 'PRODUCTION';
+              const mat = (this.materials || []).find(m => m.id === log.material_id);
+              const matUnit = mat ? mat.unit : '';
               const actionBadge = log.action === 'PURCHASE'
                 ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] tracking-wide">PURCHASE</span>`
                 : (isProd
@@ -655,10 +659,10 @@ window.RawMaterials = {
                   </td>
                   <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${log.material_name}</td>
                   <td class="py-1.5 px-3 text-right font-black tabular-nums border-r border-slate-200 ${isAdd ? 'text-emerald-600' : 'text-rose-600'}">
-                    ${isAdd ? '+' : ''}${log.qty_change}
+                    ${isAdd ? '+' : ''}${log.qty_change} ${matUnit ? `<span class="text-xs font-black text-slate-700 ml-0.5">${matUnit}</span>` : ''}
                   </td>
-                  <td class="py-1.5 px-3 text-right font-mono text-slate-400 tabular-nums border-r border-slate-200">${log.stock_before ?? '-'}</td>
-                  <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">${log.stock_after ?? '-'}</td>
+                  <td class="py-1.5 px-3 text-right font-mono text-slate-500 tabular-nums border-r border-slate-200">${log.stock_before ?? '-'} ${matUnit && log.stock_before !== undefined && log.stock_before !== null ? `<span class="text-[11px] font-bold text-slate-500">${matUnit}</span>` : ''}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">${log.stock_after ?? '-'} ${matUnit && log.stock_after !== undefined && log.stock_after !== null ? `<span class="text-xs font-black text-slate-700 ml-0.5">${matUnit}</span>` : ''}</td>
                   <td class="py-1.5 px-3 text-slate-500 text-[11px]">${log.notes || ''}</td>
                 </tr>
               `;

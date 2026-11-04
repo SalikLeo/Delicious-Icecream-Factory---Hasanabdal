@@ -944,7 +944,6 @@ window.ShopSales = {
     if (maxStock > 0 && parsed > maxStock) {
       parsed = maxStock;
       if (inputEl) inputEl.value = maxStock;
-      app.showToast(`Quantity limited to vehicle stock (${maxStock} ctns)`, 'warning');
     } else if (parsed < 1) {
       parsed = 1;
       if (inputEl) inputEl.value = 1;
@@ -969,7 +968,6 @@ window.ShopSales = {
     } else if (maxStock > 0 && parsed > maxStock) {
       parsed = maxStock;
       inputEl.value = maxStock;
-      app.showToast(`Quantity limited to vehicle stock (${maxStock} ctns)`, 'warning');
     }
 
     item.quantity = parsed;

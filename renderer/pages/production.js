@@ -1117,6 +1117,14 @@ window.Production = {
   },
 
   openItemModal(id = null) {
+    if (id) {
+      app.authorizeAction(() => this._renderItemModal(id), 'editing production product');
+    } else {
+      this._renderItemModal(null);
+    }
+  },
+
+  _renderItemModal(id = null) {
     const it = id ? this.items.find(x => x.id === id) : {
       id: null,
       name: '',
@@ -1265,51 +1273,55 @@ window.Production = {
   },
 
   async deleteItem(id) {
-    const it = this.items.find(x => x.id === id);
-    if (!it) return;
-    const ok = await new Promise(resolve => {
-      app.showConfirm({
-        title: 'Delete Item?',
-        message: `Are you sure you want to delete "${it.name}"? This item definition will be permanently removed.`,
-        confirmText: 'Delete Item',
-        confirmColor: 'red',
-        onConfirm: () => resolve(true),
-        onCancel: () => resolve(false)
+    app.authorizeAction(async () => {
+      const it = this.items.find(x => x.id === id);
+      if (!it) return;
+      const ok = await new Promise(resolve => {
+        app.showConfirm({
+          title: 'Delete Item?',
+          message: `Are you sure you want to delete "${it.name}"? This item definition will be permanently removed.`,
+          confirmText: 'Delete Item',
+          confirmColor: 'red',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
       });
-    });
 
-    if (ok) {
-      const res = await window.api.deleteIcecreamItem(id);
-      if (res && res.success) {
-        app.showToast('Item deleted successfully.', 'success');
-        await this.loadData();
-      } else {
-        app.showAlert({ title: 'Error', message: res.error || 'Failed to delete item.' });
+      if (ok) {
+        const res = await window.api.deleteIcecreamItem(id);
+        if (res && res.success) {
+          app.showToast('Item deleted successfully.', 'success');
+          await this.loadData();
+        } else {
+          app.showAlert({ title: 'Error', message: res.error || 'Failed to delete item.' });
+        }
       }
-    }
+    }, 'deleting production product');
   },
 
   async deleteBatch(id) {
-    const ok = await new Promise(resolve => {
-      app.showConfirm({
-        title: 'Delete Production Run?',
-        message: 'Are you sure you want to delete this batch? The produced pieces will be deducted from stock.',
-        confirmText: 'Delete Batch',
-        confirmColor: 'red',
-        onConfirm: () => resolve(true),
-        onCancel: () => resolve(false)
+    app.authorizeAction(async () => {
+      const ok = await new Promise(resolve => {
+        app.showConfirm({
+          title: 'Delete Production Run?',
+          message: 'Are you sure you want to delete this batch? The produced pieces will be deducted from stock.',
+          confirmText: 'Delete Batch',
+          confirmColor: 'red',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
       });
-    });
 
-    if (ok) {
-      const res = await window.api.deleteProductionBatch(id);
-      if (res && res.success) {
-        app.showToast('Batch deleted & stock reversed', 'success');
-        await this.loadData();
-      } else {
-        app.showAlert({ title: 'Error', message: res.error || 'Could not delete batch.' });
+      if (ok) {
+        const res = await window.api.deleteProductionBatch(id);
+        if (res && res.success) {
+          app.showToast('Batch deleted & stock reversed', 'success');
+          await this.loadData();
+        } else {
+          app.showAlert({ title: 'Error', message: res.error || 'Could not delete batch.' });
+        }
       }
-    }
+    }, 'deleting production batch');
   },
 
   printReport() {

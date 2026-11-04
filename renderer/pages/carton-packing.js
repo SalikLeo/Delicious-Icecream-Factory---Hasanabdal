@@ -1087,6 +1087,14 @@ window.CartonPacking = {
   },
 
   openCartonConfigModal(id = null) {
+    if (id) {
+      app.authorizeAction(() => this._renderCartonConfigModal(id), 'editing carton configuration');
+    } else {
+      this._renderCartonConfigModal(null);
+    }
+  },
+
+  _renderCartonConfigModal(id = null) {
     const c = id ? this.cartons.find(x => x.id === id) : {
       id: null,
       item_id: this.singleItems[0]?.id || null,
@@ -1426,26 +1434,28 @@ window.CartonPacking = {
   },
 
   async deleteBatch(id) {
-    const ok = await new Promise(resolve => {
-      app.showConfirm({
-        title: 'Delete Packing Batch?',
-        message: 'Are you sure? This will reverse the stock (cartons deducted, single pieces restored).',
-        confirmText: 'Delete Batch',
-        confirmColor: 'red',
-        onConfirm: () => resolve(true),
-        onCancel: () => resolve(false)
+    app.authorizeAction(async () => {
+      const ok = await new Promise(resolve => {
+        app.showConfirm({
+          title: 'Delete Packing Batch?',
+          message: 'Are you sure? This will reverse the stock (cartons deducted, single pieces restored).',
+          confirmText: 'Delete Batch',
+          confirmColor: 'red',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
       });
-    });
 
-    if (ok) {
-      const res = await window.api.deletePackingBatch(id);
-      if (res && res.success) {
-        app.showToast('Packing batch reversed', 'success');
-        await this.loadData();
-      } else {
-        app.showAlert({ title: 'Error', message: res.error || 'Failed to reverse batch.' });
+      if (ok) {
+        const res = await window.api.deletePackingBatch(id);
+        if (res && res.success) {
+          app.showToast('Packing batch reversed', 'success');
+          await this.loadData();
+        } else {
+          app.showAlert({ title: 'Error', message: res.error || 'Failed to reverse batch.' });
+        }
       }
-    }
+    }, 'deleting packing batch');
   },
 
   printReport() {

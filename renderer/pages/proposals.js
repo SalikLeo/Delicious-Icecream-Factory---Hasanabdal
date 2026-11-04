@@ -646,6 +646,7 @@ window.Proposals = {
   },
 
   async deleteDeliveryOrder(id, invoiceNo) {
+    app.authorizeAction(() => {
     app.showConfirm({
       title: 'Delete Delivery Order?',
       message: `Are you sure you want to delete delivery invoice "${invoiceNo}"? This will reverse any shop khata credit balance and restore records.`,
@@ -668,5 +669,6 @@ window.Proposals = {
         }
       }
     });
+    }, 'deleting delivery order invoice');
   }
 };

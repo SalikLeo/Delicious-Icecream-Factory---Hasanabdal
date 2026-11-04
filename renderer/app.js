@@ -912,6 +912,19 @@ const app = {
     });
   },
 
+  authorizeAction(callback, actionDescription = 'this action') {
+    const actionPassword = window.storage ? window.storage.get('action_password') : null;
+    if (actionPassword && String(actionPassword).trim()) {
+      this.verifyPassword({
+        title: 'Action Authorization (2nd Password)',
+        message: 'Please enter 2nd password to authorize ' + actionDescription + ':',
+        onVerified: callback
+      });
+    } else {
+      callback();
+    }
+  },
+
   togglePromptPasswordVisibility() {
     const input = document.getElementById('prompt-input');
     const btn = document.getElementById('prompt-toggle-btn');

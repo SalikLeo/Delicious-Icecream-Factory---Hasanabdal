@@ -95,8 +95,8 @@ const Settings = {
             </form>
           </div>
 
-          <!-- Security Settings -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100">
+          <!-- Tab Access Security -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl">
               <h3 class="font-bold text-lg text-slate-700">Tab Access Security</h3>
             </div>
@@ -147,6 +147,54 @@ const Settings = {
                        </div>
                      </div>
                   </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2nd Password: Action / Edit & Delete Security -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-lg text-slate-700">2nd Password (Edit &amp; Delete Security)</h3>
+                <p class="text-xs text-slate-500">Protect edit and delete actions across all stages and modules.</p>
+              </div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Action Protection
+              </span>
+            </div>
+            <div class="p-4 space-y-4">
+              <div class="flex items-start gap-4">
+                 <div class="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+                    <i data-lucide="key" class="w-5 h-5"></i>
+                 </div>
+                 <div class="flex-1">
+                    <h4 class="font-bold text-slate-800 text-sm">Action Security Password</h4>
+                    <p class="text-xs text-slate-500 mb-3">Require a dedicated 2nd password before editing or deleting records (raw materials, production items/batches, carton packing, vehicles, shops, invoices, expenses). Leave blank to disable protection.</p>
+                    
+                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                       <div>
+                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">New 2nd Password</label>
+                         <div class="relative">
+                           <input type="password" id="set-action-password" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-2 pr-9 text-sm focus:ring-1 focus:ring-accent outline-none">
+                           <button type="button" onclick="Settings.togglePasswordVisibility('set-action-password', this)" class="password-visibility-toggle absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1">
+                             <i data-lucide="eye" class="w-4 h-4"></i>
+                           </button>
+                         </div>
+                       </div>
+                       <div>
+                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Confirm 2nd Password</label>
+                         <div class="relative">
+                           <input type="password" id="set-action-password-confirm" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-2 pr-9 text-sm focus:ring-1 focus:ring-accent outline-none">
+                           <button type="button" onclick="Settings.togglePasswordVisibility('set-action-password-confirm', this)" class="password-visibility-toggle absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1">
+                             <i data-lucide="eye" class="w-4 h-4"></i>
+                           </button>
+                         </div>
+                       </div>
+                     </div>
+                     <button type="button" id="btn-remove-action-pass" onclick="Settings.removeActionPassword()" class="hidden text-[10px] font-bold text-rose-500 hover:text-rose-700 uppercase tracking-widest flex items-center gap-1.5 transition-colors mb-1">
+                        <i data-lucide="unlock" class="w-3 h-3"></i> Remove Current 2nd Password
+                     </button>
+                 </div>
               </div>
             </div>
           </div>

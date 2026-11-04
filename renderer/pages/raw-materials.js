@@ -763,7 +763,9 @@ window.RawMaterials = {
   openEditModal(id) {
     const m = this.materials.find(x => x.id === id);
     if (!m) return;
-    this.showMaterialModal(m);
+    app.authorizeAction(() => {
+      this.showMaterialModal(m);
+    }, 'editing raw material');
   },
 
   showMaterialModal(m) {
@@ -1110,26 +1112,28 @@ window.RawMaterials = {
   },
 
   async deleteMaterial(id) {
-    const ok = await new Promise(resolve => {
-      app.showConfirm({
-        title: 'Delete Raw Material?',
-        message: 'Are you sure you want to delete this raw material item?',
-        confirmText: 'Delete',
-        confirmColor: 'red',
-        onConfirm: () => resolve(true),
-        onCancel: () => resolve(false)
+    app.authorizeAction(async () => {
+      const ok = await new Promise(resolve => {
+        app.showConfirm({
+          title: 'Delete Raw Material?',
+          message: 'Are you sure you want to delete this raw material item?',
+          confirmText: 'Delete',
+          confirmColor: 'red',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
       });
-    });
 
-    if (ok) {
-      const res = await window.api.deleteRawMaterial(id);
-      if (res && res.success) {
-        app.showToast('Material deleted', 'success');
-        await this.loadData();
-      } else {
-        app.showAlert({ title: 'Cannot Delete', message: res.error || 'Failed to delete material.' });
+      if (ok) {
+        const res = await window.api.deleteRawMaterial(id);
+        if (res && res.success) {
+          app.showToast('Material deleted', 'success');
+          await this.loadData();
+        } else {
+          app.showAlert({ title: 'Cannot Delete', message: res.error || 'Failed to delete material.' });
+        }
       }
-    }
+    }, 'deleting raw material');
   },
 
   printReport() {

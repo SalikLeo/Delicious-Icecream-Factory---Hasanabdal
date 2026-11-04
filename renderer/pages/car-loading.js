@@ -1161,6 +1161,14 @@ window.CarLoading = {
   },
 
   openCarModal(id = null) {
+    if (id) {
+      app.authorizeAction(() => this._renderCarModal(id), 'editing vehicle');
+    } else {
+      this._renderCarModal(null);
+    }
+  },
+
+  _renderCarModal(id = null) {
     const car = id ? this.cars.find(x => x.id === id) : {
       id: null,
       car_number: '',
@@ -1403,26 +1411,28 @@ window.CarLoading = {
   },
 
   async deleteCar(id) {
-    const ok = await new Promise(resolve => {
-      app.showConfirm({
-        title: 'Delete Vehicle?',
-        message: 'Are you sure you want to remove this delivery car?',
-        confirmText: 'Delete',
-        confirmColor: 'red',
-        onConfirm: () => resolve(true),
-        onCancel: () => resolve(false)
+    app.authorizeAction(async () => {
+      const ok = await new Promise(resolve => {
+        app.showConfirm({
+          title: 'Delete Vehicle?',
+          message: 'Are you sure you want to remove this delivery car?',
+          confirmText: 'Delete',
+          confirmColor: 'red',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
       });
-    });
 
-    if (ok) {
-      const res = await window.api.deleteCar(id);
-      if (res && res.success) {
-        app.showToast('Vehicle deleted', 'success');
-        await this.loadData();
-      } else {
-        app.showAlert({ title: 'Cannot Delete', message: res.error || 'Failed to delete vehicle.' });
+      if (ok) {
+        const res = await window.api.deleteCar(id);
+        if (res && res.success) {
+          app.showToast('Vehicle deleted', 'success');
+          await this.loadData();
+        } else {
+          app.showAlert({ title: 'Cannot Delete', message: res.error || 'Failed to delete vehicle.' });
+        }
       }
-    }
+    }, 'deleting vehicle');
   },
 
   async printCarStockSheet(carId) {

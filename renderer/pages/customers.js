@@ -534,6 +534,14 @@ window.Customers = {
 
   // Modal handlers
   openShopModal(shopId = null) {
+    if (shopId) {
+      app.authorizeAction(() => this._renderShopModal(shopId), 'editing shop');
+    } else {
+      this._renderShopModal(null);
+    }
+  },
+
+  _renderShopModal(shopId = null) {
     const modal = document.getElementById('shop-edit-modal');
     const title = document.getElementById('shop-modal-title');
     const fId = document.getElementById('sf-id');
@@ -612,25 +620,27 @@ window.Customers = {
   },
 
   async deleteShop(id, name) {
-    app.showConfirm({
-      title: 'Delete Shop?',
-      message: `Are you sure you want to delete shop "${name}"?`,
-      confirmText: 'Yes, Delete',
-      confirmColor: 'bg-rose-600 hover:bg-rose-700 text-white',
-      onConfirm: async () => {
-        try {
-          app.showLoading();
-          await window.api.deleteShop(id);
-          this.selectedShopId = null;
-          await this.loadData();
-          app.showAlert({ title: 'Deleted', message: `Shop "${name}" removed.` });
-        } catch(e) {
-          app.showAlert({ title: 'Error', message: e.message });
-        } finally {
-          app.hideLoading();
+    app.authorizeAction(() => {
+      app.showConfirm({
+        title: 'Delete Shop?',
+        message: `Are you sure you want to delete shop "${name}"?`,
+        confirmText: 'Yes, Delete',
+        confirmColor: 'bg-rose-600 hover:bg-rose-700 text-white',
+        onConfirm: async () => {
+          try {
+            app.showLoading();
+            await window.api.deleteShop(id);
+            this.selectedShopId = null;
+            await this.loadData();
+            app.showAlert({ title: 'Deleted', message: `Shop "${name}" removed.` });
+          } catch(e) {
+            app.showAlert({ title: 'Error', message: e.message });
+          } finally {
+            app.hideLoading();
+          }
         }
-      }
-    });
+      });
+    }, 'deleting shop');
   },
 
   // Payment Modal

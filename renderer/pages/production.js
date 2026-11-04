@@ -478,6 +478,11 @@ window.Production = {
       `;
     }
 
+    const totalItems = items.length;
+    const totalPieces = items.reduce((sum, it) => sum + (Number(it.current_single_stock) || 0), 0);
+    const totalPoolCost = items.reduce((sum, it) => sum + ((Number(it.current_single_stock) || 0) * (Number(it.unit_cost) || 0)), 0);
+    const readyCount = items.filter(it => (Number(it.current_single_stock) || 0) > 0).length;
+
     return `
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
@@ -589,6 +594,32 @@ window.Production = {
               `;
             }).join('')}
           </tbody>
+          <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+            <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left">
+                <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                  <span class="text-cyan-700 font-black">TOTAL:</span>
+                  <span>${totalItems} ${totalItems === 1 ? 'Item' : 'Items'}</span>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-cyan-800 text-sm tabular-nums">
+                ${totalPieces.toLocaleString()} <span class="text-xs font-black text-slate-700 ml-1 inline-block">pcs</span>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-900 text-sm tabular-nums bg-cyan-50/70">
+                Rs. ${Math.round(totalPoolCost).toLocaleString()}
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center">
+                ${readyCount > 0 
+                  ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 font-black text-[10px]"><span class="w-1.5 h-1.5 rounded-full bg-cyan-600"></span> ${readyCount} Ready</span>`
+                  : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-bold text-[10px]">Empty</span>`
+                }
+              </td>
+              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;
@@ -605,6 +636,10 @@ window.Production = {
         </div>
       `;
     }
+
+    const totalBatches = batches.length;
+    const totalProducedPcs = batches.reduce((sum, b) => sum + (Number(b.produced_pieces) || 0), 0);
+    const grandTotalBatchCost = batches.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0);
 
     return `
       <div class="overflow-x-auto flex-1">
@@ -671,6 +706,25 @@ window.Production = {
               </tr>
             `).join('')}
           </tbody>
+          <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+            <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="3">
+                <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                  <span class="text-cyan-700 font-black">TOTAL:</span>
+                  <span>${totalBatches} ${totalBatches === 1 ? 'Production Batch' : 'Production Batches'}</span>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-cyan-800 text-xs tabular-nums">
+                +${totalProducedPcs.toLocaleString()} pcs
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-900 text-xs tabular-nums bg-cyan-50/70">
+                Rs. ${Math.round(grandTotalBatchCost).toLocaleString()}
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-slate-400 font-bold text-center">-</td>
+              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;

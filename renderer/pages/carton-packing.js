@@ -493,6 +493,12 @@ window.CartonPacking = {
       `;
     }
 
+    const totalCartonsCount = cartons.length;
+    const totalWarehouseCtns = cartons.reduce((sum, c) => sum + (Number(c.factory_carton_stock) || 0), 0);
+    const totalLoadedCtns = cartons.reduce((sum, c) => sum + (Number(c.total_loaded_in_cars) || 0), 0);
+    const totalWarehouseValue = cartons.reduce((sum, c) => sum + ((Number(c.factory_carton_stock) || 0) * (Number(c.carton_sale_price) || 0)), 0);
+    const totalPoolPcs = cartons.reduce((sum, c) => sum + (Number(c.available_single_pieces) || 0), 0);
+
     return `
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
@@ -613,6 +619,32 @@ window.CartonPacking = {
               `;
             }).join('')}
           </tbody>
+          <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+            <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left">
+                <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                  <span class="text-purple-700 font-black">TOTAL:</span>
+                  <span>${totalCartonsCount} ${totalCartonsCount === 1 ? 'Product' : 'Products'}</span>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-purple-800 text-sm tabular-nums">
+                ${totalWarehouseCtns.toLocaleString()} <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-blue-700 text-sm tabular-nums">
+                ${totalLoadedCtns.toLocaleString()} <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums bg-purple-50/70">
+                Rs. ${Math.round(totalWarehouseValue).toLocaleString()}
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center font-bold text-slate-700 text-xs">
+                ${totalPoolPcs.toLocaleString()} pcs
+              </td>
+              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;
@@ -629,6 +661,11 @@ window.CartonPacking = {
         </div>
       `;
     }
+
+    const totalBatchesCount = batches.length;
+    const totalPackedCtns = batches.reduce((sum, b) => sum + (Number(b.cartons_packed) || 0), 0);
+    const totalPiecesUsed = batches.reduce((sum, b) => sum + (Number(b.total_pieces_consumed) || 0), 0);
+    const grandTotalPackingCost = batches.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0);
 
     return `
       <div class="overflow-x-auto flex-1">
@@ -714,6 +751,29 @@ window.CartonPacking = {
               </tr>
             `).join('')}
           </tbody>
+          <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+            <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="3">
+                <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                  <span class="text-purple-700 font-black">TOTAL:</span>
+                  <span>${totalBatchesCount} ${totalBatchesCount === 1 ? 'Packing Batch' : 'Packing Batches'}</span>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-purple-700 text-xs tabular-nums">
+                +${totalPackedCtns.toLocaleString()} ctns
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-rose-600 text-xs tabular-nums">
+                -${totalPiecesUsed.toLocaleString()} pcs
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-900 text-xs tabular-nums bg-purple-50/70">
+                Rs. ${Math.round(grandTotalPackingCost).toLocaleString()}
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;

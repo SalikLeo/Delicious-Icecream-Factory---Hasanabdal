@@ -653,6 +653,25 @@ window.CarLoading = {
                 </tr>
               `).join('')}
             </tbody>
+            <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+              <tr class="bg-slate-100 border-t-2 border-slate-300">
+                <td class="py-2.5 px-3 border-r border-slate-300 text-left">
+                  <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                    <span class="text-blue-700 font-black">TOTAL:</span>
+                    <span>${loadedItems.length} ${loadedItems.length === 1 ? 'Product' : 'Products'}</span>
+                  </div>
+                </td>
+                <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+                <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-blue-700 text-sm tabular-nums">
+                  ${loadedItems.reduce((sum, it) => sum + (Number(it.cartons_loaded) || 0), 0).toLocaleString()} <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
+                </td>
+                <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+                <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums bg-blue-50/70">
+                  Rs. ${Math.round(loadedItems.reduce((sum, it) => sum + (Number(it.loaded_value) || 0), 0)).toLocaleString()}
+                </td>
+                <td class="py-2.5 px-3 text-center text-slate-400 font-bold text-xs">-</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       `}
@@ -725,6 +744,29 @@ window.CarLoading = {
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-700" id="dsp-table-body">
                 <!-- Injected by loadDispatchTable -->
               </tbody>
+              <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm" id="dsp-table-foot">
+                <tr class="bg-slate-100 border-t-2 border-slate-300">
+                  <td class="py-2.5 px-3 border-r border-slate-300 text-left">
+                    <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                      <span class="text-blue-700 font-black">TOTAL:</span>
+                      <span id="dsp-foot-items">0 Items</span>
+                    </div>
+                  </td>
+                  <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+                  <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-blue-700 text-sm tabular-nums" id="dsp-foot-already">
+                    0 ctns
+                  </td>
+                  <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-purple-800 text-sm tabular-nums" id="dsp-foot-warehouse">
+                    0 ctns
+                  </td>
+                  <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-blue-700 text-sm tabular-nums bg-blue-50/70" id="dsp-foot-loading">
+                    0 ctns
+                  </td>
+                  <td class="py-2.5 px-3 text-right font-black text-slate-900 text-sm tabular-nums" id="dsp-foot-after">
+                    0 ctns
+                  </td>
+                </tr>
+              </tfoot>
             </table>
 
             <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
@@ -808,6 +850,18 @@ window.CarLoading = {
       `;
     }).join('');
 
+    const totalItems = this.cartons.length;
+    const totalAlreadyInCar = this.cartons.reduce((sum, c) => sum + (invMap[c.id] || 0), 0);
+    const totalWarehouseStock = this.cartons.reduce((sum, c) => sum + (c.factory_carton_stock || 0), 0);
+    this._dispatchTotalAlready = totalAlreadyInCar;
+
+    const footItems = document.getElementById('dsp-foot-items');
+    if (footItems) footItems.textContent = `${totalItems} Items`;
+    const footAlready = document.getElementById('dsp-foot-already');
+    if (footAlready) footAlready.textContent = `${totalAlreadyInCar.toLocaleString()} ctns`;
+    const footWarehouse = document.getElementById('dsp-foot-warehouse');
+    if (footWarehouse) footWarehouse.textContent = `${totalWarehouseStock.toLocaleString()} ctns`;
+
     this.updateDispatchTotalCount();
   },
 
@@ -847,6 +901,15 @@ window.CarLoading = {
     });
     const countEl = document.getElementById('dsp-total-load-count');
     if (countEl) countEl.textContent = `${total} cartons`;
+
+    const footLoading = document.getElementById('dsp-foot-loading');
+    if (footLoading) footLoading.textContent = `${total.toLocaleString()} ctns`;
+
+    const footAfter = document.getElementById('dsp-foot-after');
+    if (footAfter) {
+      const already = this._dispatchTotalAlready || 0;
+      footAfter.textContent = `${(already + total).toLocaleString()} ctns`;
+    }
 
     const submitBtn = document.getElementById('dsp-submit-btn');
     let hasExceeding = false;
@@ -994,6 +1057,9 @@ window.CarLoading = {
       `;
     }
 
+    const totalDispatchesCount = list.length;
+    const grandTotalCartonsLoaded = list.reduce((sum, d) => sum + (Number(d.total_cartons) || 0), 0);
+
     return `
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs">
@@ -1052,6 +1118,21 @@ window.CarLoading = {
               </tr>
             `).join('')}
           </tbody>
+          <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
+            <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="4">
+                <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
+                  <span class="text-blue-700 font-black">TOTAL:</span>
+                  <span>${totalDispatchesCount} ${totalDispatchesCount === 1 ? 'Dispatch' : 'Dispatches'}</span>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-blue-700 text-sm tabular-nums">
+                ${grandTotalCartonsLoaded.toLocaleString()} ctns
+              </td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-slate-400 font-bold text-center">-</td>
+              <td class="py-2.5 px-3 text-slate-400 font-bold text-center">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;

@@ -274,27 +274,12 @@ window.ShopSales = {
               <div class="flex items-center justify-between mb-1.5">
                 <span class="text-[10px] font-black uppercase text-blue-900 tracking-wider">Loaded In This Car:</span>
                 <div class="flex items-center gap-2">
-                  <span class="text-[10px] text-blue-600 font-bold">Check to add in current sale</span>
+                  <span class="text-[10px] text-blue-600 font-bold">Select quantity to add in sale (rest remain in car)</span>
                   <button type="button" onclick="ShopSales.openQuickLoadCarModal()" class="text-[10px] text-blue-700 hover:text-blue-900 font-black underline cursor-pointer">+ Load More</button>
                 </div>
               </div>
               <div id="ss-car-loaded-pills" class="flex flex-wrap gap-2">
-                ${loadedCarItems.length === 0 ? `
-                  <span class="text-[11px] text-slate-400 font-bold italic">No cartons loaded in this car yet.</span>
-                ` : loadedCarItems.map(it => {
-                  const isAdded = this.items.some(x => x.carton_id === it.carton_id);
-                  return `
-                    <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none active:scale-95 shadow-2xs ${isAdded ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'}"
-                           title="${isAdded ? 'Uncheck to remove from bill (stays in car)' : 'Check to add in current sale'}">
-                      <input type="checkbox" 
-                             ${isAdded ? 'checked' : ''} 
-                             onchange="ShopSales.toggleLoadedCarItem(${it.carton_id}, this.checked)"
-                             class="w-3.5 h-3.5 rounded text-blue-600 accent-blue-600 cursor-pointer">
-                      <span class="truncate max-w-[200px]">${it.carton_name}:</span>
-                      <span class="font-black tabular-nums ${isAdded ? 'text-blue-100' : 'text-blue-700'}">${it.cartons_loaded} ctns</span>
-                    </label>
-                  `;
-                }).join('')}
+                ${this.renderLoadedCarPillsHtml()}
               </div>
             </div>
           </div>
@@ -665,49 +650,181 @@ window.ShopSales = {
     }
   },
 
-  renderLoadedCarPills() {
-    const container = document.getElementById('ss-car-loaded-pills');
-    if (!container) return;
-
+  renderLoadedCarPillsHtml() {
     const loadedCarItems = (this.carInventory || []).filter(it => (it.cartons_loaded || 0) > 0);
     if (loadedCarItems.length === 0) {
-      container.innerHTML = '<span class="text-[11px] text-slate-400 font-bold italic">No cartons loaded in this car yet.</span>';
-      return;
+      return '<span class="text-[11px] text-slate-400 font-bold italic py-1">No cartons loaded in this car yet.</span>';
     }
 
-    container.innerHTML = loadedCarItems.map(it => {
-      const isAdded = this.items.some(x => x.carton_id === it.carton_id);
+    return loadedCarItems.map(it => {
+      const cartItem = this.items.find(x => x.carton_id === it.carton_id);
+      const inSaleQty = cartItem ? (Number(cartItem.quantity) || 0) : 0;
+      const remainInCar = Math.max(0, it.cartons_loaded - inSaleQty);
+      const isAllInSale = inSaleQty >= it.cartons_loaded;
+
       return `
-        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none active:scale-95 shadow-2xs ${isAdded ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'}"
-               title="${isAdded ? 'Uncheck to remove from bill (stays in car)' : 'Check to add in current sale'}">
-          <input type="checkbox" 
-                 ${isAdded ? 'checked' : ''} 
-                 onchange="ShopSales.toggleLoadedCarItem(${it.carton_id}, this.checked)"
-                 class="w-3.5 h-3.5 rounded text-blue-600 accent-blue-600 cursor-pointer">
-          <span class="truncate max-w-[200px]">${it.carton_name}:</span>
-          <span class="font-black tabular-nums ${isAdded ? 'text-blue-100' : 'text-blue-700'}">${it.cartons_loaded} ctns</span>
-        </label>
+        <div id="pill-card-${it.carton_id}"
+             class="inline-flex items-center flex-wrap gap-2 px-2.5 py-1.5 rounded-xl border transition-all shadow-2xs ${inSaleQty > 0 ? 'bg-white border-blue-400 ring-2 ring-blue-100 shadow-xs' : 'bg-white/95 border-slate-200 hover:border-slate-300'}">
+          
+          <!-- Carton Name & Loaded Badge -->
+          <div class="flex items-center gap-1.5">
+            <span class="font-black text-slate-900 text-xs truncate max-w-[155px]" title="${it.carton_name}">${it.carton_name}</span>
+            <span class="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-md tabular-nums" title="Total loaded in vehicle">
+              ${it.cartons_loaded} in car
+            </span>
+          </div>
+
+          <span class="text-slate-300 font-light select-none">|</span>
+
+          <!-- In-Sale Stepper / Selector -->
+          <div class="flex items-center gap-1">
+            <span class="text-[10px] font-black text-slate-500 uppercase tracking-tight">In Sale:</span>
+            <div class="inline-flex items-center rounded-lg border border-slate-300 bg-slate-50 overflow-hidden shadow-2xs">
+              <button type="button" 
+                      id="pill-dec-${it.carton_id}"
+                      onclick="ShopSales.changeCarPillQty(${it.carton_id}, -1)" 
+                      class="w-6 h-6 flex items-center justify-center font-black text-slate-700 hover:bg-slate-200 active:scale-90 transition-all text-xs cursor-pointer select-none border-r border-slate-200 disabled:opacity-25 disabled:cursor-not-allowed"
+                      ${inSaleQty <= 0 ? 'disabled' : ''}
+                      title="Decrease sale quantity (leaves more in car)">−</button>
+
+              <input type="number" 
+                     id="pill-qty-${it.carton_id}"
+                     min="0" 
+                     max="${it.cartons_loaded}" 
+                     value="${inSaleQty}"
+                     onchange="ShopSales.setCarPillQty(${it.carton_id}, this.value)"
+                     oninput="ShopSales.setCarPillQty(${it.carton_id}, this.value, true)"
+                     class="w-10 h-6 text-center font-black text-xs text-slate-900 bg-white outline-none focus:bg-amber-50 focus:ring-1 focus:ring-blue-400 tabular-nums"
+                     title="Type quantity to add into current sale">
+
+              <button type="button" 
+                      onclick="ShopSales.changeCarPillQty(${it.carton_id}, 1)" 
+                      class="w-6 h-6 flex items-center justify-center font-black text-slate-700 hover:bg-slate-200 active:scale-90 transition-all text-xs cursor-pointer select-none border-l border-slate-200"
+                      title="Add 1 more to current sale">+</button>
+            </div>
+            <span class="text-[10px] text-slate-500 font-bold">ctns</span>
+          </div>
+
+          <!-- Quick All Button -->
+          <button type="button" 
+                  id="pill-all-${it.carton_id}"
+                  onclick="ShopSales.setCarPillQty(${it.carton_id}, ${it.cartons_loaded})" 
+                  class="px-1.5 py-0.5 text-[10px] font-black rounded border transition-all cursor-pointer ${isAllInSale ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-slate-100 hover:bg-blue-50 text-blue-700 border-slate-200'}"
+                  title="Add all ${it.cartons_loaded} ctns to current sale">
+            All
+          </button>
+
+          <!-- Remaining in Car Badge -->
+          <span id="pill-remain-${it.carton_id}" 
+                class="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums ${inSaleQty > 0 ? (remainInCar > 0 ? 'text-amber-800 bg-amber-50 border border-amber-200' : 'text-slate-600 bg-slate-100 border border-slate-200') : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}">
+            ${inSaleQty > 0 ? `${remainInCar} remain in car` : 'all in car'}
+          </span>
+        </div>
       `;
     }).join('');
   },
 
+  renderLoadedCarPills() {
+    const container = document.getElementById('ss-car-loaded-pills');
+    if (!container) return;
+
+    // Check if user is actively typing in one of the pill inputs
+    const activeEl = document.activeElement;
+    const isTypingInPill = activeEl && activeEl.id && activeEl.id.startsWith('pill-qty-');
+
+    if (isTypingInPill) {
+      const loadedCarItems = (this.carInventory || []).filter(it => (it.cartons_loaded || 0) > 0);
+      loadedCarItems.forEach(it => {
+        const cartItem = this.items.find(x => x.carton_id === it.carton_id);
+        const inSaleQty = cartItem ? (Number(cartItem.quantity) || 0) : 0;
+        const remainInCar = Math.max(0, it.cartons_loaded - inSaleQty);
+        const isAll = inSaleQty >= it.cartons_loaded;
+
+        const remainEl = document.getElementById(`pill-remain-${it.carton_id}`);
+        const decBtn = document.getElementById(`pill-dec-${it.carton_id}`);
+        const inputEl = document.getElementById(`pill-qty-${it.carton_id}`);
+        const cardEl = document.getElementById(`pill-card-${it.carton_id}`);
+        const allBtn = document.getElementById(`pill-all-${it.carton_id}`);
+
+        if (remainEl) {
+          remainEl.textContent = inSaleQty > 0 ? `${remainInCar} remain in car` : 'all in car';
+          remainEl.className = `text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums ${inSaleQty > 0 ? (remainInCar > 0 ? 'text-amber-800 bg-amber-50 border border-amber-200' : 'text-slate-600 bg-slate-100 border border-slate-200') : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}`;
+        }
+        if (decBtn) decBtn.disabled = inSaleQty <= 0;
+        if (inputEl && document.activeElement !== inputEl) inputEl.value = inSaleQty;
+        if (cardEl) {
+          cardEl.className = `inline-flex items-center flex-wrap gap-2 px-2.5 py-1.5 rounded-xl border transition-all shadow-2xs ${inSaleQty > 0 ? 'bg-white border-blue-400 ring-2 ring-blue-100 shadow-xs' : 'bg-white/95 border-slate-200 hover:border-slate-300'}`;
+        }
+        if (allBtn) {
+          allBtn.className = `px-1.5 py-0.5 text-[10px] font-black rounded border transition-all cursor-pointer ${isAll ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-slate-100 hover:bg-blue-50 text-blue-700 border-slate-200'}`;
+        }
+      });
+      return;
+    }
+
+    container.innerHTML = this.renderLoadedCarPillsHtml();
+  },
+
+  setCarPillQty(cartonId, qty, fromInput = false) {
+    const cId = Number(cartonId);
+    const carton = (this.cartons || []).find(c => c.id === cId);
+    if (!carton) return;
+
+    let parsed = parseInt(qty, 10);
+    if (isNaN(parsed) || parsed < 0) parsed = 0;
+
+    const existingIdx = this.items.findIndex(i => i.carton_id === cId);
+    if (parsed === 0) {
+      if (existingIdx !== -1) {
+        this.items.splice(existingIdx, 1);
+        this.renderCartTable();
+      } else {
+        this.renderLoadedCarPills();
+      }
+      return;
+    }
+
+    if (existingIdx !== -1) {
+      const existing = this.items[existingIdx];
+      existing.quantity = parsed;
+      existing.delivered_cartons = parsed;
+      existing.ordered_cartons = parsed;
+      this.updateLineTotal(existingIdx);
+      this.updateFinancialSummary();
+      this.renderCartTable();
+    } else {
+      const price = carton.carton_sale_price || 0;
+      this.items.push({
+        carton_id: carton.id,
+        carton_name: carton.carton_name,
+        barcode: carton.barcode || '',
+        pieces_per_carton: carton.pieces_per_carton || 20,
+        quantity: parsed,
+        ordered_cartons: parsed,
+        delivered_cartons: parsed,
+        returned_cartons: 0,
+        return_destination: 'car',
+        carton_price: price,
+        original_price: price,
+        discount: '',
+        discountType: 'flat',
+        line_total: price * parsed
+      });
+      this.renderCartTable();
+    }
+  },
+
+  changeCarPillQty(cartonId, delta) {
+    const cId = Number(cartonId);
+    const existing = this.items.find(i => i.carton_id === cId);
+    const current = existing ? (Number(existing.quantity) || 0) : 0;
+    const next = Math.max(0, current + delta);
+    this.setCarPillQty(cId, next);
+  },
+
   toggleLoadedCarItem(cartonId, isChecked) {
     const cId = Number(cartonId);
-    if (isChecked) {
-      const carton = (this.cartons || []).find(c => c.id === cId);
-      if (!carton) return;
-      this.addToCart(carton);
-      this.renderLoadedCarPills();
-    } else {
-      const idx = this.items.findIndex(x => x.carton_id === cId);
-      if (idx !== -1) {
-        const item = this.items[idx];
-        this.items.splice(idx, 1);
-        this.renderCartTable();
-        this.renderLoadedCarPills();
-        app.showToast(`Removed ${item.carton_name} from bill (kept in car)`, 'info');
-      }
-    }
+    this.setCarPillQty(cId, isChecked ? 1 : 0);
   },
 
   renderCartTable() {
@@ -753,7 +870,17 @@ window.ShopSales = {
               <span class="font-black text-slate-900 text-xs truncate max-w-[280px]">${item.carton_name}</span>
               ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
               ${item.pieces_per_carton ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
-              <span class="text-[9px] font-bold ${stock > 0 ? 'text-blue-700 bg-blue-50 border-blue-200/60' : 'text-slate-500 bg-slate-100 border-slate-200/60'} px-1.5 py-0.2 rounded border tabular-nums ml-auto sm:ml-0">${stock > 0 ? `${stock} in car` : 'Direct Factory'}</span>
+              ${(() => {
+                if (stock > 0) {
+                  const qtyNum = Number(item.quantity) || 0;
+                  const remain = Math.max(0, stock - qtyNum);
+                  const badgeText = qtyNum > stock
+                    ? `${stock} in car (0 remain, +${qtyNum - stock} wh)`
+                    : `${stock} in car (${remain} remain)`;
+                  return `<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded tabular-nums ml-auto sm:ml-0">${badgeText}</span>`;
+                }
+                return `<span class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/60 px-1.5 py-0.2 rounded tabular-nums ml-auto sm:ml-0">Direct Factory</span>`;
+              })()}
             </div>
           </td>
 
@@ -925,6 +1052,7 @@ window.ShopSales = {
     item.ordered_cartons = parsed;
     this.updateLineTotal(index);
     this.updateFinancialSummary();
+    this.renderLoadedCarPills();
   },
 
   onCartQtyBlur(index, inputEl) {
@@ -942,6 +1070,7 @@ window.ShopSales = {
     item.ordered_cartons = parsed;
     this.updateLineTotal(index);
     this.updateFinancialSummary();
+    this.renderLoadedCarPills();
   },
 
   updateCartPrice(index, price) {
@@ -950,6 +1079,7 @@ window.ShopSales = {
     item.carton_price = parseFloat(price) || 0;
     this.updateLineTotal(index);
     this.updateFinancialSummary();
+    this.renderLoadedCarPills();
   },
 
   resetCartPrice(index) {
@@ -997,6 +1127,7 @@ window.ShopSales = {
 
     this.updateLineTotal(index);
     this.updateFinancialSummary();
+    this.renderLoadedCarPills();
   },
 
   updateLineTotal(index) {

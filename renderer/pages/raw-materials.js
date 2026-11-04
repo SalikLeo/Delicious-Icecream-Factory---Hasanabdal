@@ -537,12 +537,6 @@ window.RawMaterials = {
                   ${this.getSortIcon('category')}
                 </div>
               </th>
-              <th onclick="RawMaterials.toggleSort('unit')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
-                <div class="flex items-center justify-between gap-1">
-                  <span>Unit</span>
-                  ${this.getSortIcon('unit')}
-                </div>
-              </th>
               <th onclick="RawMaterials.toggleSort('stock')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
                   <span>Current Stock</span>
@@ -582,9 +576,6 @@ window.RawMaterials = {
                   </td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px] uppercase">${m.category || 'General'}</span>
-                  </td>
-                  <td class="py-1.5 px-3 border-r border-slate-200">
-                    <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-800 font-black text-xs font-mono">${m.unit}</span>
                   </td>
                   <td class="py-1.5 px-3 text-right font-black text-sm tabular-nums border-r border-slate-200 ${isLow ? 'text-rose-600' : 'text-emerald-700'}">
                     ${Number(m.current_stock).toFixed(1).replace(/\.0$/, '')} <span class="text-xs font-black text-slate-700 ml-1 inline-block">${m.unit}</span>

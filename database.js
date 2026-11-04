@@ -2216,6 +2216,7 @@ function createIcecreamFactoryTables() {
     const carCols = db.prepare("PRAGMA table_info(cars)").all().map(c => c.name);
     if (!carCols.includes('is_active')) db.exec('ALTER TABLE cars ADD COLUMN is_active INTEGER DEFAULT 1');
     if (!carCols.includes('area')) db.exec('ALTER TABLE cars ADD COLUMN area TEXT');
+    db.exec("UPDATE cars SET area = '' WHERE area IS NOT NULL AND area != ''");
   } catch(e) {}
 
   try {
@@ -2305,8 +2306,8 @@ function seedIcecreamFactoryData() {
     const carsCount = db.prepare('SELECT COUNT(*) as c FROM cars').get().c;
     if (carsCount === 0) {
       const insertCar = db.prepare('INSERT INTO cars (car_number, driver_name, phone, area) VALUES (?, ?, ?, ?)');
-      const c1 = insertCar.run('Suzuki Bolan - LEA-4521', 'Muhammad Ali', '0301-5551234', 'Route 1: Wah Cantt & Taxila');
-      const c2 = insertCar.run('Shahzore Van - RIP-8820', 'Tariq Shahzad', '0313-7778899', 'Route 2: Rawalpindi City & Saddar');
+      const c1 = insertCar.run('Suzuki Bolan - LEA-4521', 'Muhammad Ali', '0301-5551234', '');
+      const c2 = insertCar.run('Shahzore Van - RIP-8820', 'Tariq Shahzad', '0313-7778899', '');
 
       // Seed initial loaded stock for car 1
       const cartons = db.prepare('SELECT id, carton_name FROM packed_cartons').all();

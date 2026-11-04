@@ -199,7 +199,6 @@ window.Dashboard = {
                   <div>
                     <h4 class="font-black text-xs text-slate-900">${c.car_number}</h4>
                     <p class="text-[11px] text-slate-500 font-medium">${c.driver_name} ${c.phone ? `• ${c.phone}` : ''}</p>
-                    ${c.area ? `<span class="text-[10px] text-blue-700 font-bold block mt-0.5">📍 ${c.area}</span>` : ''}
                   </div>
                   <div class="text-right">
                     <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white font-black text-xs tabular-nums block">

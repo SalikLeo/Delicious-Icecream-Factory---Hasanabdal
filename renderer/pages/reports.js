@@ -975,7 +975,7 @@ window.Reports = {
 
         <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
-            <div><strong>Vehicle / Route:</strong> <span style="font-weight: 800;">${carName}</span></div>
+            <div><strong>Vehicle:</strong> <span style="font-weight: 800;">${carName}</span></div>
             <div><strong>Driver Phone:</strong> ${car?.phone || 'N/A'}</div>
           </div>
           <div style="text-align: right;">

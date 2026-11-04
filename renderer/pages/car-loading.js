@@ -393,8 +393,7 @@ window.CarLoading = {
       filteredCars = filteredCars.filter(c =>
         (c.car_number || '').toLowerCase().includes(q) ||
         (c.driver_name || '').toLowerCase().includes(q) ||
-        (c.phone || '').toLowerCase().includes(q) ||
-        (c.area || '').toLowerCase().includes(q)
+        (c.phone || '').toLowerCase().includes(q)
       );
     }
 
@@ -437,7 +436,6 @@ window.CarLoading = {
                     <p class="text-xs font-bold text-slate-600 mt-0.5 flex items-center gap-1.5">
                       <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${c.driver_name} ${c.phone ? `• <span class="font-mono text-slate-500">${c.phone}</span>` : ''}
                     </p>
-                    ${c.area ? `<p class="text-[11px] text-blue-700 font-semibold mt-1">📍 ${c.area}</p>` : ''}
                   </div>
                   <div class="text-right shrink-0">
                     <span class="px-2.5 py-1 rounded-xl ${loaded > 0 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'} font-black text-xs tabular-nums block">
@@ -1038,17 +1036,10 @@ window.CarLoading = {
               <input type="text" id="car-driver" required value="${car.driver_name || ''}" placeholder="e.g. Muhammad Ali..."
                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
             </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Phone Number</label>
-                <input type="text" id="car-phone" value="${car.phone || ''}" placeholder="0300-1234567"
-                       class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500 font-mono">
-              </div>
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Delivery Route / Area</label>
-                <input type="text" id="car-area" value="${car.area || ''}" placeholder="e.g. Hasan Abdal & Attock..."
-                       class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
-              </div>
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Phone Number</label>
+              <input type="text" id="car-phone" value="${car.phone || ''}" placeholder="0300-1234567"
+                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500 font-mono">
             </div>
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes</label>
@@ -1079,7 +1070,7 @@ window.CarLoading = {
       car_number: document.getElementById('car-number').value,
       driver_name: document.getElementById('car-driver').value,
       phone: document.getElementById('car-phone').value,
-      area: document.getElementById('car-area').value,
+      area: '',
       notes: document.getElementById('car-notes').value
     };
 
@@ -1312,7 +1303,6 @@ window.CarLoading = {
           </div>
           <div style="text-align: right; line-height: 1.45;">
             <div><strong>Contact:</strong> ${car.phone || 'N/A'}</div>
-            <div><strong>Route / Area:</strong> ${car.area || 'All Areas'}</div>
           </div>
         </div>
 
@@ -1388,7 +1378,6 @@ window.CarLoading = {
           </div>
           <div style="text-align: right; line-height: 1.45;">
             <div><strong>Driver Phone:</strong> ${batch.phone || 'N/A'}</div>
-            <div><strong>Route / Area:</strong> ${batch.area || 'All Routes'}</div>
           </div>
         </div>
 

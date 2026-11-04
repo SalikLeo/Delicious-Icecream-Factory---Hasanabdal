@@ -4,6 +4,7 @@ window.RawMaterials = {
   logs: [],
   activeTab: 'inventory', // 'inventory' | 'purchase' | 'logs'
   searchQuery: '',
+  selectedCategory: 'all',
   sortField: 'name', // 'name' | 'category' | 'unit' | 'stock' | 'cost' | 'value' | 'status' for inventory; 'date' | 'material' | 'action' | 'qty' | 'stock_after' for logs
   sortOrder: 'asc', // 'asc' | 'desc'
   periodType: 'day', // 'day' | 'month' | 'all'
@@ -123,6 +124,17 @@ window.RawMaterials = {
                       class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
               </button>
+            </div>
+
+            <!-- Category Filter Dropdown -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <select id="rm-category-filter" onchange="RawMaterials.onCategorySelect(this.value)"
+                      class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:bg-white focus:border-emerald-400 cursor-pointer">
+                <option value="all" ${this.selectedCategory === 'all' ? 'selected' : ''}>All Categories</option>
+                ${this.getCategories().map(cat => `
+                  <option value="${cat}" ${this.selectedCategory === cat ? 'selected' : ''}>${cat}</option>
+                `).join('')}
+              </select>
             </div>
 
             <!-- Sort Dropdown -->
@@ -251,6 +263,9 @@ window.RawMaterials = {
 
   renderContentArea() {
     let filtered = [...(this.materials || [])];
+    if (this.selectedCategory && this.selectedCategory !== 'all') {
+      filtered = filtered.filter(m => (m.category || 'General').toLowerCase() === this.selectedCategory.toLowerCase());
+    }
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
       filtered = filtered.filter(m =>
@@ -300,6 +315,19 @@ window.RawMaterials = {
     }
   },
 
+  getCategories() {
+    const defaultCats = ['Dairy', 'Sweeteners', 'Flavors & Coating', 'Packaging & Sticks', 'General'];
+    const dynamicCats = (this.materials || []).map(m => m.category).filter(Boolean);
+    const set = new Set([...defaultCats, ...dynamicCats]);
+    return Array.from(set).sort();
+  },
+
+  onCategorySelect(val) {
+    this.selectedCategory = val || 'all';
+    this.updateContentArea();
+    this.updateResetButton();
+  },
+
   setPeriod(period) {
     this.periodType = period;
     this.renderUI();
@@ -307,12 +335,14 @@ window.RawMaterials = {
 
   isFilteredFromCurrent() {
     const today = new Date().toISOString().slice(0, 10);
+    if (this.selectedCategory && this.selectedCategory !== 'all') return true;
     if (this.periodType !== 'day') return true;
     if (this.selectedDate && this.selectedDate !== today) return true;
     return false;
   },
 
   resetToCurrent() {
+    this.selectedCategory = 'all';
     this.periodType = 'day';
     this.selectedDate = new Date().toISOString().slice(0, 10);
     this.renderUI();
@@ -353,6 +383,13 @@ window.RawMaterials = {
 
   getFilteredLogs() {
     let list = [...(this.logs || [])];
+    if (this.selectedCategory && this.selectedCategory !== 'all') {
+      list = list.filter(l => {
+        const mat = (this.materials || []).find(m => m.id === l.material_id);
+        const cat = mat ? (mat.category || 'General') : (l.material_category || 'General');
+        return cat.toLowerCase() === this.selectedCategory.toLowerCase();
+      });
+    }
     if (this.periodType === 'day' && this.selectedDate) {
       list = list.filter(l => l.date === this.selectedDate);
     } else if (this.periodType === 'month' && this.selectedDate) {

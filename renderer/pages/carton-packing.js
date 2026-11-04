@@ -920,8 +920,9 @@ window.CartonPacking = {
     };
     if (!c) return;
 
+    const isNew = !c.id;
     const hasBarcode = Boolean(c && c.barcode && c.barcode.trim());
-    const initStockVal = (Number(c.factory_carton_stock) || 0) * (Number(c.carton_cost_price) || 200);
+    const initStockVal = isNew ? 0 : ((Number(c.factory_carton_stock) || 0) * (Number(c.carton_cost_price) || 0));
 
     const modalEl = document.getElementById('pck-modal-container');
     if (!modalEl) return;
@@ -970,12 +971,12 @@ window.CartonPacking = {
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Pieces Per Carton *</label>
-                <input type="number" step="1" min="1" id="cfg-pcs" value="${c.pieces_per_carton || 20}" required
+                <input type="number" step="1" min="1" id="cfg-pcs" value="${isNew ? '' : (c.pieces_per_carton || '')}" placeholder="20" required
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Warehouse Cartons Stock</label>
-                <input type="number" step="1" min="0" id="cfg-stock" value="${c.factory_carton_stock || 0}"
+                <input type="number" step="1" min="0" id="cfg-stock" value="${isNew ? '' : (c.factory_carton_stock ?? '')}" placeholder="0"
                        oninput="CartonPacking.calcConfigValue()"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
               </div>
@@ -983,13 +984,13 @@ window.CartonPacking = {
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Carton Cost (Rs.)</label>
-                <input type="number" step="any" min="0" id="cfg-cost" value="${c.carton_cost_price || 200}" required
+                <input type="number" step="any" min="0" id="cfg-cost" value="${isNew ? '' : (c.carton_cost_price ?? '')}" placeholder="200" required
                        oninput="CartonPacking.calcConfigValue()"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Carton Sale Price (Rs.) *</label>
-                <input type="number" step="any" min="0" id="cfg-sale" value="${c.carton_sale_price || 250}" required
+                <input type="number" step="any" min="0" id="cfg-sale" value="${isNew ? '' : (c.carton_sale_price ?? '')}" placeholder="250" required
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-emerald-700 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
               </div>
             </div>

@@ -343,7 +343,7 @@ window.ShopSales = {
             <div class="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100 flex items-center justify-between text-xs">
               <div>
                 <span class="text-[10px] font-black uppercase text-amber-900 block">Shop Contact &amp; Area:</span>
-                <span class="font-bold text-slate-700">${activeShop ? `${activeShop.phone || 'No Phone'} • ${activeShop.address || activeShop.city || ''}` : 'Counter Walk-in Customer'}</span>
+                <span class="font-bold text-slate-700">${activeShop ? `${activeShop.phone ? (window.app && app.formatPhone ? app.formatPhone(activeShop.phone) : activeShop.phone) : 'No Phone'} • ${activeShop.address || activeShop.city || ''}` : 'Counter Walk-in Customer'}</span>
               </div>
               <div class="text-right">
                 <span class="text-[10px] font-black uppercase text-amber-900 block">Previous Balance</span>
@@ -1242,7 +1242,7 @@ window.ShopSales = {
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Opening Khata Balance</label>
-                <input type="number" step="any" min="0" id="qs-balance" value="0"
+                <input type="number" step="any" min="0" id="qs-balance" value="" placeholder="0"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400 tabular-nums">
               </div>
             </div>

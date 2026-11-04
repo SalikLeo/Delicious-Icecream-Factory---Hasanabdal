@@ -80,7 +80,7 @@ const Settings = {
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Contact Phone Numbers</label>
-                    <input type="text" id="set-phone" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none" placeholder="0315-6795995">
+                    <input type="text" id="set-phone" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none" placeholder="0300-1234567">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Website / Tagline</label>
@@ -379,7 +379,7 @@ const Settings = {
     if (document.getElementById('set-name')) document.getElementById('set-name').value = s.company_name || 'Delicious Superstar Foods';
     if (document.getElementById('set-web')) document.getElementById('set-web').value = s.website || '';
     if (document.getElementById('set-address')) document.getElementById('set-address').value = s.address || 'Hasan Abdal';
-    if (document.getElementById('set-phone')) document.getElementById('set-phone').value = s.phone || '0315-6795995';
+    if (document.getElementById('set-phone')) document.getElementById('set-phone').value = app.formatPhone ? app.formatPhone(s.phone || '0315-6795995') : (s.phone || '0315-6795995');
     this.originalLogo = s.logo_path || '';
     this.updateLogoPreview(this.originalLogo);
 

@@ -720,25 +720,25 @@ window.RawMaterials = {
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Unit of Measure *</label>
-                <input type="text" id="rm-unit" required value="${m.unit || 'Kg'}" placeholder="Liter, Kg, Pcs, Bag..."
+                <input type="text" id="rm-unit" required value="${isEdit ? (m.unit || '') : ''}" placeholder="Kg"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
               </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Opening Stock</label>
-                <input type="number" step="any" min="0" id="rm-stock" value="${m.current_stock || 0}"
+                <input type="number" step="any" min="0" id="rm-stock" value="${isEdit ? (m.current_stock ?? '') : ''}" placeholder="0"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Cost Price / Unit (Rs.)</label>
-                <input type="number" step="any" min="0" id="rm-cost" value="${m.cost_price || 0}"
+                <input type="number" step="any" min="0" id="rm-cost" value="${isEdit ? (m.cost_price ?? '') : ''}" placeholder="0"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
               </div>
             </div>
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Min Stock Alert Level</label>
-              <input type="number" step="any" min="0" id="rm-min-alert" value="${m.min_stock_alert || 0}" placeholder="Alert when stock falls below this"
+              <input type="number" step="any" min="0" id="rm-min-alert" value="${isEdit ? (m.min_stock_alert ?? '') : ''}" placeholder="5"
                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
             </div>
             <div>

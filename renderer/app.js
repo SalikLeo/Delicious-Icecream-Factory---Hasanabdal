@@ -89,6 +89,26 @@ const app = {
       if (cb) cb(input);
     });
 
+    // Global Phone Input Formatter: 0300-1234567 format (11 digits with dash after 4 digits)
+    document.addEventListener('input', (e) => {
+      const target = e.target;
+      if (!target || target.tagName !== 'INPUT') return;
+      const id = (target.id || '').toLowerCase();
+      const name = (target.name || '').toLowerCase();
+      const type = (target.type || '').toLowerCase();
+      const isPhoneField = type === 'tel' || id.includes('phone') || name.includes('phone') || target.classList.contains('phone-input');
+      if (isPhoneField) {
+        const rawDigits = target.value.replace(/\D/g, '').slice(0, 11);
+        let formatted = rawDigits;
+        if (rawDigits.length > 4) {
+          formatted = rawDigits.slice(0, 4) + '-' + rawDigits.slice(4);
+        }
+        if (target.value !== formatted) {
+          target.value = formatted;
+        }
+      }
+    });
+
     // Global Key Listener: Enter = Confirm/Save/Complete, Escape = Cancel/Back/Close
     window.addEventListener('keydown', (e) => {
       // 0. Quick Price Checker Modal (#price-checker-modal) - Shortcut: F6, F8
@@ -906,6 +926,13 @@ const app = {
   formatStockShort(totalBoxes) {
     const boxes = Math.round((Number(totalBoxes) || 0) * 100) / 100;
     return `${this.formatQty(boxes)}`;
+  },
+
+  formatPhone(val) {
+    if (!val) return '';
+    const digits = String(val).replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 4) return digits;
+    return digits.slice(0, 4) + '-' + digits.slice(4);
   },
 
   parseStockBoxes(boxes) {

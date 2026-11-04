@@ -956,6 +956,8 @@ window.Production = {
     };
     if (!it) return;
 
+    const isNew = !it.id;
+
     const modalEl = document.getElementById('prd-modal-container');
     if (!modalEl) return;
 
@@ -981,24 +983,24 @@ window.Production = {
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Cost To Make 1 Pc (Rs.)</label>
-                <input type="number" step="any" min="0" id="ii-cost" value="${it.unit_cost || 10}"
+                <input type="number" step="any" min="0" id="ii-cost" value="${isNew ? '' : (it.unit_cost ?? '')}" placeholder="10"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-cyan-500 tabular-nums">
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Retail Price / MRP (Rs.)</label>
-                <input type="number" step="any" min="0" id="ii-retail" value="${it.retail_piece_price || 40}"
+                <input type="number" step="any" min="0" id="ii-retail" value="${isNew ? '' : (it.retail_piece_price ?? '')}" placeholder="40"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-emerald-700 outline-none focus:bg-white focus:border-cyan-500 tabular-nums">
               </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Opening Single Stock</label>
-                <input type="number" step="1" min="0" id="ii-stock" value="${it.current_single_stock || 0}"
+                <input type="number" step="1" min="0" id="ii-stock" value="${isNew ? '' : (it.current_single_stock ?? '')}" placeholder="0"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-cyan-500 tabular-nums">
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Default Pcs / Carton</label>
-                <input type="number" step="1" min="1" id="ii-pcs-carton" value="${it.default_pcs_per_carton || 20}"
+                <input type="number" step="1" min="1" id="ii-pcs-carton" value="${isNew ? '' : (it.default_pcs_per_carton ?? '')}" placeholder="20"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-cyan-500 tabular-nums">
               </div>
             </div>

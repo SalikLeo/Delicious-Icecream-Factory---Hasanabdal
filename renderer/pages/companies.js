@@ -318,12 +318,12 @@ window.Companies = {
                   <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 pl-1">Balance/Amount</label>
                   <div class="relative">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">Rs.</span>
-                    <input type="number" id="comp-amount" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm font-black focus:bg-white focus:ring-4 focus:ring-accent/10 focus:border-accent outline-none transition-all tabular-nums">
+                    <input type="number" id="comp-amount" placeholder="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm font-black focus:bg-white focus:ring-4 focus:ring-accent/10 focus:border-accent outline-none transition-all tabular-nums">
                   </div>
                 </div>
                 <div>
                   <label id="comp-phone-label" class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 pl-1">Phone Number <span class="text-slate-400 font-normal text-[11px] uppercase tracking-normal">(Optional)</span></label>
-                  <input type="tel" id="comp-phone" oninput="this.value = this.value.replace(/[^0-9+\-\s]/g, '')" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-4 focus:ring-accent/10 focus:border-accent outline-none transition-all">
+                  <input type="tel" id="comp-phone" placeholder="0300-1234567" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-4 focus:ring-accent/10 focus:border-accent outline-none transition-all">
                 </div>
               </div>
 
@@ -827,7 +827,7 @@ window.Companies = {
       <tr class="hover:bg-slate-50 transition-colors group border-b border-slate-200">
         <td class="px-4 py-1 border-r border-slate-200">
           <div class="font-bold text-slate-800 uppercase tracking-tight text-xs">
-            ${c.name} ${c.phone ? `<span class="text-slate-500 font-bold ml-1 text-[11px] tabular-nums">(${c.phone})</span>` : ''}
+            ${c.name} ${c.phone ? `<span class="text-slate-500 font-bold ml-1 text-[11px] tabular-nums">(${app.formatPhone ? app.formatPhone(c.phone) : c.phone})</span>` : ''}
           </div>
         </td>
         <td class="px-4 py-1 tabular-nums border-r border-slate-200 text-xs">
@@ -885,11 +885,13 @@ window.Companies = {
         document.getElementById('comp-id').value = c.id;
         document.getElementById('comp-name').value = c.name;
         document.getElementById('comp-amount').value = c.amount || 0;
-        document.getElementById('comp-phone').value = c.phone || '';
+        document.getElementById('comp-phone').value = app.formatPhone ? app.formatPhone(c.phone) : (c.phone || '');
         document.getElementById('comp-address').value = c.address || '';
       }
     } else {
       title.textContent = `Add New ${this.currentTab === 'companies' ? 'Company' : 'Customer'}`;
+      document.getElementById('comp-amount').value = '';
+      document.getElementById('comp-phone').value = '';
     }
     
     // Update Dynamic Labels

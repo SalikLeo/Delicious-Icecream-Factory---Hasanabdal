@@ -442,7 +442,7 @@ window.CarLoading = {
                   <div>
                     <h4 class="font-black text-sm text-slate-900">${c.car_number}</h4>
                     <p class="text-xs font-bold text-slate-600 mt-0.5 flex items-center gap-1.5">
-                      <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${c.driver_name} ${c.phone ? `• <span class="font-mono text-slate-500">${c.phone}</span>` : ''}
+                      <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${c.driver_name} ${c.phone ? `• <span class="font-mono text-slate-500">${window.app && app.formatPhone ? app.formatPhone(c.phone) : c.phone}</span>` : ''}
                     </p>
                   </div>
                   <div class="text-right shrink-0">
@@ -567,7 +567,7 @@ window.CarLoading = {
             <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-mono text-[10px] font-black">CAR INVENTORY</span>
             <h3 class="text-lg font-black text-slate-900">${car.car_number}</h3>
           </div>
-          <p class="text-xs text-slate-500 font-bold mt-1">Driver: ${car.driver_name} • Phone: ${car.phone || 'N/A'}</p>
+          <p class="text-xs text-slate-500 font-bold mt-1">Driver: ${car.driver_name} • Phone: ${car.phone ? (window.app && app.formatPhone ? app.formatPhone(car.phone) : car.phone) : 'N/A'}</p>
         </div>
         <div class="flex items-center gap-2">
           <button onclick="CarLoading.startLoadingForCar(${car.id})" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">

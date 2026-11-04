@@ -248,10 +248,8 @@ window.SalesForm = {
                   <input type="text" 
                          id="sf-customer-phone" 
                          value="${this.customerPhone || ''}" 
-                         placeholder="e.g. 03001234567" 
-                         maxlength="11" 
-                         inputmode="numeric" 
-                         pattern="[0-9]*" 
+                         placeholder="0300-1234567" 
+                         maxlength="12" 
                          oninput="SalesForm.onCustomerPhoneChange(this)" 
                          onfocus="SalesForm.handleCustomerPhoneFocus()" 
                          onclick="SalesForm.handleCustomerPhoneFocus()" 
@@ -816,16 +814,20 @@ window.SalesForm = {
       el = document.getElementById('sf-customer-phone');
     }
 
-    // Restrict strictly to digits only and maximum 11 digits
-    const cleaned = (val || '').replace(/\D/g, '').slice(0, 11);
-    if (el && el.value !== cleaned) {
-      el.value = cleaned;
+    // Format strictly to 0300-1234567 format (11 digits, dash after 4 digits)
+    const digits = (val || '').replace(/\D/g, '').slice(0, 11);
+    let formatted = digits;
+    if (digits.length > 4) {
+      formatted = digits.slice(0, 4) + '-' + digits.slice(4);
     }
-    this.customerPhone = cleaned;
+    if (el && el.value !== formatted) {
+      el.value = formatted;
+    }
+    this.customerPhone = formatted;
 
     // If not selected from list, see if phone matches an existing customer
-    if (!this.customerId && this.customerPhone.length >= 10) {
-      const match = this.customers.find(c => (c.phone || '').replace(/\D/g, '') === this.customerPhone);
+    if (!this.customerId && digits.length >= 10) {
+      const match = this.customers.find(c => (c.phone || '').replace(/\D/g, '') === digits);
       if (match) {
         const idx = this.customers.indexOf(match);
         if (idx !== -1) {

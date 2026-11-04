@@ -135,7 +135,7 @@ window.Customers = {
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number</label>
-                <input type="text" id="sf-phone" placeholder="e.g. 0300-1234567"
+                <input type="text" id="sf-phone" placeholder="0300-1234567"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
               </div>
             </div>
@@ -363,7 +363,7 @@ window.Customers = {
               <span>•</span>
               <span>${s.city || 'Wah Cantt'}</span>
             </div>
-            ${s.phone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">${s.phone}</div>` : ''}
+            ${s.phone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">${window.app && app.formatPhone ? app.formatPhone(s.phone) : s.phone}</div>` : ''}
           </div>
 
           <div class="text-right shrink-0">
@@ -422,7 +422,7 @@ window.Customers = {
             </span>
           </div>
           <p class="text-[11px] text-slate-500 font-medium mt-0.5">
-            Owner: <strong>${shop.owner_name || 'N/A'}</strong> • Phone: <strong>${shop.phone || 'N/A'}</strong> • Area: <strong>${shop.city || ''} ${shop.address || ''}</strong>
+            Owner: <strong>${shop.owner_name || 'N/A'}</strong> • Phone: <strong>${shop.phone ? (window.app && app.formatPhone ? app.formatPhone(shop.phone) : shop.phone) : 'N/A'}</strong> • Area: <strong>${shop.city || ''} ${shop.address || ''}</strong>
           </p>
         </div>
 

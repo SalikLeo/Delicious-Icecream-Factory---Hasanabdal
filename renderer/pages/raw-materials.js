@@ -580,6 +580,95 @@ window.RawMaterials = {
     `;
   },
 
+  renderLogsTable() {
+    const logs = this.getFilteredLogs();
+    if (logs.length === 0) {
+      return `
+        <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
+          <i data-lucide="history" class="w-12 h-12 mb-3 text-slate-300"></i>
+          <h4 class="text-sm font-black text-slate-600">No stock movement logs found</h4>
+          <p class="text-xs text-slate-400 mt-1">Purchases, stock additions, and production consumption deductions will appear here automatically.</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="overflow-x-auto flex-1">
+        <table class="w-full text-left text-xs border-collapse border border-slate-200">
+          <thead>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th onclick="RawMaterials.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px] cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Date</span>
+                  ${this.getSortIcon('date')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('action')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Action</span>
+                  ${this.getSortIcon('action')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('material')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-between gap-1">
+                  <span>Material</span>
+                  ${this.getSortIcon('material')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('qty')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Quantity Change</span>
+                  ${this.getSortIcon('qty')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('stock_before')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Stock Before</span>
+                  ${this.getSortIcon('stock_before')}
+                </div>
+              </th>
+              <th onclick="RawMaterials.toggleSort('stock_after')" class="py-2 px-3 text-right font-black text-slate-800 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
+                <div class="flex items-center justify-end gap-1">
+                  <span>Stock Left</span>
+                  ${this.getSortIcon('stock_after')}
+                </div>
+              </th>
+              <th class="py-2 px-3">Details / Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+            ${logs.map(log => {
+              const isAdd = (log.qty_change || 0) > 0;
+              const isProd = log.action === 'PRODUCTION_USED' || log.action === 'PRODUCTION';
+              const actionBadge = log.action === 'PURCHASE'
+                ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] tracking-wide">PURCHASE</span>`
+                : (isProd
+                    ? `<span class="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-800 font-black text-[10px] tracking-wide">PRODUCTION</span>`
+                    : `<span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-black text-[10px] tracking-wide">${log.action || 'LOG'}</span>`
+                  );
+
+              return `
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-1.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(log.date, log.created_at)}</td>
+                  <td class="py-1.5 px-3 border-r border-slate-200">
+                    ${actionBadge}
+                  </td>
+                  <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${log.material_name}</td>
+                  <td class="py-1.5 px-3 text-right font-black tabular-nums border-r border-slate-200 ${isAdd ? 'text-emerald-600' : 'text-rose-600'}">
+                    ${isAdd ? '+' : ''}${log.qty_change}
+                  </td>
+                  <td class="py-1.5 px-3 text-right font-mono text-slate-400 tabular-nums border-r border-slate-200">${log.stock_before ?? '-'}</td>
+                  <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">${log.stock_after ?? '-'}</td>
+                  <td class="py-1.5 px-3 text-slate-500 text-[11px]">${log.notes || ''}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  },
+
   openAddModal() {
     this.showMaterialModal({
       id: null,

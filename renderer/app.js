@@ -109,6 +109,49 @@ const app = {
       }
     });
 
+    // Global Click / Pointerdown listener to dismiss all autocomplete / search dropdowns when clicking outside
+    const handleOutsideDropdownClick = (e) => {
+      // 1. Shop Deliveries carton search dropdown (#ss-search-dropdown)
+      const ssSearchContainer = document.getElementById('ss-search-container');
+      const ssSearchDropdown = document.getElementById('ss-search-dropdown');
+      if (ssSearchDropdown && !ssSearchDropdown.classList.contains('hidden')) {
+        if (!ssSearchContainer || !ssSearchContainer.contains(e.target)) {
+          ssSearchDropdown.classList.add('hidden');
+        }
+      }
+
+      // 2. Sales Form product search dropdown (#sf-search-dropdown)
+      const sfSearchContainer = document.getElementById('sf-search-container');
+      const sfSearchDropdown = document.getElementById('sf-search-dropdown');
+      if (sfSearchDropdown && !sfSearchDropdown.classList.contains('hidden')) {
+        if (!sfSearchContainer || !sfSearchContainer.contains(e.target)) {
+          sfSearchDropdown.classList.add('hidden');
+        }
+      }
+
+      // 3. Sales Form customer search dropdown (#sf-customer-dropdown)
+      const sfCustContainer = document.getElementById('sf-customer-container');
+      const sfCustDropdown = document.getElementById('sf-customer-dropdown');
+      if (sfCustDropdown && !sfCustDropdown.classList.contains('hidden')) {
+        if (!sfCustContainer || !sfCustContainer.contains(e.target)) {
+          sfCustDropdown.classList.add('hidden');
+        }
+      }
+
+      // 4. Any generic dropdown containers
+      document.querySelectorAll('[data-dropdown], .custom-dropdown, .search-dropdown').forEach(dd => {
+        if (!dd.classList.contains('hidden')) {
+          const wrap = dd.closest('.dropdown-container, .dropdown-wrap') || dd.parentElement;
+          if (!wrap || !wrap.contains(e.target)) {
+            dd.classList.add('hidden');
+          }
+        }
+      });
+    };
+
+    document.addEventListener('pointerdown', handleOutsideDropdownClick, true);
+    document.addEventListener('click', handleOutsideDropdownClick, true);
+
     // Global Key Listener: Enter = Confirm/Save/Complete, Escape = Cancel/Back/Close
     window.addEventListener('keydown', (e) => {
       // 0. Quick Price Checker Modal (#price-checker-modal) - Shortcut: F6, F8

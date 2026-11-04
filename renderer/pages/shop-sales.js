@@ -145,11 +145,16 @@ window.ShopSales = {
     if (!carton) return;
     const maxStock = this.getItemStock(carton.id);
     if (maxStock <= 0) {
-      app.playBeep('warning');
-      app.showAlert({
-        title: 'Out of Stock in Car',
-        message: '<b>' + (carton.carton_name || 'Carton') + '</b> is not loaded in this vehicle (0 cartons available in car).'
-      });
+      const whStock = carton.factory_carton_stock || 0;
+      if (whStock <= 0) {
+        app.playBeep('warning');
+        app.showAlert({
+          title: 'Out of Stock in Car & Warehouse',
+          message: '<b>' + (carton.carton_name || 'Carton') + '</b> is not loaded in this vehicle and has 0 cartons in Factory Warehouse.<br><br>Please produce single pieces and pack cartons first.'
+        });
+        return;
+      }
+      this.openQuickLoadCarModal(carton.id);
       return;
     }
 
@@ -267,9 +272,14 @@ window.ShopSales = {
               <label class="text-xs font-black uppercase text-slate-700 flex items-center gap-1.5">
                 <i data-lucide="truck" class="w-4 h-4 text-blue-600"></i> Delivering Vehicle / Car *
               </label>
-              <span class="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                ${activeCar ? `${activeCar.total_loaded_cartons || 0} ctns in car` : ''}
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                  ${activeCar ? `${activeCar.total_loaded_cartons || 0} ctns in car` : ''}
+                </span>
+                <button type="button" onclick="ShopSales.openQuickLoadCarModal()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs" title="Load cartons into this car right now">
+                  <i data-lucide="package-plus" class="w-3.5 h-3.5"></i> + Load Stock
+                </button>
+              </div>
             </div>
 
             <select id="ss-car-id" onchange="ShopSales.onCarChange(this.value)"
@@ -285,7 +295,10 @@ window.ShopSales = {
             <div class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 text-xs">
               <div class="flex items-center justify-between mb-1.5">
                 <span class="text-[10px] font-black uppercase text-blue-900 tracking-wider">Loaded In This Car:</span>
-                <span class="text-[10px] text-blue-600 font-bold">Check to add in current sale</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-blue-600 font-bold">Check to add in current sale</span>
+                  <button type="button" onclick="ShopSales.openQuickLoadCarModal()" class="text-[10px] text-blue-700 hover:text-blue-900 font-black underline cursor-pointer">+ Load More</button>
+                </div>
               </div>
               <div id="ss-car-loaded-pills" class="flex flex-wrap gap-2">
                 ${loadedCarItems.length === 0 ? `
@@ -546,6 +559,10 @@ window.ShopSales = {
 
       <!-- Quick Add Shop Modal Container -->
       <div id="shop-quick-modal-container"></div>
+      <!-- Quick Load Stock into Car Modal Container -->
+      <div id="car-load-quick-modal-container"></div>
+      <!-- Sale Return Modal Container -->
+      <div id="sale-return-modal-container"></div>
     `;
 
     if (window.lucide) lucide.createIcons({ root: this.container });
@@ -1040,9 +1057,19 @@ window.ShopSales = {
             ${item.pieces_per_carton ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
           </div>
           <div class="flex items-center gap-3 shrink-0 text-right">
-            <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-emerald-700') : (isHighlighted ? 'text-rose-200' : 'text-rose-600')} tabular-nums">
-              ${stock} in car stock
-            </span>
+            <div class="text-right">
+              <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-emerald-700') : (isHighlighted ? 'text-rose-200' : 'text-rose-600')} tabular-nums block">
+                ${stock} in car stock
+              </span>
+              ${stock <= 0 ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(Wh: ${item.factory_carton_stock || 0} ctns)</span>` : ''}
+            </div>
+            ${(stock <= 0 && (item.factory_carton_stock || 0) > 0) ? `
+              <button type="button" onmousedown="event.stopPropagation(); ShopSales.openQuickLoadCarModal(${item.id})"
+                      class="px-2 py-1 ${isHighlighted ? 'bg-white text-slate-900' : 'bg-blue-600 hover:bg-blue-500 text-white'} text-[10px] font-black rounded-lg transition-all shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
+                      title="Load cartons from factory warehouse into this car">
+                <i data-lucide="plus" class="w-3 h-3"></i> Load to Car
+              </button>
+            ` : ''}
             <span class="text-xs font-black tabular-nums ${isHighlighted ? 'text-white' : 'text-slate-900'} min-w-[65px] text-right">
               Rs. ${price}
             </span>
@@ -1052,6 +1079,7 @@ window.ShopSales = {
     }).join('');
 
     dropdown.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons({ root: dropdown });
   },
 
   handleSearchKeyDown(e) {
@@ -1286,6 +1314,323 @@ window.ShopSales = {
       this.renderUI();
     } else {
       app.showAlert({ title: 'Error', message: res.error || 'Failed to save shop.' });
+    }
+  },
+
+  openQuickLoadCarModal(preselectCartonId = null) {
+    const activeCar = this.cars.find(c => c.id === this.selectedCarId) || this.cars[0];
+    if (!activeCar) {
+      app.showAlert({ title: 'No Vehicle', message: 'Please create or select a delivery vehicle first.' });
+      return;
+    }
+    this.selectedCarId = activeCar.id;
+
+    const dropdown = document.getElementById('ss-search-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+
+    this._quickLoadCartons = {};
+    if (preselectCartonId) {
+      const carton = (this.cartons || []).find(c => c.id === preselectCartonId);
+      const whStock = carton ? (carton.factory_carton_stock || 0) : 0;
+      this._quickLoadCartons[preselectCartonId] = Math.min(1, Math.max(1, whStock));
+    }
+    this._quickLoadAutoAdd = true;
+    this._quickLoadSearch = '';
+
+    let modalEl = document.getElementById('car-load-quick-modal-container');
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.id = 'car-load-quick-modal-container';
+      document.body.appendChild(modalEl);
+    }
+
+    this.renderQuickLoadModalContent();
+    if (preselectCartonId) {
+      setTimeout(() => {
+        const inp = document.getElementById(`ql-qty-${preselectCartonId}`);
+        if (inp) {
+          inp.focus();
+          inp.select();
+        }
+      }, 50);
+    }
+  },
+
+  closeQuickLoadModal() {
+    const modalEl = document.getElementById('car-load-quick-modal-container');
+    if (modalEl) modalEl.innerHTML = '';
+    this._quickLoadCartons = {};
+  },
+
+  onQuickLoadSearch(val) {
+    this._quickLoadSearch = (val || '').toLowerCase();
+    this.renderQuickLoadModalContent();
+    const sInput = document.getElementById('ql-search-inp');
+    if (sInput) {
+      sInput.value = val;
+      sInput.focus();
+    }
+  },
+
+  stepQuickLoadQty(cartonId, maxWh, delta) {
+    const cur = Number(this._quickLoadCartons[cartonId] || 0);
+    let next = cur + delta;
+    if (next < 0) next = 0;
+    if (next > maxWh) next = maxWh;
+    this._quickLoadCartons[cartonId] = next;
+    const input = document.getElementById(`ql-qty-${cartonId}`);
+    if (input) input.value = next;
+    this.updateQuickLoadSummary();
+  },
+
+  setQuickLoadQty(cartonId, maxWh, val) {
+    let num = parseInt(val) || 0;
+    if (num < 0) num = 0;
+    if (num > maxWh) num = maxWh;
+    this._quickLoadCartons[cartonId] = num;
+    const input = document.getElementById(`ql-qty-${cartonId}`);
+    if (input && input.value !== String(num)) input.value = num;
+    this.updateQuickLoadSummary();
+  },
+
+  updateQuickLoadSummary() {
+    let totalCartons = 0;
+    let totalValue = 0;
+    (this.cartons || []).forEach(c => {
+      const q = Number(this._quickLoadCartons[c.id]) || 0;
+      if (q > 0) {
+        totalCartons += q;
+        totalValue += q * (c.carton_sale_price || 0);
+      }
+    });
+
+    const ctnsEl = document.getElementById('ql-summary-cartons');
+    const valEl = document.getElementById('ql-summary-value');
+    const submitBtn = document.getElementById('ql-submit-btn');
+
+    if (ctnsEl) ctnsEl.textContent = `${totalCartons} cartons`;
+    if (valEl) valEl.textContent = `Rs. ${Math.round(totalValue).toLocaleString()}`;
+    if (submitBtn) {
+      submitBtn.disabled = totalCartons === 0;
+      if (totalCartons === 0) {
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  },
+
+  renderQuickLoadModalContent() {
+    const modalEl = document.getElementById('car-load-quick-modal-container');
+    if (!modalEl) return;
+
+    const activeCar = this.cars.find(c => c.id === this.selectedCarId) || this.cars[0];
+    if (!activeCar) return;
+
+    let filteredCartons = [...(this.cartons || [])];
+    if (this._quickLoadSearch) {
+      const q = this._quickLoadSearch;
+      filteredCartons = filteredCartons.filter(c =>
+        (c.carton_name || '').toLowerCase().includes(q) ||
+        (c.barcode || '').toLowerCase().includes(q)
+      );
+    }
+
+    let totalCartons = 0;
+    let totalValue = 0;
+    (this.cartons || []).forEach(c => {
+      const q = Number(this._quickLoadCartons[c.id]) || 0;
+      if (q > 0) {
+        totalCartons += q;
+        totalValue += q * (c.carton_sale_price || 0);
+      }
+    });
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) ShopSales.closeQuickLoadModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+          
+          <!-- Header -->
+          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center shrink-0">
+            <div>
+              <h3 class="text-base font-black tracking-tight flex items-center gap-2">
+                <i data-lucide="package-plus" class="w-5 h-5 text-blue-400"></i>
+                Load Items into Vehicle for Sale
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Vehicle: <b class="text-blue-300 font-mono">${activeCar.car_number}</b> (${activeCar.driver_name}) • Transferred from Factory Warehouse
+              </p>
+            </div>
+            <button onclick="ShopSales.closeQuickLoadModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+
+          <!-- Search & Filter Bar -->
+          <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2 shrink-0">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              <input type="text" id="ql-search-inp" value="${this._quickLoadSearch || ''}" oninput="ShopSales.onQuickLoadSearch(this.value)" placeholder="Filter carton products..."
+                     class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500">
+            </div>
+            <span class="text-xs text-slate-500 font-bold px-2 shrink-0">${filteredCartons.length} products</span>
+          </div>
+
+          <!-- Items Table -->
+          <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
+            <table class="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+              <thead class="bg-slate-100 text-[11px] font-black uppercase text-slate-600 border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-3">Carton Product</th>
+                  <th class="py-2.5 px-3 text-center">In Car</th>
+                  <th class="py-2.5 px-3 text-center">Factory Wh</th>
+                  <th class="py-2.5 px-3 text-right">Sale Price</th>
+                  <th class="py-2.5 px-3 text-center w-40">Cartons to Load</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${filteredCartons.map(c => {
+                  const inCar = this.getItemStock(c.id);
+                  const whStock = c.factory_carton_stock || 0;
+                  const loadQty = this._quickLoadCartons[c.id] || 0;
+                  const isOutOfWarehouse = whStock <= 0;
+
+                  return `
+                    <tr class="hover:bg-slate-50/80 transition-colors ${loadQty > 0 ? 'bg-blue-50/60' : ''}">
+                      <td class="py-2 px-3">
+                        <div class="font-bold text-slate-900">${c.carton_name}</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">
+                          ${c.barcode ? `#${c.barcode} • ` : ''}${c.pieces_per_carton} pcs/carton
+                        </div>
+                      </td>
+                      <td class="py-2 px-3 text-center font-bold tabular-nums">
+                        <span class="px-2 py-0.5 rounded-full text-[11px] ${inCar > 0 ? 'bg-blue-100 text-blue-800 font-black' : 'text-slate-400'}">
+                          ${inCar} ctns
+                        </span>
+                      </td>
+                      <td class="py-2 px-3 text-center font-bold tabular-nums">
+                        <span class="px-2 py-0.5 rounded-full text-[11px] ${whStock > 0 ? 'bg-purple-100 text-purple-800 font-black' : 'bg-rose-50 text-rose-500 font-bold'}">
+                          ${whStock} ctns
+                        </span>
+                      </td>
+                      <td class="py-2 px-3 text-right font-black tabular-nums text-slate-800">
+                        Rs. ${c.carton_sale_price || 0}
+                      </td>
+                      <td class="py-2 px-3 text-center">
+                        ${isOutOfWarehouse ? `
+                          <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">Wh Empty</span>
+                        ` : `
+                          <div class="inline-flex items-center gap-1">
+                            <button type="button" onclick="ShopSales.stepQuickLoadQty(${c.id}, ${whStock}, -1)" class="w-6 h-6 rounded-md bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all">-</button>
+                            <input type="number" id="ql-qty-${c.id}" min="0" max="${whStock}" value="${loadQty}"
+                                   oninput="ShopSales.setQuickLoadQty(${c.id}, ${whStock}, this.value)"
+                                   class="w-14 text-center py-1 bg-white border border-slate-300 rounded-md text-xs font-black text-slate-900 outline-none focus:border-blue-500 tabular-nums">
+                            <button type="button" onclick="ShopSales.stepQuickLoadQty(${c.id}, ${whStock}, 1)" class="w-6 h-6 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-700 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all">+</button>
+                          </div>
+                        `}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Footer -->
+          <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-4 shrink-0 flex-wrap">
+            <div class="flex items-center gap-3">
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="ql-auto-add-check" ${this._quickLoadAutoAdd ? 'checked' : ''} onchange="ShopSales._quickLoadAutoAdd = this.checked" class="w-4 h-4 rounded text-blue-600 accent-blue-600">
+                <span class="text-xs font-bold text-slate-700">Add loaded items to current sale bill</span>
+              </label>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <div id="ql-summary-cartons" class="text-xs font-black text-blue-700 tabular-nums">${totalCartons} cartons</div>
+                <div id="ql-summary-value" class="text-[10px] font-bold text-slate-500 tabular-nums">Rs. ${Math.round(totalValue).toLocaleString()}</div>
+              </div>
+              <button type="button" onclick="ShopSales.closeQuickLoadModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-all">Cancel</button>
+              <button type="button" id="ql-submit-btn" onclick="ShopSales.submitQuickLoadModal()" ${totalCartons === 0 ? 'disabled' : ''}
+                      class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-1.5 ${totalCartons === 0 ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}">
+                <i data-lucide="check" class="w-4 h-4"></i> Confirm & Load into Car
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+  },
+
+  async submitQuickLoadModal() {
+    const activeCar = this.cars.find(c => c.id === this.selectedCarId);
+    if (!activeCar) return;
+
+    const itemsToLoad = Object.entries(this._quickLoadCartons || {})
+      .map(([cId, qty]) => ({ carton_id: Number(cId), cartons_to_load: Number(qty) }))
+      .filter(x => x.cartons_to_load > 0);
+
+    if (itemsToLoad.length === 0) {
+      app.showToast('Please specify at least 1 carton to load.', 'warning');
+      return;
+    }
+
+    const totalCtns = itemsToLoad.reduce((sum, it) => sum + it.cartons_to_load, 0);
+
+    app.showLoading?.();
+    try {
+      const res = await window.api.loadCarStock({
+        car_id: activeCar.id,
+        date: new Date().toISOString().slice(0, 10),
+        items: itemsToLoad
+      });
+
+      if (res && res.success) {
+        app.playBeep('success');
+        app.showToast(`Loaded +${totalCtns} cartons into ${activeCar.car_number}!`, 'success');
+
+        // Reload data from DB
+        this.cars = await window.api.getCars() || [];
+        this.cartons = await window.api.getPackedCartons() || [];
+        this.carInventory = await window.api.getCarInventory(activeCar.id) || [];
+
+        // If auto add to bill is checked:
+        if (this._quickLoadAutoAdd) {
+          itemsToLoad.forEach(loaded => {
+            const carton = this.cartons.find(c => c.id === loaded.carton_id);
+            if (!carton) return;
+            const existingIdx = this.items.findIndex(i => i.carton_id === carton.id);
+            if (existingIdx !== -1) {
+              this.items[existingIdx].quantity += loaded.cartons_to_load;
+              this.items[existingIdx].delivered_cartons = this.items[existingIdx].quantity;
+              this.items[existingIdx].ordered_cartons = this.items[existingIdx].quantity;
+              this.updateLineTotal(existingIdx);
+            } else {
+              this.items.push({
+                carton_id: carton.id,
+                carton_name: carton.carton_name,
+                barcode: carton.barcode || '',
+                pieces_per_carton: carton.pieces_per_carton || 20,
+                quantity: loaded.cartons_to_load,
+                ordered_cartons: loaded.cartons_to_load,
+                delivered_cartons: loaded.cartons_to_load,
+                carton_price: carton.carton_sale_price || 0,
+                discount: '',
+                discountType: 'flat',
+                line_total: (loaded.cartons_to_load) * (carton.carton_sale_price || 0)
+              });
+            }
+          });
+          this.updateFinancialSummary();
+        }
+
+        this.closeQuickLoadModal();
+        this.renderUI();
+      } else {
+        app.showAlert({ title: 'Loading Error', message: res.error || 'Failed to load cartons into car.' });
+      }
+    } finally {
+      app.hideLoading?.();
     }
   },
 

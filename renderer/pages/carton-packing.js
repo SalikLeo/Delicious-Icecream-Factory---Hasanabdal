@@ -733,6 +733,8 @@ window.CartonPacking = {
     const modalEl = document.getElementById('pck-modal-container');
     if (!modalEl) return;
 
+    const defaultCarton = defaultCartonId ? this.cartons.find(x => x.id === Number(defaultCartonId)) : null;
+
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
@@ -748,18 +750,30 @@ window.CartonPacking = {
           </div>
 
           <form onsubmit="CartonPacking.handlePackingSubmit(event)" class="p-6 space-y-4">
-            <!-- 1. Select Carton Product -->
-            <div>
+            <!-- 1. Select Carton Product (Searchable) -->
+            <div class="relative dropdown-wrap" id="pk-carton-wrap">
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Select Carton Product *</label>
-              <select id="pk-carton-id" required onchange="CartonPacking.onCartonSelectChange(this.value)"
-                      class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500">
-                <option value="">-- Choose Carton Product --</option>
-                ${this.cartons.map(c => `
-                  <option value="${c.id}" ${c.id === defaultCartonId ? 'selected' : ''}>
-                    ${c.carton_name} (Loose Pcs in Pool: ${c.available_single_pieces || 0} pcs)
-                  </option>
-                `).join('')}
-              </select>
+              <input type="hidden" id="pk-carton-id" value="${defaultCarton ? defaultCarton.id : ''}">
+              
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                <input type="text" id="pk-carton-search" autocomplete="off"
+                       placeholder="Type to search carton (e.g. Chocbar, Crunch)..."
+                       value="${defaultCarton ? defaultCarton.carton_name : ''}"
+                       onfocus="CartonPacking.openCartonDropdown()"
+                       onclick="CartonPacking.openCartonDropdown()"
+                       oninput="CartonPacking.filterCartonDropdown(this.value)"
+                       onkeydown="CartonPacking.onCartonKeydown(event)"
+                       class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 transition-all cursor-pointer">
+                <button type="button" onclick="CartonPacking.toggleCartonDropdown()"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Floating Searchable Dropdown -->
+              <div id="pk-carton-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
+              </div>
             </div>
 
             <!-- Single Pcs Available Banner -->
@@ -829,6 +843,111 @@ window.CartonPacking = {
 
     if (defaultCartonId) {
       this.onCartonSelectChange(defaultCartonId);
+    }
+  },
+
+  openCartonDropdown() {
+    const dropdown = document.getElementById('pk-carton-dropdown');
+    if (!dropdown) return;
+    const searchVal = document.getElementById('pk-carton-search')?.value || '';
+    this.filterCartonDropdown(searchVal);
+    if (window.lucide) lucide.createIcons({ root: dropdown });
+  },
+
+  toggleCartonDropdown() {
+    const dropdown = document.getElementById('pk-carton-dropdown');
+    if (!dropdown) return;
+    if (dropdown.classList.contains('hidden')) {
+      this.openCartonDropdown();
+      document.getElementById('pk-carton-search')?.focus();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  filterCartonDropdown(query = '') {
+    const dropdown = document.getElementById('pk-carton-dropdown');
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+    const currentId = Number(document.getElementById('pk-carton-id')?.value) || null;
+
+    let matches = this.cartons || [];
+    if (q) {
+      matches = matches.filter(c => 
+        (c.carton_name || '').toLowerCase().includes(q) ||
+        (c.barcode || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-4 text-center text-xs font-bold text-slate-400">
+          No carton products match "${query}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    this.cartonMatches = matches;
+    this.cartonActiveIdx = 0;
+
+    dropdown.innerHTML = matches.map((c, idx) => {
+      const isSelected = c.id === currentId;
+      return `
+        <div class="px-3.5 py-2.5 hover:bg-purple-50/80 cursor-pointer flex items-center justify-between transition-colors ${isSelected ? 'bg-purple-50 font-black text-purple-950' : 'text-slate-800'}"
+             onclick="CartonPacking.selectCartonProduct(${c.id})">
+          <div>
+            <div class="text-xs font-black text-slate-900">${c.carton_name}</div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">Loose Pcs in Pool: <span class="font-black text-slate-700">${c.available_single_pieces || 0} pcs</span></div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono font-black text-purple-700">Rs. ${c.carton_sale_price || 0}</span>
+            <span class="text-[10px] text-slate-400 block font-normal">${c.pieces_per_carton || 0} pcs/ctn</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  },
+
+  selectCartonProduct(id) {
+    const c = (this.cartons || []).find(x => x.id === Number(id));
+    if (!c) return;
+    const hiddenInp = document.getElementById('pk-carton-id');
+    const searchInp = document.getElementById('pk-carton-search');
+    const dropdown = document.getElementById('pk-carton-dropdown');
+
+    if (hiddenInp) hiddenInp.value = c.id;
+    if (searchInp) searchInp.value = c.carton_name;
+    if (dropdown) dropdown.classList.add('hidden');
+
+    this.onCartonSelectChange(c.id);
+  },
+
+  onCartonKeydown(e) {
+    const dropdown = document.getElementById('pk-carton-dropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        this.openCartonDropdown();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      dropdown.classList.add('hidden');
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (this.cartonMatches && this.cartonMatches.length > 0) {
+        const item = this.cartonMatches[this.cartonActiveIdx || 0] || this.cartonMatches[0];
+        if (item) this.selectCartonProduct(item.id);
+      }
     }
   },
 
@@ -923,6 +1042,7 @@ window.CartonPacking = {
     const isNew = !c.id;
     const hasBarcode = Boolean(c && c.barcode && c.barcode.trim());
     const initStockVal = isNew ? 0 : ((Number(c.factory_carton_stock) || 0) * (Number(c.carton_cost_price) || 0));
+    const activeItem = this.singleItems.find(it => it.id === c.item_id) || this.singleItems[0];
 
     const modalEl = document.getElementById('pck-modal-container');
     if (!modalEl) return;
@@ -936,13 +1056,29 @@ window.CartonPacking = {
           </div>
           <form onsubmit="CartonPacking.handleCartonConfigSubmit(event)" class="p-6 space-y-4">
             <input type="hidden" id="cfg-id" value="${c.id || ''}">
-            <div>
+            <div class="relative dropdown-wrap" id="cfg-item-wrap">
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Base Ice Cream Item *</label>
-              <select id="cfg-item-id" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500">
-                ${this.singleItems.map(it => `
-                  <option value="${it.id}" ${it.id === c.item_id ? 'selected' : ''}>${it.name}</option>
-                `).join('')}
-              </select>
+              <input type="hidden" id="cfg-item-id" value="${activeItem ? activeItem.id : ''}">
+              
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                <input type="text" id="cfg-item-search" autocomplete="off"
+                       placeholder="Type to search base ice cream..."
+                       value="${activeItem ? activeItem.name : ''}"
+                       onfocus="CartonPacking.openBaseItemDropdown()"
+                       onclick="CartonPacking.openBaseItemDropdown()"
+                       oninput="CartonPacking.filterBaseItemDropdown(this.value)"
+                       onkeydown="CartonPacking.onBaseItemKeydown(event)"
+                       class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 transition-all cursor-pointer">
+                <button type="button" onclick="CartonPacking.toggleBaseItemDropdown()"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Floating Searchable Dropdown -->
+              <div id="cfg-item-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
+              </div>
             </div>
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Carton Full Title *</label>
@@ -1020,6 +1156,102 @@ window.CartonPacking = {
       </div>
     `;
     if (window.lucide) lucide.createIcons({ root: modalEl });
+  },
+
+  openBaseItemDropdown() {
+    const dropdown = document.getElementById('cfg-item-dropdown');
+    if (!dropdown) return;
+    const searchVal = document.getElementById('cfg-item-search')?.value || '';
+    this.filterBaseItemDropdown(searchVal);
+    if (window.lucide) lucide.createIcons({ root: dropdown });
+  },
+
+  toggleBaseItemDropdown() {
+    const dropdown = document.getElementById('cfg-item-dropdown');
+    if (!dropdown) return;
+    if (dropdown.classList.contains('hidden')) {
+      this.openBaseItemDropdown();
+      document.getElementById('cfg-item-search')?.focus();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  filterBaseItemDropdown(query = '') {
+    const dropdown = document.getElementById('cfg-item-dropdown');
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+    const currentId = Number(document.getElementById('cfg-item-id')?.value) || null;
+
+    let matches = this.singleItems || [];
+    if (q) {
+      matches = matches.filter(it => 
+        (it.name || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-4 text-center text-xs font-bold text-slate-400">
+          No items match "${query}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    this.baseItemMatches = matches;
+    this.baseItemActiveIdx = 0;
+
+    dropdown.innerHTML = matches.map((it, idx) => {
+      const isSelected = it.id === currentId;
+      return `
+        <div class="px-3.5 py-2 hover:bg-purple-50/80 cursor-pointer flex items-center justify-between transition-colors ${isSelected ? 'bg-purple-50 font-black text-purple-950' : 'text-slate-800'}"
+             onclick="CartonPacking.selectBaseItem(${it.id})">
+          <div class="text-xs font-black text-slate-900">${it.name}</div>
+          <span class="text-[10px] text-slate-400 font-mono">ID: #${it.id}</span>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  },
+
+  selectBaseItem(id) {
+    const it = (this.singleItems || []).find(x => x.id === Number(id));
+    if (!it) return;
+    const hiddenInp = document.getElementById('cfg-item-id');
+    const searchInp = document.getElementById('cfg-item-search');
+    const dropdown = document.getElementById('cfg-item-dropdown');
+
+    if (hiddenInp) hiddenInp.value = it.id;
+    if (searchInp) searchInp.value = it.name;
+    if (dropdown) dropdown.classList.add('hidden');
+  },
+
+  onBaseItemKeydown(e) {
+    const dropdown = document.getElementById('cfg-item-dropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        this.openBaseItemDropdown();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      dropdown.classList.add('hidden');
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (this.baseItemMatches && this.baseItemMatches.length > 0) {
+        const item = this.baseItemMatches[this.baseItemActiveIdx || 0] || this.baseItemMatches[0];
+        if (item) this.selectBaseItem(item.id);
+      }
+    }
   },
 
   closeModal() {

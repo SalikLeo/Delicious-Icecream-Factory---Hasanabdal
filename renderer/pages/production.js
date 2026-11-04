@@ -680,6 +680,8 @@ window.Production = {
     const modalEl = document.getElementById('prd-modal-container');
     if (!modalEl) return;
 
+    const defaultItem = defaultItemId ? this.items.find(x => x.id === Number(defaultItemId)) : null;
+
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) Production.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col">
@@ -695,18 +697,30 @@ window.Production = {
           </div>
 
           <form onsubmit="Production.handleProductionSubmit(event)" class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-            <!-- 1. Select Item -->
-            <div>
+            <!-- 1. Select Item (Searchable) -->
+            <div class="relative dropdown-wrap" id="pr-item-wrap">
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Select Ice Cream Item to Produce *</label>
-              <select id="pr-item-id" required onchange="Production.onProductionItemChange(this.value)"
-                      class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-cyan-500">
-                <option value="">-- Choose Item --</option>
-                ${this.items.map(it => `
-                  <option value="${it.id}" ${it.id === defaultItemId ? 'selected' : ''}>
-                    ${it.name} (Currently in Pool: ${it.current_single_stock} pcs @ Cost Rs. ${it.unit_cost})
-                  </option>
-                `).join('')}
-              </select>
+              <input type="hidden" id="pr-item-id" value="${defaultItem ? defaultItem.id : ''}">
+              
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                <input type="text" id="pr-item-search" autocomplete="off"
+                       placeholder="Type to search item (e.g. Chocbar, Mango Bar)..."
+                       value="${defaultItem ? defaultItem.name : ''}"
+                       onfocus="Production.openItemDropdown()"
+                       onclick="Production.openItemDropdown()"
+                       oninput="Production.filterItemDropdown(this.value)"
+                       onkeydown="Production.onItemKeydown(event)"
+                       class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-cyan-500 transition-all cursor-pointer">
+                <button type="button" onclick="Production.toggleItemDropdown()"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Floating Searchable Dropdown -->
+              <div id="pr-item-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
+              </div>
             </div>
 
             <!-- 2. Quantity & Cost -->
@@ -779,6 +793,110 @@ window.Production = {
     } else {
       // Add one default row for convenience
       this.addMaterialDeductionRow();
+    }
+  },
+
+  openItemDropdown() {
+    const dropdown = document.getElementById('pr-item-dropdown');
+    if (!dropdown) return;
+    const searchVal = document.getElementById('pr-item-search')?.value || '';
+    this.filterItemDropdown(searchVal);
+    if (window.lucide) lucide.createIcons({ root: dropdown });
+  },
+
+  toggleItemDropdown() {
+    const dropdown = document.getElementById('pr-item-dropdown');
+    if (!dropdown) return;
+    if (dropdown.classList.contains('hidden')) {
+      this.openItemDropdown();
+      document.getElementById('pr-item-search')?.focus();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  filterItemDropdown(query = '') {
+    const dropdown = document.getElementById('pr-item-dropdown');
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+    const currentId = Number(document.getElementById('pr-item-id')?.value) || null;
+
+    let matches = this.items || [];
+    if (q) {
+      matches = matches.filter(it => 
+        (it.name || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-4 text-center text-xs font-bold text-slate-400">
+          No items match "${query}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    this.itemMatches = matches;
+    this.itemActiveIdx = 0;
+
+    dropdown.innerHTML = matches.map((it, idx) => {
+      const isSelected = it.id === currentId;
+      return `
+        <div class="px-3.5 py-2.5 hover:bg-cyan-50/80 cursor-pointer flex items-center justify-between transition-colors ${isSelected ? 'bg-cyan-50 font-black text-cyan-950' : 'text-slate-800'}"
+             onclick="Production.selectProductionItem(${it.id})">
+          <div>
+            <div class="text-xs font-black text-slate-900">${it.name}</div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">In Pool: <span class="font-black text-slate-700">${it.current_single_stock} pcs</span></div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono font-black text-cyan-700">Rs. ${it.unit_cost}</span>
+            <span class="text-[10px] text-slate-400 block font-normal">/ piece</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  },
+
+  selectProductionItem(id) {
+    const it = (this.items || []).find(x => x.id === Number(id));
+    if (!it) return;
+    const hiddenInp = document.getElementById('pr-item-id');
+    const searchInp = document.getElementById('pr-item-search');
+    const dropdown = document.getElementById('pr-item-dropdown');
+
+    if (hiddenInp) hiddenInp.value = it.id;
+    if (searchInp) searchInp.value = it.name;
+    if (dropdown) dropdown.classList.add('hidden');
+
+    this.onProductionItemChange(it.id);
+  },
+
+  onItemKeydown(e) {
+    const dropdown = document.getElementById('pr-item-dropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        this.openItemDropdown();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      dropdown.classList.add('hidden');
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (this.itemMatches && this.itemMatches.length > 0) {
+        const item = this.itemMatches[this.itemActiveIdx || 0] || this.itemMatches[0];
+        if (item) this.selectProductionItem(item.id);
+      }
     }
   },
 

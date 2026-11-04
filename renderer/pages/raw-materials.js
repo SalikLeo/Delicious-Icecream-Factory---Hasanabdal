@@ -839,6 +839,8 @@ window.RawMaterials = {
     const modalEl = document.getElementById('rm-modal-container');
     if (!modalEl) return;
 
+    const defaultMaterial = defaultMaterialId ? this.materials.find(x => x.id === Number(defaultMaterialId)) : null;
+
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) RawMaterials.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
@@ -850,17 +852,30 @@ window.RawMaterials = {
             <button onclick="RawMaterials.closeModal()" class="text-emerald-300 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
           <form onsubmit="RawMaterials.handlePurchaseSubmit(event)" class="p-6 space-y-4">
-            <div>
+            <!-- Searchable Dropdown for Material Selection -->
+            <div class="relative dropdown-wrap" id="po-material-wrap">
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Select Raw Material *</label>
-              <select id="po-material-id" required onchange="RawMaterials.onPurchaseMaterialChange(this.value)"
-                      class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
-                <option value="">-- Choose Material --</option>
-                ${this.materials.map(m => `
-                  <option value="${m.id}" ${m.id === defaultMaterialId ? 'selected' : ''}>
-                    ${m.name} (Current: ${m.current_stock} ${m.unit} @ Rs. ${m.cost_price})
-                  </option>
-                `).join('')}
-              </select>
+              <input type="hidden" id="po-material-id" value="${defaultMaterial ? defaultMaterial.id : ''}">
+              
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                <input type="text" id="po-material-search" autocomplete="off"
+                       placeholder="Search material by name, category..."
+                       value="${defaultMaterial ? defaultMaterial.name : ''}"
+                       onfocus="RawMaterials.openPurchaseMaterialDropdown()"
+                       onclick="RawMaterials.openPurchaseMaterialDropdown()"
+                       oninput="RawMaterials.filterPurchaseMaterialDropdown(this.value)"
+                       onkeydown="RawMaterials.onPurchaseMaterialKeydown(event)"
+                       class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 transition-all cursor-pointer">
+                <button type="button" onclick="RawMaterials.togglePurchaseMaterialDropdown()"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Floating Searchable Dropdown -->
+              <div id="po-material-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
+              </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -907,6 +922,112 @@ window.RawMaterials = {
 
     if (defaultMaterialId) {
       this.onPurchaseMaterialChange(defaultMaterialId);
+    }
+  },
+
+  openPurchaseMaterialDropdown() {
+    const dropdown = document.getElementById('po-material-dropdown');
+    if (!dropdown) return;
+    const searchVal = document.getElementById('po-material-search')?.value || '';
+    this.filterPurchaseMaterialDropdown(searchVal);
+    if (window.lucide) lucide.createIcons({ root: dropdown });
+  },
+
+  togglePurchaseMaterialDropdown() {
+    const dropdown = document.getElementById('po-material-dropdown');
+    if (!dropdown) return;
+    if (dropdown.classList.contains('hidden')) {
+      this.openPurchaseMaterialDropdown();
+      document.getElementById('po-material-search')?.focus();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  filterPurchaseMaterialDropdown(query = '') {
+    const dropdown = document.getElementById('po-material-dropdown');
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+    const currentId = Number(document.getElementById('po-material-id')?.value) || null;
+
+    let matches = this.materials || [];
+    if (q) {
+      matches = matches.filter(m => 
+        (m.name || '').toLowerCase().includes(q) ||
+        (m.category || '').toLowerCase().includes(q) ||
+        (m.unit || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-4 text-center text-xs font-bold text-slate-400">
+          No raw materials match "${query}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    this.purchaseMaterialMatches = matches;
+    this.purchaseMaterialActiveIdx = 0;
+
+    dropdown.innerHTML = matches.map((m, idx) => {
+      const isSelected = m.id === currentId;
+      return `
+        <div class="px-3.5 py-2.5 hover:bg-emerald-50/80 cursor-pointer flex items-center justify-between transition-colors ${isSelected ? 'bg-emerald-50 font-black text-emerald-950' : 'text-slate-800'}"
+             onclick="RawMaterials.selectPurchaseMaterial(${m.id})">
+          <div>
+            <div class="text-xs font-black text-slate-900">${m.name}</div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">${m.category || 'General'} • Current: <span class="font-black text-slate-700">${m.current_stock} ${m.unit}</span></div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono font-black text-emerald-700">Rs. ${m.cost_price}</span>
+            <span class="text-[10px] text-slate-400 block font-normal">/ ${m.unit}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  },
+
+  selectPurchaseMaterial(id) {
+    const m = (this.materials || []).find(x => x.id === Number(id));
+    if (!m) return;
+    const hiddenInp = document.getElementById('po-material-id');
+    const searchInp = document.getElementById('po-material-search');
+    const dropdown = document.getElementById('po-material-dropdown');
+
+    if (hiddenInp) hiddenInp.value = m.id;
+    if (searchInp) searchInp.value = m.name;
+    if (dropdown) dropdown.classList.add('hidden');
+
+    this.onPurchaseMaterialChange(m.id);
+  },
+
+  onPurchaseMaterialKeydown(e) {
+    const dropdown = document.getElementById('po-material-dropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        this.openPurchaseMaterialDropdown();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      dropdown.classList.add('hidden');
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (this.purchaseMaterialMatches && this.purchaseMaterialMatches.length > 0) {
+        const item = this.purchaseMaterialMatches[this.purchaseMaterialActiveIdx || 0] || this.purchaseMaterialMatches[0];
+        if (item) this.selectPurchaseMaterial(item.id);
+      }
     }
   },
 

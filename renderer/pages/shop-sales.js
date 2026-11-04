@@ -333,20 +333,30 @@ window.ShopSales = {
             </div>
 
             <div class="flex items-center gap-2">
-              <div class="relative flex-1">
-                <select id="ss-shop-id" onchange="ShopSales.onShopChange(this.value)"
-                        class="w-full px-3.5 py-2.5 bg-slate-50 border-2 ${activeShop ? 'border-amber-400 bg-amber-50/20' : 'border-slate-300'} rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-amber-500 transition-all cursor-pointer">
-                  <option value="">-- Choose Registered Shop --</option>
-                  ${this.shops.map(s => `
-                    <option value="${s.id}" ${activeShop && s.id === activeShop.id ? 'selected' : ''}>
-                      ${s.name} ${s.owner_name ? `(${s.owner_name})` : ''} ${s.city ? `• ${s.city}` : ''}
-                    </option>
-                  `).join('')}
-                </select>
+              <div class="relative flex-1 dropdown-wrap" id="ss-shop-wrap">
+                <input type="hidden" id="ss-shop-id" value="${activeShop ? activeShop.id : ''}">
+                <div class="relative">
+                  <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                  <input type="text" id="ss-shop-search" autocomplete="off"
+                         placeholder="Search or choose registered shop..."
+                         value="${activeShop ? `${activeShop.name}${activeShop.owner_name ? ` (${activeShop.owner_name})` : ''}` : ''}"
+                         onfocus="ShopSales.openShopDropdown()"
+                         onclick="ShopSales.openShopDropdown()"
+                         oninput="ShopSales.filterShopDropdown(this.value)"
+                         onkeydown="ShopSales.onShopKeydown(event)"
+                         class="w-full pl-9 pr-8 py-2 bg-slate-50 border-2 ${activeShop ? 'border-amber-400 bg-amber-50/20' : 'border-slate-300'} rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-amber-500 transition-all cursor-pointer">
+                  <button type="button" onclick="ShopSales.toggleShopDropdown()"
+                          class="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+                <!-- Floating Searchable Dropdown -->
+                <div id="ss-shop-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
+                </div>
               </div>
               ${activeShop ? `
                 <button type="button" onclick="ShopSales.clearShopSelection()" title="Clear Shop Selection"
-                        class="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95" aria-label="Clear Shop">
+                        class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95" aria-label="Clear Shop">
                   <i data-lucide="x" class="w-4 h-4 text-rose-600"></i>
                 </button>
               ` : ''}
@@ -582,6 +592,99 @@ window.ShopSales = {
   clearShopSelection() {
     this.selectedShopId = null;
     this.renderUI();
+  },
+
+  openShopDropdown() {
+    const dropdown = document.getElementById('ss-shop-dropdown');
+    if (!dropdown) return;
+    const searchVal = document.getElementById('ss-shop-search')?.value || '';
+    this.filterShopDropdown(searchVal);
+    if (window.lucide) lucide.createIcons({ root: dropdown });
+  },
+
+  toggleShopDropdown() {
+    const dropdown = document.getElementById('ss-shop-dropdown');
+    if (!dropdown) return;
+    if (dropdown.classList.contains('hidden')) {
+      this.openShopDropdown();
+      document.getElementById('ss-shop-search')?.focus();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  filterShopDropdown(query = '') {
+    const dropdown = document.getElementById('ss-shop-dropdown');
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+    const currentId = this.selectedShopId;
+
+    let matches = this.shops || [];
+    if (q) {
+      matches = matches.filter(s => 
+        (s.name || '').toLowerCase().includes(q) ||
+        (s.owner_name || '').toLowerCase().includes(q) ||
+        (s.city || '').toLowerCase().includes(q) ||
+        (s.phone || '').includes(q)
+      );
+    }
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-3 text-center text-xs font-bold text-slate-400">
+          No registered shops match "${query}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    this.shopMatches = matches;
+    this.shopActiveIdx = 0;
+
+    dropdown.innerHTML = matches.map((s, idx) => {
+      const isSelected = s.id === currentId;
+      return `
+        <div class="px-3 py-2 hover:bg-amber-50/80 cursor-pointer flex items-center justify-between transition-colors ${isSelected ? 'bg-amber-50 font-black text-amber-950' : 'text-slate-800'}"
+             onclick="ShopSales.onShopChange(${s.id})">
+          <div>
+            <div class="text-xs font-black text-slate-900">${s.name} ${s.owner_name ? `<span class="text-[11px] font-bold text-slate-500 font-normal">(${s.owner_name})</span>` : ''}</div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">${s.city || 'Local Area'} • ${s.phone ? (window.app && app.formatPhone ? app.formatPhone(s.phone) : s.phone) : 'No Phone'}</div>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] font-black uppercase text-amber-800 block">Balance</span>
+            <span class="text-xs font-mono font-black ${Number(s.current_balance) > 0 ? 'text-rose-600' : 'text-slate-700'}">Rs. ${Math.round(Number(s.current_balance) || 0).toLocaleString()}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  },
+
+  onShopKeydown(e) {
+    const dropdown = document.getElementById('ss-shop-dropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        this.openShopDropdown();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      dropdown.classList.add('hidden');
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (this.shopMatches && this.shopMatches.length > 0) {
+        const item = this.shopMatches[this.shopActiveIdx || 0] || this.shopMatches[0];
+        if (item) this.onShopChange(item.id);
+      }
+    }
   },
 
   renderLoadedCarPills() {

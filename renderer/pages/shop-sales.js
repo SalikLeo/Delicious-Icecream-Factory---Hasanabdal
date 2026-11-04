@@ -834,9 +834,8 @@ window.ShopSales = {
       if (existingIdx !== -1) {
         this.items.splice(existingIdx, 1);
         this.renderCartTable();
-      } else {
-        this.renderLoadedCarPills();
       }
+      this.renderLoadedCarPills();
       return;
     }
 
@@ -903,6 +902,7 @@ window.ShopSales = {
     if (this.items.length === 0) {
       tbody.innerHTML = '';
       if (emptyState) emptyState.classList.remove('hidden');
+      this.renderLoadedCarPills();
       this.updateFinancialSummary();
       return;
     }
@@ -1239,6 +1239,7 @@ window.ShopSales = {
   removeRow(index) {
     this.items.splice(index, 1);
     this.renderCartTable();
+    this.renderLoadedCarPills();
   },
 
   handleSearchInput(val) {

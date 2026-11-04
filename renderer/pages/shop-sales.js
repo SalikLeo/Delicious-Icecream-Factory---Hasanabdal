@@ -141,18 +141,45 @@ window.ShopSales = {
     return match ? (Number(match.cartons_loaded) || 0) : 0;
   },
 
+  getTotalCartonStock(cartonId) {
+    const cId = Number(cartonId);
+    const carton = (this.cartons || []).find(c => c.id === cId);
+    const whStock = carton ? (Number(carton.factory_carton_stock) || 0) : 0;
+    const carStock = this.getItemStock(cId);
+    return {
+      carStock,
+      whStock,
+      total: carStock + whStock
+    };
+  },
+
   addToCart(carton) {
     if (!carton) return;
+    const stockInfo = this.getTotalCartonStock(carton.id);
+    if (stockInfo.total <= 0) {
+      app.playBeep('warning');
+      app.showAlert({
+        title: 'Out of Stock',
+        message: `<b>${carton.carton_name}</b> has 0 cartons available (0 in vehicle and 0 in factory warehouse freezer).<br><br>Please produce single pieces and pack cartons first.`
+      });
+      return;
+    }
+
     const existingIdx = this.items.findIndex(i => i.carton_id === carton.id);
     if (existingIdx !== -1) {
       const existing = this.items[existingIdx];
-      existing.quantity++;
-      existing.delivered_cartons = existing.quantity;
-      existing.ordered_cartons = existing.quantity;
-      this.updateLineTotal(existingIdx);
-      this.updateFinancialSummary();
-      this.renderCartTable();
-      app.showToast('Added ' + carton.carton_name + ' (Total: ' + existing.quantity + ' ctns)', 'success');
+      if (existing.quantity < stockInfo.total) {
+        existing.quantity++;
+        existing.delivered_cartons = existing.quantity;
+        existing.ordered_cartons = existing.quantity;
+        this.updateLineTotal(existingIdx);
+        this.updateFinancialSummary();
+        this.renderCartTable();
+        app.showToast('Added ' + carton.carton_name + ' (Total: ' + existing.quantity + ' ctns)', 'success');
+      } else {
+        app.playBeep('warning');
+        app.showToast(`Cannot add more. Total stock limit is ${stockInfo.total} ctns (${stockInfo.carStock} in car + ${stockInfo.whStock} in warehouse)`, 'warning');
+      }
       setTimeout(() => this.focusCartField(existingIdx, 'qty'), 40);
     } else {
       const price = carton.carton_sale_price || 0;
@@ -657,10 +684,25 @@ window.ShopSales = {
     }
 
     return loadedCarItems.map(it => {
+      const stockInfo = this.getTotalCartonStock(it.carton_id);
+      const maxAllowed = stockInfo.total;
       const cartItem = this.items.find(x => x.carton_id === it.carton_id);
       const inSaleQty = cartItem ? (Number(cartItem.quantity) || 0) : 0;
       const remainInCar = Math.max(0, it.cartons_loaded - inSaleQty);
-      const isAllInSale = inSaleQty >= it.cartons_loaded;
+      const isAllCarSold = inSaleQty >= it.cartons_loaded;
+
+      let remainText = 'all in car';
+      let remainClass = 'text-emerald-700 bg-emerald-50 border border-emerald-200';
+      if (inSaleQty > 0) {
+        if (inSaleQty <= it.cartons_loaded) {
+          remainText = `${remainInCar} remain in car`;
+          remainClass = remainInCar > 0 ? 'text-amber-800 bg-amber-50 border border-amber-200' : 'text-blue-800 bg-blue-50 border border-blue-200';
+        } else {
+          const fromWh = inSaleQty - it.cartons_loaded;
+          remainText = `0 in car (+${fromWh} wh)`;
+          remainClass = 'text-purple-800 bg-purple-50 border border-purple-200';
+        }
+      }
 
       return `
         <div id="pill-card-${it.carton_id}"
@@ -669,14 +711,14 @@ window.ShopSales = {
           <!-- Carton Name & Loaded Badge -->
           <div class="flex items-center gap-1.5">
             <span class="font-black text-slate-900 text-xs truncate max-w-[155px]" title="${it.carton_name}">${it.carton_name}</span>
-            <span class="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-md tabular-nums" title="Total loaded in vehicle">
+            <span class="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-md tabular-nums" title="Currently in car: ${it.cartons_loaded} | Warehouse: ${stockInfo.whStock} | Total: ${maxAllowed}">
               ${it.cartons_loaded} in car
             </span>
           </div>
 
           <span class="text-slate-300 font-light select-none">|</span>
 
-          <!-- In-Sale Stepper / Selector -->
+          <!-- In-Sale Stepper / Selector with strict maxAllowed -->
           <div class="flex items-center gap-1">
             <span class="text-[10px] font-black text-slate-500 uppercase tracking-tight">In Sale:</span>
             <div class="inline-flex items-center rounded-lg border border-slate-300 bg-slate-50 overflow-hidden shadow-2xs">
@@ -690,34 +732,36 @@ window.ShopSales = {
               <input type="number" 
                      id="pill-qty-${it.carton_id}"
                      min="0" 
-                     max="${it.cartons_loaded}" 
+                     max="${maxAllowed}" 
                      value="${inSaleQty}"
                      onchange="ShopSales.setCarPillQty(${it.carton_id}, this.value)"
                      oninput="ShopSales.setCarPillQty(${it.carton_id}, this.value, true)"
                      class="w-10 h-6 text-center font-black text-xs text-slate-900 bg-white outline-none focus:bg-amber-50 focus:ring-1 focus:ring-blue-400 tabular-nums"
-                     title="Type quantity to add into current sale">
+                     title="Max available: ${maxAllowed} ctns (${it.cartons_loaded} in car + ${stockInfo.whStock} in warehouse)">
 
               <button type="button" 
+                      id="pill-inc-${it.carton_id}"
                       onclick="ShopSales.changeCarPillQty(${it.carton_id}, 1)" 
-                      class="w-6 h-6 flex items-center justify-center font-black text-slate-700 hover:bg-slate-200 active:scale-90 transition-all text-xs cursor-pointer select-none border-l border-slate-200"
-                      title="Add 1 more to current sale">+</button>
+                      class="w-6 h-6 flex items-center justify-center font-black text-slate-700 hover:bg-slate-200 active:scale-90 transition-all text-xs cursor-pointer select-none border-l border-slate-200 disabled:opacity-25 disabled:cursor-not-allowed"
+                      ${inSaleQty >= maxAllowed ? 'disabled' : ''}
+                      title="Add 1 more (Max ${maxAllowed} ctns)">+</button>
             </div>
             <span class="text-[10px] text-slate-500 font-bold">ctns</span>
           </div>
 
-          <!-- Quick All Button -->
+          <!-- Quick All Car Button -->
           <button type="button" 
                   id="pill-all-${it.carton_id}"
                   onclick="ShopSales.setCarPillQty(${it.carton_id}, ${it.cartons_loaded})" 
-                  class="px-1.5 py-0.5 text-[10px] font-black rounded border transition-all cursor-pointer ${isAllInSale ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-slate-100 hover:bg-blue-50 text-blue-700 border-slate-200'}"
-                  title="Add all ${it.cartons_loaded} ctns to current sale">
-            All
+                  class="px-1.5 py-0.5 text-[10px] font-black rounded border transition-all cursor-pointer ${isAllCarSold ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-slate-100 hover:bg-blue-50 text-blue-700 border-slate-200'}"
+                  title="Add all ${it.cartons_loaded} loaded car cartons to current sale">
+            All Car
           </button>
 
           <!-- Remaining in Car Badge -->
           <span id="pill-remain-${it.carton_id}" 
-                class="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums ${inSaleQty > 0 ? (remainInCar > 0 ? 'text-amber-800 bg-amber-50 border border-amber-200' : 'text-slate-600 bg-slate-100 border border-slate-200') : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}">
-            ${inSaleQty > 0 ? `${remainInCar} remain in car` : 'all in car'}
+                class="text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums ${remainClass}">
+            ${remainText}
           </span>
         </div>
       `;
@@ -770,8 +814,20 @@ window.ShopSales = {
     const carton = (this.cartons || []).find(c => c.id === cId);
     if (!carton) return;
 
+    const stockInfo = this.getTotalCartonStock(cId);
+    const maxAllowed = stockInfo.total;
+
     let parsed = parseInt(qty, 10);
     if (isNaN(parsed) || parsed < 0) parsed = 0;
+
+    // Strict clamping to total available stock (Car + Warehouse)
+    if (parsed > maxAllowed) {
+      parsed = maxAllowed;
+      const inputEl = document.getElementById(`pill-qty-${cId}`);
+      if (inputEl) inputEl.value = maxAllowed;
+      app.playBeep('warning');
+      app.showToast(`Total available stock for ${carton.carton_name} is ${maxAllowed} ctns (${stockInfo.carStock} in car + ${stockInfo.whStock} in warehouse)`, 'warning');
+    }
 
     const existingIdx = this.items.findIndex(i => i.carton_id === cId);
     if (parsed === 0) {
@@ -816,9 +872,15 @@ window.ShopSales = {
 
   changeCarPillQty(cartonId, delta) {
     const cId = Number(cartonId);
+    const stockInfo = this.getTotalCartonStock(cId);
     const existing = this.items.find(i => i.carton_id === cId);
     const current = existing ? (Number(existing.quantity) || 0) : 0;
-    const next = Math.max(0, current + delta);
+    const next = Math.min(stockInfo.total, Math.max(0, current + delta));
+    if (delta > 0 && current >= stockInfo.total) {
+      app.playBeep('warning');
+      app.showToast(`Reached maximum available stock (${stockInfo.total} ctns: ${stockInfo.carStock} in car + ${stockInfo.whStock} in warehouse)`, 'warning');
+      return;
+    }
     this.setCarPillQty(cId, next);
   },
 
@@ -891,6 +953,7 @@ window.ShopSales = {
                      id="cart-qty-input-${idx}"
                      value="${item.quantity}"
                      min="1"
+                     max="${this.getTotalCartonStock(item.carton_id).total}"
                      step="1"
                      onkeydown="ShopSales.handleCartKeyDown(event, ${idx}, 'qty')"
                      oninput="ShopSales.updateCartQty(${idx}, this.value, this)"
@@ -1837,11 +1900,19 @@ window.ShopSales = {
     const shopName = activeShop ? activeShop.name : 'Counter Walk-in Customer';
     const notes = '';
 
-    // Validate quantities
+    // Validate quantities against total available stock
     for (const it of this.items) {
       const q = Number(it.quantity) || 0;
       if (q <= 0) {
         app.showAlert({ title: 'Invalid Quantity', message: `Quantity for <b>${it.carton_name}</b> must be at least 1.` });
+        return;
+      }
+      const stockInfo = this.getTotalCartonStock(it.carton_id);
+      if (q > stockInfo.total) {
+        app.showAlert({
+          title: 'Stock Limit Exceeded',
+          message: `Quantity for <b>${it.carton_name}</b> is ${q} ctns, but only <b>${stockInfo.total} ctns</b> are available in total (${stockInfo.carStock} in car + ${stockInfo.whStock} in factory warehouse freezer). Please adjust quantity to ${stockInfo.total} or less.`
+        });
         return;
       }
     }

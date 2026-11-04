@@ -3161,6 +3161,25 @@ function saveShopDelivery(data) {
     subtotal += lineTotal;
   });
 
+  // Validate total available stock (car + factory warehouse freezer)
+  for (const it of data.items) {
+    const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
+    const pc = db.prepare('SELECT carton_name, factory_carton_stock FROM packed_cartons WHERE id = ?').get(it.carton_id);
+    const name = pc ? pc.carton_name : 'Carton';
+    const whStock = pc ? Number(pc.factory_carton_stock) || 0 : 0;
+    let carStock = 0;
+    if (car) {
+      const ci = db.prepare('SELECT cartons_loaded FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(car.id, it.carton_id);
+      carStock = ci ? Number(ci.cartons_loaded) || 0 : 0;
+    }
+    const totalAvail = carStock + whStock;
+    if (qty > totalAvail) {
+      return { 
+        error: `Quantity (${qty} ctns) for "${name}" exceeds total available stock (${totalAvail} ctns: ${carStock} in ${car ? car.car_number : 'car'} + ${whStock} in factory warehouse freezer).` 
+      };
+    }
+  }
+
   const totalAmount = Math.max(0, subtotal - discount);
   if (receivedAmount > totalAmount) {
     return { error: `Received amount (Rs. ${receivedAmount.toLocaleString()}) cannot be more than the net bill total (Rs. ${totalAmount.toLocaleString()})` };

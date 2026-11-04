@@ -920,6 +920,9 @@ window.CartonPacking = {
     };
     if (!c) return;
 
+    const hasBarcode = Boolean(c && c.barcode && c.barcode.trim());
+    const initStockVal = (Number(c.factory_carton_stock) || 0) * (Number(c.carton_cost_price) || 200);
+
     const modalEl = document.getElementById('pck-modal-container');
     if (!modalEl) return;
 
@@ -945,16 +948,24 @@ window.CartonPacking = {
               <input type="text" id="cfg-name" required value="${c.carton_name || ''}" placeholder="e.g. Chocbar Carton (20 Pcs)..."
                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500">
             </div>
-            <div>
+            <div id="cfg-barcode-wrap">
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 flex items-center justify-between">
                 <span>Carton Barcode</span>
-                <button type="button" onclick="CartonPacking.generateConfigBarcode()" class="text-[10px] text-purple-600 hover:text-purple-700 font-bold cursor-pointer">+ Auto Generate</button>
+                ${hasBarcode ? `
+                  <span class="text-[10px] text-slate-500 font-bold flex items-center gap-1">
+                    <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> Permanent Barcode (Locked)
+                  </span>
+                ` : `
+                  <button type="button" id="cfg-btn-gen-barcode" onclick="CartonPacking.generateConfigBarcode()" class="text-[10px] text-purple-600 hover:text-purple-700 font-bold cursor-pointer transition-colors">+ Auto Generate</button>
+                `}
               </label>
               <div class="relative">
                 <input type="text" id="cfg-barcode" value="${c.barcode || ''}" placeholder="Scan barcode with scanner or click generate..."
-                       class="w-full pl-3.5 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500">
-                <i data-lucide="scan-barcode" class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                       ${hasBarcode ? 'readonly' : ''}
+                       class="w-full pl-3.5 pr-8 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 ${hasBarcode ? 'bg-slate-100 cursor-not-allowed text-slate-600' : 'bg-slate-50'}">
+                <i data-lucide="${hasBarcode ? 'lock' : 'scan-barcode'}" class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
               </div>
+              <p class="text-[10px] text-slate-400 mt-1 font-medium">Barcode can only be generated once and remains permanently linked to this carton.</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -965,6 +976,7 @@ window.CartonPacking = {
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Warehouse Cartons Stock</label>
                 <input type="number" step="1" min="0" id="cfg-stock" value="${c.factory_carton_stock || 0}"
+                       oninput="CartonPacking.calcConfigValue()"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
               </div>
             </div>
@@ -972,6 +984,7 @@ window.CartonPacking = {
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Carton Cost (Rs.)</label>
                 <input type="number" step="any" min="0" id="cfg-cost" value="${c.carton_cost_price || 200}" required
+                       oninput="CartonPacking.calcConfigValue()"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
               </div>
               <div>
@@ -980,6 +993,23 @@ window.CartonPacking = {
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-emerald-700 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
               </div>
             </div>
+
+            <!-- Total Stock Value Display (Cost x Cartons Stock) -->
+            <div class="bg-purple-50/80 border border-purple-200/90 rounded-xl p-2.5 px-3.5 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="calculator" class="w-4 h-4 text-purple-600"></i>
+                <div>
+                  <span class="text-[11px] font-black uppercase text-purple-900 tracking-wider block">Total Stock Value</span>
+                  <span class="text-[10px] text-purple-600 font-bold block">(Cost × Cartons Stock)</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span id="cfg-stock-value" class="font-mono font-black text-sm text-purple-800 tabular-nums">
+                  Rs. ${Math.round(initStockVal).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button type="button" onclick="CartonPacking.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
               <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black shadow-md cursor-pointer">Save Carton Config</button>
@@ -1047,10 +1077,34 @@ window.CartonPacking = {
 
   generateConfigBarcode() {
     const inp = document.getElementById('cfg-barcode');
-    if (inp) {
-      const code = Math.floor(100000000000 + Math.random() * 900000000000).toString();
-      inp.value = code;
-      inp.focus();
+    if (!inp) return;
+    if (inp.value && inp.value.trim()) {
+      app.showToast('Barcode has already been generated and cannot be re-generated.', 'info');
+      return;
+    }
+    const code = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    inp.value = code;
+    inp.readOnly = true;
+    inp.classList.remove('bg-slate-50');
+    inp.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-600');
+
+    const btn = document.getElementById('cfg-btn-gen-barcode');
+    if (btn) {
+      btn.outerHTML = `<span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Generated (Locked)</span>`;
+    }
+    const wrap = document.getElementById('cfg-barcode-wrap');
+    if (wrap && window.lucide) lucide.createIcons({ root: wrap });
+
+    app.showToast('Carton barcode generated and permanently locked!', 'success');
+  },
+
+  calcConfigValue() {
+    const stock = Number(document.getElementById('cfg-stock')?.value) || 0;
+    const cost = Number(document.getElementById('cfg-cost')?.value) || 0;
+    const total = stock * cost;
+    const el = document.getElementById('cfg-stock-value');
+    if (el) {
+      el.textContent = `Rs. ${Math.round(total).toLocaleString()}`;
     }
   },
 

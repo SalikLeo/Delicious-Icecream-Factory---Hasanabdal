@@ -2702,6 +2702,26 @@ function findCartonByBarcode(barcode) {
 }
 
 function savePackedCarton(data) {
+  let barcodeToSave = (data.barcode || '').trim();
+
+  if (data.id) {
+    const existing = db.prepare('SELECT barcode FROM packed_cartons WHERE id = ?').get(data.id);
+    // Barcode can only be generated once for an item/carton: preserve permanent existing barcode
+    if (existing && existing.barcode && existing.barcode.trim()) {
+      barcodeToSave = existing.barcode.trim();
+    }
+  }
+
+  // Ensure barcode is unique across all packed cartons if present
+  if (barcodeToSave) {
+    const dup = data.id 
+      ? db.prepare('SELECT id, carton_name FROM packed_cartons WHERE barcode = ? AND id != ?').get(barcodeToSave, data.id)
+      : db.prepare('SELECT id, carton_name FROM packed_cartons WHERE barcode = ?').get(barcodeToSave);
+    if (dup) {
+      return { error: `Barcode "${barcodeToSave}" is already assigned to "${dup.carton_name}". Barcodes must be unique.` };
+    }
+  }
+
   if (data.id) {
     db.prepare(`
       UPDATE packed_cartons
@@ -2715,7 +2735,7 @@ function savePackedCarton(data) {
       Number(data.carton_sale_price) || 0,
       Number(data.carton_wholesale_price) || 0,
       Number(data.factory_carton_stock) || 0,
-      data.barcode || '',
+      barcodeToSave,
       data.notes || '',
       data.id
     );
@@ -2735,7 +2755,7 @@ function savePackedCarton(data) {
       Number(data.carton_sale_price) || 0,
       Number(data.carton_wholesale_price) || 0,
       Number(data.factory_carton_stock) || 0,
-      data.barcode || '',
+      barcodeToSave,
       data.notes || ''
     );
     return { success: true, id: res.lastInsertRowid };

@@ -54,8 +54,8 @@ window.RawMaterials = {
             <p class="text-xs text-slate-300 font-medium">Manage factory raw stock (Milk, Sugar, Sticks, Wrappers, Cocoa). Track what is purchased and what is left behind.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
-            <button onclick="RawMaterials.openAddModal()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Material
+            <button onclick="RawMaterials.openAddModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-white"></i> Add New Material
             </button>
             <button onclick="RawMaterials.openPurchaseModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-900 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
               <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Purchase / Stock-In

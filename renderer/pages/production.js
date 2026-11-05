@@ -55,8 +55,8 @@ window.Production = {
             <p class="text-xs text-slate-300 font-medium">Produce loose individual pieces (e.g. Chocbar 100 pcs @ Rs. 10, Ice Loly 40 pcs @ Rs. 25). Raw materials are deducted automatically.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
-            <button onclick="Production.openProductionModal()" class="px-4 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="play-circle" class="w-4 h-4"></i> Run Production (Make Pieces)
+            <button onclick="Production.openProductionModal()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+              <i data-lucide="play-circle" class="w-4 h-4 text-white"></i> Run Production (Make Pieces)
             </button>
             <button onclick="Production.openItemModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer">
               <i data-lucide="plus" class="w-4 h-4 text-cyan-400"></i> New Flavor / Item
@@ -832,8 +832,8 @@ window.Production = {
 
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button type="button" onclick="Production.closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
-              <button type="submit" class="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
-                <i data-lucide="check-circle" class="w-4 h-4"></i> Complete Production Run
+              <button type="submit" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
+                <i data-lucide="check-circle" class="w-4 h-4 text-white"></i> Complete Production Run
               </button>
             </div>
           </form>
@@ -1105,12 +1105,12 @@ window.Production = {
       if (hasExceeding) {
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
-        submitBtn.classList.remove('cursor-pointer', 'hover:bg-cyan-400', 'active:scale-95');
+        submitBtn.classList.remove('cursor-pointer', 'hover:bg-cyan-500', 'active:scale-95');
         submitBtn.title = 'Cannot complete: raw material quantity exceeds available stock';
       } else {
         submitBtn.disabled = false;
         submitBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
-        submitBtn.classList.add('cursor-pointer', 'hover:bg-cyan-400', 'active:scale-95');
+        submitBtn.classList.add('cursor-pointer', 'hover:bg-cyan-500', 'active:scale-95');
         submitBtn.title = 'Complete Production Run';
       }
     }

@@ -46,15 +46,15 @@ window.Reports = {
         <div class="flex bg-slate-200/80 p-1.5 rounded-2xl gap-1 shrink-0 overflow-x-auto">
           <button type="button" onclick="Reports.switchTab('cars')" id="rpt-tab-cars"
                   class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer bg-white text-slate-900 shadow-sm">
-            <i data-lucide="truck" class="w-4 h-4 text-blue-600"></i> 1. Cars &amp; Delivery Sales
+            <i data-lucide="truck" class="w-4 h-4 text-blue-600"></i> 1. Cars &amp; Sales
           </button>
           <button type="button" onclick="Reports.switchTab('raw')" id="rpt-tab-raw"
                   class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900">
-            <i data-lucide="boxes" class="w-4 h-4 text-emerald-600"></i> 2. Raw Material Balance
+            <i data-lucide="boxes" class="w-4 h-4 text-emerald-600"></i> 2. Raw Material Stock
           </button>
           <button type="button" onclick="Reports.switchTab('inventory')" id="rpt-tab-inventory"
                   class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900">
-            <i data-lucide="package" class="w-4 h-4 text-purple-600"></i> 3. Finished Goods Stock
+            <i data-lucide="package" class="w-4 h-4 text-purple-600"></i> 3. Carton Stock
           </button>
           <button type="button" onclick="Reports.switchTab('finance')" id="rpt-tab-finance"
                   class="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:text-slate-900">

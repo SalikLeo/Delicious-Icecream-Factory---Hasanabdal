@@ -165,7 +165,7 @@ window.CarLoading = {
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button onclick="CarLoading.switchTab('dispatch')" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="package-check" class="w-4 h-4"></i> Load Stock into Car
+              <i data-lucide="package-check" class="w-4 h-4"></i> + Load Car
             </button>
             <button onclick="CarLoading.openCarModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer">
               <i data-lucide="truck" class="w-4 h-4 text-blue-400"></i> Add Car / Van
@@ -212,13 +212,13 @@ window.CarLoading = {
         <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
           <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
             <button onclick="CarLoading.switchTab('cars')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'cars' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
-              Delivery Cars &amp; Loaded Stock
+              Delivery Cars &amp; Stock
             </button>
             <button onclick="CarLoading.switchTab('dispatch')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'dispatch' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
-              + Load Stock into Car (Dispatch)
+              + Load Car
             </button>
             <button onclick="CarLoading.switchTab('history')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'history' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
-              Loading History &amp; Gate Passes
+              Loading History
             </button>
           </div>
 

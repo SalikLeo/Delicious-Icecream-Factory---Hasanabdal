@@ -159,7 +159,7 @@ const Settings = {
           <!-- Right Column: Security (1st & 2nd Password) & Backup -->
           <div class="space-y-6">
             <!-- Tab Access Security -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 relative z-30">
             <div class="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl">
               <h3 class="font-bold text-lg text-slate-700">Tab Access Security</h3>
             </div>
@@ -200,11 +200,11 @@ const Settings = {
                      <div class="pt-3 border-t border-slate-100">
                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Locked Tabs Selection</label>
                        <div class="relative">
-                         <button type="button" onclick="Settings.toggleTabDropdown(event)" id="locked-tabs-btn" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold hover:bg-white border-slate-200 transition-all flex items-center justify-between">
+                         <button type="button" onclick="Settings.toggleTabDropdown(event)" id="locked-tabs-btn" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold hover:bg-white transition-all flex items-center justify-between cursor-pointer">
                             <span id="locked-tabs-text">No Tabs Locked</span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                            <i data-lucide="chevron-down" id="locked-tabs-chevron" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
                          </button>
-                         <div id="locked-tabs-menu" class="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-2 hidden max-h-60 overflow-y-auto">
+                         <div id="locked-tabs-menu" class="absolute top-full left-0 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1.5 hidden max-h-72 overflow-y-auto custom-scrollbar divide-y divide-slate-50">
                             <!-- Injected dynamically -->
                          </div>
                        </div>
@@ -844,14 +844,20 @@ const Settings = {
   toggleTabDropdown(event) {
     if (event) event.stopPropagation();
     const menu = document.getElementById('locked-tabs-menu');
+    const btn = document.getElementById('locked-tabs-btn');
+    const chevron = document.getElementById('locked-tabs-chevron');
     if (!menu) return;
     const isHidden = menu.classList.contains('hidden');
     
     if (isHidden) {
       menu.classList.remove('hidden');
+      if (btn) btn.classList.add('ring-2', 'ring-accent', 'border-accent');
+      if (chevron) chevron.classList.add('rotate-180');
       const closeMenu = (e) => {
-        if (!menu.contains(e.target)) {
+        if (!menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
           menu.classList.add('hidden');
+          if (btn) btn.classList.remove('ring-2', 'ring-accent', 'border-accent');
+          if (chevron) chevron.classList.remove('rotate-180');
           document.removeEventListener('click', closeMenu);
         }
       };
@@ -860,6 +866,8 @@ const Settings = {
       }, 0);
     } else {
       menu.classList.add('hidden');
+      if (btn) btn.classList.remove('ring-2', 'ring-accent', 'border-accent');
+      if (chevron) chevron.classList.remove('rotate-180');
     }
   },
 
@@ -879,7 +887,7 @@ const Settings = {
     menu.innerHTML = LOCKABLE_TABS.map(tab => {
       const isLocked = lockedTabs.includes(tab.key);
       return `
-        <div onclick="Settings.toggleTabLock('${tab.key}', event)" class="px-4 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer select-none">
+        <div onclick="Settings.toggleTabLock('${tab.key}', event)" class="px-4 py-2.5 hover:bg-slate-50 flex items-center justify-between cursor-pointer select-none transition-colors">
           <span class="text-xs font-bold text-slate-700">${tab.name}</span>
           <div class="w-4 h-4 border border-slate-300 rounded flex items-center justify-center transition-colors ${isLocked ? 'bg-accent border-accent text-slate-900' : 'bg-white'}">
             ${isLocked ? '<i data-lucide="check" class="w-3 h-3 stroke-[3]"></i>' : ''}

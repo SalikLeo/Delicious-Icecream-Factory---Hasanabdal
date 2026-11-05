@@ -298,10 +298,10 @@ const Settings = {
                     <i data-lucide="download" class="w-5 h-5"></i>
                  </div>
                  <div>
-                    <h4 class="font-bold text-slate-800 text-sm">Backup Data Locally</h4>
-                    <p class="text-xs text-slate-500 mb-3">Backup all proposals, expenses, products, and logs into a single file at any time.</p>
-                    <button onclick="Settings.backupData()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm">
-                      Backup App Data
+                    <h4 class="font-bold text-slate-800 text-sm">Backup Factory Data Locally</h4>
+                    <p class="text-xs text-slate-500 mb-3">Create a complete backup file of all raw materials, production batches, packed carton stocks, delivery vehicles, shop sales, customer khata, and expenses.</p>
+                    <button onclick="Settings.backupData()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
+                      <i data-lucide="download" class="w-3.5 h-3.5"></i> Backup App Data
                     </button>
                  </div>
               </div>
@@ -312,22 +312,22 @@ const Settings = {
                  </div>
                  <div>
                     <h4 class="font-bold text-slate-800 text-sm">Restore from Backup</h4>
-                    <p class="text-xs text-slate-500 mb-3">Restore your entire system from a previous backup file. <span class="text-red-500 font-bold">This will replace current data.</span></p>
-                    <button onclick="Settings.restoreData()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm">
-                      Restore Data
+                    <p class="text-xs text-slate-500 mb-3">Restore your entire factory database from a previous backup file. <span class="text-rose-600 font-bold">This replaces all current data and restarts the application automatically.</span></p>
+                    <button onclick="Settings.restoreData()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
+                      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-amber-600"></i> Restore Data
                     </button>
                  </div>
               </div>
 
               <div class="pt-2 border-t border-slate-100 flex items-start gap-4">
-                 <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600 shrink-0">
+                 <div class="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                  </div>
                  <div>
                     <h4 class="font-bold text-slate-800 text-sm">Clear All App Data</h4>
-                    <p class="text-xs text-slate-500 mb-3">Permanently delete all data and reset the application to its original state. <span class="text-red-600 font-bold underline">This action cannot be undone.</span></p>
-                    <button onclick="Settings.clearAppData()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm">
-                      Clear All Data
+                    <p class="text-xs text-slate-500 mb-3">Permanently wipe all data across all 5 stages (raw materials, production runs, carton stocks, cars, shop sales, customer khata) and reset the app to a completely clean slate. <span class="text-rose-600 font-bold underline">This action cannot be undone.</span></p>
+                    <button onclick="Settings.clearAppData()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear All Data
                     </button>
                  </div>
               </div>
@@ -754,76 +754,68 @@ const Settings = {
   },
 
   async handleRestore() {
-    app.verifyPassword({
-      title: 'Security Verification',
-      message: 'Enter security password to authorize restoring database:',
-      onVerified: () => {
-        app.showConfirm({
-          title: 'Restore Database',
-          message: 'Restoring a database will replace all current data with the selected backup file. The app will restart automatically upon completion. Are you sure you want to proceed?',
-          confirmText: 'Select Backup File',
-          confirmColor: 'orange',
-          onConfirm: async () => {
-            app.showLoading();
-            try {
-              // Clear local and session storage so restored DB rehydrates cleanly
-              localStorage.clear();
-              sessionStorage.clear();
-              const res = await window.api.restoreData();
-              if (res && !res.success && res.error !== 'Cancelled') {
-                app.showAlert('Restore failed: ' + res.error);
-              }
-            } catch (err) {
-              console.error(err);
-              app.showAlert('Failed to restore database: ' + err.message);
-            } finally {
-              app.hideLoading();
+    app.authorizeAction(() => {
+      app.showConfirm({
+        title: 'Restore Factory Database',
+        message: 'Restoring a database will replace all current factory data, stocks, delivery records, and accounts with the selected backup file.<br><br><b>The application will automatically restart once the restore completes.</b><br><br>Are you sure you want to proceed?',
+        confirmText: 'Select Backup File',
+        confirmColor: 'orange',
+        onConfirm: async () => {
+          app.showLoading();
+          try {
+            // Clear local and session storage so restored DB rehydrates cleanly
+            localStorage.clear();
+            sessionStorage.clear();
+            const res = await window.api.restoreData();
+            if (res && !res.success && res.error !== 'Cancelled') {
+              app.showAlert('Restore failed: ' + res.error);
             }
+          } catch (err) {
+            console.error(err);
+            app.showAlert('Failed to restore database: ' + err.message);
+          } finally {
+            app.hideLoading();
           }
-        });
-      }
-    });
+        }
+      });
+    }, 'restoring database from backup');
   },
 
   async clearAppData() {
-    app.verifyPassword({
-      title: 'Security Verification',
-      message: 'Enter password to authorize clearing all app data:',
-      onVerified: () => {
-        app.showConfirm({
-          title: 'Clear All App Data',
-          message: 'Are you sure you want to delete EVERYTHING? This will permanently delete all stock items, rate lists, sales invoices, companies, customers, expenses, and transaction logs. The app will be reset to a clean slate. This action CANNOT be undone!',
-          confirmText: 'Yes, Delete Everything',
-          confirmColor: 'red',
-          onConfirm: async () => {
-            app.showLoading();
-            try {
-              localStorage.clear();
-              sessionStorage.clear();
-              const res = await window.api.clearAppData();
-              if (res && res.success) {
-                app.hideLoading();
-                app.showAlert({
-                  title: 'All Data Cleared',
-                  message: 'All stock items, sales, rate history, companies, customers, expenses, and transactions have been permanently cleared.',
-                  buttonText: 'Reset Application',
-                  onConfirm: () => {
-                    window.location.reload();
-                  }
-                });
-              } else {
-                app.showAlert('Clear data failed: ' + (res ? res.error : 'Unknown error'));
-              }
-            } catch (err) {
-              console.error(err);
-              app.showAlert('Failed to clear data: ' + err.message);
-            } finally {
+    app.authorizeAction(() => {
+      app.showConfirm({
+        title: 'Clear All Factory & App Data',
+        message: 'Are you sure you want to delete EVERYTHING?<br><br>This will permanently wipe all:<br>• <b>Stage 1:</b> Raw materials stock & purchases<br>• <b>Stage 2:</b> Single pieces production & batches<br>• <b>Stage 3:</b> Packed cartons warehouse stock<br>• <b>Stage 4:</b> Delivery vehicles & loaded stock<br>• <b>Stage 5:</b> Shop sales, delivery invoices & returns<br>• <b>Ledgers:</b> Customer & supplier khata balances, expenses & logs<br><br><span class="text-rose-600 font-black">The application will be reset to a completely clean slate. This action CANNOT be undone!</span>',
+        confirmText: 'Yes, Delete Everything',
+        confirmColor: 'red',
+        onConfirm: async () => {
+          app.showLoading();
+          try {
+            localStorage.clear();
+            sessionStorage.clear();
+            const res = await window.api.clearAppData();
+            if (res && res.success) {
               app.hideLoading();
+              app.showAlert({
+                title: 'All Factory Data Cleared',
+                message: 'All factory raw materials, production batches, carton stock, vehicles, shop deliveries, and khata ledger records have been completely cleared.<br><br>The system is now reset to a clean slate.',
+                buttonText: 'Reset Application',
+                onConfirm: () => {
+                  window.location.reload();
+                }
+              });
+            } else {
+              app.showAlert('Clear data failed: ' + (res ? res.error : 'Unknown error'));
             }
+          } catch (err) {
+            console.error(err);
+            app.showAlert('Failed to clear data: ' + err.message);
+          } finally {
+            app.hideLoading();
           }
-        });
-      }
-    });
+        }
+      });
+    }, 'clearing all application data');
   },
 
   togglePasswordVisibility(inputId, btn) {

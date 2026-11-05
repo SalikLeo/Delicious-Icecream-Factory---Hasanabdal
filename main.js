@@ -404,9 +404,12 @@ ipcMain.handle('backup-data', async () => {
   const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   
   const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Backup Database',
+    title: 'Backup Factory Database',
     defaultPath: `DeliciousSuperstarFoods-Backup-${datetimeStr}.db`,
-    filters: [{ name: 'SQLite Database', extensions: ['db'] }]
+    filters: [
+      { name: 'SQLite Database (*.db)', extensions: ['db'] },
+      { name: 'All Files (*.*)', extensions: ['*'] }
+    ]
   });
 
   if (!result.canceled && result.filePath) {
@@ -422,9 +425,12 @@ ipcMain.handle('backup-data', async () => {
 
 ipcMain.handle('restore-data', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Restore Database',
+    title: 'Restore Factory Database',
     properties: ['openFile'],
-    filters: [{ name: 'SQLite Database', extensions: ['db'] }]
+    filters: [
+      { name: 'SQLite Database (*.db)', extensions: ['db'] },
+      { name: 'All Files (*.*)', extensions: ['*'] }
+    ]
   });
 
   if (!result.canceled && result.filePaths.length > 0) {
@@ -432,7 +438,23 @@ ipcMain.handle('restore-data', async () => {
       const backupPath = result.filePaths[0];
       const dbPath = db.getDbPath();
 
-      // Close DB, delete leftover WAL/SHM, replace file, relaunch
+      // 1. Verify selected file is a valid healthy SQLite database before touching active DB
+      const Database = require('better-sqlite3');
+      let testDb = null;
+      try {
+        testDb = new Database(backupPath, { readonly: true, fileMustExist: true });
+        const check = testDb.pragma('quick_check');
+        if (!check || !check[0] || check[0].quick_check !== 'ok') {
+          throw new Error('Database integrity check failed');
+        }
+      } catch (checkErr) {
+        if (testDb) { try { testDb.close(); } catch(e) {} }
+        return { success: false, error: 'The selected file is not a valid SQLite database: ' + checkErr.message };
+      } finally {
+        if (testDb) { try { testDb.close(); } catch(e) {} }
+      }
+
+      // 2. Close active DB, remove any existing WAL/SHM files
       db.close();
 
       const walPath = dbPath + '-wal';
@@ -444,7 +466,18 @@ ipcMain.handle('restore-data', async () => {
         try { fs.unlinkSync(shmPath); } catch(e) {}
       }
 
+      // 3. Replace database file with selected backup
       fs.copyFileSync(backupPath, dbPath);
+
+      // 4. Verify & run any missing migrations on the restored database
+      try {
+        db.init();
+        db.close();
+      } catch (migrateErr) {
+        console.warn('Restored DB init check warning:', migrateErr);
+      }
+
+      // 5. Relaunch app cleanly
       app.relaunch();
       app.exit(0);
       return { success: true };

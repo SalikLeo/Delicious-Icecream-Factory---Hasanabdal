@@ -508,7 +508,7 @@ function seedInitialData() {
 function clearAllData() {
   try {
     const transaction = db.transaction(() => {
-      // 1. Delete all rows from dynamic product tables
+      // 1. Delete all rows from any dynamic product tables
       const productTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'products_%'").all();
       productTables.forEach(row => {
         try {
@@ -518,17 +518,45 @@ function clearAllData() {
         }
       });
 
-      // 2. Delete all records from transactional & operational tables
+      // 2. Comprehensive deletion of all operational factory data across all 5 stages
       const tablesToClear = [
-        'proposals',
-        'proposal_items',
-        'product_rate_history',
-        'expenses',
+        // Stage 1: Raw Materials & Stock Logs
+        'raw_material_logs',
+        'raw_material_purchases',
+        'raw_materials',
+
+        // Stage 2: Single Pieces Production & Recipes
+        'production_batch_materials',
+        'production_batches',
+        'icecream_items',
+
+        // Stage 3: Carton Packing & Warehouse Stock
+        'packing_batches',
+        'packed_cartons',
+
+        // Stage 4: Vehicle Inventory, Cars & Loading Dispatches
+        'car_loading_items',
+        'car_loading_batches',
+        'car_inventory',
+        'cars',
+
+        // Stage 5: Shop Deliveries, Line Items, Returns & Payments
+        'shop_delivery_items',
+        'shop_deliveries',
+        'shop_return_items',
+        'shop_returns',
+        'shop_payments',
+        'shops',
+
+        // Accounts, Ledgers & Operational Records
         'companies',
         'customers',
-        'shops',
+        'expenses',
         'employees',
         'favorites',
+        'product_rate_history',
+        'proposals',
+        'proposal_items',
         'app_kv_store'
       ];
 
@@ -543,40 +571,36 @@ function clearAllData() {
         }
       });
 
-      // 3. Reset all auto-increment counters to start back from 1
+      // 3. Reset all auto-increment counters so IDs start fresh from 1
       try {
         db.exec(`DELETE FROM sqlite_sequence`);
       } catch (e) {}
 
-      // 4. Ensure standard category labels and units remain intact
-      const productLabels = [
-        { slug: 'panels', label: 'Biscuits' },
-        { slug: 'inverters', label: 'Cold Drinks' },
-        { slug: 'structures', label: 'Jellies & Candies' },
-        { slug: 'cables', label: 'Snacks & Chips' },
-        { slug: 'breakers', label: 'Chocolates' },
-        { slug: 'batteries', label: 'Dairy & Groceries' },
-        { slug: 'misc', label: 'Juices & Beverages' },
-        { slug: 'others', label: 'General Items' }
-      ];
-      productLabels.forEach(l => {
-        try {
-          db.prepare('INSERT OR IGNORE INTO category_labels (slug, label) VALUES (?, ?)').run(l.slug, l.label);
-        } catch (e) {}
-      });
+      // 4. Mark factory data as seeded so initial demo data is NOT re-inserted on restart
+      try {
+        db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('factory_data_seeded', '1')").run();
+      } catch (e) {}
 
-      const defaultUnits = ['PACK', 'PCS', 'BOX', 'BOTTLE', 'CARTON', 'SET'];
+      // 5. Ensure standard units and factory expense categories are present
+      const defaultUnits = ['PACK', 'PCS', 'BOX', 'BOTTLE', 'CARTON', 'SET', 'Liter', 'Kg'];
+      const unitStmt = db.prepare('INSERT OR IGNORE INTO product_units (name) VALUES (?)');
       defaultUnits.forEach(u => {
-        try {
-          db.prepare('INSERT OR IGNORE INTO product_units (name) VALUES (?)').run(u);
-        } catch (e) {}
+        try { unitStmt.run(u); } catch (e) {}
       });
 
-      const defaultExpCats = ['Office', 'Transport', 'Utilities', 'Salaries', 'Purchase', 'Other'];
+      const defaultExpCats = [
+        'Factory Operations', 
+        'Raw Materials', 
+        'Transport & Fuel', 
+        'Utilities & Electricity', 
+        'Staff Salaries', 
+        'Vehicle Maintenance', 
+        'Cold Storage & Freezers', 
+        'Other'
+      ];
+      const expCatStmt = db.prepare('INSERT OR IGNORE INTO expense_categories (name) VALUES (?)');
       defaultExpCats.forEach(c => {
-        try {
-          db.prepare('INSERT OR IGNORE INTO expense_categories (name) VALUES (?)').run(c);
-        } catch (e) {}
+        try { expCatStmt.run(c); } catch (e) {}
       });
     });
 
@@ -2234,6 +2258,12 @@ function createIcecreamFactoryTables() {
 
 function seedIcecreamFactoryData() {
   try {
+    // If factory data has already been seeded or explicitly cleared by user, do not recreate demo data
+    const isSeeded = db.prepare("SELECT value FROM settings WHERE key = 'factory_data_seeded'").get();
+    if (isSeeded && isSeeded.value === '1') {
+      return;
+    }
+
     // 1. Raw Materials seed
     const rawCount = db.prepare('SELECT COUNT(*) as c FROM raw_materials').get().c;
     if (rawCount === 0) {
@@ -2326,6 +2356,8 @@ function seedIcecreamFactoryData() {
       insertShop.run('Al-Rehman Super Store', 'M. Tariq', '0321-4567890', 'Barrier 3, Taxila', 'Taxila', 0);
       insertShop.run('Bismillah Karyana & Refreshment', 'Rashid Khan', '0333-1122334', 'Saddar Bazar, Rawalpindi', 'Rawalpindi', 0);
     }
+
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('factory_data_seeded', '1')").run();
   } catch (err) {
     console.error('Failed to seed ice cream factory data:', err);
   }

@@ -84,6 +84,7 @@ contextBridge.exposeInMainWorld('api', {
   backupData: () => ipcRenderer.invoke('backup-data'),
   restoreData: () => ipcRenderer.invoke('restore-data'),
   clearAppData: () => ipcRenderer.invoke('clear-app-data'),
+  relaunchApp: () => ipcRenderer.invoke('relaunch-app'),
   generatePDF: (filename) => ipcRenderer.invoke('generate-pdf', filename),
   getBackupDirectory: () => ipcRenderer.invoke('get-backup-directory'),
   selectBackupDirectory: () => ipcRenderer.invoke('select-backup-directory'),

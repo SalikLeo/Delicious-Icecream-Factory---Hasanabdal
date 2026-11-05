@@ -502,6 +502,15 @@ ipcMain.handle('clear-app-data', async () => {
   }
 });
 
+ipcMain.handle('relaunch-app', () => {
+  try {
+    app.relaunch();
+    app.exit(0);
+  } catch (err) {
+    console.error('Relaunch app error:', err);
+  }
+});
+
 // KV Store IPC
 ipcMain.handle('get-all-kv', () => db.getAllKv());
 ipcMain.handle('set-kv', (event, key, value) => db.setKv(key, value));

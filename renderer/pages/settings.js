@@ -804,10 +804,14 @@ const Settings = {
               app.hideLoading();
               app.showAlert({
                 title: 'All Factory Data Cleared',
-                message: 'All factory raw materials, production batches, carton stock, vehicles, shop deliveries, and khata ledger records have been completely cleared.<br><br>The system is now reset to a clean slate.',
-                buttonText: 'Reset Application',
-                onConfirm: () => {
-                  window.location.reload();
+                message: 'All factory raw materials, production batches, carton stock, vehicles, shop deliveries, and khata ledger records have been completely cleared.<br><br>The application will now restart fresh to a clean slate.',
+                buttonText: 'Restart Application',
+                onConfirm: async () => {
+                  if (window.api && typeof window.api.relaunchApp === 'function') {
+                    await window.api.relaunchApp();
+                  } else {
+                    window.location.reload();
+                  }
                 }
               });
             } else {

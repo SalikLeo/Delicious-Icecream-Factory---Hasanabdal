@@ -1,8 +1,10 @@
 // Factory Reports: Comprehensive A5 Reporting Hub for Ice Cream Factory
 window.Reports = {
   currentTab: 'cars', // 'cars' | 'raw' | 'inventory' | 'finance'
-  periodType: 'daily', // 'daily' | 'monthly' | 'all'
+  periodType: 'daily', // 'daily' | 'monthly' | 'annual' | 'custom' | 'all'
   selectedDate: '',
+  startDate: '',
+  endDate: '',
   selectedCarId: '',
   settings: {},
 
@@ -126,6 +128,9 @@ window.Reports = {
     } else if (this.periodType === 'annual' && this.selectedDate) {
       const y = this.selectedDate.slice(0, 4);
       filtered = filtered.filter(d => d.date && d.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) filtered = filtered.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+      if (this.endDate) filtered = filtered.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
     }
 
     let totalDeliveredCartons = 0;
@@ -194,6 +199,10 @@ window.Reports = {
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 Annual
               </button>
+              <button type="button" onclick="Reports.setPeriod('custom')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Custom Range
+              </button>
               <button type="button" onclick="Reports.setPeriod('all')"
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 All Time
@@ -204,9 +213,22 @@ window.Reports = {
           ${this.periodType !== 'all' ? `
             <div>
               <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
-                ${this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date')}
+                ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
-              ${this.periodType === 'annual' ? `
+              ${this.periodType === 'custom' ? `
+                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl">
+                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <input type="date" id="rpt-cars-start-date" value="${this.startDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('start', this.value)"
+                         oninput="Reports.onCustomDateChange('start', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <input type="date" id="rpt-cars-end-date" value="${this.endDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('end', this.value)"
+                         oninput="Reports.onCustomDateChange('end', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                </div>
+              ` : this.periodType === 'annual' ? `
                 <select id="rpt-cars-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
                   ${this.getAvailableYears().map(y => `
                     <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
@@ -355,6 +377,9 @@ window.Reports = {
     } else if (this.periodType === 'annual' && this.selectedDate) {
       const y = this.selectedDate.slice(0, 4);
       filtered = filtered.filter(d => d.date && d.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) filtered = filtered.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+      if (this.endDate) filtered = filtered.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
     }
 
     let totalDeliveredCartons = 0;
@@ -418,6 +443,7 @@ window.Reports = {
       return ym;
     }
     if (this.periodType === 'annual') return String(val).slice(0, 4);
+    if (this.periodType === 'custom') return `${app.formatDateOnly(this.startDate || this.selectedDate)} – ${app.formatDateOnly(this.endDate || this.selectedDate)}`;
     return val;
   },
 
@@ -428,14 +454,18 @@ window.Reports = {
 
   isFilteredFromCurrent() {
     const today = new Date().toISOString().slice(0, 10);
+    if (this.periodType === 'custom') return true;
     if (this.periodType !== 'daily') return true;
     if (this.selectedDate && this.selectedDate !== today) return true;
     return false;
   },
 
   resetToCurrent() {
+    const today = new Date().toISOString().slice(0, 10);
     this.periodType = 'daily';
-    this.selectedDate = new Date().toISOString().slice(0, 10);
+    this.selectedDate = today;
+    this.startDate = today;
+    this.endDate = today;
     this.loadTabContent();
   },
 
@@ -467,6 +497,20 @@ window.Reports = {
   onDateChange(val) {
     if (!val) return;
     this.selectedDate = val;
+    if (this.currentTab === 'cars') {
+      this.updateCarsBody();
+    } else if (this.currentTab === 'finance') {
+      this.updateFinanceBody();
+    } else {
+      this.loadTabContent();
+    }
+    this.updateResetButtons();
+  },
+
+  onCustomDateChange(type, val) {
+    if (!val) return;
+    if (type === 'start') this.startDate = val;
+    if (type === 'end') this.endDate = val;
     if (this.currentTab === 'cars') {
       this.updateCarsBody();
     } else if (this.currentTab === 'finance') {
@@ -720,6 +764,15 @@ window.Reports = {
       const y = this.selectedDate.slice(0, 4);
       filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
       filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) {
+        filtDeliv = filtDeliv.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+        filtExp = filtExp.filter(e => (e.date || '').slice(0, 10) >= this.startDate);
+      }
+      if (this.endDate) {
+        filtDeliv = filtDeliv.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
+        filtExp = filtExp.filter(e => (e.date || '').slice(0, 10) <= this.endDate);
+      }
     }
 
     let totalSales = 0;
@@ -758,6 +811,10 @@ window.Reports = {
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 Annual
               </button>
+              <button type="button" onclick="Reports.setPeriod('custom')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Custom Range
+              </button>
               <button type="button" onclick="Reports.setPeriod('all')"
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 All Time
@@ -768,9 +825,22 @@ window.Reports = {
           ${this.periodType !== 'all' ? `
             <div>
               <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
-                ${this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date')}
+                ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
-              ${this.periodType === 'annual' ? `
+              ${this.periodType === 'custom' ? `
+                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl">
+                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <input type="date" id="rpt-finance-start-date" value="${this.startDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('start', this.value)"
+                         oninput="Reports.onCustomDateChange('start', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <input type="date" id="rpt-finance-end-date" value="${this.endDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('end', this.value)"
+                         oninput="Reports.onCustomDateChange('end', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                </div>
+              ` : this.periodType === 'annual' ? `
                 <select id="rpt-finance-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
                   ${this.getAvailableYears().map(y => `
                     <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
@@ -902,6 +972,15 @@ window.Reports = {
       const y = this.selectedDate.slice(0, 4);
       filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
       filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) {
+        filtDeliv = filtDeliv.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+        filtExp = filtExp.filter(e => (e.date || '').slice(0, 10) >= this.startDate);
+      }
+      if (this.endDate) {
+        filtDeliv = filtDeliv.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
+        filtExp = filtExp.filter(e => (e.date || '').slice(0, 10) <= this.endDate);
+      }
     }
 
     let totalSales = 0;
@@ -1214,6 +1293,15 @@ window.Reports = {
       const y = this.selectedDate.slice(0, 4);
       filtDeliv = filtDeliv.filter(d => d.date && d.date.startsWith(y));
       filtExp = filtExp.filter(e => e.date && e.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) {
+        filtDeliv = filtDeliv.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+        filtExp = filtExp.filter(e => (e.date || '').slice(0, 10) >= this.startDate);
+      }
+      if (this.endDate) {
+        filtDeliv = filtDeliv.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
+        filtExp = filtExp.filter(e => (e.date || '').slice(0, 10) <= this.endDate);
+      }
     }
 
     let totalSales = 0;

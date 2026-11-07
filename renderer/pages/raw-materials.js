@@ -7,8 +7,10 @@ window.RawMaterials = {
   selectedCategory: 'all',
   sortField: 'name', // 'name' | 'category' | 'unit' | 'stock' | 'cost' | 'value' | 'status' for inventory; 'date' | 'material' | 'action' | 'qty' | 'stock_after' for logs
   sortOrder: 'asc', // 'asc' | 'desc'
-  periodType: 'day', // 'day' | 'month' | 'all'
+  periodType: 'day', // 'day' | 'month' | 'year' | 'custom' | 'all'
   selectedDate: new Date().toISOString().slice(0, 10),
+  startDate: new Date().toISOString().slice(0, 10),
+  endDate: new Date().toISOString().slice(0, 10),
 
   async render(container) {
     this.container = container;
@@ -161,7 +163,7 @@ window.RawMaterials = {
               </select>
             </div>
 
-            <!-- Period Switcher: Daily | Monthly | Annual | All -->
+            <!-- Period Switcher: Daily | Monthly | Annual | Custom Range | All -->
             <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
               <button type="button" onclick="RawMaterials.setPeriod('day')" id="rm-tab-day"
                       class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
@@ -175,16 +177,33 @@ window.RawMaterials = {
                       class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
                 Annual
               </button>
+              <button type="button" onclick="RawMaterials.setPeriod('custom')" id="rm-tab-custom"
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                Custom Range
+              </button>
               <button type="button" onclick="RawMaterials.setPeriod('all')" id="rm-tab-all"
                       class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
                 All
               </button>
             </div>
 
-            <!-- Date Picker for Day/Month/Year -->
+            <!-- Date Picker for Day/Month/Year/Custom -->
             ${this.periodType !== 'all' ? `
               <div id="rm-date-picker-wrap" class="shrink-0">
-                ${this.periodType === 'year' ? `
+                ${this.periodType === 'custom' ? `
+                  <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+                    <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                    <input type="date" id="rm-start-date" value="${this.startDate || this.selectedDate}" 
+                           onchange="RawMaterials.onCustomDateChange('start', this.value)"
+                           oninput="RawMaterials.onCustomDateChange('start', this.value)"
+                           class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
+                    <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                    <input type="date" id="rm-end-date" value="${this.endDate || this.selectedDate}" 
+                           onchange="RawMaterials.onCustomDateChange('end', this.value)"
+                           oninput="RawMaterials.onCustomDateChange('end', this.value)"
+                           class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
+                  </div>
+                ` : this.periodType === 'year' ? `
                   <select id="rm-date-input" onchange="RawMaterials.onDateChange(this.value)" oninput="RawMaterials.onDateChange(this.value)"
                           class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer">
                     ${this.getAvailableYears().map(y => `
@@ -238,10 +257,18 @@ window.RawMaterials = {
     const stats = this.getPeriodStats();
     const periodLabel = this.periodType === 'day' 
       ? `Today (${app.formatDateOnly(this.selectedDate)})` 
-      : (this.periodType === 'month' ? `Month (${this.selectedDate.slice(5, 7)}/${this.selectedDate.slice(0, 4)})` : `Annual (${this.selectedDate.slice(0, 4)})`);
+      : (this.periodType === 'month' 
+        ? `Month (${this.selectedDate.slice(5, 7)}/${this.selectedDate.slice(0, 4)})` 
+        : (this.periodType === 'year' 
+          ? `Annual (${this.selectedDate.slice(0, 4)})` 
+          : `Custom (${app.formatDateOnly(this.startDate)} – ${app.formatDateOnly(this.endDate)})`));
     const badgeText = this.periodType === 'day' 
       ? 'Daily Stats' 
-      : (this.periodType === 'month' ? 'Monthly Stats' : 'Annual Stats');
+      : (this.periodType === 'month' 
+        ? 'Monthly Stats' 
+        : (this.periodType === 'year' 
+          ? 'Annual Stats' 
+          : 'Custom Range Stats'));
     return `
       <div class="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
         <div class="flex items-center gap-2">
@@ -336,15 +363,19 @@ window.RawMaterials = {
   isFilteredFromCurrent() {
     const today = new Date().toISOString().slice(0, 10);
     if (this.selectedCategory && this.selectedCategory !== 'all') return true;
+    if (this.periodType === 'custom') return true;
     if (this.periodType !== 'day') return true;
     if (this.selectedDate && this.selectedDate !== today) return true;
     return false;
   },
 
   resetToCurrent() {
+    const today = new Date().toISOString().slice(0, 10);
     this.selectedCategory = 'all';
     this.periodType = 'day';
-    this.selectedDate = new Date().toISOString().slice(0, 10);
+    this.selectedDate = today;
+    this.startDate = today;
+    this.endDate = today;
     this.renderUI();
   },
 
@@ -365,6 +396,14 @@ window.RawMaterials = {
   onDateChange(val) {
     if (!val) return;
     this.selectedDate = val;
+    this.updateContentArea();
+    this.updateResetButton();
+  },
+
+  onCustomDateChange(type, val) {
+    if (!val) return;
+    if (type === 'start') this.startDate = val;
+    if (type === 'end') this.endDate = val;
     this.updateContentArea();
     this.updateResetButton();
   },
@@ -398,6 +437,9 @@ window.RawMaterials = {
     } else if (this.periodType === 'year' && this.selectedDate) {
       const y = this.selectedDate.slice(0, 4);
       list = list.filter(l => l.date && l.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) list = list.filter(l => (l.date || '').slice(0, 10) >= this.startDate);
+      if (this.endDate) list = list.filter(l => (l.date || '').slice(0, 10) <= this.endDate);
     }
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();

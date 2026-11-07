@@ -6,8 +6,10 @@ window.Proposals = {
   shops: [],
   selectedCarId: '',
   selectedShopId: '',
-  periodType: 'day', // 'day' | 'month' | 'all'
+  periodType: 'day', // 'day' | 'month' | 'year' | 'custom' | 'all'
   selectedDate: '',
+  startDate: '',
+  endDate: '',
   selectedMonth: '',
   selectedYear: new Date().getFullYear(),
   searchQuery: '',
@@ -124,7 +126,7 @@ window.Proposals = {
               </select>
             </div>
 
-            <!-- Period Switcher: Daily | Monthly | Annual | All -->
+            <!-- Period Switcher: Daily | Monthly | Annual | Custom Range | All -->
             <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
               <button type="button" onclick="Proposals.setPeriod('day')" id="prop-tab-day"
                       class="px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer bg-white text-slate-900 shadow-2xs">
@@ -137,6 +139,10 @@ window.Proposals = {
               <button type="button" onclick="Proposals.setPeriod('year')" id="prop-tab-year"
                       class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900">
                 Annual
+              </button>
+              <button type="button" onclick="Proposals.setPeriod('custom')" id="prop-tab-custom"
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900">
+                Custom Range
               </button>
               <button type="button" onclick="Proposals.setPeriod('all')" id="prop-tab-all"
                       class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900">
@@ -393,13 +399,17 @@ window.Proposals = {
 
   isFilteredFromCurrent() {
     const today = new Date().toISOString().slice(0, 10);
+    if (this.periodType === 'custom') return true;
     if (this.periodType !== 'day') return true;
     if (this.selectedDate && this.selectedDate !== today) return true;
     return false;
   },
 
   resetToCurrent() {
-    this.selectedDate = new Date().toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
+    this.selectedDate = today;
+    this.startDate = today;
+    this.endDate = today;
     this.setPeriod('day');
   },
 
@@ -424,6 +434,14 @@ window.Proposals = {
     this.updateResetButton();
   },
 
+  onCustomDateChange(type, val) {
+    if (!val) return;
+    if (type === 'start') this.startDate = val;
+    if (type === 'end') this.endDate = val;
+    this.applyFilters();
+    this.updateResetButton();
+  },
+
   getAvailableYears() {
     const curYear = new Date().getFullYear();
     const years = new Set([curYear, curYear - 1, curYear + 1]);
@@ -438,7 +456,7 @@ window.Proposals = {
 
   setPeriod(period) {
     this.periodType = period;
-    ['day', 'month', 'year', 'all'].forEach(p => {
+    ['day', 'month', 'year', 'custom', 'all'].forEach(p => {
       const btn = document.getElementById(`prop-tab-${p}`);
       if (!btn) return;
       if (p === period) {
@@ -462,6 +480,21 @@ window.Proposals = {
           <select id="prop-date-input" onchange="Proposals.onDateChange(this.value)" oninput="Proposals.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none cursor-pointer">
             ${years.map(y => `<option value="${y}" ${String(selY) === String(y) ? 'selected' : ''}>${y}</option>`).join('')}
           </select>
+        `;
+      } else if (period === 'custom') {
+        wrap.innerHTML = `
+          <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+            <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+            <input type="date" id="prop-start-date" value="${this.startDate || this.selectedDate}" 
+                   onchange="Proposals.onCustomDateChange('start', this.value)"
+                   oninput="Proposals.onCustomDateChange('start', this.value)"
+                   class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
+            <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+            <input type="date" id="prop-end-date" value="${this.endDate || this.selectedDate}" 
+                   onchange="Proposals.onCustomDateChange('end', this.value)"
+                   oninput="Proposals.onCustomDateChange('end', this.value)"
+                   class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
+          </div>
         `;
       } else {
         wrap.innerHTML = '';
@@ -494,6 +527,9 @@ window.Proposals = {
     } else if (this.periodType === 'year' && this.selectedDate) {
       const y = this.selectedDate.slice(0, 4);
       list = list.filter(d => d.date && d.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) list = list.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+      if (this.endDate) list = list.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
     }
 
     // Search query

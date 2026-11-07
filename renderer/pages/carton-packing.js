@@ -655,6 +655,9 @@ window.CartonPacking = {
                       <button onclick="CartonPacking.openCartonConfigModal(${c.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Pricing / Spec">
                         <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                       </button>
+                      <button onclick="CartonPacking.deleteCarton(${c.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Carton Product">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1473,6 +1476,33 @@ window.CartonPacking = {
     } else {
       app.showAlert({ title: 'Error', message: res.error || 'Failed to save carton config.' });
     }
+  },
+
+  async deleteCarton(id) {
+    app.authorizeAction(async () => {
+      const c = (this.cartons || []).find(x => x.id === id);
+      const name = c ? c.carton_name : 'this carton product';
+      const ok = await new Promise(resolve => {
+        app.showConfirm({
+          title: 'Delete Carton Product?',
+          message: `Are you sure you want to delete "${name}"?<br><br><span class="text-rose-600 font-bold">This carton variant definition will be permanently removed.</span>`,
+          confirmText: 'Delete Carton',
+          confirmColor: 'red',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
+      });
+
+      if (ok) {
+        const res = await window.api.deletePackedCarton(id);
+        if (res && res.success) {
+          app.showToast('Carton product deleted successfully.', 'success');
+          await this.loadData();
+        } else {
+          app.showAlert({ title: 'Cannot Delete', message: res.error || 'Failed to delete carton product.' });
+        }
+      }
+    }, 'deleting carton product');
   },
 
   async deleteBatch(id) {

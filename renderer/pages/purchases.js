@@ -701,8 +701,8 @@ window.Purchases = {
     }
 
     modalEl.innerHTML = `
-      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 cursor-pointer" onclick="if(event.target === this) Purchases.closeModal()">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 cursor-default" onclick="event.stopPropagation()">
           <div class="p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex justify-between items-center">
             <div class="flex items-center gap-2.5">
               <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
@@ -794,6 +794,16 @@ window.Purchases = {
     `;
 
     if (window.lucide) lucide.createIcons({ root: modalEl });
+
+    if (this._escListener) {
+      document.removeEventListener('keydown', this._escListener);
+    }
+    this._escListener = (e) => {
+      if (e.key === 'Escape') {
+        Purchases.closeModal();
+      }
+    };
+    document.addEventListener('keydown', this._escListener);
   },
 
   onModalMaterialChange(matId) {
@@ -819,6 +829,10 @@ window.Purchases = {
   closeModal() {
     const modalEl = document.getElementById('purchase-modal-container');
     if (modalEl) modalEl.remove();
+    if (this._escListener) {
+      document.removeEventListener('keydown', this._escListener);
+      this._escListener = null;
+    }
   },
 
   async handlePurchaseSubmit(e, purchaseId = null) {

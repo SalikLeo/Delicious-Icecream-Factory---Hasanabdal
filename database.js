@@ -2478,6 +2478,167 @@ function addRawMaterialPurchase(data) {
   return { success: true, purchaseId, newStock: mat.current_stock + qty };
 }
 
+function getRawMaterialPurchases(filters = {}) {
+  let query = `
+    SELECT p.*, rm.category as material_category
+    FROM raw_material_purchases p
+    LEFT JOIN raw_materials rm ON p.material_id = rm.id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (filters.material_id) {
+    query += ' AND p.material_id = ?';
+    params.push(Number(filters.material_id));
+  }
+  if (filters.supplier_name) {
+    query += ' AND p.supplier_name = ?';
+    params.push(filters.supplier_name);
+  }
+  if (filters.search) {
+    const s = `%${filters.search}%`;
+    query += ' AND (p.material_name LIKE ? OR p.supplier_name LIKE ? OR p.invoice_no LIKE ? OR p.notes LIKE ?)';
+    params.push(s, s, s, s);
+  }
+  if (filters.date) {
+    query += ' AND p.date = ?';
+    params.push(filters.date);
+  } else if (filters.period === 'day' && filters.selectedDate) {
+    query += ' AND p.date = ?';
+    params.push(filters.selectedDate);
+  } else if (filters.period === 'month' && filters.selectedMonth) {
+    query += ' AND p.date LIKE ?';
+    params.push(`${filters.selectedMonth}%`);
+  } else if (filters.period === 'year' && filters.selectedYear) {
+    query += ' AND p.date LIKE ?';
+    params.push(`${filters.selectedYear}%`);
+  } else if (filters.period === 'custom' || (filters.startDate && filters.endDate)) {
+    if (filters.startDate) {
+      query += ' AND p.date >= ?';
+      params.push(filters.startDate);
+    }
+    if (filters.endDate) {
+      query += ' AND p.date <= ?';
+      params.push(filters.endDate);
+    }
+  }
+
+  query += ' ORDER BY p.date DESC, p.id DESC';
+  return db.prepare(query).all(...params);
+}
+
+function getRawMaterialPurchase(id) {
+  return db.prepare(`
+    SELECT p.*, rm.category as material_category
+    FROM raw_material_purchases p
+    LEFT JOIN raw_materials rm ON p.material_id = rm.id
+    WHERE p.id = ?
+  `).get(id);
+}
+
+function updateRawMaterialPurchase(id, data) {
+  const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
+  if (!p) return { error: 'Purchase record not found' };
+
+  const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(data.material_id || p.material_id);
+  if (!mat) return { error: 'Raw material not found' };
+
+  const newQty = Number(data.qty) || 0;
+  const newCost = Number(data.unit_cost) || 0;
+  const newTotal = newQty * newCost;
+  const newDate = data.date || p.date;
+
+  const tx = db.transaction(() => {
+    if (mat.id === p.material_id) {
+      const diffQty = newQty - p.qty;
+      const newStock = Math.max(0, (mat.current_stock || 0) + diffQty);
+      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?').run(newStock, newCost, mat.id);
+    } else {
+      const oldMat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(p.material_id);
+      if (oldMat) {
+        const revertedOldStock = Math.max(0, (oldMat.current_stock || 0) - p.qty);
+        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(revertedOldStock, oldMat.id);
+      }
+      const newStock = (mat.current_stock || 0) + newQty;
+      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?').run(newStock, newCost, mat.id);
+    }
+
+    db.prepare(`
+      UPDATE raw_material_purchases
+      SET material_id = ?, material_name = ?, qty = ?, unit = ?, unit_cost = ?, total_cost = ?, supplier_name = ?, invoice_no = ?, date = ?, notes = ?
+      WHERE id = ?
+    `).run(
+      mat.id,
+      mat.name,
+      newQty,
+      mat.unit,
+      newCost,
+      newTotal,
+      data.supplier_name || '',
+      data.invoice_no || '',
+      newDate,
+      data.notes || '',
+      id
+    );
+
+    db.prepare(`
+      UPDATE raw_material_logs
+      SET material_id = ?, material_name = ?, qty_change = ?, date = ?, notes = ?
+      WHERE reference_id = ? AND action = 'PURCHASE'
+    `).run(
+      mat.id,
+      mat.name,
+      newQty,
+      newDate,
+      `Purchased ${newQty} ${mat.unit} from ${data.supplier_name || 'Supplier'} @ Rs. ${newCost} (Updated)`,
+      id
+    );
+  });
+
+  tx();
+  return { success: true };
+}
+
+function deleteRawMaterialPurchase(id) {
+  const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
+  if (!p) return { error: 'Purchase record not found' };
+
+  const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(p.material_id);
+  const tx = db.transaction(() => {
+    if (mat) {
+      const newStock = Math.max(0, (mat.current_stock || 0) - (p.qty || 0));
+      db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(newStock, mat.id);
+      db.prepare(`
+        INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+        VALUES (?, ?, 'PURCHASE_CANCELLED', ?, ?, ?, ?, date('now'), ?)
+      `).run(
+        mat.id,
+        mat.name,
+        -(p.qty || 0),
+        mat.current_stock,
+        newStock,
+        p.id,
+        `Deleted Purchase #${p.invoice_no || p.id} (-${p.qty} ${p.unit})`
+      );
+    }
+    db.prepare("DELETE FROM raw_material_logs WHERE reference_id = ? AND action = 'PURCHASE'").run(p.id);
+    db.prepare('DELETE FROM raw_material_purchases WHERE id = ?').run(id);
+  });
+
+  tx();
+  return { success: true };
+}
+
+function getRawMaterialSuppliers() {
+  const rows = db.prepare(`
+    SELECT DISTINCT supplier_name
+    FROM raw_material_purchases
+    WHERE supplier_name IS NOT NULL AND TRIM(supplier_name) != ''
+    ORDER BY supplier_name ASC
+  `).all();
+  return rows.map(r => r.supplier_name);
+}
+
 function getRawMaterialLogs(filters = {}) {
   let query = 'SELECT * FROM raw_material_logs WHERE 1=1';
   const params = [];
@@ -3776,6 +3937,7 @@ function getIcecreamFactorySummary() {
 module.exports = {
   // Stage 1: Raw Materials
   getRawMaterials, getRawMaterial, saveRawMaterial, deleteRawMaterial, addRawMaterialPurchase, getRawMaterialLogs,
+  getRawMaterialPurchases, getRawMaterialPurchase, updateRawMaterialPurchase, deleteRawMaterialPurchase, getRawMaterialSuppliers,
   // Stage 2: Single Items Production
   getIcecreamItems, getIcecreamItem, saveIcecreamItem, deleteIcecreamItem, runProductionBatch, getProductionBatches, deleteProductionBatch,
   // Stage 3: Packed Cartons

@@ -98,6 +98,11 @@ contextBridge.exposeInMainWorld('api', {
   deleteRawMaterial: (id) => ipcRenderer.invoke('delete-raw-material', id),
   addRawMaterialPurchase: (data) => ipcRenderer.invoke('add-raw-material-purchase', data),
   getRawMaterialLogs: (filters) => ipcRenderer.invoke('get-raw-material-logs', filters),
+  getRawMaterialPurchases: (filters) => ipcRenderer.invoke('get-raw-material-purchases', filters),
+  getRawMaterialPurchase: (id) => ipcRenderer.invoke('get-raw-material-purchase', id),
+  updateRawMaterialPurchase: (id, data) => ipcRenderer.invoke('update-raw-material-purchase', id, data),
+  deleteRawMaterialPurchase: (id) => ipcRenderer.invoke('delete-raw-material-purchase', id),
+  getRawMaterialSuppliers: () => ipcRenderer.invoke('get-raw-material-suppliers'),
 
   // Stage 2: Single Items Production
   getIcecreamItems: () => ipcRenderer.invoke('get-icecream-items'),

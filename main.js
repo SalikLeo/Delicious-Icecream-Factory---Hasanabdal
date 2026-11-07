@@ -229,6 +229,11 @@ ipcMain.handle('save-raw-material', (event, data) => db.saveRawMaterial(data));
 ipcMain.handle('delete-raw-material', (event, id) => db.deleteRawMaterial(id));
 ipcMain.handle('add-raw-material-purchase', (event, data) => db.addRawMaterialPurchase(data));
 ipcMain.handle('get-raw-material-logs', (event, filters) => db.getRawMaterialLogs(filters));
+ipcMain.handle('get-raw-material-purchases', (event, filters) => db.getRawMaterialPurchases(filters));
+ipcMain.handle('get-raw-material-purchase', (event, id) => db.getRawMaterialPurchase(id));
+ipcMain.handle('update-raw-material-purchase', (event, id, data) => db.updateRawMaterialPurchase(id, data));
+ipcMain.handle('delete-raw-material-purchase', (event, id) => db.deleteRawMaterialPurchase(id));
+ipcMain.handle('get-raw-material-suppliers', () => db.getRawMaterialSuppliers());
 
 // Stage 2: Single Items Production
 ipcMain.handle('get-icecream-items', () => db.getIcecreamItems());

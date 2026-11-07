@@ -319,7 +319,7 @@ const app = {
 
     // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(btn => {
-      const isCurrent = btn.id === `nav-${page}`;
+      const isCurrent = btn.id === `nav-${page}` || ((page === 'companies' || page === 'purchases') && (btn.id === 'nav-purchases' || btn.id === 'nav-companies'));
       const icon = btn.querySelector('.nav-icon');
       const text = btn.querySelector('.nav-text');
       if (isCurrent) {
@@ -405,7 +405,8 @@ const app = {
             case 'master-db': await (window.MasterDB || MasterDB).render(panel); break;
             case 'rate-list': await (window.RateList || RateList).render(panel, args); break;
             case 'expenses': await (window.Expenses || Expenses).render(panel); break;
-            case 'companies': await (window.Companies || Companies).render(panel); break;
+            case 'purchases':
+            case 'companies': await (window.Purchases || window.Companies || Purchases || Companies).render(panel, args); break;
             case 'reports': await (window.Reports || Reports).render(panel); break;
             case 'settings': await (window.Settings || Settings).render(panel); break;
           }

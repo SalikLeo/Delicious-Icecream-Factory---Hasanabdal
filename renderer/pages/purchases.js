@@ -951,7 +951,6 @@ window.Purchases = {
             <tr style="background: #f1f5f9; border-bottom: 1.5px solid #0f172a;">
               <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">S#</th>
               <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Raw Material Description</th>
-              <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">Unit</th>
               <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: right;">Quantity</th>
               <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: right;">Cost / Unit</th>
               <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: right;">Total Amount</th>
@@ -961,15 +960,14 @@ window.Purchases = {
             <tr>
               <td style="border: 1px solid #e2e8f0; padding: 6px; text-align: center;">1</td>
               <td style="border: 1px solid #e2e8f0; padding: 6px; font-weight: 800;">${p.material_name}</td>
-              <td style="border: 1px solid #e2e8f0; padding: 6px; text-align: center;">${p.unit || ''}</td>
-              <td style="border: 1px solid #e2e8f0; padding: 6px; text-align: right; font-weight: 800;">${p.qty}</td>
+              <td style="border: 1px solid #e2e8f0; padding: 6px; text-align: right; font-weight: 800;">${p.qty} ${p.unit ? p.unit.toUpperCase() : ''}</td>
               <td style="border: 1px solid #e2e8f0; padding: 6px; text-align: right;">Rs. ${Number(p.unit_cost).toLocaleString()}</td>
               <td style="border: 1px solid #e2e8f0; padding: 6px; text-align: right; font-weight: 900;">Rs. ${Math.round(p.total_cost).toLocaleString()}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr style="background: #f8fafc; font-weight: 900; border-top: 1.5px solid #0f172a;">
-              <td colspan="5" style="border: 1px solid #cbd5e1; padding: 6px; text-align: right; text-transform: uppercase;">Grand Total Purchase Cost:</td>
+              <td colspan="4" style="border: 1px solid #cbd5e1; padding: 6px; text-align: right; text-transform: uppercase;">Grand Total Purchase Cost:</td>
               <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: right; font-size: 11px;">Rs. ${Math.round(p.total_cost).toLocaleString()}</td>
             </tr>
           </tfoot>

@@ -455,7 +455,7 @@ window.Purchases = {
       return `
         <tr class="hover:bg-slate-50/80 transition-colors">
           <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${p.date || '—'}</td>
-          <td class="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap border-r border-slate-200">${p.invoice_no || `PO-${p.id}`}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap border-r border-slate-200">${p.invoice_no || `PUR-${p.id}`}</td>
           <td class="py-2.5 px-3 border-r border-slate-200">
             <div class="flex items-center gap-2">
               <span class="font-black text-slate-900">${p.material_name}</span>
@@ -750,35 +750,27 @@ window.Purchases = {
               </span>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Supplier Name</label>
-                <input type="text" id="pmo-supplier" placeholder="e.g. Dairy Milk Farms..."
-                       value="${p ? (p.supplier_name || '') : ''}" list="pmo-suppliers-datalist"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
-                <datalist id="pmo-suppliers-datalist">
-                  ${this.suppliers.map(s => `<option value="${s}">`).join('')}
-                </datalist>
-              </div>
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Invoice / Bill #</label>
-                <input type="text" id="pmo-invoice" placeholder="e.g. INV-10024"
-                       value="${p ? (p.invoice_no || '') : ''}"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 font-mono">
-              </div>
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Supplier Name</label>
+              <input type="text" id="pmo-supplier" placeholder="e.g. Dairy Milk Farms, Agro Chemical..."
+                     value="${p ? (p.supplier_name || '') : ''}" list="pmo-suppliers-datalist"
+                     class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
+              <datalist id="pmo-suppliers-datalist">
+                ${this.suppliers.map(s => `<option value="${s}">`).join('')}
+              </datalist>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Purchase Date</label>
                 <input type="date" id="pmo-date" value="${p ? p.date : new Date().toISOString().split('T')[0]}"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 font-mono">
+                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 font-mono">
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes / Remarks</label>
                 <input type="text" id="pmo-notes" placeholder="Vehicle #, payment terms..."
                        value="${p ? (p.notes || '') : ''}"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
+                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
               </div>
             </div>
 
@@ -841,7 +833,6 @@ window.Purchases = {
     const qty = Number(document.getElementById('pmo-qty').value);
     const unitCost = Number(document.getElementById('pmo-cost').value);
     const supplier = document.getElementById('pmo-supplier').value.trim();
-    const invoiceNo = document.getElementById('pmo-invoice').value.trim();
     const date = document.getElementById('pmo-date').value;
     const notes = document.getElementById('pmo-notes').value.trim();
 
@@ -854,7 +845,6 @@ window.Purchases = {
       qty,
       unit_cost: unitCost,
       supplier_name: supplier,
-      invoice_no: invoiceNo,
       date,
       notes
     };
@@ -937,7 +927,7 @@ window.Purchases = {
 
         <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; padding: 6px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
           <div>
-            <div><b>Purchase Ref:</b> #${p.invoice_no || `PO-${p.id}`}</div>
+            <div><b>Purchase Ref:</b> #${p.invoice_no || `PUR-${p.id}`}</div>
             <div><b>Supplier:</b> ${p.supplier_name || 'Direct Walk-in / Cash'}</div>
           </div>
           <div style="text-align: right;">
@@ -1036,7 +1026,7 @@ window.Purchases = {
             ${list.map(p => `
               <tr>
                 <td style="border: 1px solid #e2e8f0; padding: 4px;">${p.date || '—'}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 700;">${p.invoice_no || `PO-${p.id}`}</td>
+                <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 700;">${p.invoice_no || `PUR-${p.id}`}</td>
                 <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 800;">${p.material_name}</td>
                 <td style="border: 1px solid #e2e8f0; padding: 4px;">${p.supplier_name || 'Walk-in'}</td>
                 <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 800;">${p.qty} ${p.unit || ''}</td>

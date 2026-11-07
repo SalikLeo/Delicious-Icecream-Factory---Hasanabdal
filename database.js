@@ -2237,6 +2237,11 @@ function createIcecreamFactoryTables() {
   `);
 
   try {
+    db.exec(`
+      UPDATE raw_material_purchases 
+      SET invoice_no = 'PUR-' || id 
+      WHERE invoice_no IS NULL OR invoice_no = '' OR invoice_no LIKE 'PO-%';
+    `);
     const carCols = db.prepare("PRAGMA table_info(cars)").all().map(c => c.name);
     if (!carCols.includes('is_active')) db.exec('ALTER TABLE cars ADD COLUMN is_active INTEGER DEFAULT 1');
     if (!carCols.includes('area')) db.exec('ALTER TABLE cars ADD COLUMN area TEXT');
@@ -2435,6 +2440,24 @@ function addRawMaterialPurchase(data) {
   const totalCost = qty * unitCost;
   const date = data.date || new Date().toISOString().split('T')[0];
 
+  let invoiceNo = data.invoice_no ? String(data.invoice_no).trim() : '';
+  if (!invoiceNo) {
+    const last = db.prepare("SELECT id, invoice_no FROM raw_material_purchases WHERE invoice_no LIKE 'PUR-%' ORDER BY id DESC LIMIT 1").get();
+    let nextNum = 1;
+    if (last && last.invoice_no) {
+      const match = last.invoice_no.match(/PUR-(\d+)/i);
+      if (match) {
+        nextNum = parseInt(match[1]) + 1;
+      } else {
+        nextNum = (last.id || 0) + 1;
+      }
+    } else {
+      const totalCount = db.prepare('SELECT COUNT(*) as c FROM raw_material_purchases').get().c;
+      nextNum = totalCount + 1;
+    }
+    invoiceNo = `PUR-${nextNum}`;
+  }
+
   let purchaseId;
   const tx = db.transaction(() => {
     const res = db.prepare(`
@@ -2448,7 +2471,7 @@ function addRawMaterialPurchase(data) {
       unitCost,
       totalCost,
       data.supplier_name || '',
-      data.invoice_no || '',
+      invoiceNo,
       date,
       data.notes || ''
     );
@@ -2547,6 +2570,7 @@ function updateRawMaterialPurchase(id, data) {
   const newCost = Number(data.unit_cost) || 0;
   const newTotal = newQty * newCost;
   const newDate = data.date || p.date;
+  const newInvoiceNo = (data.invoice_no && String(data.invoice_no).trim()) ? String(data.invoice_no).trim() : (p.invoice_no || `PUR-${id}`);
 
   const tx = db.transaction(() => {
     if (mat.id === p.material_id) {
@@ -2575,7 +2599,7 @@ function updateRawMaterialPurchase(id, data) {
       newCost,
       newTotal,
       data.supplier_name || '',
-      data.invoice_no || '',
+      newInvoiceNo,
       newDate,
       data.notes || '',
       id

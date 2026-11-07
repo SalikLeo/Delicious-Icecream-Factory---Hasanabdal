@@ -950,8 +950,8 @@ window.RawMaterials = {
               </div>
             </div>
             <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes / Bill #</label>
-              <input type="text" id="po-notes" placeholder="Invoice #, vehicle #, payment status..."
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes / Remarks</label>
+              <input type="text" id="po-notes" placeholder="Vehicle #, payment status, terms..."
                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
             </div>
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">

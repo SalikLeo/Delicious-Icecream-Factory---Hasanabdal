@@ -97,6 +97,7 @@ window.Companies = {
                <button type="button" id="txns-period-day" onclick="Companies.setTxnPeriodType('day')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">Daily</button>
                <button type="button" id="txns-period-month" onclick="Companies.setTxnPeriodType('month')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Monthly</button>
                <button type="button" id="txns-period-year" onclick="Companies.setTxnPeriodType('year')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Annual</button>
+               <button type="button" id="txns-period-custom" onclick="Companies.setTxnPeriodType('custom')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Custom Range</button>
                <button type="button" id="txns-period-all" onclick="Companies.setTxnPeriodType('all')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">All</button>
             </div>
 
@@ -143,6 +144,14 @@ window.Companies = {
             <div id="txns-annual-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
                <select id="txns-year-picker" onchange="Companies.filterTransactions()" class="bg-transparent border-0 px-2 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                </select>
+            </div>
+
+            <!-- Custom Range controls -->
+            <div id="txns-custom-controls" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-0.5 rounded-lg hidden">
+              <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+              <input type="date" id="txns-start-date" onchange="Companies.filterTransactions()" oninput="Companies.filterTransactions()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+              <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+              <input type="date" id="txns-end-date" onchange="Companies.filterTransactions()" oninput="Companies.filterTransactions()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
             </div>
           </div>
         </div>
@@ -218,6 +227,7 @@ window.Companies = {
                <button type="button" id="comp-period-day" onclick="Companies.setCompPeriodType('day')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">Daily</button>
                <button type="button" id="comp-period-month" onclick="Companies.setCompPeriodType('month')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Monthly</button>
                <button type="button" id="comp-period-year" onclick="Companies.setCompPeriodType('year')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Annual</button>
+               <button type="button" id="comp-period-custom" onclick="Companies.setCompPeriodType('custom')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Custom Range</button>
                <button type="button" id="comp-period-all" onclick="Companies.setCompPeriodType('all')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">All</button>
             </div>
 
@@ -264,6 +274,14 @@ window.Companies = {
             <div id="comp-annual-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
                <select id="comp-year-picker" onchange="Companies.applyFilters()" class="bg-transparent border-0 px-2 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                </select>
+            </div>
+
+            <!-- Custom Range controls -->
+            <div id="comp-custom-controls" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-0.5 rounded-lg hidden">
+              <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+              <input type="date" id="comp-start-date" onchange="Companies.applyFilters()" oninput="Companies.applyFilters()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+              <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+              <input type="date" id="comp-end-date" onchange="Companies.applyFilters()" oninput="Companies.applyFilters()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
             </div>
           </div>
           
@@ -405,6 +423,7 @@ window.Companies = {
                    <button type="button" id="history-period-day" onclick="Companies.setHistoryPeriodType('day')" class="px-2.5 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Daily</button>
                    <button type="button" id="history-period-month" onclick="Companies.setHistoryPeriodType('month')" class="px-2.5 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Monthly</button>
                    <button type="button" id="history-period-year" onclick="Companies.setHistoryPeriodType('year')" class="px-2.5 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Annual</button>
+                   <button type="button" id="history-period-custom" onclick="Companies.setHistoryPeriodType('custom')" class="px-2.5 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Custom Range</button>
                    <button type="button" id="history-period-all" onclick="Companies.setHistoryPeriodType('all')" class="px-2.5 py-1 text-[11px] font-black rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">All</button>
                 </div>
 
@@ -451,6 +470,14 @@ window.Companies = {
                 <div id="history-annual-controls" class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 hidden shadow-2xs">
                    <select id="history-year-picker" onchange="Companies.filterHistory()" class="bg-transparent border-0 px-2 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                    </select>
+                </div>
+
+                <!-- Custom Range controls -->
+                <div id="history-custom-controls" class="flex items-center gap-1.5 bg-white border border-slate-300 px-2.5 py-1 rounded-lg hidden shadow-2xs">
+                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <input type="date" id="history-start-date" onchange="Companies.filterHistory()" oninput="Companies.filterHistory()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <input type="date" id="history-end-date" onchange="Companies.filterHistory()" oninput="Companies.filterHistory()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                 </div>
               </div>
 
@@ -722,6 +749,12 @@ window.Companies = {
               const targetY = parseInt(document.getElementById('comp-year-picker')?.value);
               if (targetY) {
                 inPeriod = (parsed.year === targetY);
+              }
+            } else if (this.currentCompPeriod === 'custom') {
+              const startDate = document.getElementById('comp-start-date')?.value;
+              const endDate = document.getElementById('comp-end-date')?.value;
+              if (startDate && endDate) {
+                inPeriod = (parsed.dateStr >= startDate && parsed.dateStr <= endDate);
               }
             }
           }
@@ -1090,7 +1123,16 @@ window.Companies = {
 
   setHistoryPeriodType(type) {
     this.currentHistoryPeriod = type;
-    const periods = ['day', 'month', 'year', 'all'];
+    if (type === 'custom') {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const sDate = document.getElementById('history-start-date');
+      const eDate = document.getElementById('history-end-date');
+      if (sDate && !sDate.value) sDate.value = document.getElementById('history-date-picker')?.value || todayStr;
+      if (eDate && !eDate.value) eDate.value = document.getElementById('history-date-picker')?.value || todayStr;
+    }
+
+    const periods = ['day', 'month', 'year', 'custom', 'all'];
     periods.forEach(p => {
       const btn = document.getElementById(`history-period-${p}`);
       if (btn) {
@@ -1105,10 +1147,12 @@ window.Companies = {
     const dailyEl = document.getElementById('history-daily-controls');
     const monthlyEl = document.getElementById('history-monthly-controls');
     const annualEl = document.getElementById('history-annual-controls');
+    const customEl = document.getElementById('history-custom-controls');
 
     if (dailyEl) dailyEl.classList.toggle('hidden', type !== 'day');
     if (monthlyEl) monthlyEl.classList.toggle('hidden', type !== 'month');
     if (annualEl) annualEl.classList.toggle('hidden', type !== 'year');
+    if (customEl) customEl.classList.toggle('hidden', type !== 'custom');
 
     this.historyPage = 1;
     this.filterHistory();
@@ -1200,6 +1244,11 @@ window.Companies = {
       ySelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
       ySelect.value = String(now.getFullYear());
     }
+
+    const sDate = document.getElementById('history-start-date');
+    const eDate = document.getElementById('history-end-date');
+    if (sDate && !sDate.value) sDate.value = todayStr;
+    if (eDate && !eDate.value) eDate.value = todayStr;
   },
 
   clearHistorySearch() {
@@ -1247,6 +1296,12 @@ window.Companies = {
             const targetY = parseInt(document.getElementById('history-year-picker')?.value);
             if (targetY) {
               if (parsed.year !== targetY) return false;
+            }
+          } else if (this.currentHistoryPeriod === 'custom') {
+            const startDate = document.getElementById('history-start-date')?.value;
+            const endDate = document.getElementById('history-end-date')?.value;
+            if (startDate && endDate) {
+              if (parsed.dateStr < startDate || parsed.dateStr > endDate) return false;
             }
           }
         }
@@ -1855,8 +1910,18 @@ window.Companies = {
     document.getElementById('txns-daily-controls')?.classList.toggle('hidden', type !== 'day');
     document.getElementById('txns-monthly-controls')?.classList.toggle('hidden', type !== 'month');
     document.getElementById('txns-annual-controls')?.classList.toggle('hidden', type !== 'year');
+    document.getElementById('txns-custom-controls')?.classList.toggle('hidden', type !== 'custom');
 
-    ['day', 'month', 'year', 'all'].forEach(t => {
+    if (type === 'custom') {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const sDate = document.getElementById('txns-start-date');
+      const eDate = document.getElementById('txns-end-date');
+      if (sDate && !sDate.value) sDate.value = document.getElementById('txns-date-picker')?.value || todayStr;
+      if (eDate && !eDate.value) eDate.value = document.getElementById('txns-date-picker')?.value || todayStr;
+    }
+
+    ['day', 'month', 'year', 'custom', 'all'].forEach(t => {
       const btn = document.getElementById(`txns-period-${t}`);
       if (btn) {
         if (t === type) {
@@ -1935,8 +2000,18 @@ window.Companies = {
     document.getElementById('comp-daily-controls')?.classList.toggle('hidden', type !== 'day');
     document.getElementById('comp-monthly-controls')?.classList.toggle('hidden', type !== 'month');
     document.getElementById('comp-annual-controls')?.classList.toggle('hidden', type !== 'year');
+    document.getElementById('comp-custom-controls')?.classList.toggle('hidden', type !== 'custom');
 
-    ['all', 'day', 'month', 'year'].forEach(t => {
+    if (type === 'custom') {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const sDate = document.getElementById('comp-start-date');
+      const eDate = document.getElementById('comp-end-date');
+      if (sDate && !sDate.value) sDate.value = document.getElementById('comp-date-picker')?.value || todayStr;
+      if (eDate && !eDate.value) eDate.value = document.getElementById('comp-date-picker')?.value || todayStr;
+    }
+
+    ['all', 'day', 'month', 'year', 'custom'].forEach(t => {
       const btn = document.getElementById(`comp-period-${t}`);
       if (btn) {
         if (t === type) {
@@ -2053,6 +2128,12 @@ window.Companies = {
             const targetY = parseInt(document.getElementById('txns-year-picker')?.value);
             if (targetY) {
               if (parsed.year !== targetY) return false;
+            }
+          } else if (this.currentTxnPeriod === 'custom') {
+            const startDate = document.getElementById('txns-start-date')?.value;
+            const endDate = document.getElementById('txns-end-date')?.value;
+            if (startDate && endDate) {
+              if (parsed.dateStr < startDate || parsed.dateStr > endDate) return false;
             }
           }
         }

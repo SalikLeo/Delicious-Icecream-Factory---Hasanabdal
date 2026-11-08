@@ -91,6 +91,7 @@ const Expenses = {
                <button id="exp-period-day-tab" onclick="Expenses.setPeriodType('day')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">Daily</button>
                <button id="exp-period-month-tab" onclick="Expenses.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Monthly</button>
                <button id="exp-period-year-tab" onclick="Expenses.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Annual</button>
+               <button id="exp-period-custom-tab" onclick="Expenses.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Custom Range</button>
                <button id="exp-period-all-tab" onclick="Expenses.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">All</button>
             </div>
 
@@ -137,6 +138,14 @@ const Expenses = {
             <div id="exp-annual-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
                <select id="exp-stats-year-picker" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                </select>
+            </div>
+
+            <!-- Custom Range controls -->
+            <div id="exp-custom-controls" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl hidden">
+              <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+              <input type="date" id="exp-start-date" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+              <input type="date" id="exp-end-date" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
             </div>
 
             <button id="exp-clear-period-btn" onclick="Expenses.resetPeriodToDefault()" class="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-md transition-all hidden cursor-pointer" title="Reset to Daily (Today)">
@@ -302,6 +311,12 @@ const Expenses = {
       yearPicker.value = now.getFullYear();
     }
 
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const sDate = document.getElementById('exp-start-date');
+    const eDate = document.getElementById('exp-end-date');
+    if (sDate && !sDate.value) sDate.value = todayStr;
+    if (eDate && !eDate.value) eDate.value = todayStr;
+
     this.updateDropdowns();
     this.setPeriodType('day');
   },
@@ -413,6 +428,12 @@ const Expenses = {
             const targetY = parseInt(document.getElementById('exp-stats-year-picker')?.value);
             if (targetY) {
               matchesPeriod = (parsed.year === targetY);
+            }
+          } else if (this.currentPeriodType === 'custom') {
+            const startDate = document.getElementById('exp-start-date')?.value;
+            const endDate = document.getElementById('exp-end-date')?.value;
+            if (startDate && endDate) {
+              matchesPeriod = (parsed.dateStr >= startDate && parsed.dateStr <= endDate);
             }
           }
         }
@@ -544,8 +565,18 @@ const Expenses = {
     document.getElementById('exp-daily-controls')?.classList.toggle('hidden', type !== 'day');
     document.getElementById('exp-monthly-controls')?.classList.toggle('hidden', type !== 'month');
     document.getElementById('exp-annual-controls')?.classList.toggle('hidden', type !== 'year');
+    document.getElementById('exp-custom-controls')?.classList.toggle('hidden', type !== 'custom');
     
-    ['day', 'month', 'year', 'all'].forEach(t => {
+    if (type === 'custom') {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const sDate = document.getElementById('exp-start-date');
+      const eDate = document.getElementById('exp-end-date');
+      if (sDate && !sDate.value) sDate.value = document.getElementById('exp-stats-date-picker')?.value || todayStr;
+      if (eDate && !eDate.value) eDate.value = document.getElementById('exp-stats-date-picker')?.value || todayStr;
+    }
+
+    ['day', 'month', 'year', 'custom', 'all'].forEach(t => {
       const btn = document.getElementById(`exp-period-${t}-tab`);
       if (btn) {
         if (t === type) {
@@ -600,6 +631,12 @@ const Expenses = {
             if (targetY) {
               matchesPeriod = (parsed.year === targetY);
             }
+          } else if (this.currentPeriodType === 'custom') {
+            const startDate = document.getElementById('exp-start-date')?.value;
+            const endDate = document.getElementById('exp-end-date')?.value;
+            if (startDate && endDate) {
+              matchesPeriod = (parsed.dateStr >= startDate && parsed.dateStr <= endDate);
+            }
           }
         }
       }
@@ -627,6 +664,10 @@ const Expenses = {
     } else if (this.currentPeriodType === 'year') {
       const y = parseInt(document.getElementById('exp-stats-year-picker')?.value) || new Date().getFullYear();
       period = `Annual (${y})`;
+    } else if (this.currentPeriodType === 'custom') {
+      const s = document.getElementById('exp-start-date')?.value;
+      const e = document.getElementById('exp-end-date')?.value;
+      period = `Custom Range (${s ? app.formatDateOnly(s) : ''} - ${e ? app.formatDateOnly(e) : ''})`;
     }
 
     const catTotals = {};

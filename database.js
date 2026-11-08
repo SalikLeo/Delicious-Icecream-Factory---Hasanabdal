@@ -1618,6 +1618,15 @@ function getItemSales(section, period, targetDate = null) {
     } else {
       conditions.push("strftime('%Y', COALESCE(p.date, p.created_at), 'localtime') = strftime('%Y', 'now', 'localtime')");
     }
+  } else if (period === 'custom') {
+    if (targetDate) {
+      let s = typeof targetDate === 'object' ? (targetDate.start || targetDate[0]) : null;
+      let e = typeof targetDate === 'object' ? (targetDate.end || targetDate[1]) : null;
+      if (s && e) {
+        conditions.push("date(COALESCE(p.date, p.created_at), 'localtime') >= ? AND date(COALESCE(p.date, p.created_at), 'localtime') <= ?");
+        params.push(s, e);
+      }
+    }
   }
 
   const whereClause = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";

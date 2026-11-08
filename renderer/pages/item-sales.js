@@ -153,6 +153,7 @@ window.ItemSales = {
                <button id="item-period-day-tab" onclick="ItemSales.setPeriodType('day')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">Daily</button>
                <button id="item-period-month-tab" onclick="ItemSales.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Monthly</button>
                <button id="item-period-year-tab" onclick="ItemSales.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Annual</button>
+               <button id="item-period-custom-tab" onclick="ItemSales.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Custom Range</button>
                <button id="item-period-all-tab" onclick="ItemSales.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">All</button>
             </div>
 
@@ -199,6 +200,14 @@ window.ItemSales = {
             <div id="item-annual-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
                <select id="item-stats-year-picker" onchange="ItemSales.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                </select>
+            </div>
+
+            <!-- Custom Range controls -->
+            <div id="item-custom-controls" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl hidden">
+              <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+              <input type="date" id="item-start-date" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+              <input type="date" id="item-end-date" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
             </div>
 
             <button id="item-clear-period-btn" onclick="ItemSales.resetPeriodToDefault()" class="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-md transition-all hidden cursor-pointer" title="Reset to Daily (Today)">
@@ -264,6 +273,11 @@ window.ItemSales = {
       if (monthSelect) {
         monthSelect.value = now.getMonth() + 1;
       }
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const sDate = document.getElementById('item-start-date');
+      const eDate = document.getElementById('item-end-date');
+      if (sDate && !sDate.value) sDate.value = todayStr;
+      if (eDate && !eDate.value) eDate.value = todayStr;
 
       await this.loadData();
       this.setPeriodType('day');
@@ -372,7 +386,16 @@ window.ItemSales = {
 
   setPeriodType(type) {
     this.currentPeriodType = type;
-    ['day', 'month', 'year', 'all'].forEach(t => {
+    if (type === 'custom') {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const sDate = document.getElementById('item-start-date');
+      const eDate = document.getElementById('item-end-date');
+      if (sDate && !sDate.value) sDate.value = document.getElementById('item-stats-date-picker')?.value || todayStr;
+      if (eDate && !eDate.value) eDate.value = document.getElementById('item-stats-date-picker')?.value || todayStr;
+    }
+
+    ['day', 'month', 'year', 'custom', 'all'].forEach(t => {
       const tab = document.getElementById(`item-period-${t}-tab`);
       if (tab) {
         if (t === type) {
@@ -386,10 +409,12 @@ window.ItemSales = {
     const dailyEl = document.getElementById('item-daily-controls');
     const monthlyEl = document.getElementById('item-monthly-controls');
     const annualEl = document.getElementById('item-annual-controls');
+    const customEl = document.getElementById('item-custom-controls');
 
     if (dailyEl) dailyEl.classList.toggle('hidden', type !== 'day');
     if (monthlyEl) monthlyEl.classList.toggle('hidden', type !== 'month');
     if (annualEl) annualEl.classList.toggle('hidden', type !== 'year');
+    if (customEl) customEl.classList.toggle('hidden', type !== 'custom');
 
     this.applyFilters();
   },
@@ -536,6 +561,12 @@ window.ItemSales = {
             const targetY = parseInt(document.getElementById('item-stats-year-picker')?.value);
             if (targetY) {
               matchesPeriod = (parsed.year === targetY);
+            }
+          } else if (this.currentPeriodType === 'custom') {
+            const startDate = document.getElementById('item-start-date')?.value;
+            const endDate = document.getElementById('item-end-date')?.value;
+            if (startDate && endDate) {
+              matchesPeriod = (parsed.dateStr >= startDate && parsed.dateStr <= endDate);
             }
           }
         }
@@ -827,6 +858,10 @@ window.ItemSales = {
       } else if (this.currentPeriodType === 'year') {
         const y = document.getElementById('item-stats-year-picker')?.value;
         periodLabel = `Annual: ${y}`;
+      } else if (this.currentPeriodType === 'custom') {
+        const s = document.getElementById('item-start-date')?.value;
+        const e = document.getElementById('item-end-date')?.value;
+        periodLabel = `Custom: ${s ? app.formatDateOnly(s) : ''} - ${e ? app.formatDateOnly(e) : ''}`;
       }
 
       let totalQty = 0, totalRev = 0, totalCost = 0, totalProfit = 0;

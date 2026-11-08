@@ -351,6 +351,7 @@ const MasterDB = {
                    <button onclick="MasterDB.switchSalesPeriod('daily')" id="btn-sales-daily" class="period-btn px-3 py-1.5 rounded-md text-xs font-black bg-white shadow-sm text-slate-900 transition-all cursor-pointer">Daily</button>
                    <button onclick="MasterDB.switchSalesPeriod('monthly')" id="btn-sales-monthly" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">Monthly</button>
                    <button onclick="MasterDB.switchSalesPeriod('annual')" id="btn-sales-annual" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">Annual</button>
+                   <button onclick="MasterDB.switchSalesPeriod('custom')" id="btn-sales-custom" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">Custom Range</button>
                    <button onclick="MasterDB.switchSalesPeriod('all')" id="btn-sales-all" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">All Time</button>
                 </div>
 
@@ -360,6 +361,13 @@ const MasterDB = {
 
                 <div id="sales-stat-month-wrap" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
                   <input type="month" id="sales-stat-month" onchange="MasterDB.loadSalesData()" oninput="MasterDB.loadSalesData()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                </div>
+
+                <div id="sales-stat-custom-wrap" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-0.5 rounded-lg hidden">
+                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <input type="date" id="sales-stat-start-date" onchange="MasterDB.loadSalesData()" oninput="MasterDB.loadSalesData()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <input type="date" id="sales-stat-end-date" onchange="MasterDB.loadSalesData()" oninput="MasterDB.loadSalesData()" class="bg-transparent border-0 px-1 py-0.5 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                 </div>
 
                 <button onclick="MasterDB.closeSalesStats()" class="p-2 text-slate-400 hover:text-slate-600 ml-2 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -2146,14 +2154,27 @@ const MasterDB = {
 
     const isDaily = this.currentSalesPeriod === 'daily';
     const isMonthly = this.currentSalesPeriod === 'monthly';
+    const isCustom = this.currentSalesPeriod === 'custom';
     document.getElementById('sales-stat-date-wrap')?.classList.toggle('hidden', !isDaily);
     document.getElementById('sales-stat-month-wrap')?.classList.toggle('hidden', !isMonthly);
+    document.getElementById('sales-stat-custom-wrap')?.classList.toggle('hidden', !isCustom);
 
     let targetDate = null;
     if (isDaily) {
       targetDate = document.getElementById('sales-stat-date')?.value || null;
     } else if (isMonthly) {
       targetDate = document.getElementById('sales-stat-month')?.value || null;
+    } else if (isCustom) {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const sEl = document.getElementById('sales-stat-start-date');
+      const eEl = document.getElementById('sales-stat-end-date');
+      if (sEl && !sEl.value) sEl.value = document.getElementById('sales-stat-date')?.value || todayStr;
+      if (eEl && !eEl.value) eEl.value = document.getElementById('sales-stat-date')?.value || todayStr;
+      targetDate = {
+        start: sEl?.value || todayStr,
+        end: eEl?.value || todayStr
+      };
     }
 
     const tbody = document.getElementById('sales-tbody');

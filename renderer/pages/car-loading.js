@@ -479,7 +479,7 @@ window.CarLoading = {
                   ${this.getCarSortIcon('loaded_value')}
                 </div>
               </th>
-              <th class="py-2.5 px-3 text-right w-48">Actions</th>
+              <th class="py-2.5 px-3 text-right w-36">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -543,12 +543,6 @@ window.CarLoading = {
                         </button>
                         <button onclick="CarLoading.printCarStockSheet(${c.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Print Vehicle Stock Sheet">
                           <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <button onclick="CarLoading.openCarModal(${c.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Vehicle">
-                          <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <button onclick="CarLoading.deleteCar(${c.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Vehicle">
-                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                         </button>
                       </div>
                     </td>

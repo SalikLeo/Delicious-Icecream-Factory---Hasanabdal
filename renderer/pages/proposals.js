@@ -32,12 +32,16 @@ window.Proposals = {
               <i data-lucide="history" class="w-6 h-6"></i>
             </div>
             <div>
-              <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Delivery &amp; Sales History</h2>
+              <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Sales History</h2>
               <p class="text-xs text-slate-500 font-medium">All vehicle dispatch orders, delivered cartons, cash collected, and generated A5 bills.</p>
             </div>
           </div>
 
           <div class="flex items-center gap-2">
+            <button type="button" onclick="app.navigate('item-sales')"
+                    class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95" title="View item-wise carton sales breakdown">
+              <i data-lucide="package" class="w-4 h-4 text-amber-400"></i> Item Sales
+            </button>
             <button type="button" onclick="app.navigate('shop-sales')"
                     class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
               <i data-lucide="plus" class="w-4 h-4"></i> New Shop Delivery

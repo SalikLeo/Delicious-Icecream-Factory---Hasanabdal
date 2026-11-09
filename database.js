@@ -1737,9 +1737,43 @@ function getAllProposalItems() {
       p.created_at
     FROM proposal_items pi
     JOIN proposals p ON pi.proposal_id = p.id
-    ORDER BY p.id DESC, pi.id ASC
+
+    UNION ALL
+
+    SELECT
+      sdi.id + 1000000 AS id,
+      sdi.delivery_id AS proposal_id,
+      sdi.carton_id AS item_id,
+      'Ice Cream Cartons' AS section,
+      sdi.carton_name AS description,
+      sdi.delivered_cartons AS qty,
+      'ctns' AS unit,
+      COALESCE(pc.carton_cost, 0) AS unit_cost,
+      sdi.carton_price AS unit_retail,
+      sdi.carton_price AS unit_discounted,
+      (sdi.delivered_cartons * COALESCE(pc.carton_cost, 0)) AS line_cost,
+      sdi.line_total AS line_retail,
+      (sdi.line_total - (sdi.delivered_cartons * COALESCE(pc.carton_cost, 0))) AS line_profit,
+      sd.invoice_no AS proposal_number,
+      sd.shop_name AS customer_name,
+      sd.shop_phone AS phone,
+      sd.driver_name AS seller_name,
+      sd.payment_method,
+      'Delivery Sale' AS sale_mode,
+      sd.date,
+      sd.created_at
+    FROM shop_delivery_items sdi
+    JOIN shop_deliveries sd ON sdi.delivery_id = sd.id
+    LEFT JOIN packed_cartons pc ON sdi.carton_id = pc.id
+
+    ORDER BY date DESC, id DESC
   `;
-  return db.prepare(sql).all();
+  try {
+    return db.prepare(sql).all();
+  } catch (err) {
+    console.error('Error fetching all proposal items:', err);
+    return [];
+  }
 }
 
 function getShops() {

@@ -448,7 +448,7 @@
   </main>
 
   <!-- Custom Confirm Modal -->
-  <div id="confirm-modal" onclick="if(event.target === this) app.hideConfirm()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1000] no-print p-4">
+  <div id="confirm-modal" onclick="if(event.target === this) app.hideConfirm()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[9990] no-print p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col md:flex-row max-h-[92vh]" id="confirm-card">
       
       <!-- Left Column: Receipt / Document Preview (hidden by default, shown when previewHtml provided) -->

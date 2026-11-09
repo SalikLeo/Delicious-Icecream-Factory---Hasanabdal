@@ -83,7 +83,7 @@ window.Production = {
 
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Loose Pieces in Pool</p>
+              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Loose Pieces in Stock</p>
               <h3 class="text-2xl font-black text-cyan-700 mt-1 tabular-nums">${totalSinglePieces.toLocaleString()} <span class="text-xs font-bold text-slate-400">pieces ready to pack</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-black">
@@ -134,11 +134,11 @@ window.Production = {
                 ${this.activeTab === 'catalog' ? `
                   <option value="name_asc" ${this.sortField==='name'&&this.sortOrder==='asc'?'selected':''}>Item Name (A-Z)</option>
                   <option value="name_desc" ${this.sortField==='name'&&this.sortOrder==='desc'?'selected':''}>Item Name (Z-A)</option>
-                  <option value="stock_desc" ${this.sortField==='stock'&&this.sortOrder==='desc'?'selected':''}>Highest Pool Stock</option>
-                  <option value="stock_asc" ${this.sortField==='stock'&&this.sortOrder==='asc'?'selected':''}>Lowest Pool Stock</option>
+                  <option value="stock_desc" ${this.sortField==='stock'&&this.sortOrder==='desc'?'selected':''}>Highest Stock</option>
+                  <option value="stock_asc" ${this.sortField==='stock'&&this.sortOrder==='asc'?'selected':''}>Lowest Stock</option>
                   <option value="cost_desc" ${this.sortField==='cost'&&this.sortOrder==='desc'?'selected':''}>Highest Making Cost</option>
                   <option value="retail_desc" ${this.sortField==='retail'&&this.sortOrder==='desc'?'selected':''}>Highest Retail MRP</option>
-                  <option value="total_cost_desc" ${this.sortField==='total_cost'&&this.sortOrder==='desc'?'selected':''}>Highest Total Pool Cost</option>
+                  <option value="total_cost_desc" ${this.sortField==='total_cost'&&this.sortOrder==='desc'?'selected':''}>Highest Total Stock Cost</option>
                   <option value="status_desc" ${this.sortField==='status'&&this.sortOrder==='desc'?'selected':''}>Ready to Pack First</option>
                 ` : `
                   <option value="date_desc" ${this.sortField==='date'&&this.sortOrder==='desc'?'selected':''}>Newest First</option>
@@ -544,7 +544,7 @@ window.Production = {
               </th>
               <th onclick="Production.toggleSort('stock')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Available Pool Stock</span>
+                  <span>Available Stock</span>
                   ${this.getSortIcon('stock')}
                 </div>
               </th>
@@ -562,7 +562,7 @@ window.Production = {
               </th>
               <th onclick="Production.toggleSort('total_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Total Pool Cost</span>
+                  <span>Total Stock Cost</span>
                   ${this.getSortIcon('total_cost')}
                 </div>
               </th>
@@ -613,7 +613,7 @@ window.Production = {
                   <td class="py-1.5 px-3 text-center border-r border-slate-200">
                     ${pieces > 0 
                       ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-800 font-bold text-[10px] border border-cyan-200"><span class="w-1.5 h-1.5 rounded-full bg-cyan-600"></span> Ready to Pack</span>`
-                      : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px] border border-slate-200">Empty Pool</span>`
+                      : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px] border border-slate-200">Out of Stock</span>`
                     }
                   </td>
                   <td class="py-1.5 px-3 text-right">
@@ -944,7 +944,7 @@ window.Production = {
              onclick="Production.selectProductionItem(${it.id})">
           <div>
             <div class="text-xs font-black text-slate-900">${it.name}</div>
-            <div class="text-[10px] text-slate-500 font-bold mt-0.5">In Pool: <span class="font-black text-slate-700">${it.current_single_stock} pcs</span></div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">In Stock: <span class="font-black text-slate-700">${it.current_single_stock} pcs</span></div>
           </div>
           <div class="text-right">
             <span class="text-xs font-mono font-black text-cyan-700">Rs. ${it.unit_cost}</span>
@@ -1307,7 +1307,7 @@ window.Production = {
     const res = await window.api.runProductionBatch(data);
     if (res && res.success) {
       this.closeModal();
-      app.showToast(`Production Run ${res.batchNumber} complete! +${pieces} pieces added to pool.`, 'success');
+      app.showToast(`Production Run ${res.batchNumber} complete! +${pieces} pieces added to stock.`, 'success');
       await this.loadData();
     } else {
       app.showAlert({ title: 'Production Error', message: res.error || 'Failed to complete production run.' });
@@ -1379,7 +1379,7 @@ window.Production = {
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          STAGE 2: SINGLE ITEMS PRODUCTION POOL REPORT
+          STAGE 2: SINGLE ITEMS PRODUCTION STOCK REPORT
         </div>
 
         <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
@@ -1387,7 +1387,7 @@ window.Production = {
             <tr>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item / Flavor</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pieces in Pool</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pieces in Stock</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Cost/Piece</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 90px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Cost Value</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Retail MRP</th>
@@ -1418,6 +1418,6 @@ window.Production = {
       </div>
     `;
 
-    app.showA5Preview(html, 'Production Pool Report (A5)');
+    app.showA5Preview(html, 'Production Stock Report (A5)');
   }
 };

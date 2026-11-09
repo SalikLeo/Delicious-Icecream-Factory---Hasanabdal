@@ -228,7 +228,7 @@ window.CarLoading = {
               <!-- Search -->
               <div class="relative w-full sm:w-56">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="cld-search" placeholder="${this.activeTab === 'cars' ? 'Search vehicle, driver, plate...' : 'Search dispatch #, vehicle, driver...'}"
+                <input type="text" id="cld-search" placeholder="${this.activeTab === 'cars' ? 'Search vehicle, driver, plate...' : 'Search loading slip #, vehicle, driver...'}"
                        value="${this.searchQuery}" oninput="CarLoading.onSearch(this.value)"
                        class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-400">
                 <button type="button" id="cld-search-clear" onclick="CarLoading.clearSearch()" title="Clear search"
@@ -254,7 +254,7 @@ window.CarLoading = {
                     <option value="total_cartons_desc" ${this.sortField==='total_cartons'&&this.sortOrder==='desc'?'selected':''}>Most Cartons Loaded</option>
                     <option value="car_number_asc" ${this.sortField==='car_number'&&this.sortOrder==='asc'?'selected':''}>Vehicle (A-Z)</option>
                     <option value="driver_name_asc" ${this.sortField==='driver_name'&&this.sortOrder==='asc'?'selected':''}>Driver (A-Z)</option>
-                    <option value="dispatch_no_asc" ${this.sortField==='dispatch_no'&&this.sortOrder==='asc'?'selected':''}>Dispatch # (A-Z)</option>
+                    <option value="dispatch_no_asc" ${this.sortField==='dispatch_no'&&this.sortOrder==='asc'?'selected':''}>Loading Slip # (A-Z)</option>
                   `}
                 </select>
               </div>
@@ -882,7 +882,7 @@ window.CarLoading = {
           <!-- Dispatch Form Header -->
           <div class="p-5 bg-gradient-to-r from-blue-50 to-slate-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <span class="text-[10px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">DISPATCH OPERATION</span>
+              <span class="text-[10px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">CAR LOADING</span>
               <h3 class="text-lg font-black text-slate-900 mt-1">Load Cartons from Warehouse into Car</h3>
               <p class="text-xs text-slate-500 font-medium">Cartons will be deducted from factory freezer and transferred to car inventory.</p>
             </div>
@@ -916,7 +916,7 @@ window.CarLoading = {
                          class="pl-8 pr-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-blue-500 shadow-2xs">
                 </div>
                 <div class="text-right">
-                  <span class="text-xs font-bold text-slate-500">Dispatch Date:</span>
+                  <span class="text-xs font-bold text-slate-500">Loading Date:</span>
                   <input type="date" id="dsp-date" value="${new Date().toISOString().split('T')[0]}" class="ml-1 px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 outline-none">
                 </div>
               </div>
@@ -1166,7 +1166,7 @@ window.CarLoading = {
     }).join('');
 
     app.showConfirm({
-      title: 'Confirm Vehicle Dispatch & Loading',
+      title: 'Confirm Car Loading',
       message: `
         <div class="text-left space-y-3">
           <p class="text-xs text-slate-600">
@@ -1194,8 +1194,8 @@ window.CarLoading = {
 
           if (res && res.success) {
             this.dispatchItems = {};
-            app.showToast(`Stock loaded! Dispatch No: ${res.dispatchNo}`, 'success');
-            // Generate & preview A5 Gate Pass Loading Sheet
+            app.showToast(`Stock loaded! Loading Slip #: ${res.dispatchNo}`, 'success');
+            // Generate & preview A5 Loading Sheet
             await this.printLoadingGatePass(res.batchId);
             await this.loadData();
             this.switchTab('cars');
@@ -1242,7 +1242,7 @@ window.CarLoading = {
       return `
         <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
           <i data-lucide="history" class="w-12 h-12 mb-3 text-slate-300"></i>
-          <h4 class="text-sm font-black text-slate-600">${this.searchQuery ? 'No matching dispatches found' : 'No dispatches logged yet'}</h4>
+          <h4 class="text-sm font-black text-slate-600">${this.searchQuery ? 'No matching loading records found' : 'No loading records logged yet'}</h4>
           <p class="text-xs text-slate-400 mt-1">${this.searchQuery ? `No records matched "${this.searchQuery}"` : 'Car loading operations will be recorded here.'}</p>
           ${this.searchQuery ? `<button onclick="CarLoading.clearSearch()" class="text-xs text-blue-600 font-bold mt-2 underline cursor-pointer">Clear Search</button>` : ''}
         </div>
@@ -1259,7 +1259,7 @@ window.CarLoading = {
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
               <th onclick="CarLoading.toggleSort('dispatch_no')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
-                  <span>Dispatch #</span>
+                  <span>Loading Slip #</span>
                   ${this.getSortIcon('dispatch_no')}
                 </div>
               </th>
@@ -1288,7 +1288,7 @@ window.CarLoading = {
                 </div>
               </th>
               <th class="py-2 px-3 border-r border-slate-200">Notes</th>
-              <th class="py-2 px-3 text-center">Gate Pass</th>
+              <th class="py-2 px-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -1301,11 +1301,18 @@ window.CarLoading = {
                 <td class="py-1.5 px-3 text-right font-black text-blue-700 text-xs tabular-nums border-r border-slate-200">${d.total_cartons} ctns</td>
                 <td class="py-1.5 px-3 text-slate-400 text-[10px] border-r border-slate-200">${d.notes || ''}</td>
                 <td class="py-1.5 px-3 text-center">
-                  <button onclick="CarLoading.printLoadingGatePass(${d.id})"
-                          class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
-                          title="Print Loading Gate Pass (A5)">
-                    <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                  </button>
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button onclick="CarLoading.printLoadingGatePass(${d.id})"
+                            class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                            title="Print Loading Slip (A5)">
+                      <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="CarLoading.deleteLoadingBatch(${d.id})"
+                            class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                            title="Delete Loading Record">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             `).join('')}
@@ -1315,7 +1322,7 @@ window.CarLoading = {
               <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="4">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-blue-700 font-black">TOTAL:</span>
-                  <span>${totalDispatchesCount} ${totalDispatchesCount === 1 ? 'Dispatch' : 'Dispatches'}</span>
+                  <span>${totalDispatchesCount} ${totalDispatchesCount === 1 ? 'Loading Record' : 'Loading Records'}</span>
                 </div>
               </td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-blue-700 text-sm tabular-nums">
@@ -1328,6 +1335,45 @@ window.CarLoading = {
         </table>
       </div>
     `;
+  },
+
+  async deleteLoadingBatch(batchId) {
+    const batch = (this.dispatches || []).find(d => d.id === batchId);
+    const slipNo = batch ? batch.dispatch_no : `#${batchId}`;
+
+    app.showConfirm({
+      title: 'Delete Loading Record',
+      message: `
+        <div class="text-left space-y-2">
+          <p class="text-xs text-slate-700">Are you sure you want to delete loading record <b>${slipNo}</b>?</p>
+          <div class="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+            <p class="font-bold">⚠️ This will reverse the stock movements:</p>
+            <p class="mt-1">• Cartons loaded into vehicle will be deducted from vehicle stock.</p>
+            <p>• Cartons will be returned back to factory warehouse freezer stock.</p>
+          </div>
+        </div>
+      `,
+      confirmText: 'Yes, Delete Record',
+      confirmColor: 'red',
+      onConfirm: async () => {
+        app.showLoading?.();
+        try {
+          const res = await window.api.deleteCarLoadingBatch(batchId);
+          if (res && res.success) {
+            app.showToast(`Loading record ${slipNo} deleted and stock reversed!`, 'success');
+            await this.loadData();
+            this.renderUI();
+          } else {
+            app.showAlert({ title: 'Cannot Delete Loading Record', message: res.error || 'Failed to delete loading record.' });
+          }
+        } catch (err) {
+          console.error('[CAR-LOADING] Delete error:', err);
+          app.showAlert({ title: 'Error', message: 'Failed to delete loading record: ' + (err.message || err) });
+        } finally {
+          app.hideLoading?.();
+        }
+      }
+    });
   },
 
   switchTab(tab) {
@@ -1698,7 +1744,7 @@ window.CarLoading = {
             Driver / Salesman Signature
           </div>
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
-            Dispatch Officer Signature
+            Loading Supervisor Signature
           </div>
         </div>
       </div>
@@ -1719,11 +1765,11 @@ window.CarLoading = {
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
           <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
-          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Pass #: ${batch.dispatch_no} | Date &amp; Time: ${app.formatDateTime(batch.date, batch.created_at)}</p>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Slip #: ${batch.dispatch_no} | Date &amp; Time: ${app.formatDateTime(batch.date, batch.created_at)}</p>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          VEHICLE DISPATCH GATE PASS
+          VEHICLE LOADING SLIP
         </div>
 
         <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
@@ -1762,7 +1808,7 @@ window.CarLoading = {
         </table>
 
         <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 0; font-size: 10px; font-weight: 900; color: #000;">
-          <span>TOTAL CARTONS DISPATCHED: ${batch.total_cartons}</span>
+          <span>TOTAL CARTONS LOADED: ${batch.total_cartons}</span>
           <span style="font-family: -apple-system, monospace;">ESTIMATED VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
@@ -1771,12 +1817,12 @@ window.CarLoading = {
             Driver / Receiver Signature
           </div>
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
-            Factory Gate / Security Officer
+            Security / Gate Officer
           </div>
         </div>
       </div>
     `;
 
-    app.showA5Preview(html, `Dispatch Gate Pass - ${batch.dispatch_no} (A5)`);
+    app.showA5Preview(html, `Vehicle Loading Slip - ${batch.dispatch_no} (A5)`);
   }
 };

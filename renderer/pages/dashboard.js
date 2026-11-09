@@ -104,7 +104,7 @@ window.Dashboard = {
                 <p class="text-[11px] text-slate-400 font-medium mt-0.5">Loose pieces (Chocbar, Ice Loly)</p>
                 
                 <div class="mt-3 pt-2.5 border-t border-slate-100">
-                  <div class="text-[10px] font-bold text-slate-400 uppercase">Pieces in Pool:</div>
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Pieces in Stock:</div>
                   <div class="text-base font-black text-cyan-700 tabular-nums">${single.total_single_pieces.toLocaleString()} <span class="text-xs font-normal text-slate-500">pcs</span></div>
                   <div class="text-[10px] text-slate-500 mt-0.5">Ready to pack into cartons</div>
                 </div>

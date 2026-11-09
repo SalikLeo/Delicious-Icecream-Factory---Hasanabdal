@@ -154,7 +154,7 @@ window.CartonPacking = {
                   <option value="loaded_desc" ${this.sortField==='loaded'&&this.sortOrder==='desc'?'selected':''}>Most Loaded in Cars</option>
                   <option value="value_desc" ${this.sortField==='value'&&this.sortOrder==='desc'?'selected':''}>Highest Stock Value</option>
                   <option value="price_desc" ${this.sortField==='price'&&this.sortOrder==='desc'?'selected':''}>Highest Sale Price</option>
-                  <option value="pool_pcs_desc" ${this.sortField==='pool_pcs'&&this.sortOrder==='desc'?'selected':''}>Most Loose Pcs in Pool</option>
+                  <option value="pool_pcs_desc" ${this.sortField==='pool_pcs'&&this.sortOrder==='desc'?'selected':''}>Most Loose Pcs in Stock</option>
                 ` : `
                   <option value="date_desc" ${this.sortField==='date'&&this.sortOrder==='desc'?'selected':''}>Newest First</option>
                   <option value="date_asc" ${this.sortField==='date'&&this.sortOrder==='asc'?'selected':''}>Oldest First</option>
@@ -590,7 +590,7 @@ window.CartonPacking = {
               </th>
               <th onclick="CartonPacking.toggleSort('pool_pcs')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-center gap-1">
-                  <span>Loose Pcs in Pool</span>
+                  <span>Loose Pcs in Stock</span>
                   ${this.getSortIcon('pool_pcs')}
                 </div>
               </th>
@@ -849,7 +849,7 @@ window.CartonPacking = {
                 <span class="px-2 py-0.5 rounded-full bg-purple-400 text-slate-950 font-mono text-[10px] font-black">STAGE 3</span>
                 <h3 class="text-base font-black tracking-tight">Pack Single Pieces into Cartons</h3>
               </div>
-              <p class="text-[11px] text-purple-300 mt-0.5">Deducts loose pieces from pool and adds ready cartons to factory stock</p>
+              <p class="text-[11px] text-purple-300 mt-0.5">Deducts loose pieces from stock and adds ready cartons to factory stock</p>
             </div>
             <button onclick="CartonPacking.closeModal()" class="text-purple-300 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
@@ -883,7 +883,7 @@ window.CartonPacking = {
 
             <!-- Single Pcs Available Banner -->
             <div id="pk-pool-indicator" class="p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-600">Available Single Pieces in Pool:</span>
+              <span class="font-bold text-slate-600">Available Single Pieces in Stock:</span>
               <span id="pk-available-display" class="font-black text-slate-900 tabular-nums">0 pcs</span>
             </div>
 
@@ -916,7 +916,7 @@ window.CartonPacking = {
                 <span id="pk-total-cost-display" class="text-purple-700 tabular-nums">Rs. 0</span>
               </div>
               <div id="pk-insufficient-warning" class="text-xs font-black text-rose-600 hidden pt-1">
-                ⚠️ Warning: Not enough single pieces in production pool!
+                ⚠️ Warning: Not enough single pieces in stock!
               </div>
             </div>
 
@@ -1004,7 +1004,7 @@ window.CartonPacking = {
              onclick="CartonPacking.selectCartonProduct(${c.id})">
           <div>
             <div class="text-xs font-black text-slate-900">${c.carton_name}</div>
-            <div class="text-[10px] text-slate-500 font-bold mt-0.5">Loose Pcs in Pool: <span class="font-black text-slate-700">${c.available_single_pieces || 0} pcs</span></div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">Loose Pcs in Stock: <span class="font-black text-slate-700">${c.available_single_pieces || 0} pcs</span></div>
           </div>
           <div class="text-right">
             <span class="text-xs font-mono font-black text-purple-700">Rs. ${c.carton_sale_price || 0}</span>
@@ -1097,7 +1097,7 @@ window.CartonPacking = {
     if (isExceeding) {
       if (warning) {
         warning.classList.remove('hidden');
-        warning.textContent = `⚠️ Insufficient pieces in pool! Need ${totalPcsNeeded.toLocaleString()} pcs, but only ${availablePcs.toLocaleString()} available.`;
+        warning.textContent = `⚠️ Insufficient pieces in stock! Need ${totalPcsNeeded.toLocaleString()} pcs, but only ${availablePcs.toLocaleString()} available.`;
       }
       if (qtyInput) {
         qtyInput.classList.add('border-rose-500', 'bg-rose-50/50', 'text-rose-700');

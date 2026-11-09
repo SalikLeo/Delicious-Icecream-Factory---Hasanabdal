@@ -3350,6 +3350,68 @@ function getCarLoadingBatch(id) {
   return batch;
 }
 
+function deleteCarLoadingBatch(id) {
+  const batch = db.prepare(`
+    SELECT clb.*, c.car_number 
+    FROM car_loading_batches clb
+    LEFT JOIN cars c ON c.id = clb.car_id
+    WHERE clb.id = ?
+  `).get(id);
+  if (!batch) return { error: 'Loading record not found' };
+
+  const items = db.prepare('SELECT * FROM car_loading_items WHERE dispatch_id = ?').all(id);
+
+  // Validate if car still has the stock to return
+  for (const item of items) {
+    if (item.cartons_loaded > 0) {
+      const inv = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(batch.car_id, item.carton_id);
+      const currentLoaded = inv ? (inv.cartons_loaded || 0) : 0;
+      if (currentLoaded < item.cartons_loaded) {
+        return { 
+          error: `Cannot delete loading record: ${item.cartons_loaded} ctns of "${item.carton_name}" were loaded, but only ${currentLoaded} ctns remain in vehicle ${batch.car_number || ''} (the rest were already delivered/sold).` 
+        };
+      }
+    }
+  }
+
+  const tx = db.transaction(() => {
+    for (const item of items) {
+      if (item.cartons_loaded > 0) {
+        // Reverse load: deduct from car, add back to factory warehouse stock
+        db.prepare(`
+          UPDATE car_inventory 
+          SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
+          WHERE car_id = ? AND carton_id = ?
+        `).run(item.cartons_loaded, batch.car_id, item.carton_id);
+
+        db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+          .run(item.cartons_loaded, item.carton_id);
+      } else if (item.cartons_loaded < 0) {
+        // Reverse unload: add back to car, deduct from factory warehouse stock
+        const absQty = Math.abs(item.cartons_loaded);
+        db.prepare(`
+          UPDATE car_inventory 
+          SET cartons_loaded = cartons_loaded + ?, updated_at = CURRENT_TIMESTAMP
+          WHERE car_id = ? AND carton_id = ?
+        `).run(absQty, batch.car_id, item.carton_id);
+
+        db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
+          .run(absQty, item.carton_id);
+      }
+    }
+
+    db.prepare('DELETE FROM car_loading_items WHERE dispatch_id = ?').run(id);
+    db.prepare('DELETE FROM car_loading_batches WHERE id = ?').run(id);
+  });
+
+  try {
+    tx();
+    return { success: true, dispatchNo: batch.dispatch_no };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
 // --- STAGE 5: SHOP DELIVERIES, SALES & RETURNS ---
 function saveShopDelivery(data) {
   if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
@@ -3976,7 +4038,7 @@ module.exports = {
   // Stage 3: Packed Cartons
   getPackedCartons, getPackedCarton, findCartonByBarcode, savePackedCarton, deletePackedCarton, runCartonPacking, getPackingBatches, deletePackingBatch,
   // Stage 4: Cars & Delivery Loading
-  getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch,
+  getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch, deleteCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns
   saveShopDelivery, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
   processShopReturn, getShopReturns, getShopReturn,

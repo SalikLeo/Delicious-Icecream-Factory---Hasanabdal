@@ -264,6 +264,7 @@ ipcMain.handle('load-car-stock', (event, data) => db.loadCarStock(data));
 ipcMain.handle('unload-car-stock', (event, data) => db.unloadCarStock(data));
 ipcMain.handle('get-car-loading-batches', (event, carId) => db.getCarLoadingBatches(carId));
 ipcMain.handle('get-car-loading-batch', (event, id) => db.getCarLoadingBatch(id));
+ipcMain.handle('delete-car-loading-batch', (event, id) => db.deleteCarLoadingBatch(id));
 
 // Stage 5: Shop Deliveries, Sales & Returns
 ipcMain.handle('save-shop-delivery', (event, data) => db.saveShopDelivery(data));

@@ -217,9 +217,6 @@ window.CarLoading = {
             <button onclick="CarLoading.switchTab('cars')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'cars' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Delivery Cars &amp; Stock
             </button>
-            <button onclick="CarLoading.openCarsListModal()" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-white/60" title="View & Edit Registered Cars">
-              Cars List
-            </button>
             <button onclick="CarLoading.switchTab('dispatch')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'dispatch' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               + Load Car
             </button>

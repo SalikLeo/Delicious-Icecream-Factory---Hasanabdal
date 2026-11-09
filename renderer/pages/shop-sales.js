@@ -1340,7 +1340,7 @@ window.ShopSales = {
               <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-blue-700') : (isHighlighted ? 'text-slate-200' : 'text-slate-500')} tabular-nums block">
                 ${stock > 0 ? `${stock} in car` : 'Direct Factory'}
               </span>
-              <span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(Wh: ${item.factory_carton_stock || 0} ctns)</span>
+              <span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(In Stock: ${item.factory_carton_stock || 0} ctns)</span>
             </div>
             <span class="text-xs font-black tabular-nums ${isHighlighted ? 'text-white' : 'text-slate-900'} min-w-[65px] text-right">
               Rs. ${price}

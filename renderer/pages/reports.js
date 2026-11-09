@@ -528,10 +528,12 @@ window.Reports = {
     this.selectedDate = val;
     if (this.currentTab === 'cars') {
       this.updateCarsBody();
+    } else if (this.currentTab === 'raw') {
+      this.updateRawBody();
+    } else if (this.currentTab === 'inventory') {
+      this.updateInventoryBody();
     } else if (this.currentTab === 'finance') {
       this.updateFinanceBody();
-    } else {
-      this.loadTabContent();
     }
     this.updateResetButtons();
   },
@@ -542,10 +544,12 @@ window.Reports = {
     if (type === 'end') this.endDate = val;
     if (this.currentTab === 'cars') {
       this.updateCarsBody();
+    } else if (this.currentTab === 'raw') {
+      this.updateRawBody();
+    } else if (this.currentTab === 'inventory') {
+      this.updateInventoryBody();
     } else if (this.currentTab === 'finance') {
       this.updateFinanceBody();
-    } else {
-      this.loadTabContent();
     }
     this.updateResetButtons();
   },
@@ -564,48 +568,7 @@ window.Reports = {
     this.rawMaterials = rawListAll;
     this.rawMaterialsPurchases = purchasesAll;
 
-    // Filter purchases by period
-    let filteredPurchases = purchasesAll;
-    if (this.periodType === 'daily' && this.selectedDate) {
-      filteredPurchases = purchasesAll.filter(p => p.date === this.selectedDate);
-    } else if (this.periodType === 'monthly' && this.selectedDate) {
-      const ym = this.selectedDate.slice(0, 7);
-      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(ym));
-    } else if (this.periodType === 'annual' && this.selectedDate) {
-      const y = this.selectedDate.slice(0, 4);
-      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(y));
-    } else if (this.periodType === 'custom') {
-      if (this.startDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
-      if (this.endDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
-    }
-
-    // Purchases mapped by material
-    const purchasesByMaterial = {};
-    let totalPurchasedCostInPeriod = 0;
-    filteredPurchases.forEach(p => {
-      const mid = p.material_id;
-      if (!purchasesByMaterial[mid]) purchasesByMaterial[mid] = { qty: 0, cost: 0, count: 0 };
-      purchasesByMaterial[mid].qty += (p.quantity || 0);
-      purchasesByMaterial[mid].cost += (p.total_price || 0);
-      purchasesByMaterial[mid].count += 1;
-      totalPurchasedCostInPeriod += (p.total_price || 0);
-    });
-
-    // Categories
     const categories = [...new Set(rawListAll.map(m => m.category).filter(Boolean))].sort();
-
-    // Filter materials by selected category
-    let rawList = rawListAll;
-    if (this.selectedRawCategory) {
-      rawList = rawList.filter(m => m.category === this.selectedRawCategory);
-    }
-
-    let totalValuation = 0;
-    let lowStockCount = 0;
-    rawList.forEach(m => {
-      totalValuation += (m.total_value || (m.current_stock * m.cost_price) || 0);
-      if (m.current_stock <= m.min_stock_alert) lowStockCount++;
-    });
 
     container.innerHTML = `
       <!-- Filter Controls -->
@@ -700,6 +663,59 @@ window.Reports = {
         </button>
       </div>
 
+      <div id="rpt-raw-body" class="flex-1 flex flex-col gap-4">
+        ${this.renderRawBody()}
+      </div>
+    `;
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  renderRawBody() {
+    const rawListAll = this.rawMaterials || [];
+    const purchasesAll = this.rawMaterialsPurchases || [];
+
+    // Filter purchases by period
+    let filteredPurchases = purchasesAll;
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filteredPurchases = purchasesAll.filter(p => p.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
+      if (this.endDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
+    }
+
+    // Purchases mapped by material
+    const purchasesByMaterial = {};
+    let totalPurchasedCostInPeriod = 0;
+    filteredPurchases.forEach(p => {
+      const mid = p.material_id;
+      if (!purchasesByMaterial[mid]) purchasesByMaterial[mid] = { qty: 0, cost: 0, count: 0 };
+      purchasesByMaterial[mid].qty += (p.quantity || 0);
+      purchasesByMaterial[mid].cost += (p.total_price || 0);
+      purchasesByMaterial[mid].count += 1;
+      totalPurchasedCostInPeriod += (p.total_price || 0);
+    });
+
+    // Filter materials by selected category
+    let rawList = rawListAll;
+    if (this.selectedRawCategory) {
+      rawList = rawList.filter(m => m.category === this.selectedRawCategory);
+    }
+
+    let totalValuation = 0;
+    let lowStockCount = 0;
+    rawList.forEach(m => {
+      totalValuation += (m.total_value || (m.current_stock * m.cost_price) || 0);
+      if (m.current_stock <= m.min_stock_alert) lowStockCount++;
+    });
+
+    return `
       <!-- KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
@@ -786,6 +802,13 @@ window.Reports = {
     `;
   },
 
+  updateRawBody() {
+    const el = document.getElementById('rpt-raw-body');
+    if (!el) return;
+    el.innerHTML = this.renderRawBody();
+    if (window.lucide) lucide.createIcons({ root: el });
+  },
+
   // -------------------------------------------------------------
   // TAB 3: FINISHED GOODS WAREHOUSE INVENTORY
   // -------------------------------------------------------------
@@ -797,72 +820,14 @@ window.Reports = {
     const cars = await window.api.getCars() || [];
     this.packedCartons = cartonsAll;
     this.packingBatches = packingBatchesAll;
+    this.inventoryDeliveries = deliveriesAll;
     this.singleItems = singleItems;
+    this.inventoryCars = cars;
 
-    // Filter packing batches and deliveries by period
-    let filteredPacking = packingBatchesAll;
-    let filteredDeliveries = deliveriesAll;
-    if (this.periodType === 'daily' && this.selectedDate) {
-      filteredPacking = packingBatchesAll.filter(p => p.date === this.selectedDate);
-      filteredDeliveries = deliveriesAll.filter(d => d.date === this.selectedDate);
-    } else if (this.periodType === 'monthly' && this.selectedDate) {
-      const ym = this.selectedDate.slice(0, 7);
-      filteredPacking = packingBatchesAll.filter(p => p.date && p.date.startsWith(ym));
-      filteredDeliveries = deliveriesAll.filter(d => d.date && d.date.startsWith(ym));
-    } else if (this.periodType === 'annual' && this.selectedDate) {
-      const y = this.selectedDate.slice(0, 4);
-      filteredPacking = packingBatchesAll.filter(p => p.date && p.date.startsWith(y));
-      filteredDeliveries = deliveriesAll.filter(d => d.date && d.date.startsWith(y));
-    } else if (this.periodType === 'custom') {
-      if (this.startDate) {
-        filteredPacking = filteredPacking.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
-        filteredDeliveries = filteredDeliveries.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
-      }
-      if (this.endDate) {
-        filteredPacking = filteredPacking.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
-        filteredDeliveries = filteredDeliveries.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
-      }
-    }
-
-    // Packed in period map
-    const packedByCarton = {};
-    let totalPackedInPeriod = 0;
-    filteredPacking.forEach(p => {
-      const cid = p.carton_id;
-      packedByCarton[cid] = (packedByCarton[cid] || 0) + (p.cartons_packed || 0);
-      totalPackedInPeriod += (p.cartons_packed || 0);
-    });
-
-    // Delivered in period
-    let totalDeliveredInPeriod = 0;
-    filteredDeliveries.forEach(d => {
-      totalDeliveredInPeriod += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
-    });
-
-    let cartons = cartonsAll;
-    if (this.selectedCartonId) {
-      cartons = cartons.filter(c => String(c.id) === String(this.selectedCartonId));
-    }
-
-    let totalWarehouseCartons = 0;
-    let totalSaleValuation = 0;
-    let totalCostValuation = 0;
-
-    cartons.forEach(c => {
-      totalWarehouseCartons += (c.factory_carton_stock || 0);
-      totalSaleValuation += ((c.factory_carton_stock || 0) * (c.carton_sale_price || 0));
-      totalCostValuation += ((c.factory_carton_stock || 0) * (c.carton_cost_price || 0));
-    });
-
-    // Compute stock loaded in cars
-    let totalCartonsInCars = 0;
+    // Cache car inventory
+    this.carInventories = {};
     for (const car of cars) {
-      const inv = await window.api.getCarInventory(car.id) || [];
-      inv.forEach(i => {
-        if (!this.selectedCartonId || String(i.carton_id) === String(this.selectedCartonId)) {
-          totalCartonsInCars += (i.cartons_loaded || 0);
-        }
-      });
+      this.carInventories[car.id] = await window.api.getCarInventory(car.id) || [];
     }
 
     container.innerHTML = `
@@ -958,6 +923,86 @@ window.Reports = {
         </button>
       </div>
 
+      <div id="rpt-inventory-body" class="flex-1 flex flex-col gap-4">
+        ${this.renderInventoryBody()}
+      </div>
+    `;
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  renderInventoryBody() {
+    const cartonsAll = this.packedCartons || [];
+    const packingBatchesAll = this.packingBatches || [];
+    const deliveriesAll = this.inventoryDeliveries || this.deliveries || [];
+
+    // Filter packing batches and deliveries by period
+    let filteredPacking = packingBatchesAll;
+    let filteredDeliveries = deliveriesAll;
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filteredPacking = packingBatchesAll.filter(p => p.date === this.selectedDate);
+      filteredDeliveries = deliveriesAll.filter(d => d.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filteredPacking = packingBatchesAll.filter(p => p.date && p.date.startsWith(ym));
+      filteredDeliveries = deliveriesAll.filter(d => d.date && d.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filteredPacking = packingBatchesAll.filter(p => p.date && p.date.startsWith(y));
+      filteredDeliveries = deliveriesAll.filter(d => d.date && d.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) {
+        filteredPacking = filteredPacking.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
+        filteredDeliveries = filteredDeliveries.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+      }
+      if (this.endDate) {
+        filteredPacking = filteredPacking.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
+        filteredDeliveries = filteredDeliveries.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
+      }
+    }
+
+    // Packed in period map
+    const packedByCarton = {};
+    let totalPackedInPeriod = 0;
+    filteredPacking.forEach(p => {
+      const cid = p.carton_id;
+      packedByCarton[cid] = (packedByCarton[cid] || 0) + (p.cartons_packed || 0);
+      totalPackedInPeriod += (p.cartons_packed || 0);
+    });
+
+    // Delivered in period
+    let totalDeliveredInPeriod = 0;
+    filteredDeliveries.forEach(d => {
+      totalDeliveredInPeriod += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
+    });
+
+    let cartons = cartonsAll;
+    if (this.selectedCartonId) {
+      cartons = cartons.filter(c => String(c.id) === String(this.selectedCartonId));
+    }
+
+    let totalWarehouseCartons = 0;
+    let totalSaleValuation = 0;
+    let totalCostValuation = 0;
+
+    cartons.forEach(c => {
+      totalWarehouseCartons += (c.factory_carton_stock || 0);
+      totalSaleValuation += ((c.factory_carton_stock || 0) * (c.carton_sale_price || 0));
+      totalCostValuation += ((c.factory_carton_stock || 0) * (c.carton_cost_price || 0));
+    });
+
+    // Compute stock loaded in cars
+    let totalCartonsInCars = 0;
+    const carInvs = this.carInventories || {};
+    Object.values(carInvs).forEach(inv => {
+      inv.forEach(i => {
+        if (!this.selectedCartonId || String(i.carton_id) === String(this.selectedCartonId)) {
+          totalCartonsInCars += (i.cartons_loaded || 0);
+        }
+      });
+    });
+
+    return `
       <!-- KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
@@ -1043,6 +1088,13 @@ window.Reports = {
         </div>
       </div>
     `;
+  },
+
+  updateInventoryBody() {
+    const el = document.getElementById('rpt-inventory-body');
+    if (!el) return;
+    el.innerHTML = this.renderInventoryBody();
+    if (window.lucide) lucide.createIcons({ root: el });
   },
 
   // -------------------------------------------------------------

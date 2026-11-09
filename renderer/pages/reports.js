@@ -6,12 +6,16 @@ window.Reports = {
   startDate: '',
   endDate: '',
   selectedCarId: '',
+  selectedRawCategory: '',
+  selectedCartonId: '',
   settings: {},
 
   // Cached data
   cars: [],
   rawMaterials: [],
+  rawMaterialsPurchases: [],
   packedCartons: [],
+  packingBatches: [],
   singleItems: [],
   deliveries: [],
   expenses: [],
@@ -170,11 +174,11 @@ window.Reports = {
     container.innerHTML = `
       <!-- Filter Controls -->
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex items-end gap-3 flex-wrap">
           <div>
             <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Select Vehicle / Car</label>
             <select id="rpt-car-select" onchange="Reports.onCarChange(this.value)"
-                    class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
+                    class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none h-[34px] cursor-pointer">
               <option value="">-- All Delivery Cars --</option>
               ${this.cars.map(c => `
                 <option value="${c.id}" ${String(c.id) === String(this.selectedCarId) ? 'selected' : ''}>
@@ -186,7 +190,7 @@ window.Reports = {
 
           <div>
             <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Period</label>
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
               <button type="button" onclick="Reports.setPeriod('daily')"
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 Daily
@@ -216,7 +220,7 @@ window.Reports = {
                 ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
               ${this.periodType === 'custom' ? `
-                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl">
+                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
                   <span class="text-[10px] font-black uppercase text-slate-400">From</span>
                   <input type="date" id="rpt-cars-start-date" value="${this.startDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('start', this.value)"
@@ -229,7 +233,7 @@ window.Reports = {
                          class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
                 </div>
               ` : this.periodType === 'annual' ? `
-                <select id="rpt-cars-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                <select id="rpt-cars-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
                   ${this.getAvailableYears().map(y => `
                     <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
                   `).join('')}
@@ -239,17 +243,17 @@ window.Reports = {
                        value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
                        onchange="Reports.onDateChange(this.value)"
                        oninput="Reports.onDateChange(this.value)"
-                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
               `}
             </div>
           ` : ''}
 
           <!-- Red Cross Reset to Current Date/Period -->
-          <div id="rpt-cars-reset-wrap" class="shrink-0 flex items-center">
+          <div id="rpt-cars-reset-wrap" class="shrink-0 flex items-center h-[34px]">
             ${this.isFilteredFromCurrent() ? `
               <button type="button" onclick="Reports.resetToCurrent()" 
-                      class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
-                      title="Go back to current (Today)">
+                      class="w-[34px] h-[34px] rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0" 
+                      title="Reset to current (Today)">
                 <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
               </button>
             ` : ''}
@@ -428,6 +432,24 @@ window.Reports = {
         if (!isNaN(y)) years.add(y);
       }
     });
+    (this.expenses || []).forEach(e => {
+      if (e.date) {
+        const y = parseInt(e.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    (this.rawMaterialsPurchases || []).forEach(p => {
+      if (p.date) {
+        const y = parseInt(p.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    (this.packingBatches || []).forEach(b => {
+      if (b.date) {
+        const y = parseInt(b.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
     return Array.from(years).sort((a, b) => b - a);
   },
 
@@ -452,11 +474,24 @@ window.Reports = {
     this.loadTabContent();
   },
 
+  onRawCategoryChange(val) {
+    this.selectedRawCategory = val;
+    this.loadTabContent();
+  },
+
+  onCartonChange(val) {
+    this.selectedCartonId = val;
+    this.loadTabContent();
+  },
+
   isFilteredFromCurrent() {
     const today = new Date().toISOString().slice(0, 10);
     if (this.periodType === 'custom') return true;
     if (this.periodType !== 'daily') return true;
     if (this.selectedDate && this.selectedDate !== today) return true;
+    if (this.currentTab === 'cars' && this.selectedCarId) return true;
+    if (this.currentTab === 'raw' && this.selectedRawCategory) return true;
+    if (this.currentTab === 'inventory' && this.selectedCartonId) return true;
     return false;
   },
 
@@ -466,32 +501,26 @@ window.Reports = {
     this.selectedDate = today;
     this.startDate = today;
     this.endDate = today;
+    this.selectedCarId = '';
+    this.selectedRawCategory = '';
+    this.selectedCartonId = '';
     this.loadTabContent();
   },
 
   updateResetButtons() {
-    const wrapCars = document.getElementById('rpt-cars-reset-wrap');
-    if (wrapCars) {
-      wrapCars.innerHTML = this.isFilteredFromCurrent() ? `
+    const wraps = ['rpt-cars-reset-wrap', 'rpt-raw-reset-wrap', 'rpt-inventory-reset-wrap', 'rpt-finance-reset-wrap'];
+    wraps.forEach(id => {
+      const wrap = document.getElementById(id);
+      if (!wrap) return;
+      wrap.innerHTML = this.isFilteredFromCurrent() ? `
         <button type="button" onclick="Reports.resetToCurrent()" 
-                class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
-                title="Go back to current (Today)">
+                class="w-[34px] h-[34px] rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0" 
+                title="Reset to current (Today)">
           <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
         </button>
       ` : '';
-      if (window.lucide) lucide.createIcons({ root: wrapCars });
-    }
-    const wrapFin = document.getElementById('rpt-finance-reset-wrap');
-    if (wrapFin) {
-      wrapFin.innerHTML = this.isFilteredFromCurrent() ? `
-        <button type="button" onclick="Reports.resetToCurrent()" 
-                class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
-                title="Go back to current (Today)">
-          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
-        </button>
-      ` : '';
-      if (window.lucide) lucide.createIcons({ root: wrapFin });
-    }
+      if (window.lucide) lucide.createIcons({ root: wrap });
+    });
   },
 
   onDateChange(val) {
@@ -530,24 +559,141 @@ window.Reports = {
   // TAB 2: RAW MATERIALS STOCK & BALANCE
   // -------------------------------------------------------------
   async renderRawReport(container) {
-    const rawList = await window.api.getRawMaterials() || [];
-    this.rawMaterials = rawList;
+    const rawListAll = await window.api.getRawMaterials() || [];
+    const purchasesAll = await window.api.getRawMaterialPurchases() || [];
+    this.rawMaterials = rawListAll;
+    this.rawMaterialsPurchases = purchasesAll;
+
+    // Filter purchases by period
+    let filteredPurchases = purchasesAll;
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filteredPurchases = purchasesAll.filter(p => p.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
+      if (this.endDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
+    }
+
+    // Purchases mapped by material
+    const purchasesByMaterial = {};
+    let totalPurchasedCostInPeriod = 0;
+    filteredPurchases.forEach(p => {
+      const mid = p.material_id;
+      if (!purchasesByMaterial[mid]) purchasesByMaterial[mid] = { qty: 0, cost: 0, count: 0 };
+      purchasesByMaterial[mid].qty += (p.quantity || 0);
+      purchasesByMaterial[mid].cost += (p.total_price || 0);
+      purchasesByMaterial[mid].count += 1;
+      totalPurchasedCostInPeriod += (p.total_price || 0);
+    });
+
+    // Categories
+    const categories = [...new Set(rawListAll.map(m => m.category).filter(Boolean))].sort();
+
+    // Filter materials by selected category
+    let rawList = rawListAll;
+    if (this.selectedRawCategory) {
+      rawList = rawList.filter(m => m.category === this.selectedRawCategory);
+    }
 
     let totalValuation = 0;
     let lowStockCount = 0;
-
     rawList.forEach(m => {
-      totalValuation += (m.total_value || 0);
+      totalValuation += (m.total_value || (m.current_stock * m.cost_price) || 0);
       if (m.current_stock <= m.min_stock_alert) lowStockCount++;
     });
 
     container.innerHTML = `
-      <!-- Top Action Bar -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
-        <div>
-          <h3 class="font-black text-sm text-slate-900">Raw Materials Inventory &amp; Remaining Balance</h3>
-          <p class="text-[11px] text-slate-500 font-medium">Clear breakdown of what raw material is left behind in factory stock and current financial valuation.</p>
+      <!-- Filter Controls -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-end gap-3 flex-wrap">
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Filter Category</label>
+            <select id="rpt-raw-cat-select" onchange="Reports.onRawCategoryChange(this.value)"
+                    class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none h-[34px] cursor-pointer">
+              <option value="">-- All Categories --</option>
+              ${categories.map(cat => `
+                <option value="${cat}" ${this.selectedRawCategory === cat ? 'selected' : ''}>${cat}</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Period</label>
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
+              <button type="button" onclick="Reports.setPeriod('daily')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Daily
+              </button>
+              <button type="button" onclick="Reports.setPeriod('monthly')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Monthly
+              </button>
+              <button type="button" onclick="Reports.setPeriod('annual')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Annual
+              </button>
+              <button type="button" onclick="Reports.setPeriod('custom')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Custom Range
+              </button>
+              <button type="button" onclick="Reports.setPeriod('all')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                All Time
+              </button>
+            </div>
+          </div>
+
+          ${this.periodType !== 'all' ? `
+            <div>
+              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
+              </label>
+              ${this.periodType === 'custom' ? `
+                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
+                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <input type="date" id="rpt-raw-start-date" value="${this.startDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('start', this.value)"
+                         oninput="Reports.onCustomDateChange('start', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <input type="date" id="rpt-raw-end-date" value="${this.endDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('end', this.value)"
+                         oninput="Reports.onCustomDateChange('end', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                </div>
+              ` : this.periodType === 'annual' ? `
+                <select id="rpt-raw-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
+                  ${this.getAvailableYears().map(y => `
+                    <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
+                  `).join('')}
+                </select>
+              ` : `
+                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" id="rpt-raw-date-input"
+                       value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
+                       onchange="Reports.onDateChange(this.value)"
+                       oninput="Reports.onDateChange(this.value)"
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
+              `}
+            </div>
+          ` : ''}
+
+          <!-- Red Cross Reset to Current Date/Period -->
+          <div id="rpt-raw-reset-wrap" class="shrink-0 flex items-center h-[34px]">
+            ${this.isFilteredFromCurrent() ? `
+              <button type="button" onclick="Reports.resetToCurrent()" 
+                      class="w-[34px] h-[34px] rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0" 
+                      title="Reset to current (Today)">
+                <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+              </button>
+            ` : ''}
+          </div>
         </div>
+
         <button type="button" onclick="Reports.printRawReport()"
                 class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer">
           <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Report
@@ -555,17 +701,23 @@ window.Reports = {
       </div>
 
       <!-- KPI Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
           <p class="text-[10px] font-black uppercase text-slate-400">Total Registered Materials</p>
           <h3 class="text-xl font-black text-slate-900 mt-1">${rawList.length} Items</h3>
-          <p class="text-[11px] font-bold text-slate-400 mt-0.5">Milk, Sugar, Sticks, Wrappers, Cartons</p>
+          <p class="text-[11px] font-bold text-slate-400 mt-0.5">${this.selectedRawCategory ? `Filtered by ${this.selectedRawCategory}` : 'All categories'}</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Total Stock Valuation</p>
+          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Stock Valuation</p>
           <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalValuation).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Total Value at Purchase Cost</p>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Current Stock at Cost</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Purchases in Period</p>
+          <h3 class="text-xl font-black text-blue-700 mt-1">Rs. ${Math.round(totalPurchasedCostInPeriod).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${filteredPurchases.length} POs (${this.formatPeriodDate(this.selectedDate)})</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
@@ -584,6 +736,7 @@ window.Reports = {
                 <th class="py-2 px-3 border-r border-slate-200">Material Name</th>
                 <th class="py-2 px-3 border-r border-slate-200">Category</th>
                 <th class="py-2 px-2 text-center border-r border-slate-200">Unit</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Inward / Purchased (Period)</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Remaining Stock Balance</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Total Value (Rs.)</th>
@@ -593,11 +746,18 @@ window.Reports = {
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${rawList.map(m => {
                 const isLow = m.current_stock <= m.min_stock_alert;
+                const pur = purchasesByMaterial[m.id];
                 return `
                   <tr class="hover:bg-slate-50/70 transition-colors">
                     <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${m.name}</td>
                     <td class="py-1.5 px-3 text-slate-500 text-xs border-r border-slate-200">${m.category}</td>
                     <td class="py-1.5 px-2 text-center font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
+                    <td class="py-1.5 px-3 text-right tabular-nums border-r border-slate-200">
+                      ${pur && pur.qty > 0 ? `
+                        <span class="font-black text-blue-700">+${pur.qty} <span class="text-[10px] text-blue-500">${m.unit}</span></span>
+                        <div class="text-[10px] font-bold text-slate-400">Rs. ${Math.round(pur.cost).toLocaleString()}</div>
+                      ` : '<span class="text-slate-400 font-normal">None in period</span>'}
+                    </td>
                     <td class="py-1.5 px-3 text-right font-black text-xs text-slate-900 tabular-nums border-r border-slate-200">
                       ${m.current_stock} <span class="text-[10px] text-slate-400 font-bold">${m.unit}</span>
                     </td>
@@ -630,11 +790,59 @@ window.Reports = {
   // TAB 3: FINISHED GOODS WAREHOUSE INVENTORY
   // -------------------------------------------------------------
   async renderInventoryReport(container) {
-    const cartons = await window.api.getPackedCartons() || [];
+    const cartonsAll = await window.api.getPackedCartons() || [];
+    const packingBatchesAll = await window.api.getPackingBatches() || [];
+    const deliveriesAll = await window.api.getShopDeliveries() || [];
     const singleItems = await window.api.getIcecreamItems() || [];
     const cars = await window.api.getCars() || [];
-    this.packedCartons = cartons;
+    this.packedCartons = cartonsAll;
+    this.packingBatches = packingBatchesAll;
     this.singleItems = singleItems;
+
+    // Filter packing batches and deliveries by period
+    let filteredPacking = packingBatchesAll;
+    let filteredDeliveries = deliveriesAll;
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filteredPacking = packingBatchesAll.filter(p => p.date === this.selectedDate);
+      filteredDeliveries = deliveriesAll.filter(d => d.date === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filteredPacking = packingBatchesAll.filter(p => p.date && p.date.startsWith(ym));
+      filteredDeliveries = deliveriesAll.filter(d => d.date && d.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filteredPacking = packingBatchesAll.filter(p => p.date && p.date.startsWith(y));
+      filteredDeliveries = deliveriesAll.filter(d => d.date && d.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) {
+        filteredPacking = filteredPacking.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
+        filteredDeliveries = filteredDeliveries.filter(d => (d.date || '').slice(0, 10) >= this.startDate);
+      }
+      if (this.endDate) {
+        filteredPacking = filteredPacking.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
+        filteredDeliveries = filteredDeliveries.filter(d => (d.date || '').slice(0, 10) <= this.endDate);
+      }
+    }
+
+    // Packed in period map
+    const packedByCarton = {};
+    let totalPackedInPeriod = 0;
+    filteredPacking.forEach(p => {
+      const cid = p.carton_id;
+      packedByCarton[cid] = (packedByCarton[cid] || 0) + (p.cartons_packed || 0);
+      totalPackedInPeriod += (p.cartons_packed || 0);
+    });
+
+    // Delivered in period
+    let totalDeliveredInPeriod = 0;
+    filteredDeliveries.forEach(d => {
+      totalDeliveredInPeriod += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
+    });
+
+    let cartons = cartonsAll;
+    if (this.selectedCartonId) {
+      cartons = cartons.filter(c => String(c.id) === String(this.selectedCartonId));
+    }
 
     let totalWarehouseCartons = 0;
     let totalSaleValuation = 0;
@@ -650,16 +858,100 @@ window.Reports = {
     let totalCartonsInCars = 0;
     for (const car of cars) {
       const inv = await window.api.getCarInventory(car.id) || [];
-      inv.forEach(i => { totalCartonsInCars += (i.cartons_loaded || 0); });
+      inv.forEach(i => {
+        if (!this.selectedCartonId || String(i.carton_id) === String(this.selectedCartonId)) {
+          totalCartonsInCars += (i.cartons_loaded || 0);
+        }
+      });
     }
 
     container.innerHTML = `
-      <!-- Action Bar -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex justify-between items-center gap-3">
-        <div>
-          <h3 class="font-black text-sm text-slate-900">Finished Goods &amp; Ready Warehouse Inventory</h3>
-          <p class="text-[11px] text-slate-500 font-medium">Ready packed cartons in factory warehouse and loaded inside delivery vehicles.</p>
+      <!-- Filter Controls -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-end gap-3 flex-wrap">
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Filter Carton</label>
+            <select id="rpt-carton-select" onchange="Reports.onCartonChange(this.value)"
+                    class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none h-[34px] cursor-pointer">
+              <option value="">-- All Packed Cartons --</option>
+              ${cartonsAll.map(c => `
+                <option value="${c.id}" ${String(this.selectedCartonId) === String(c.id) ? 'selected' : ''}>${c.carton_name}</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Period</label>
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
+              <button type="button" onclick="Reports.setPeriod('daily')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Daily
+              </button>
+              <button type="button" onclick="Reports.setPeriod('monthly')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Monthly
+              </button>
+              <button type="button" onclick="Reports.setPeriod('annual')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Annual
+              </button>
+              <button type="button" onclick="Reports.setPeriod('custom')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                Custom Range
+              </button>
+              <button type="button" onclick="Reports.setPeriod('all')"
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                All Time
+              </button>
+            </div>
+          </div>
+
+          ${this.periodType !== 'all' ? `
+            <div>
+              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
+              </label>
+              ${this.periodType === 'custom' ? `
+                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
+                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <input type="date" id="rpt-inv-start-date" value="${this.startDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('start', this.value)"
+                         oninput="Reports.onCustomDateChange('start', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <input type="date" id="rpt-inv-end-date" value="${this.endDate || this.selectedDate}" 
+                         onchange="Reports.onCustomDateChange('end', this.value)"
+                         oninput="Reports.onCustomDateChange('end', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                </div>
+              ` : this.periodType === 'annual' ? `
+                <select id="rpt-inv-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
+                  ${this.getAvailableYears().map(y => `
+                    <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
+                  `).join('')}
+                </select>
+              ` : `
+                <input type="${this.periodType === 'monthly' ? 'month' : 'date'}" id="rpt-inv-date-input"
+                       value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
+                       onchange="Reports.onDateChange(this.value)"
+                       oninput="Reports.onDateChange(this.value)"
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
+              `}
+            </div>
+          ` : ''}
+
+          <!-- Red Cross Reset to Current Date/Period -->
+          <div id="rpt-inventory-reset-wrap" class="shrink-0 flex items-center h-[34px]">
+            ${this.isFilteredFromCurrent() ? `
+              <button type="button" onclick="Reports.resetToCurrent()" 
+                      class="w-[34px] h-[34px] rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0" 
+                      title="Reset to current (Today)">
+                <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+              </button>
+            ` : ''}
+          </div>
         </div>
+
         <button type="button" onclick="Reports.printInventoryReport()"
                 class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer">
           <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Report
@@ -667,7 +959,7 @@ window.Reports = {
       </div>
 
       <!-- KPI Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
           <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Cartons</p>
           <h3 class="text-xl font-black text-slate-900 mt-1">${totalWarehouseCartons} Cartons</h3>
@@ -681,9 +973,15 @@ window.Reports = {
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Cost Value</p>
-          <h3 class="text-xl font-black text-slate-900 mt-1">Rs. ${Math.round(totalCostValuation).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-slate-400 mt-0.5">Production Cost</p>
+          <p class="text-[10px] font-black uppercase text-slate-400">Packed in Period</p>
+          <h3 class="text-xl font-black text-emerald-700 mt-1">${totalPackedInPeriod} Cartons</h3>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">${filteredPacking.length} batches (${this.formatPeriodDate(this.selectedDate)})</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Dispatched in Period</p>
+          <h3 class="text-xl font-black text-amber-700 mt-1">${totalDeliveredInPeriod} Cartons</h3>
+          <p class="text-[11px] font-bold text-amber-600 mt-0.5">Delivered to Shops</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
@@ -706,6 +1004,7 @@ window.Reports = {
               <tr>
                 <th class="py-2 px-3 border-r border-slate-200">Product / Carton Name</th>
                 <th class="py-2 px-2 text-center border-r border-slate-200">Pcs / Ctn</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Packed in Period</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Carton Cost (Rs.)</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Sale Price (Rs.)</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Margin / Ctn</th>
@@ -717,10 +1016,16 @@ window.Reports = {
               ${cartons.map(c => {
                 const margin = (c.carton_sale_price || 0) - (c.carton_cost_price || 0);
                 const stockWorth = (c.factory_carton_stock || 0) * (c.carton_sale_price || 0);
+                const packed = packedByCarton[c.id] || 0;
                 return `
                   <tr class="hover:bg-slate-50/70 transition-colors">
                     <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${c.carton_name}</td>
                     <td class="py-1.5 px-2 text-center font-bold text-purple-700 border-r border-slate-200 text-xs">${c.pieces_per_carton} pcs</td>
+                    <td class="py-1.5 px-3 text-right tabular-nums border-r border-slate-200">
+                      ${packed > 0 ? `
+                        <span class="font-black text-emerald-700">+${packed} <span class="text-[10px] text-emerald-600">ctns</span></span>
+                      ` : '<span class="text-slate-400 font-normal">0 ctns</span>'}
+                    </td>
                     <td class="py-1.5 px-3 text-right text-slate-600 border-r border-slate-200 text-xs">Rs. ${c.carton_cost_price}</td>
                     <td class="py-1.5 px-3 text-right font-black text-slate-900 border-r border-slate-200 text-xs">Rs. ${c.carton_sale_price}</td>
                     <td class="py-1.5 px-3 text-right font-bold text-emerald-700 border-r border-slate-200 text-xs">+Rs. ${margin}</td>
@@ -795,10 +1100,10 @@ window.Reports = {
     container.innerHTML = `
       <!-- Filters -->
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex items-end gap-3 flex-wrap">
           <div>
             <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Financial Period</label>
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
               <button type="button" onclick="Reports.setPeriod('daily')"
                       class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
                 Daily
@@ -828,7 +1133,7 @@ window.Reports = {
                 ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
               ${this.periodType === 'custom' ? `
-                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl">
+                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
                   <span class="text-[10px] font-black uppercase text-slate-400">From</span>
                   <input type="date" id="rpt-finance-start-date" value="${this.startDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('start', this.value)"
@@ -841,7 +1146,7 @@ window.Reports = {
                          class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
                 </div>
               ` : this.periodType === 'annual' ? `
-                <select id="rpt-finance-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                <select id="rpt-finance-date-input" onchange="Reports.onDateChange(this.value)" oninput="Reports.onDateChange(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
                   ${this.getAvailableYears().map(y => `
                     <option value="${y}" ${String(this.selectedDate || '').startsWith(String(y)) ? 'selected' : ''}>${y}</option>
                   `).join('')}
@@ -851,17 +1156,17 @@ window.Reports = {
                        value="${this.periodType === 'monthly' ? this.selectedDate.slice(0, 7) : this.selectedDate}"
                        onchange="Reports.onDateChange(this.value)"
                        oninput="Reports.onDateChange(this.value)"
-                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none cursor-pointer h-[34px]">
               `}
             </div>
           ` : ''}
 
           <!-- Red Cross Reset to Current Date/Period -->
-          <div id="rpt-finance-reset-wrap" class="shrink-0 flex items-center">
+          <div id="rpt-finance-reset-wrap" class="shrink-0 flex items-center h-[34px]">
             ${this.isFilteredFromCurrent() ? `
               <button type="button" onclick="Reports.resetToCurrent()" 
-                      class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95" 
-                      title="Go back to current (Today)">
+                      class="w-[34px] h-[34px] rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0" 
+                      title="Reset to current (Today)">
                 <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
               </button>
             ` : ''}
@@ -1126,9 +1431,12 @@ window.Reports = {
 
   async printRawReport() {
     const s = this.settings;
-    const rawList = await window.api.getRawMaterials() || [];
+    let rawList = await window.api.getRawMaterials() || [];
+    if (this.selectedRawCategory) {
+      rawList = rawList.filter(m => m.category === this.selectedRawCategory);
+    }
     let totalVal = 0;
-    rawList.forEach(m => totalVal += (m.total_value || 0));
+    rawList.forEach(m => totalVal += (m.total_value || (m.current_stock * m.cost_price) || 0));
 
     const html = `
       <div class="a5-container">
@@ -1144,11 +1452,11 @@ window.Reports = {
         <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
             <div><strong>Factory Stage:</strong> Stage 1: Raw Materials Inventory</div>
-            <div><strong>Total Materials:</strong> ${rawList.length} Items</div>
+            <div><strong>Category:</strong> ${this.selectedRawCategory || 'All Categories'} (${rawList.length} Items)</div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Report Date:</strong> ${app.formatDateTime(new Date())}</div>
-            <div><strong>Valuation Method:</strong> Purchase Cost Average</div>
+            <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
+            <div><strong>Printed On:</strong> ${app.formatDateTime(new Date())}</div>
           </div>
         </div>
 
@@ -1197,7 +1505,10 @@ window.Reports = {
 
   async printInventoryReport() {
     const s = this.settings;
-    const cartons = await window.api.getPackedCartons() || [];
+    let cartons = await window.api.getPackedCartons() || [];
+    if (this.selectedCartonId) {
+      cartons = cartons.filter(c => String(c.id) === String(this.selectedCartonId));
+    }
     let totalStock = 0;
     let totalWorth = 0;
 
@@ -1220,11 +1531,11 @@ window.Reports = {
         <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
             <div><strong>Inventory Location:</strong> Main Cold Storage Warehouse</div>
-            <div><strong>Catalog Variants:</strong> ${cartons.length} Products</div>
+            <div><strong>Carton:</strong> ${this.selectedCartonId && cartons[0] ? cartons[0].carton_name : `All Cartons (${cartons.length} Products)`}</div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Report Date:</strong> ${app.formatDateTime(new Date())}</div>
-            <div><strong>Status:</strong> Ready Packed Cartons</div>
+            <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
+            <div><strong>Printed On:</strong> ${app.formatDateTime(new Date())}</div>
           </div>
         </div>
 

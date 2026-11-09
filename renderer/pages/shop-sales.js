@@ -244,6 +244,8 @@ window.ShopSales = {
       this.receivedAmount = totalAmount;
     } else if (this.items.length === 0) {
       this.receivedAmount = 0;
+    } else if (this.receivedAmount > totalAmount) {
+      this.receivedAmount = totalAmount;
     }
     const previousBalance = activeShop ? Number(activeShop.amount || 0) : 0;
     const remainingBill = Math.max(0, totalAmount - (Number(this.receivedAmount) || 0));
@@ -540,8 +542,12 @@ window.ShopSales = {
               <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider mb-0.5">Received</span>
               <div class="flex items-center gap-1.5">
                 <span class="text-xs font-black text-slate-400">Rs.</span>
-                <input type="number" min="0" max="${totalAmount}" step="any" id="ss-received-input" value="${this.receivedAmount}" oninput="ShopSales.onReceivedChange(this.value)" placeholder="0"
-                       class="w-24 px-2.5 py-0.5 text-right font-black text-sm rounded-lg outline-none tabular-nums bg-white border-2 transition-all ${this.receivedAmount > totalAmount ? 'border-rose-400 text-rose-600 focus:ring-1 focus:ring-rose-200' : 'border-emerald-500 text-emerald-700 focus:ring-1 focus:ring-emerald-200'}">
+                <input type="number" min="0" max="${totalAmount}" step="any" id="ss-received-input" value="${this.receivedAmount}"
+                       oninput="ShopSales.onReceivedChange(this.value)"
+                       onchange="ShopSales.onReceivedChange(this.value)"
+                       onblur="if (!this.value) { this.value = ShopSales.receivedAmount; }"
+                       placeholder="0"
+                       class="w-24 px-2.5 py-0.5 text-right font-black text-sm rounded-lg outline-none tabular-nums bg-white border-2 transition-all border-emerald-500 text-emerald-700 focus:ring-1 focus:ring-emerald-200">
               </div>
             </div>
 
@@ -563,8 +569,8 @@ window.ShopSales = {
 
           <!-- Complete Sale Button -->
           <button type="button" id="ss-submit-btn" onclick="ShopSales.submitSaleAndPrint()"
-                  ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'disabled' : ''}
-                  class="px-5 py-2.5 ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
+                  ${this.items.length === 0 ? 'disabled' : ''}
+                  class="px-5 py-2.5 ${this.items.length === 0 ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
             <i data-lucide="printer" class="w-4 h-4"></i>
             <span>Complete Sale &amp; Print Bill</span>
           </button>
@@ -1425,7 +1431,30 @@ window.ShopSales = {
 
   onReceivedChange(val) {
     this.isReceivedManuallyEdited = true;
-    this.receivedAmount = Number(val) || 0;
+    let subtotal = 0;
+    this.items.forEach(it => {
+      subtotal += (Number(it.line_total) || 0);
+    });
+    const netTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+
+    if (val === '' || val === null || val === undefined) {
+      this.receivedAmount = 0;
+      this.updateFinancialSummary();
+      return;
+    }
+
+    let amt = Number(val);
+    if (isNaN(amt) || amt < 0) {
+      amt = 0;
+    }
+    if (amt > netTotal) {
+      amt = netTotal;
+      const recvInput = document.getElementById('ss-received-input');
+      if (recvInput) {
+        recvInput.value = netTotal;
+      }
+    }
+    this.receivedAmount = amt;
     this.updateFinancialSummary();
   },
 
@@ -1459,6 +1488,8 @@ window.ShopSales = {
       this.receivedAmount = 0;
     } else if (!this.isReceivedManuallyEdited) {
       this.receivedAmount = netTotal;
+    } else if (this.receivedAmount > netTotal) {
+      this.receivedAmount = netTotal;
     }
     const remainingBill = Math.max(0, netTotal - (Number(this.receivedAmount) || 0));
     const activeShop = this.shops.find(s => s.id === this.selectedShopId);
@@ -1485,25 +1516,19 @@ window.ShopSales = {
     }
 
     const recvInput = document.getElementById('ss-received-input');
-    const isOver = this.receivedAmount > netTotal;
     if (recvInput) {
       recvInput.max = netTotal;
-      if (!this.isReceivedManuallyEdited || this.items.length === 0) {
+      if (!this.isReceivedManuallyEdited || this.items.length === 0 || Number(recvInput.value) > netTotal) {
         recvInput.value = this.receivedAmount;
       }
-      if (isOver) {
-        recvInput.classList.add('border-rose-400', 'text-rose-600', 'bg-rose-50/50');
-        recvInput.classList.remove('border-emerald-500', 'text-emerald-700', 'bg-emerald-50/30');
-      } else {
-        recvInput.classList.remove('border-rose-400', 'text-rose-600', 'bg-rose-50/50');
-        recvInput.classList.add('border-emerald-500', 'text-emerald-700', 'bg-emerald-50/30');
-      }
+      recvInput.classList.remove('border-rose-400', 'text-rose-600', 'bg-rose-50/50');
+      recvInput.classList.add('border-emerald-500', 'text-emerald-700', 'bg-emerald-50/30');
     }
 
     const submitBtn = document.getElementById('ss-submit-btn');
     const hasItems = this.items.length > 0;
     if (submitBtn) {
-      if (!hasItems || isOver) {
+      if (!hasItems) {
         submitBtn.disabled = true;
         submitBtn.className = 'px-6 py-2.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
       } else {

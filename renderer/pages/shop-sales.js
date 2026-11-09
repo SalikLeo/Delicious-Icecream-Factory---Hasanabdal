@@ -12,6 +12,7 @@ window.ShopSales = {
   highlightedSearchIndex: 0,
   discount: 0,
   receivedAmount: 0,
+  isReceivedManuallyEdited: false,
   paymentMethod: 'Cash',
   currentReturnDelivery: null,
   returnDestination: 'car', // 'car' | 'stock'
@@ -239,6 +240,11 @@ window.ShopSales = {
     });
 
     const totalAmount = Math.max(0, subtotal - (Number(this.discount) || 0));
+    if (!this.isReceivedManuallyEdited && this.items.length > 0) {
+      this.receivedAmount = totalAmount;
+    } else if (this.items.length === 0) {
+      this.receivedAmount = 0;
+    }
     const previousBalance = activeShop ? Number(activeShop.amount || 0) : 0;
     const remainingBill = Math.max(0, totalAmount - (Number(this.receivedAmount) || 0));
     const netShopBalance = previousBalance + remainingBill;
@@ -1418,6 +1424,7 @@ window.ShopSales = {
   },
 
   onReceivedChange(val) {
+    this.isReceivedManuallyEdited = true;
     this.receivedAmount = Number(val) || 0;
     this.updateFinancialSummary();
   },
@@ -1447,6 +1454,12 @@ window.ShopSales = {
     });
 
     const netTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+    if (this.items.length === 0) {
+      this.isReceivedManuallyEdited = false;
+      this.receivedAmount = 0;
+    } else if (!this.isReceivedManuallyEdited) {
+      this.receivedAmount = netTotal;
+    }
     const remainingBill = Math.max(0, netTotal - (Number(this.receivedAmount) || 0));
     const activeShop = this.shops.find(s => s.id === this.selectedShopId);
     const previousBalance = Number(activeShop?.amount) || 0;
@@ -1475,6 +1488,9 @@ window.ShopSales = {
     const isOver = this.receivedAmount > netTotal;
     if (recvInput) {
       recvInput.max = netTotal;
+      if (!this.isReceivedManuallyEdited || this.items.length === 0) {
+        recvInput.value = this.receivedAmount;
+      }
       if (isOver) {
         recvInput.classList.add('border-rose-400', 'text-rose-600', 'bg-rose-50/50');
         recvInput.classList.remove('border-emerald-500', 'text-emerald-700', 'bg-emerald-50/30');
@@ -1501,6 +1517,7 @@ window.ShopSales = {
     this.items = [];
     this.discount = 0;
     this.receivedAmount = 0;
+    this.isReceivedManuallyEdited = false;
     this.paymentMethod = 'Cash';
     this.selectedShopId = null;
     this.renderUI();

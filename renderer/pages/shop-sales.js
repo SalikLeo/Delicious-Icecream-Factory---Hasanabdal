@@ -2010,7 +2010,24 @@ window.ShopSales = {
       return;
     }
 
+    const previousBalance = activeShop ? Number(activeShop.amount || 0) : 0;
+    const date = new Date().toISOString().split('T')[0];
+    let invoiceNo;
+    if (window.api && window.api.getNextDeliveryInvoiceNo) {
+      try {
+        invoiceNo = await window.api.getNextDeliveryInvoiceNo(date);
+      } catch (err) {
+        console.warn('getNextDeliveryInvoiceNo failed', err);
+      }
+    }
+    if (!invoiceNo) {
+      const todayStr = date.replace(/-/g, '');
+      const countToday = (this.deliveries || []).filter(d => d.date === date).length + 1;
+      invoiceNo = `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    }
+
     const payload = {
+      invoice_no: invoiceNo,
       shop_id: this.selectedShopId || null,
       shop_name: shopName,
       shop_phone: activeShop?.phone || '',
@@ -2023,27 +2040,61 @@ window.ShopSales = {
       items: validItems
     };
 
-    const res = await window.api.saveShopDelivery(payload);
-    if (res && res.success) {
-      app.playBeep('success');
-      app.showToast(`Delivery Invoice ${res.invoice_no} completed!`, 'success');
-      // Generate & preview A5 invoice immediately
-      await this.printA5Invoice(res.id);
-      this.resetForm();
-      await this.loadData();
-    } else {
-      app.showAlert({ title: 'Error Saving Sale', message: res.error || 'Failed to record delivery.' });
-    }
+    const draftDelivery = {
+      invoice_no: invoiceNo,
+      date,
+      created_at: new Date().toISOString(),
+      car_number: activeCar ? activeCar.car_number : 'Direct Warehouse',
+      driver_name: activeCar ? activeCar.driver_name : 'N/A',
+      shop_name: shopName,
+      shop_phone: activeShop?.phone || 'Walk-in',
+      shop_address: activeShop?.address || 'Hasan Abdal',
+      payment_method: this.paymentMethod || 'Cash',
+      notes,
+      subtotal,
+      discount: this.discount,
+      total_amount: netBillTotal,
+      received_amount: this.receivedAmount,
+      remaining_balance: Math.max(0, netBillTotal - (this.receivedAmount || 0)),
+      previous_balance: previousBalance,
+      items: validItems.map(it => ({
+        ...it,
+        returned_cartons: 0,
+        pieces_per_carton: it.pieces_per_carton || 1
+      }))
+    };
+
+    const previewHtml = this.generateA5InvoiceHtml(draftDelivery);
+
+    app.showA5Preview(previewHtml, `Confirm Delivery Invoice - ${invoiceNo}`, {
+      confirmText: 'Save & Print Invoice',
+      subtitle: 'CONFIRM INVOICE DETAILS BEFORE FINAL RECORDING (A5 FORMAT)',
+      onConfirm: async () => {
+        const res = await window.api.saveShopDelivery(payload);
+        if (res && res.success) {
+          app.playBeep('success');
+          app.showToast(`Delivery Invoice ${res.invoice_no} saved successfully!`, 'success');
+          const savedDelivery = await window.api.getShopDelivery(res.id);
+          const finalHtml = this.generateA5InvoiceHtml(savedDelivery || { ...draftDelivery, invoice_no: res.invoice_no });
+          await app.printA5Document(finalHtml, `Delivery Invoice - ${res.invoice_no}`);
+          this.resetForm();
+          await this.loadData();
+        } else {
+          app.showAlert({ title: 'Error Saving Sale', message: res?.error || 'Failed to record delivery.' });
+        }
+      },
+      onDiscard: () => {
+        app.showToast('Delivery invoice not saved. You can continue editing.', 'info');
+      }
+    });
   },
 
   async printDeliveryInvoice(deliveryId) {
     return this.printA5Invoice(deliveryId);
   },
 
-  async printA5Invoice(deliveryId) {
-    const delivery = await window.api.getShopDelivery(deliveryId);
-    if (!delivery) return;
-
+  generateA5InvoiceHtml(delivery) {
+    if (!delivery) return '';
     const settings = app.settings || {};
     const company = settings.company_name || 'Delicious Superstar Foods';
     const phone = settings.phone || '0315-6795995';
@@ -2051,10 +2102,10 @@ window.ShopSales = {
     const tagline = settings.tagline || 'Delicious Superstar Foods & Ice Cream Products';
 
     const items = delivery.items || [];
-    const totalDelivered = items.reduce((sum, it) => sum + it.delivered_cartons, 0);
-    const totalReturned = items.reduce((sum, it) => sum + it.returned_cartons, 0);
+    const totalDelivered = items.reduce((sum, it) => sum + (Number(it.delivered_cartons) || 0), 0);
+    const totalReturned = items.reduce((sum, it) => sum + (Number(it.returned_cartons) || 0), 0);
 
-    const html = `
+    return `
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 2px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 10px;">
         
         <!-- Factory Header -->
@@ -2107,9 +2158,9 @@ window.ShopSales = {
                   <span style="font-weight: 800;">${it.carton_name}</span>
                   ${it.returned_cartons > 0 ? `<span style="font-size: 8.5px; font-weight: 500; display: block;">(Ret: ${it.returned_cartons} ctns ${it.return_destination === 'car' ? 'kept in car' : 'sent to stock'})</span>` : ''}
                 </td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.pieces_per_carton} pcs</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.ordered_cartons}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: 800; font-size: 9.5px; color: #000;">${it.delivered_cartons}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.pieces_per_carton || 1} pcs</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.ordered_cartons || it.delivered_cartons || 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: 800; font-size: 9.5px; color: #000;">${it.delivered_cartons || 1}</td>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: ${it.returned_cartons > 0 ? '800' : '400'}; font-size: 9.5px; color: #000;">${it.returned_cartons || 0}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.carton_price}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.line_total).toLocaleString()}</td>
@@ -2181,7 +2232,12 @@ window.ShopSales = {
         </div>
       </div>
     `;
+  },
 
+  async printA5Invoice(deliveryId) {
+    const delivery = await window.api.getShopDelivery(deliveryId);
+    if (!delivery) return;
+    const html = this.generateA5InvoiceHtml(delivery);
     app.showA5Preview(html, `Delivery Invoice - ${delivery.invoice_no} (A5)`);
   },
 

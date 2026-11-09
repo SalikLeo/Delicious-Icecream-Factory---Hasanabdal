@@ -137,6 +137,7 @@ contextBridge.exposeInMainWorld('api', {
   deleteCarLoadingBatch: (id) => ipcRenderer.invoke('delete-car-loading-batch', id),
 
   // Stage 5: Shop Deliveries, Sales & Returns
+  getNextDeliveryInvoiceNo: (date) => ipcRenderer.invoke('get-next-delivery-invoice-no', date),
   saveShopDelivery: (data) => ipcRenderer.invoke('save-shop-delivery', data),
   processShopReturn: (data) => ipcRenderer.invoke('process-shop-return', data),
   getShopDeliveries: (filters) => ipcRenderer.invoke('get-shop-deliveries', filters),

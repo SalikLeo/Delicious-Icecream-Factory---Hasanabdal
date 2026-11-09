@@ -3462,6 +3462,13 @@ function deleteCarLoadingBatch(id) {
   }
 }
 
+function getNextDeliveryInvoiceNo(customDate) {
+  const date = customDate || new Date().toISOString().split('T')[0];
+  const todayStr = date.replace(/-/g, '');
+  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_deliveries WHERE date = ?').get(date).c + 1;
+  return `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
+}
+
 // --- STAGE 5: SHOP DELIVERIES, SALES & RETURNS ---
 function saveShopDelivery(data) {
   if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
@@ -3477,7 +3484,7 @@ function saveShopDelivery(data) {
   const date = data.date || new Date().toISOString().split('T')[0];
   const todayStr = date.replace(/-/g, '');
   const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_deliveries WHERE date = ?').get(date).c + 1;
-  const invoiceNo = `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
+  const invoiceNo = data.invoice_no || `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
 
   const discount = Number(data.discount) || 0;
   const receivedAmount = Number(data.received_amount) || 0;
@@ -4090,7 +4097,7 @@ module.exports = {
   // Stage 4: Cars & Delivery Loading
   getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch, deleteCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns
-  saveShopDelivery, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
+  saveShopDelivery, getNextDeliveryInvoiceNo, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
   processShopReturn, getShopReturns, getShopReturn,
 
   init, getDbPath, getDbPathForBranch, close, backupDatabase, clearAllData,

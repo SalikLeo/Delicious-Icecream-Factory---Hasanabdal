@@ -1245,6 +1245,10 @@ const app = {
   },
 
   closePreview() {
+    const onDiscard = this.previewOnDiscard;
+    this.previewOnConfirm = null;
+    this.previewOnDiscard = null;
+
     const modal = document.getElementById('preview-modal');
     if (modal) {
       modal.classList.add('hidden');
@@ -1252,6 +1256,10 @@ const app = {
     }
     this.clearAllPrintContainers();
     
+    if (onDiscard) {
+      onDiscard();
+    }
+
     if (this.currentPage === 'proposal-form' && SalesForm.onClosePreview) {
         SalesForm.onClosePreview();
     }
@@ -1666,14 +1674,14 @@ const app = {
     return result;
   },
 
-  showA5Preview(htmlContent, title = 'Invoice Preview') {
+  showA5Preview(htmlContent, title = 'Invoice Preview', options = {}) {
     const modal = document.getElementById('preview-modal');
     const paper = document.getElementById('preview-paper');
     const titleEl = document.getElementById('preview-title');
     const subtitleEl = document.getElementById('preview-subtitle');
 
     if (titleEl) titleEl.textContent = title;
-    if (subtitleEl) subtitleEl.textContent = 'A5 PAPER FORMAT (148 × 210 MM)';
+    if (subtitleEl) subtitleEl.textContent = options.subtitle || 'A5 PAPER FORMAT (148 × 210 MM)';
 
     if (paper) {
       paper.className = 'bg-white shadow-2xl origin-top mb-12 w-full max-w-[580px] rounded-lg p-5 border border-slate-200';
@@ -1686,6 +1694,16 @@ const app = {
       printContainer.innerHTML = htmlContent;
       printContainer.classList.add('active-print-target');
     }
+
+    const printBtn = document.getElementById('confirm-print-btn');
+    if (printBtn) {
+      const confirmLabel = options.confirmText || 'Confirm & Print';
+      printBtn.innerHTML = `<i data-lucide="printer" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span>${confirmLabel}</span>`;
+      printBtn.onclick = () => this.confirmPrint();
+    }
+
+    this.previewOnConfirm = options.onConfirm || null;
+    this.previewOnDiscard = options.onDiscard || null;
 
     if (modal) {
       modal.classList.remove('hidden');
@@ -1704,14 +1722,24 @@ const app = {
   },
 
   async confirmPrint() {
+    const onConfirm = this.previewOnConfirm;
+    this.previewOnConfirm = null;
+    this.previewOnDiscard = null;
+
     const modal = document.getElementById('preview-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
     
-    await this.printReceipt({ pageSize: 'A5' });
-    
-    if (this.currentPage === 'proposal-form' && SalesForm.onAfterPrint) {
-        SalesForm.onAfterPrint();
+    if (onConfirm) {
+      await onConfirm();
+    } else {
+      await this.printReceipt({ pageSize: 'A5' });
+      
+      if (this.currentPage === 'proposal-form' && SalesForm.onAfterPrint) {
+          SalesForm.onAfterPrint();
+      }
     }
   },
 

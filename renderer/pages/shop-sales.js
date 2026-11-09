@@ -477,19 +477,19 @@ window.ShopSales = {
           </div>
         </div>
 
-        <!-- Bottom: Streamlined Horizontal Settlement Bar -->
-        <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 text-white p-4 rounded-2xl shadow-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 mb-6">
+        <!-- Bottom: Streamlined Horizontal Settlement Bar (Sticky Footer, Light Mode) -->
+        <div class="sticky bottom-0 z-20 bg-white/95 backdrop-blur-md text-slate-800 p-4 rounded-2xl shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] border border-slate-200 flex flex-wrap items-center justify-between gap-4 mt-auto mb-1">
           
           <!-- Method Toggle -->
           <div class="flex items-center gap-2 shrink-0">
-            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Method:</span>
-            <div class="inline-flex p-1 bg-slate-800 rounded-xl border border-slate-700">
+            <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">Method:</span>
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
               <button type="button" id="ss-pm-cash" onclick="ShopSales.setPaymentMethod('Cash')"
-                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'}">
+                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80' : 'text-slate-500 hover:text-slate-800'}">
                 💵 Cash
               </button>
               <button type="button" id="ss-pm-online" onclick="ShopSales.setPaymentMethod('Online')"
-                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'}">
+                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80' : 'text-slate-500 hover:text-slate-800'}">
                 💳 Online
               </button>
             </div>
@@ -500,43 +500,43 @@ window.ShopSales = {
             
             <!-- Subtotal -->
             <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
-                Subtotal <span id="ss-subtotal-ctns" class="text-slate-500 font-bold">(${totalCartons} ctns)</span>
+              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">
+                Subtotal <span id="ss-subtotal-ctns" class="text-slate-400 font-bold">(${totalCartons} ctns)</span>
               </span>
-              <span id="ss-subtotal-val" class="text-sm font-black text-slate-200 tabular-nums">Rs. ${Math.round(subtotal).toLocaleString()}</span>
+              <span id="ss-subtotal-val" class="text-sm font-black text-slate-800 tabular-nums">Rs. ${Math.round(subtotal).toLocaleString()}</span>
             </div>
 
             <!-- Discount -->
             <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">Discount</span>
+              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">Discount</span>
               <div class="flex items-center gap-1 mt-0.5">
                 <span class="text-xs font-bold text-slate-400">Rs.</span>
                 <input type="number" min="0" step="any" id="ss-discount-input" value="${this.discount}" oninput="ShopSales.onDiscountChange(this.value)"
-                       class="w-20 px-2 py-1 text-right bg-slate-800 border border-slate-700 rounded-lg text-white font-bold outline-none tabular-nums text-xs focus:border-amber-400">
+                       class="w-20 px-2 py-1 text-right bg-slate-50 border border-slate-300 rounded-lg text-slate-800 font-bold outline-none tabular-nums text-xs focus:border-amber-500 focus:bg-white transition-colors">
               </div>
             </div>
 
             <!-- Net Total -->
-            <div class="text-left shrink-0 px-3 py-1 bg-slate-800/80 rounded-xl border border-slate-700/80">
-              <span class="text-[10px] font-black uppercase text-amber-400 block tracking-wider">Net Total</span>
-              <span id="ss-net-total-val" class="text-lg font-black text-amber-400 tabular-nums">Rs. ${Math.round(totalAmount).toLocaleString()}</span>
+            <div class="text-left shrink-0 px-3.5 py-1.5 bg-amber-50 rounded-xl border border-amber-200 shadow-2xs">
+              <span class="text-[10px] font-black uppercase text-amber-800 block tracking-wider">Net Total</span>
+              <span id="ss-net-total-val" class="text-lg font-black text-amber-700 tabular-nums">Rs. ${Math.round(totalAmount).toLocaleString()}</span>
             </div>
 
             <!-- Received Input -->
             <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">Received</span>
+              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">Received</span>
               <div class="flex items-center gap-1 mt-0.5">
                 <span class="text-xs font-bold text-slate-400">Rs.</span>
                 <input type="number" min="0" max="${totalAmount}" step="any" id="ss-received-input" value="${this.receivedAmount}" oninput="ShopSales.onReceivedChange(this.value)" placeholder="0"
-                       class="w-24 px-2.5 py-1 text-right font-black text-sm bg-slate-800 border-2 ${this.receivedAmount > totalAmount ? 'border-rose-500 text-rose-300' : 'border-emerald-500 text-emerald-400'} rounded-lg outline-none tabular-nums focus:bg-slate-750">
+                       class="w-24 px-2.5 py-1 text-right font-black text-sm rounded-lg outline-none tabular-nums focus:bg-white border-2 transition-colors ${this.receivedAmount > totalAmount ? 'border-rose-400 text-rose-600 bg-rose-50/50' : 'border-emerald-500 text-emerald-700 bg-emerald-50/30'}">
               </div>
             </div>
 
             <!-- Remaining Bill Balance -->
             <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider">Bill Balance</span>
+              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">Bill Balance</span>
               <div class="flex items-baseline gap-1 mt-0.5">
-                <span id="ss-rem-balance-val" class="text-sm font-black tabular-nums ${remainingBill > 0 ? 'text-rose-400' : 'text-emerald-400'}">
+                <span id="ss-rem-balance-val" class="text-sm font-black tabular-nums ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}">
                   Rs. ${Math.round(remainingBill).toLocaleString()}
                 </span>
                 <span id="ss-total-shop-balance-val" class="text-[10px] font-bold text-slate-400">${previousBalance > 0 ? `(Total: Rs. ${Math.round(netShopBalance).toLocaleString()})` : ''}</span>
@@ -548,7 +548,7 @@ window.ShopSales = {
           <!-- Complete Sale Button -->
           <button type="button" id="ss-submit-btn" onclick="ShopSales.submitSaleAndPrint()"
                   ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'disabled' : ''}
-                  class="px-6 py-2.5 ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60' : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
+                  class="px-6 py-2.5 ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
             <i data-lucide="printer" class="w-4 h-4"></i>
             <span>Complete Sale &amp; Print Bill</span>
           </button>
@@ -1418,11 +1418,11 @@ window.ShopSales = {
     const btnOnline = document.getElementById('ss-pm-online');
     if (btnCash && btnOnline) {
       if (pm === 'Cash') {
-        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-950 shadow-xs';
-        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-400 hover:text-white';
+        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-900 shadow-xs border border-slate-200/80';
+        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-800';
       } else {
-        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-400 hover:text-white';
-        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-950 shadow-xs';
+        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-800';
+        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-900 shadow-xs border border-slate-200/80';
       }
     }
   },
@@ -1453,7 +1453,7 @@ window.ShopSales = {
     const remEl = document.getElementById('ss-rem-balance-val');
     if (remEl) {
       remEl.textContent = `Rs. ${Math.round(remainingBill).toLocaleString()}`;
-      remEl.className = `text-sm font-black tabular-nums ${remainingBill > 0 ? 'text-rose-400' : 'text-emerald-400'}`;
+      remEl.className = `text-sm font-black tabular-nums ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}`;
     }
 
     const shopBalEl = document.getElementById('ss-total-shop-balance-val');
@@ -1466,11 +1466,11 @@ window.ShopSales = {
     if (recvInput) {
       recvInput.max = netTotal;
       if (isOver) {
-        recvInput.classList.add('border-rose-500', 'text-rose-300');
-        recvInput.classList.remove('border-emerald-500', 'text-emerald-400');
+        recvInput.classList.add('border-rose-400', 'text-rose-600', 'bg-rose-50/50');
+        recvInput.classList.remove('border-emerald-500', 'text-emerald-700', 'bg-emerald-50/30');
       } else {
-        recvInput.classList.remove('border-rose-500', 'text-rose-300');
-        recvInput.classList.add('border-emerald-500', 'text-emerald-400');
+        recvInput.classList.remove('border-rose-400', 'text-rose-600', 'bg-rose-50/50');
+        recvInput.classList.add('border-emerald-500', 'text-emerald-700', 'bg-emerald-50/30');
       }
     }
 
@@ -1479,10 +1479,10 @@ window.ShopSales = {
     if (submitBtn) {
       if (!hasItems || isOver) {
         submitBtn.disabled = true;
-        submitBtn.className = 'px-6 py-2.5 bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
+        submitBtn.className = 'px-6 py-2.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
       } else {
         submitBtn.disabled = false;
-        submitBtn.className = 'px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md cursor-pointer active:scale-95 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
+        submitBtn.className = 'px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
       }
     }
   },

@@ -1772,6 +1772,7 @@ const app = {
         sale_price: c.carton_sale_price || 0,
         cost_price: c.carton_cost_price || 0,
         current_stock: c.factory_carton_stock || 0,
+        stickers_printed: Number(c.stickers_printed || 0),
         category_label: `${c.pieces_per_carton} pcs/ctn`,
         pieces_per_carton: c.pieces_per_carton,
         is_carton: true,
@@ -1842,6 +1843,65 @@ const app = {
     }
   },
 
+  getStickersPrintedCount(itemId) {
+    if (!itemId) return 0;
+    let countFromMem = 0;
+    if (this.barcodeStickerState && this.barcodeStickerState.allProducts) {
+      const found = this.barcodeStickerState.allProducts.find(p => p.id === itemId);
+      if (found && typeof found.stickers_printed === 'number') {
+        countFromMem = Number(found.stickers_printed || 0);
+      }
+    }
+    let countFromStorage = 0;
+    if (window.storage) {
+      const map = window.storage.get('stickers_printed_counts') || {};
+      if (map[itemId] !== undefined) {
+        countFromStorage = Number(map[itemId] || 0);
+      }
+    }
+    return Math.max(countFromMem, countFromStorage);
+  },
+
+  async recordStickersPrinted(itemId, count = 1) {
+    if (!itemId) return;
+    const qty = Math.max(1, Number(count) || 1);
+    const prev = this.getStickersPrintedCount(itemId);
+    const newTotal = prev + qty;
+
+    // 1. Update in-memory allProducts & activeItem
+    if (this.barcodeStickerState) {
+      if (this.barcodeStickerState.activeItem && this.barcodeStickerState.activeItem.id === itemId) {
+        this.barcodeStickerState.activeItem.stickers_printed = newTotal;
+      }
+      if (Array.isArray(this.barcodeStickerState.allProducts)) {
+        const p = this.barcodeStickerState.allProducts.find(x => x.id === itemId);
+        if (p) p.stickers_printed = newTotal;
+      }
+    }
+
+    // 2. Persist to storage
+    if (window.storage) {
+      const map = window.storage.get('stickers_printed_counts') || {};
+      map[itemId] = newTotal;
+      window.storage.set('stickers_printed_counts', map);
+    }
+
+    // 3. Update active card display if currently visible/rendered
+    const printedDisplay = document.getElementById('bsm-item-printed-display');
+    if (printedDisplay) {
+      printedDisplay.innerHTML = 'Already printed: <span class="font-black text-indigo-700">' + newTotal + '</span>';
+    }
+
+    // 4. Persist to SQLite via IPC
+    if (window.api && window.api.incrementStickersPrinted) {
+      try {
+        await window.api.incrementStickersPrinted({ id: itemId, qty });
+      } catch (err) {
+        console.warn('Could not increment stickers in database:', err);
+      }
+    }
+  },
+
   getCategoryDisplayName(itemOrSlug) {
     if (!itemOrSlug) return 'Sellable Carton';
     if (typeof itemOrSlug === 'object') {
@@ -1860,6 +1920,7 @@ const app = {
     const bcDisplay = document.getElementById('bsm-item-barcode-display');
     const priceDisplay = document.getElementById('bsm-item-price-display');
     const stockDisplay = document.getElementById('bsm-item-stock-display');
+    const printedDisplay = document.getElementById('bsm-item-printed-display');
     const genBtn = document.getElementById('bsm-gen-barcode-btn');
     const matchStockBtn = document.getElementById('bsm-match-stock-btn');
     const cartonSel = document.getElementById('bsm-carton-select');
@@ -1868,11 +1929,13 @@ const app = {
     const price = Number(item.retail_price || item.sale_price || 0);
     const stock = Number(item.current_stock || 0);
     const hasBarcode = Boolean(item.barcode && String(item.barcode).trim());
+    const printedCount = this.getStickersPrintedCount(item.id);
 
     if (nameEl) nameEl.textContent = item.item_name || 'Carton Product';
     if (catEl) catEl.textContent = catName;
     if (priceDisplay) priceDisplay.textContent = 'Price: Rs. ' + price.toLocaleString();
     if (stockDisplay) stockDisplay.textContent = 'Stock: ' + stock + ' ctns';
+    if (printedDisplay) printedDisplay.innerHTML = 'Already printed: <span class="font-black text-indigo-700">' + printedCount + '</span>';
 
     if (bcDisplay) {
       if (hasBarcode) {
@@ -2346,6 +2409,7 @@ const app = {
 
       if (result && result.success !== false) {
         this.showToast('Successfully printed ' + qty + ' sticker' + (qty > 1 ? 's' : '') + '!', 'success');
+        this.recordStickersPrinted(item.id, qty);
       } else if (result && result.failureReason) {
         console.warn('Print response:', result.failureReason);
       }

@@ -250,6 +250,7 @@ ipcMain.handle('get-packed-carton', (event, id) => db.getPackedCarton(id));
 ipcMain.handle('find-carton-by-barcode', (event, barcode) => db.findCartonByBarcode(barcode));
 ipcMain.handle('save-packed-carton', (event, data) => db.savePackedCarton(data));
 ipcMain.handle('delete-packed-carton', (event, id) => db.deletePackedCarton(id));
+ipcMain.handle('increment-stickers-printed', (event, data) => db.incrementCartonStickersPrinted(data?.id, data?.qty));
 ipcMain.handle('run-carton-packing', (event, data) => db.runCartonPacking(data));
 ipcMain.handle('get-packing-batches', (event, filters) => db.getPackingBatches(filters));
 ipcMain.handle('delete-packing-batch', (event, id) => db.deletePackingBatch(id));

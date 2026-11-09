@@ -2128,6 +2128,7 @@ function createIcecreamFactoryTables() {
       carton_sale_price REAL NOT NULL,
       carton_wholesale_price REAL DEFAULT 0,
       factory_carton_stock INTEGER DEFAULT 0,
+      stickers_printed INTEGER DEFAULT 0,
       barcode TEXT,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -2289,6 +2290,9 @@ function createIcecreamFactoryTables() {
     if (!carCols.includes('is_active')) db.exec('ALTER TABLE cars ADD COLUMN is_active INTEGER DEFAULT 1');
     if (!carCols.includes('area')) db.exec('ALTER TABLE cars ADD COLUMN area TEXT');
     db.exec("UPDATE cars SET area = '' WHERE area IS NOT NULL AND area != ''");
+
+    const pcCols = db.prepare("PRAGMA table_info(packed_cartons)").all().map(c => c.name);
+    if (!pcCols.includes('stickers_printed')) db.exec('ALTER TABLE packed_cartons ADD COLUMN stickers_printed INTEGER DEFAULT 0');
   } catch(e) {}
 
   try {
@@ -3031,6 +3035,18 @@ function deletePackedCarton(id) {
   db.prepare('DELETE FROM packing_batches WHERE carton_id = ?').run(id);
   db.prepare('DELETE FROM packed_cartons WHERE id = ?').run(id);
   return { success: true };
+}
+
+function incrementCartonStickersPrinted(id, qty = 1) {
+  try {
+    const q = Math.max(1, Number(qty) || 1);
+    db.prepare('UPDATE packed_cartons SET stickers_printed = COALESCE(stickers_printed, 0) + ? WHERE id = ?').run(q, id);
+    const row = db.prepare('SELECT stickers_printed FROM packed_cartons WHERE id = ?').get(id);
+    return { success: true, count: row ? (row.stickers_printed || 0) : 0 };
+  } catch (e) {
+    console.error('Error incrementing stickers printed:', e);
+    return { success: false, error: e.message };
+  }
 }
 
 function runCartonPacking(data) {
@@ -4070,7 +4086,7 @@ module.exports = {
   // Stage 2: Single Items Production
   getIcecreamItems, getIcecreamItem, saveIcecreamItem, deleteIcecreamItem, runProductionBatch, getProductionBatches, deleteProductionBatch,
   // Stage 3: Packed Cartons
-  getPackedCartons, getPackedCarton, findCartonByBarcode, savePackedCarton, deletePackedCarton, runCartonPacking, getPackingBatches, deletePackingBatch,
+  getPackedCartons, getPackedCarton, findCartonByBarcode, savePackedCarton, deletePackedCarton, incrementCartonStickersPrinted, runCartonPacking, getPackingBatches, deletePackingBatch,
   // Stage 4: Cars & Delivery Loading
   getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch, deleteCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns

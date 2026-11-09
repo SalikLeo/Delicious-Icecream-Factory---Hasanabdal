@@ -119,6 +119,7 @@ contextBridge.exposeInMainWorld('api', {
   findCartonByBarcode: (barcode) => ipcRenderer.invoke('find-carton-by-barcode', barcode),
   savePackedCarton: (data) => ipcRenderer.invoke('save-packed-carton', data),
   deletePackedCarton: (id) => ipcRenderer.invoke('delete-packed-carton', id),
+  incrementStickersPrinted: (data) => ipcRenderer.invoke('increment-stickers-printed', data),
   runCartonPacking: (data) => ipcRenderer.invoke('run-carton-packing', data),
   getPackingBatches: (filters) => ipcRenderer.invoke('get-packing-batches', filters),
   deletePackingBatch: (id) => ipcRenderer.invoke('delete-packing-batch', id),

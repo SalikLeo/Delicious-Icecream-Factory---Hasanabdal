@@ -226,13 +226,13 @@ window.CarLoading = {
             <!-- Controls: Search + Sort -->
             <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
               <!-- Search -->
-              <div class="relative w-full sm:w-56">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <div class="relative w-full sm:w-72 md:w-84 lg:w-96">
+                <i data-lucide="search" class="w-4.5 h-4.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                 <input type="text" id="cld-search" placeholder="${this.activeTab === 'cars' ? 'Search vehicle, driver, plate...' : 'Search loading slip #, vehicle, driver...'}"
                        value="${this.searchQuery}" oninput="CarLoading.onSearch(this.value)"
-                       class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-400">
+                       class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 shadow-2xs transition-all">
                 <button type="button" id="cld-search-clear" onclick="CarLoading.clearSearch()" title="Clear search"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer ${this.searchQuery ? '' : 'hidden'}">
                   <i data-lucide="x" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
@@ -240,7 +240,7 @@ window.CarLoading = {
               <!-- Sort Dropdown -->
               <div class="flex items-center gap-1.5 shrink-0">
                 <select id="cld-sort-select" onchange="CarLoading.onSortSelect(this.value)"
-                        class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:bg-white focus:border-blue-400 cursor-pointer">
+                        class="px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 outline-none hover:bg-slate-50 focus:border-blue-500 focus:ring-3 focus:ring-blue-100 shadow-2xs transition-all cursor-pointer">
                   ${this.activeTab === 'cars' ? `
                     <option value="car_number_asc" ${this.sortField==='car_number'&&this.sortOrder==='asc'?'selected':''}>Vehicle / Plate (A-Z)</option>
                     <option value="car_number_desc" ${this.sortField==='car_number'&&this.sortOrder==='desc'?'selected':''}>Vehicle / Plate (Z-A)</option>
@@ -908,16 +908,16 @@ window.CarLoading = {
               </div>
               <div class="flex items-center gap-3 flex-wrap">
                 <!-- Barcode scan input -->
-                <div class="relative min-w-[200px]">
-                  <i data-lucide="scan-barcode" class="w-3.5 h-3.5 text-blue-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                <div class="relative min-w-[260px] sm:min-w-[320px] md:min-w-[380px]">
+                  <i data-lucide="scan-barcode" class="w-4.5 h-4.5 text-blue-600 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                   <input type="text" id="dsp-barcode-scan"
                          onkeydown="if(event.key==='Enter'){event.preventDefault(); CarLoading.handleBarcodeScan(this.value); this.value='';}"
                          placeholder="Scan carton barcode..."
-                         class="pl-8 pr-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-blue-500 shadow-2xs">
+                         class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 shadow-2xs transition-all">
                 </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-slate-500">Loading Date:</span>
-                  <input type="date" id="dsp-date" value="${new Date().toISOString().split('T')[0]}" class="ml-1 px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 outline-none">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Loading Date:</span>
+                  <input type="date" id="dsp-date" value="${new Date().toISOString().split('T')[0]}" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 shadow-2xs transition-all">
                 </div>
               </div>
             </div>

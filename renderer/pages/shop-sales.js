@@ -478,12 +478,12 @@ window.ShopSales = {
         </div>
 
         <!-- Bottom: Streamlined Horizontal Settlement Bar (Sticky Footer, Light Mode) -->
-        <div class="sticky bottom-0 z-20 bg-white/95 backdrop-blur-md text-slate-800 p-4 rounded-2xl shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] border border-slate-200 flex flex-wrap items-center justify-between gap-4 mt-auto mb-1">
+        <div class="sticky bottom-0 z-20 bg-white/95 backdrop-blur-md text-slate-800 p-3.5 px-5 rounded-2xl shadow-[0_-4px_24px_-2px_rgba(0,0,0,0.08),0_2px_6px_-1px_rgba(0,0,0,0.04)] border border-slate-200/90 flex flex-wrap items-center justify-between gap-3 sm:gap-4 mt-auto mb-1">
           
           <!-- Method Toggle -->
           <div class="flex items-center gap-2 shrink-0">
-            <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">Method:</span>
-            <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Method:</span>
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-2xs">
               <button type="button" id="ss-pm-cash" onclick="ShopSales.setPaymentMethod('Cash')"
                       class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80' : 'text-slate-500 hover:text-slate-800'}">
                 💵 Cash
@@ -495,60 +495,70 @@ window.ShopSales = {
             </div>
           </div>
 
-          <!-- Horizontal Figures -->
-          <div class="flex flex-wrap items-center gap-5 sm:gap-6">
+          <!-- Divider -->
+          <div class="h-8 w-px bg-slate-200/80 hidden xl:block shrink-0"></div>
+
+          <!-- Horizontal Figures Strip (Evenly spaced & symmetrically aligned) -->
+          <div class="flex-1 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
             
             <!-- Subtotal -->
-            <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">
-                Subtotal <span id="ss-subtotal-ctns" class="text-slate-400 font-bold">(${totalCartons} ctns)</span>
-              </span>
-              <span id="ss-subtotal-val" class="text-sm font-black text-slate-800 tabular-nums">Rs. ${Math.round(subtotal).toLocaleString()}</span>
+            <div class="bg-slate-50/90 px-3.5 py-1.5 rounded-xl border border-slate-200/80 shrink-0 min-w-[110px]">
+              <div class="flex items-center justify-between gap-1 mb-0.5">
+                <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Subtotal</span>
+                <span id="ss-subtotal-ctns" class="text-[10px] text-slate-400 font-bold">(${totalCartons} ctns)</span>
+              </div>
+              <div id="ss-subtotal-val" class="text-sm font-black text-slate-800 tabular-nums leading-tight">Rs. ${Math.round(subtotal).toLocaleString()}</div>
             </div>
 
             <!-- Discount -->
-            <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">Discount</span>
-              <div class="flex items-center gap-1 mt-0.5">
-                <span class="text-xs font-bold text-slate-400">Rs.</span>
+            <div class="bg-slate-50/90 px-3.5 py-1.5 rounded-xl border border-slate-200/80 shrink-0">
+              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider mb-0.5">Discount</span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-black text-slate-400">Rs.</span>
                 <input type="number" min="0" step="any" id="ss-discount-input" value="${this.discount}" oninput="ShopSales.onDiscountChange(this.value)"
-                       class="w-20 px-2 py-1 text-right bg-slate-50 border border-slate-300 rounded-lg text-slate-800 font-bold outline-none tabular-nums text-xs focus:border-amber-500 focus:bg-white transition-colors">
+                       class="w-20 px-2 py-0.5 text-right bg-white border border-slate-300 rounded-lg text-slate-900 font-black outline-none tabular-nums text-xs focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all">
               </div>
             </div>
 
-            <!-- Net Total -->
-            <div class="text-left shrink-0 px-3.5 py-1.5 bg-amber-50 rounded-xl border border-amber-200 shadow-2xs">
-              <span class="text-[10px] font-black uppercase text-amber-800 block tracking-wider">Net Total</span>
-              <span id="ss-net-total-val" class="text-lg font-black text-amber-700 tabular-nums">Rs. ${Math.round(totalAmount).toLocaleString()}</span>
+            <!-- Net Total (Primary Highlight) -->
+            <div class="px-4 py-1.5 bg-gradient-to-br from-amber-50 to-amber-100/70 rounded-xl border-2 border-amber-300 shadow-2xs shrink-0 min-w-[130px]">
+              <div class="flex items-center justify-between gap-2 mb-0.5">
+                <span class="text-[10px] font-black uppercase text-amber-800 tracking-wider">Net Total</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              </div>
+              <div id="ss-net-total-val" class="text-base font-black text-amber-900 tabular-nums leading-tight">Rs. ${Math.round(totalAmount).toLocaleString()}</div>
             </div>
 
             <!-- Received Input -->
-            <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">Received</span>
-              <div class="flex items-center gap-1 mt-0.5">
-                <span class="text-xs font-bold text-slate-400">Rs.</span>
+            <div class="bg-slate-50/90 px-3.5 py-1.5 rounded-xl border border-slate-200/80 shrink-0">
+              <span class="text-[10px] font-black uppercase text-slate-400 block tracking-wider mb-0.5">Received</span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-black text-slate-400">Rs.</span>
                 <input type="number" min="0" max="${totalAmount}" step="any" id="ss-received-input" value="${this.receivedAmount}" oninput="ShopSales.onReceivedChange(this.value)" placeholder="0"
-                       class="w-24 px-2.5 py-1 text-right font-black text-sm rounded-lg outline-none tabular-nums focus:bg-white border-2 transition-colors ${this.receivedAmount > totalAmount ? 'border-rose-400 text-rose-600 bg-rose-50/50' : 'border-emerald-500 text-emerald-700 bg-emerald-50/30'}">
+                       class="w-24 px-2.5 py-0.5 text-right font-black text-sm rounded-lg outline-none tabular-nums bg-white border-2 transition-all ${this.receivedAmount > totalAmount ? 'border-rose-400 text-rose-600 focus:ring-1 focus:ring-rose-200' : 'border-emerald-500 text-emerald-700 focus:ring-1 focus:ring-emerald-200'}">
               </div>
             </div>
 
             <!-- Remaining Bill Balance -->
-            <div class="text-left shrink-0">
-              <span class="text-[10px] font-black uppercase text-slate-500 block tracking-wider">Bill Balance</span>
-              <div class="flex items-baseline gap-1 mt-0.5">
-                <span id="ss-rem-balance-val" class="text-sm font-black tabular-nums ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}">
-                  Rs. ${Math.round(remainingBill).toLocaleString()}
-                </span>
-                <span id="ss-total-shop-balance-val" class="text-[10px] font-bold text-slate-400">${previousBalance > 0 ? `(Total: Rs. ${Math.round(netShopBalance).toLocaleString()})` : ''}</span>
+            <div class="bg-slate-50/90 px-3.5 py-1.5 rounded-xl border border-slate-200/80 shrink-0 min-w-[125px]">
+              <div class="flex items-center justify-between gap-1 mb-0.5">
+                <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Bill Balance</span>
+                <span id="ss-total-shop-balance-val" class="text-[10px] font-bold text-slate-500">${previousBalance > 0 ? `(Total: Rs. ${Math.round(netShopBalance).toLocaleString()})` : ''}</span>
+              </div>
+              <div id="ss-rem-balance-val" class="text-sm font-black tabular-nums leading-tight ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}">
+                Rs. ${Math.round(remainingBill).toLocaleString()}
               </div>
             </div>
 
           </div>
 
+          <!-- Divider -->
+          <div class="h-8 w-px bg-slate-200/80 hidden xl:block shrink-0"></div>
+
           <!-- Complete Sale Button -->
           <button type="button" id="ss-submit-btn" onclick="ShopSales.submitSaleAndPrint()"
                   ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'disabled' : ''}
-                  class="px-6 py-2.5 ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
+                  class="px-5 py-2.5 ${(this.items.length === 0 || this.receivedAmount > totalAmount) ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
             <i data-lucide="printer" class="w-4 h-4"></i>
             <span>Complete Sale &amp; Print Bill</span>
           </button>

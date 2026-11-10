@@ -582,14 +582,23 @@ window.CarLoading = {
                                 </tr>
                               </thead>
                               <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-                                ${loadedCartonsList.map(it => `
+                                ${loadedCartonsList.map(it => {
+                                  const isShoper = it.package_type === 'shoper';
+                                  const unitAbbr = isShoper ? 'shoper' : 'ctn';
+                                  const unitsAbbr = isShoper ? 'shopers' : 'ctns';
+                                  return `
                                   <tr class="hover:bg-slate-50">
-                                    <td class="py-1.5 px-3 border-r border-slate-200 font-bold text-slate-900">${it.carton_name}</td>
+                                    <td class="py-1.5 px-3 border-r border-slate-200 font-bold text-slate-900">
+                                      <div class="flex items-center gap-1.5">
+                                        <span>${it.carton_name}</span>
+                                        <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
+                                      </div>
+                                    </td>
                                     <td class="py-1.5 px-3 text-center border-r border-slate-200">
-                                      <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-mono text-[10px] font-bold border border-purple-200">${it.pieces_per_carton || 20} pcs/ctn</span>
+                                      <span class="px-2 py-0.5 rounded-md ${isShoper ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-purple-50 text-purple-700 border-purple-200'} font-mono text-[10px] font-bold border">${it.pieces_per_carton || 20} pcs/${unitAbbr}</span>
                                     </td>
                                     <td class="py-1.5 px-3 text-right border-r border-slate-200 font-black text-blue-700 tabular-nums">
-                                      ${it.cartons_loaded} <span class="text-[11px] font-bold text-slate-500">ctns</span>
+                                      ${it.cartons_loaded} <span class="text-[11px] font-bold text-slate-500">${unitsAbbr}</span>
                                     </td>
                                     <td class="py-1.5 px-3 text-right border-r border-slate-200 font-mono font-bold text-slate-700 tabular-nums">
                                       Rs. ${(it.carton_sale_price || 0).toLocaleString()}
@@ -598,7 +607,8 @@ window.CarLoading = {
                                       Rs. ${Math.round(it.loaded_value || 0).toLocaleString()}
                                     </td>
                                   </tr>
-                                `).join('')}
+                                `;
+                                }).join('')}
                               </tbody>
                               <tfoot class="bg-slate-100 font-black text-xs text-slate-900 border-t border-slate-200">
                                 <tr>
@@ -1002,6 +1012,9 @@ window.CarLoading = {
     }
 
     tbody.innerHTML = this.cartons.map(c => {
+      const isShoper = c.package_type === 'shoper';
+      const unitAbbr = isShoper ? 'shoper' : 'ctn';
+      const unitsAbbr = isShoper ? 'shopers' : 'ctns';
       const inCar = invMap[c.id] || 0;
       const warehouse = c.factory_carton_stock || 0;
       const curQty = this.dispatchItems?.[c.id] || '';
@@ -1009,13 +1022,16 @@ window.CarLoading = {
       return `
         <tr class="hover:bg-slate-50">
           <td class="py-1.5 px-3 border-r border-slate-200">
-            <div class="font-black text-slate-900 text-xs">${c.carton_name}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-black text-slate-900 text-xs">${c.carton_name}</span>
+              <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
+            </div>
             <div class="text-[10px] text-slate-400 leading-tight">Rate: Rs. ${c.carton_sale_price}</div>
           </td>
-          <td class="py-1.5 px-3 text-center font-mono text-[10px] text-slate-500 border-r border-slate-200">${c.pieces_per_carton} pcs</td>
-          <td class="py-1.5 px-3 text-right font-mono font-bold text-blue-600 text-xs tabular-nums border-r border-slate-200">${inCar} ctns</td>
-          <td class="py-1.5 px-3 text-right font-black ${warehouse > 0 ? 'text-purple-700' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
-            ${warehouse} ctns
+          <td class="py-1.5 px-3 text-center font-mono text-[10px] text-slate-500 border-r border-slate-200">${c.pieces_per_carton} pcs/${unitAbbr}</td>
+          <td class="py-1.5 px-3 text-right font-mono font-bold text-blue-600 text-xs tabular-nums border-r border-slate-200">${inCar} ${unitsAbbr}</td>
+          <td class="py-1.5 px-3 text-right font-black ${warehouse > 0 ? (isShoper ? 'text-sky-700' : 'text-purple-700') : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
+            ${warehouse} ${unitsAbbr}
           </td>
           <td class="py-1.5 px-3 text-right border-r border-slate-200">
             <div class="flex items-center justify-end gap-1.5">
@@ -1025,7 +1041,7 @@ window.CarLoading = {
             </div>
           </td>
           <td class="py-1.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums dsp-total-after" id="dsp-after-${c.id}">
-            ${inCar + (Number(curQty) || 0)} ctns
+            ${inCar + (Number(curQty) || 0)} ${unitsAbbr}
           </td>
         </tr>
       `;

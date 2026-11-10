@@ -187,6 +187,7 @@ window.ShopSales = {
       this.items.push({
         carton_id: carton.id,
         carton_name: carton.carton_name,
+        package_type: carton.package_type || 'carton',
         barcode: carton.barcode || '',
         pieces_per_carton: carton.pieces_per_carton || 20,
         quantity: 1,
@@ -953,7 +954,7 @@ window.ShopSales = {
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="font-black text-slate-900 text-xs truncate max-w-[280px]">${item.carton_name}</span>
               ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
-              ${item.pieces_per_carton ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
+              ${item.pieces_per_carton ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${item.pieces_per_carton} pcs/${item.package_type === 'shoper' ? 'shoper' : 'ctn'})</span>` : ''}
               ${(() => {
                 if (stock > 0) {
                   const qtyNum = Number(item.quantity) || 0;
@@ -968,7 +969,7 @@ window.ShopSales = {
             </div>
           </td>
 
-          <!-- Qty Input with CTN Unit & Strict Max Stock Clamping -->
+          <!-- Qty Input with Unit Badge & Strict Max Stock Clamping -->
           <td class="py-1 px-2 text-center border-r border-slate-200">
             <div class="inline-flex items-center justify-center gap-1">
               <input type="number" 
@@ -981,7 +982,7 @@ window.ShopSales = {
                      oninput="ShopSales.updateCartQty(${idx}, this.value, this)"
                      onblur="ShopSales.onCartQtyBlur(${idx}, this)"
                      class="w-14 bg-white/60 focus:bg-amber-100 border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-center font-black text-slate-900 text-xs outline-none transition-all tabular-nums py-0.5 px-1 rounded shadow-2xs">
-              <span class="w-10 text-left text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate shrink-0">CTN</span>
+              <span class="w-12 text-left text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate shrink-0">${item.package_type === 'shoper' ? 'SHOPER' : 'CTN'}</span>
             </div>
           </td>
 
@@ -1316,13 +1317,17 @@ window.ShopSales = {
       const stock = this.getItemStock(item.id);
       const price = item.carton_sale_price || 0;
 
+      const isShoper = item.package_type === 'shoper';
+      const unitAbbr = isShoper ? 'shoper' : 'ctn';
+      const unitsAbbr = isShoper ? 'shopers' : 'ctns';
+
       if (isAlreadyInCart) {
         return `
           <div class="px-3.5 py-2 flex items-center justify-between border-b border-slate-100 last:border-0 bg-slate-50/80 text-slate-400 cursor-not-allowed select-none opacity-60">
             <div class="flex items-center gap-2 min-w-0 flex-1">
               <span class="w-5.5 h-5.5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black shrink-0 font-mono">✓</span>
               <span class="text-xs font-bold text-slate-500 truncate line-through">${item.carton_name}</span>
-              ${item.pieces_per_carton ? `<span class="text-[10px] text-slate-400 shrink-0">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
+              ${item.pieces_per_carton ? `<span class="text-[10px] text-slate-400 shrink-0">(${item.pieces_per_carton} pcs/${unitAbbr})</span>` : ''}
             </div>
             <div class="flex items-center gap-2.5 shrink-0 text-right">
               <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-600">In Bill</span>
@@ -1339,14 +1344,14 @@ window.ShopSales = {
             <span class="w-5.5 h-5.5 rounded ${isHighlighted ? 'bg-white/25 text-white border border-white/30' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-black shrink-0 font-mono">${idx + 1}</span>
             <span class="text-xs font-black truncate ${isHighlighted ? 'text-white' : 'text-slate-900'}">${item.carton_name}</span>
             ${item.barcode ? `<span class="text-[9px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60 border-amber-400/40' : 'text-slate-600 bg-slate-100 border-slate-300'} px-1 py-0.2 rounded border">#${item.barcode}</span>` : ''}
-            ${item.pieces_per_carton ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0">(${item.pieces_per_carton} pcs/ctn)</span>` : ''}
+            ${item.pieces_per_carton ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0">(${item.pieces_per_carton} pcs/${unitAbbr})</span>` : ''}
           </div>
           <div class="flex items-center gap-3 shrink-0 text-right">
             <div class="text-right">
               <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-blue-700') : (isHighlighted ? 'text-slate-200' : 'text-slate-500')} tabular-nums block">
                 ${stock > 0 ? `${stock} in car` : 'Direct Factory'}
               </span>
-              <span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(In Stock: ${item.factory_carton_stock || 0} ctns)</span>
+              <span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(In Stock: ${item.factory_carton_stock || 0} ${unitsAbbr})</span>
             </div>
             <span class="text-xs font-black tabular-nums ${isHighlighted ? 'text-white' : 'text-slate-900'} min-w-[65px] text-right">
               Rs. ${price}
@@ -2142,30 +2147,36 @@ window.ShopSales = {
             <tr>
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 22px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item Description / Flavor</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 45px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pack</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pack</th>
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 38px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Order</th>
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 42px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Deliv.</th>
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 38px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Ret.</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 55px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Rate/Ctn</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 55px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Rate</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 68px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
             </tr>
           </thead>
           <tbody>
-            ${items.map((it, idx) => `
+            ${items.map((it, idx) => {
+              const isShoper = it.package_type === 'shoper';
+              const unitAbbr = isShoper ? 'shoper' : 'ctn';
+              const unitsAbbr = isShoper ? 'shopers' : 'ctns';
+              return `
               <tr>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${idx + 1}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">
                   <span style="font-weight: 800;">${it.carton_name}</span>
-                  ${it.returned_cartons > 0 ? `<span style="font-size: 8.5px; font-weight: 500; display: block;">(Ret: ${it.returned_cartons} ctns ${it.return_destination === 'car' ? 'kept in car' : 'sent to stock'})</span>` : ''}
+                  <span style="font-size: 8px; font-weight: 700; text-transform: uppercase; border: 1px solid #000; padding: 0.5px 2.5px; border-radius: 2.5px; margin-left: 2px;">${isShoper ? 'Shoper' : 'Carton'}</span>
+                  ${it.returned_cartons > 0 ? `<span style="font-size: 8.5px; font-weight: 500; display: block;">(Ret: ${it.returned_cartons} ${unitsAbbr} ${it.return_destination === 'car' ? 'kept in car' : 'sent to stock'})</span>` : ''}
                 </td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.pieces_per_carton || 1} pcs</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9px; color: #000;">${it.pieces_per_carton || 1} pcs/${unitAbbr}</td>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.ordered_cartons || it.delivered_cartons || 1}</td>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: 800; font-size: 9.5px; color: #000;">${it.delivered_cartons || 1}</td>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: ${it.returned_cartons > 0 ? '800' : '400'}; font-size: 9.5px; color: #000;">${it.returned_cartons || 0}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.carton_price}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.line_total).toLocaleString()}</td>
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
         </table>
 
@@ -2173,8 +2184,15 @@ window.ShopSales = {
         <div style="margin-top: 6px; display: flex; justify-content: space-between; gap: 8px;">
           <!-- Left: Return Note -->
           <div style="flex: 1; border: 1px solid #000; padding: 5px 8px; font-size: 9.5px; color: #000; background: #fff; line-height: 1.4;">
-            <div><strong>Cartons Summary:</strong> Total Delivered: <strong>${totalDelivered} Cartons</strong></div>
-            ${totalReturned > 0 ? `<div>Returned: <strong>${totalReturned} Cartons</strong></div>` : ''}
+            ${(() => {
+              const delCtns = items.filter(it => (it.package_type || 'carton') !== 'shoper').reduce((sum, it) => sum + (Number(it.delivered_cartons) || 0), 0);
+              const delShopers = items.filter(it => it.package_type === 'shoper').reduce((sum, it) => sum + (Number(it.delivered_cartons) || 0), 0);
+              const breakdown = (delCtns > 0 && delShopers > 0)
+                ? ` (${delCtns} Cartons, ${delShopers} Shopers)`
+                : (delShopers > 0 ? ` (${delShopers} Shopers)` : ` (${delCtns} Cartons)`);
+              return `<div><strong>Packaging Delivered:</strong> <strong>${totalDelivered} units${breakdown}</strong></div>`;
+            })()}
+            ${totalReturned > 0 ? `<div>Returned: <strong>${totalReturned} Units</strong></div>` : ''}
             ${delivery.notes ? `<div style="margin-top: 2px;"><strong>Notes:</strong> ${delivery.notes}</div>` : ''}
             <div style="margin-top: 4px; font-size: 8.5px; font-weight: 600;">* Please inspect all cartons upon delivery. Cold chain maintenance is required.</div>
           </div>

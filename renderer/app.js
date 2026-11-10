@@ -1791,21 +1791,25 @@ const app = {
     // Load packed cartons as products for stickers
     try {
       const cartons = (await window.api.getPackedCartons()) || [];
-      this.barcodeStickerState.allProducts = cartons.map(c => ({
-        id: c.id,
-        item_name: c.carton_name,
-        carton_name: c.carton_name,
-        barcode: c.barcode || '',
-        retail_price: c.carton_sale_price || 0,
-        sale_price: c.carton_sale_price || 0,
-        cost_price: c.carton_cost_price || 0,
-        current_stock: c.factory_carton_stock || 0,
-        stickers_printed: Number(c.stickers_printed || 0),
-        category_label: `${c.pieces_per_carton} pcs/ctn`,
-        pieces_per_carton: c.pieces_per_carton,
-        is_carton: true,
-        base_item_name: c.base_item_name || c.item_name
-      }));
+      this.barcodeStickerState.allProducts = cartons.map(c => {
+        const isShoper = c.package_type === 'shoper';
+        return {
+          id: c.id,
+          item_name: c.carton_name,
+          carton_name: c.carton_name,
+          package_type: c.package_type || 'carton',
+          barcode: c.barcode || '',
+          retail_price: c.carton_sale_price || 0,
+          sale_price: c.carton_sale_price || 0,
+          cost_price: c.carton_cost_price || 0,
+          current_stock: c.factory_carton_stock || 0,
+          stickers_printed: Number(c.stickers_printed || 0),
+          category_label: `${c.pieces_per_carton} pcs/${isShoper ? 'shoper' : 'ctn'}`,
+          pieces_per_carton: c.pieces_per_carton,
+          is_carton: true,
+          base_item_name: c.base_item_name || c.item_name
+        };
+      });
     } catch (e) {
       console.warn('Failed to load packed cartons for sticker printing:', e);
       this.barcodeStickerState.allProducts = [];
@@ -1953,16 +1957,17 @@ const app = {
     const matchStockBtn = document.getElementById('bsm-match-stock-btn');
     const cartonSel = document.getElementById('bsm-carton-select');
 
-    const catName = item.category_label || (item.pieces_per_carton ? `${item.pieces_per_carton} pcs/ctn` : 'Carton');
+    const isShoper = item.package_type === 'shoper';
+    const catName = item.category_label || (item.pieces_per_carton ? `${item.pieces_per_carton} pcs/${isShoper ? 'shoper' : 'ctn'}` : (isShoper ? 'Shoper' : 'Carton'));
     const price = Number(item.retail_price || item.sale_price || 0);
     const stock = Number(item.current_stock || 0);
     const hasBarcode = Boolean(item.barcode && String(item.barcode).trim());
     const printedCount = this.getStickersPrintedCount(item.id);
 
-    if (nameEl) nameEl.textContent = item.item_name || 'Carton Product';
+    if (nameEl) nameEl.textContent = item.item_name || 'Product';
     if (catEl) catEl.textContent = catName;
     if (priceDisplay) priceDisplay.textContent = 'Price: Rs. ' + price.toLocaleString();
-    if (stockDisplay) stockDisplay.textContent = 'Stock: ' + stock + ' ctns';
+    if (stockDisplay) stockDisplay.textContent = 'Stock: ' + stock + (isShoper ? ' shopers' : ' ctns');
     if (printedDisplay) printedDisplay.innerHTML = 'Already printed: <span class="font-black text-indigo-700">' + printedCount + '</span>';
 
     if (bcDisplay) {

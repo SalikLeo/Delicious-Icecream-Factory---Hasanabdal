@@ -2123,6 +2123,7 @@ function createIcecreamFactoryTables() {
       item_id INTEGER NOT NULL REFERENCES icecream_items(id),
       item_name TEXT NOT NULL,
       carton_name TEXT NOT NULL,
+      package_type TEXT DEFAULT 'carton',
       pieces_per_carton INTEGER NOT NULL,
       carton_cost_price REAL DEFAULT 0,
       carton_sale_price REAL NOT NULL,
@@ -2141,6 +2142,7 @@ function createIcecreamFactoryTables() {
       carton_id INTEGER NOT NULL REFERENCES packed_cartons(id),
       item_id INTEGER NOT NULL,
       item_name TEXT NOT NULL,
+      package_type TEXT DEFAULT 'carton',
       cartons_packed INTEGER NOT NULL,
       pieces_per_carton INTEGER NOT NULL,
       total_pieces_consumed INTEGER NOT NULL,
@@ -2231,6 +2233,7 @@ function createIcecreamFactoryTables() {
       delivery_id INTEGER NOT NULL REFERENCES shop_deliveries(id) ON DELETE CASCADE,
       carton_id INTEGER NOT NULL,
       carton_name TEXT NOT NULL,
+      package_type TEXT DEFAULT 'carton',
       pieces_per_carton INTEGER NOT NULL,
       ordered_cartons INTEGER DEFAULT 0,
       delivered_cartons INTEGER NOT NULL,
@@ -2293,6 +2296,13 @@ function createIcecreamFactoryTables() {
 
     const pcCols = db.prepare("PRAGMA table_info(packed_cartons)").all().map(c => c.name);
     if (!pcCols.includes('stickers_printed')) db.exec('ALTER TABLE packed_cartons ADD COLUMN stickers_printed INTEGER DEFAULT 0');
+    if (!pcCols.includes('package_type')) db.exec("ALTER TABLE packed_cartons ADD COLUMN package_type TEXT DEFAULT 'carton'");
+
+    const pbCols = db.prepare("PRAGMA table_info(packing_batches)").all().map(c => c.name);
+    if (!pbCols.includes('package_type')) db.exec("ALTER TABLE packing_batches ADD COLUMN package_type TEXT DEFAULT 'carton'");
+
+    const sdiCols = db.prepare("PRAGMA table_info(shop_delivery_items)").all().map(c => c.name);
+    if (!sdiCols.includes('package_type')) db.exec("ALTER TABLE shop_delivery_items ADD COLUMN package_type TEXT DEFAULT 'carton'");
   } catch(e) {}
 
   try {
@@ -2986,14 +2996,17 @@ function savePackedCarton(data) {
     }
   }
 
+  const packageType = (data.package_type === 'shoper' || data.package_type === 'Shoper') ? 'shoper' : 'carton';
+
   if (data.id) {
     db.prepare(`
       UPDATE packed_cartons
-      SET item_id = ?, carton_name = ?, pieces_per_carton = ?, carton_cost_price = ?, carton_sale_price = ?, carton_wholesale_price = ?, factory_carton_stock = ?, barcode = ?, notes = ?
+      SET item_id = ?, carton_name = ?, package_type = ?, pieces_per_carton = ?, carton_cost_price = ?, carton_sale_price = ?, carton_wholesale_price = ?, factory_carton_stock = ?, barcode = ?, notes = ?
       WHERE id = ?
     `).run(
       data.item_id,
       data.carton_name.trim(),
+      packageType,
       Number(data.pieces_per_carton) || 20,
       Number(data.carton_cost_price) || 0,
       Number(data.carton_sale_price) || 0,
@@ -3008,12 +3021,13 @@ function savePackedCarton(data) {
     const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(data.item_id);
     const itemName = item ? item.name : '';
     const res = db.prepare(`
-      INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock, barcode, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO packed_cartons (item_id, item_name, carton_name, package_type, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock, barcode, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       data.item_id,
       itemName,
       data.carton_name.trim(),
+      packageType,
       Number(data.pieces_per_carton) || 20,
       Number(data.carton_cost_price) || 0,
       Number(data.carton_sale_price) || 0,
@@ -3095,15 +3109,17 @@ function runCartonPacking(data) {
     `).run(cartonsPacked, piecesPerCarton, cartonCost, cartonSalePrice, carton.id);
 
     // 3. Insert packing batch record
+    const pkgType = carton.package_type || 'carton';
     const res = db.prepare(`
-      INSERT INTO packing_batches (packing_number, date, carton_id, item_id, item_name, cartons_packed, pieces_per_carton, total_pieces_consumed, carton_cost, total_cost, carton_sale_price, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO packing_batches (packing_number, date, carton_id, item_id, item_name, package_type, cartons_packed, pieces_per_carton, total_pieces_consumed, carton_cost, total_cost, carton_sale_price, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       packingNumber,
       date,
       carton.id,
       item.id,
       item.name,
+      pkgType,
       cartonsPacked,
       piecesPerCarton,
       totalPiecesNeeded,
@@ -3225,6 +3241,7 @@ function getCarInventory(carId) {
   return db.prepare(`
     SELECT pc.id as carton_id,
            pc.carton_name,
+           COALESCE(pc.package_type, 'carton') as package_type,
            pc.pieces_per_carton,
            pc.carton_sale_price,
            pc.carton_cost_price,
@@ -3568,6 +3585,7 @@ function saveShopDelivery(data) {
     for (const it of data.items) {
       const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(it.carton_id);
       const cartonName = pc ? pc.carton_name : (it.carton_name || 'Ice Cream Carton');
+      const pkgType = pc ? (pc.package_type || 'carton') : (it.package_type || 'carton');
       const pcsPerCarton = pc ? pc.pieces_per_carton : (Number(it.pieces_per_carton) || 20);
       const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
       const price = Number(it.carton_price) || 0;
@@ -3576,14 +3594,15 @@ function saveShopDelivery(data) {
       // Insert item
       db.prepare(`
         INSERT INTO shop_delivery_items (
-          delivery_id, carton_id, carton_name, pieces_per_carton,
+          delivery_id, carton_id, carton_name, package_type, pieces_per_carton,
           ordered_cartons, delivered_cartons, returned_cartons, return_destination,
           carton_price, line_total
-        ) VALUES (?, ?, ?, ?, ?, ?, 0, 'car', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'car', ?, ?)
       `).run(
         deliveryId,
         it.carton_id,
         cartonName,
+        pkgType,
         pcsPerCarton,
         qty,
         qty,
@@ -3845,7 +3864,12 @@ function getShopDeliveries(filters = {}) {
 function getShopDelivery(id) {
   const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
   if (!delivery) return null;
-  delivery.items = db.prepare('SELECT * FROM shop_delivery_items WHERE delivery_id = ?').all(id);
+  delivery.items = db.prepare(`
+    SELECT sdi.*, COALESCE(sdi.package_type, pc.package_type, 'carton') as package_type
+    FROM shop_delivery_items sdi
+    LEFT JOIN packed_cartons pc ON pc.id = sdi.carton_id
+    WHERE sdi.delivery_id = ?
+  `).all(id);
   return delivery;
 }
 

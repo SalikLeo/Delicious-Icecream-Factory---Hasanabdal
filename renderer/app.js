@@ -319,7 +319,7 @@ const app = {
 
     // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(btn => {
-      const isCurrent = btn.id === `nav-${page}` || ((page === 'companies' || page === 'purchases') && (btn.id === 'nav-purchases' || btn.id === 'nav-companies'));
+      const isCurrent = btn.id === `nav-${page}` || ((page === 'companies' || page === 'purchases' || page === 'item-purchases') && (btn.id === 'nav-purchases' || btn.id === 'nav-companies')) || (page === 'item-sales' && (btn.id === 'nav-proposals' || btn.id === 'nav-sales-history'));
       const icon = btn.querySelector('.nav-icon');
       const text = btn.querySelector('.nav-text');
       if (isCurrent) {
@@ -407,6 +407,7 @@ const app = {
             case 'expenses': await (window.Expenses || Expenses).render(panel); break;
             case 'purchases':
             case 'companies': await (window.Purchases || window.Companies || Purchases || Companies).render(panel, args); break;
+            case 'item-purchases': await (window.ItemPurchases || ItemPurchases).render(panel, args); break;
             case 'reports': await (window.Reports || Reports).render(panel); break;
             case 'settings': await (window.Settings || Settings).render(panel); break;
           }
@@ -450,6 +451,8 @@ const app = {
           Customers.loadData();
         } else if (page === 'item-sales' && window.ItemSales && typeof ItemSales.loadData === 'function') {
           ItemSales.loadData();
+        } else if (page === 'item-purchases' && window.ItemPurchases && typeof ItemPurchases.loadData === 'function') {
+          ItemPurchases.loadData();
         } else if (page === 'expenses' && window.Expenses && typeof Expenses.loadData === 'function') {
           Expenses.loadData();
         } else if (page === 'companies' && window.Companies && typeof Companies.loadCompanies === 'function') {
@@ -500,6 +503,7 @@ const app = {
       'proposals': 'Sales History',
       'customers': 'Customers',
       'item-sales': 'Item Sales',
+      'item-purchases': 'Item Purchases',
       'master-db': 'Stock',
       'rate-list': 'Rate List',
       'expenses': 'Expenses',

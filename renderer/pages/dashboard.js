@@ -34,7 +34,7 @@ window.Dashboard = {
     const today = s.today || { date: '', sales: 0, received: 0, invoices: 0, cartons_sold: 0 };
 
     const settings = app.settings || {};
-    const company = settings.company_name || 'Ice Cream Factory';
+    const company = (settings.company_name || 'Delicious Superstar Foods').replace(/\s*\(Branch \d+\)/i, '').trim() || 'Delicious Superstar Foods';
 
     this.container.innerHTML = `
       <div class="h-full flex flex-col gap-3.5 w-full overflow-y-auto custom-scrollbar">
@@ -46,7 +46,7 @@ window.Dashboard = {
               <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[10px] font-black uppercase tracking-wider">FACTORY HUB</span>
               <span class="text-xs text-slate-300 font-mono font-bold">${app.formatDateTime(new Date())}</span>
             </div>
-            <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">${company} Management</h2>
+            <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">${company}</h2>
             <p class="text-xs text-slate-300 font-medium mt-1">Complete 5-stage production, packing, vehicle dispatch, and shop deliveries control center.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">

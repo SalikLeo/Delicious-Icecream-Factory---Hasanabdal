@@ -37,6 +37,10 @@ window.ItemPurchases = {
             </div>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="app.navigate('suppliers')" class="h-10 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer" title="Manage Suppliers & Vendor Purchases">
+              <i data-lucide="users" class="w-4 h-4 text-blue-500"></i>
+              <span>Suppliers</span>
+            </button>
             <button onclick="ItemPurchases.printReport()" class="h-10 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer" title="Print Item Purchases Report (A5)">
               <i data-lucide="printer" class="w-4 h-4 text-slate-500"></i>
               <span>Print</span>

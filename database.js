@@ -355,6 +355,12 @@ function createTables() {
     address TEXT, 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+  try {
+    const compCols = db.prepare("PRAGMA table_info(companies)").all().map(c => c.name);
+    if (!compCols.includes('contact_person')) {
+      db.exec("ALTER TABLE companies ADD COLUMN contact_person TEXT");
+    }
+  } catch (e) {}
 
   // Customers
   db.exec(`CREATE TABLE IF NOT EXISTS customers (
@@ -1367,10 +1373,12 @@ function saveCompany(data) {
     const { id, ...updates } = data;
     const clause = Object.keys(updates).map(k => `${k} = @${k}`).join(', ');
     db.prepare(`UPDATE companies SET ${clause} WHERE id = @id`).run(data);
+    return { success: true, id: data.id };
   } else {
     const keys = Object.keys(data);
     const placeholders = keys.map(k => `@${k}`).join(', ');
-    db.prepare(`INSERT INTO companies (${keys.join(', ')}) VALUES (${placeholders})`).run(data);
+    const res = db.prepare(`INSERT INTO companies (${keys.join(', ')}) VALUES (${placeholders})`).run(data);
+    return { success: true, id: res.lastInsertRowid };
   }
 }
 
@@ -2712,9 +2720,9 @@ function deleteRawMaterialPurchase(id) {
 
 function getRawMaterialSuppliers() {
   const rows = db.prepare(`
-    SELECT DISTINCT supplier_name
-    FROM raw_material_purchases
-    WHERE supplier_name IS NOT NULL AND TRIM(supplier_name) != ''
+    SELECT DISTINCT name as supplier_name FROM companies WHERE name IS NOT NULL AND TRIM(name) != ''
+    UNION
+    SELECT DISTINCT supplier_name FROM raw_material_purchases WHERE supplier_name IS NOT NULL AND TRIM(supplier_name) != ''
     ORDER BY supplier_name ASC
   `).all();
   return rows.map(r => r.supplier_name);

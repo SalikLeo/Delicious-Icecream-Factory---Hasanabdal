@@ -57,10 +57,13 @@ contextBridge.exposeInMainWorld('api', {
   saveEmployee: (data) => ipcRenderer.invoke('save-employee', data),
   deleteEmployee: (id) => ipcRenderer.invoke('delete-employee', id),
 
-  // Companies
+  // Companies & Suppliers
   getCompanies: () => ipcRenderer.invoke('get-companies'),
   saveCompany: (data) => ipcRenderer.invoke('save-company', data),
   deleteCompany: (id) => ipcRenderer.invoke('delete-company', id),
+  getSuppliers: () => ipcRenderer.invoke('get-companies'),
+  saveSupplier: (data) => ipcRenderer.invoke('save-company', data),
+  deleteSupplier: (id) => ipcRenderer.invoke('delete-company', id),
 
   // Customers
   getCustomers: () => ipcRenderer.invoke('get-customers'),

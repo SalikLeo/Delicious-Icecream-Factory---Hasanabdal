@@ -2311,6 +2311,20 @@ function createIcecreamFactoryTables() {
 
     const sdiCols = db.prepare("PRAGMA table_info(shop_delivery_items)").all().map(c => c.name);
     if (!sdiCols.includes('package_type')) db.exec("ALTER TABLE shop_delivery_items ADD COLUMN package_type TEXT DEFAULT 'carton'");
+
+    // Simplify legacy INV-2026xxxx-xxx invoice numbers to sequential integers 1, 2, 3
+    const oldInvs = db.prepare("SELECT id, invoice_no FROM shop_deliveries WHERE invoice_no LIKE 'INV-%' ORDER BY id ASC").all();
+    for (const row of oldInvs) {
+      const match = row.invoice_no.match(/INV-\d+-(\d+)/i) || row.invoice_no.match(/INV-(\d+)/i);
+      const newInv = match ? String(parseInt(match[1], 10)) : String(row.id);
+      const exists = db.prepare("SELECT id FROM shop_deliveries WHERE invoice_no = ? AND id != ?").get(newInv, row.id);
+      if (!exists) {
+        db.prepare("UPDATE shop_deliveries SET invoice_no = ? WHERE id = ?").run(newInv, row.id);
+        try {
+          db.prepare("UPDATE shop_returns SET invoice_no = ? WHERE invoice_no = ?").run(newInv, row.invoice_no);
+        } catch (e) {}
+      }
+    }
   } catch(e) {}
 
   try {
@@ -3487,11 +3501,33 @@ function deleteCarLoadingBatch(id) {
   }
 }
 
-function getNextDeliveryInvoiceNo(customDate) {
-  const date = customDate || new Date().toISOString().split('T')[0];
-  const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_deliveries WHERE date = ?').get(date).c + 1;
-  return `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
+function getNextDeliveryInvoiceNo() {
+  const rows = db.prepare('SELECT id, invoice_no FROM shop_deliveries').all();
+  if (!rows || rows.length === 0) {
+    return '1';
+  }
+
+  let maxNum = 0;
+  for (const r of rows) {
+    if (r.invoice_no) {
+      const trimmed = String(r.invoice_no).trim();
+      if (/^\d+$/.test(trimmed)) {
+        const n = parseInt(trimmed, 10);
+        if (n > maxNum) maxNum = n;
+      } else {
+        const m = trimmed.match(/(\d+)$/);
+        if (m) {
+          const n = parseInt(m[1], 10);
+          if (n > 0 && n < 100000 && n > maxNum) maxNum = n;
+        }
+      }
+    }
+    if (r.id && r.id > maxNum) {
+      maxNum = Math.max(maxNum, r.id);
+    }
+  }
+
+  return String(maxNum + 1);
 }
 
 // --- STAGE 5: SHOP DELIVERIES, SALES & RETURNS ---
@@ -3507,9 +3543,9 @@ function saveShopDelivery(data) {
   const shopAddress = data.shop_address || (shop ? shop.address : '');
 
   const date = data.date || new Date().toISOString().split('T')[0];
-  const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_deliveries WHERE date = ?').get(date).c + 1;
-  const invoiceNo = data.invoice_no || `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
+  const invoiceNo = (data.invoice_no && String(data.invoice_no).trim() && !String(data.invoice_no).startsWith('INV-20'))
+    ? String(data.invoice_no).trim()
+    : getNextDeliveryInvoiceNo();
 
   const discount = Number(data.discount) || 0;
   const receivedAmount = Number(data.received_amount) || 0;

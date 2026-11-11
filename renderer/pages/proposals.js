@@ -557,7 +557,7 @@ window.Proposals = {
         const dB = new Date(b.date || b.created_at || 0).getTime() || 0;
         return so * (dA - dB);
       }
-      if (sf === 'invoice') return so * (a.invoice_no || '').localeCompare(b.invoice_no || '');
+      if (sf === 'invoice') return so * (a.invoice_no || '').localeCompare(b.invoice_no || '', undefined, { numeric: true });
       if (sf === 'car_driver') return so * ((a.car_number || '') + (a.driver_name || '')).localeCompare((b.car_number || '') + (b.driver_name || ''));
       if (sf === 'shop') return so * (a.shop_name || '').localeCompare(b.shop_name || '');
       if (sf === 'cartons') return so * (((a.total_cartons_delivered || 0) - (a.total_cartons_returned || 0)) - ((b.total_cartons_delivered || 0) - (b.total_cartons_returned || 0)));

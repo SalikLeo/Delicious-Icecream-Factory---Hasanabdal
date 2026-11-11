@@ -39,6 +39,12 @@ window.ShopSales = {
         this.carInventory = await window.api.getCarInventory(this.selectedCarId) || [];
       }
 
+      if (window.api && window.api.getNextDeliveryInvoiceNo) {
+        try {
+          this.nextInvoiceNo = await window.api.getNextDeliveryInvoiceNo();
+        } catch (e) {}
+      }
+
       this.renderUI();
     } catch (e) {
       console.error('Failed to load shop sales:', e);
@@ -441,7 +447,7 @@ window.ShopSales = {
                 <!-- Invoice Number Field -->
                 <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shadow-2xs">
                   <span class="text-slate-400 text-[10px] uppercase font-black tracking-wider">INV:</span>
-                  <span class="text-slate-900 font-black text-xs uppercase tabular-nums font-mono">AUTO</span>
+                  <span class="text-slate-900 font-black text-xs uppercase tabular-nums font-mono">#${this.nextInvoiceNo || '1'}</span>
                 </div>
 
                 <!-- Payment Method (Cash / Online) -->
@@ -2020,15 +2026,19 @@ window.ShopSales = {
     let invoiceNo;
     if (window.api && window.api.getNextDeliveryInvoiceNo) {
       try {
-        invoiceNo = await window.api.getNextDeliveryInvoiceNo(date);
+        invoiceNo = await window.api.getNextDeliveryInvoiceNo();
       } catch (err) {
         console.warn('getNextDeliveryInvoiceNo failed', err);
       }
     }
     if (!invoiceNo) {
-      const todayStr = date.replace(/-/g, '');
-      const countToday = (this.deliveries || []).filter(d => d.date === date).length + 1;
-      invoiceNo = `INV-${todayStr}-${String(countToday).padStart(3, '0')}`;
+      let maxNum = 0;
+      (this.deliveries || []).forEach(d => {
+        const num = parseInt(d.invoice_no, 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+        if (d.id && d.id > maxNum) maxNum = d.id;
+      });
+      invoiceNo = String(maxNum + 1);
     }
 
     const payload = {

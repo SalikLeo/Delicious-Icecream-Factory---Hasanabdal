@@ -971,21 +971,32 @@
           </div>
         </div>
 
-        <!-- Element Toggles -->
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-4 text-xs font-bold text-slate-700">
-          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Include:</span>
-          <label class="flex items-center gap-1.5 cursor-pointer select-none">
-            <input type="checkbox" id="tij-inc-store" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
-            <span>Store Header</span>
-          </label>
-          <label class="flex items-center gap-1.5 cursor-pointer select-none">
-            <input type="checkbox" id="tij-inc-name" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
-            <span>Item Name</span>
-          </label>
-          <label class="flex items-center gap-1.5 cursor-pointer select-none">
-            <input type="checkbox" id="tij-inc-price" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
-            <span>Price</span>
-          </label>
+        <!-- Element Toggles & Scan Optimization -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700">
+          <div class="flex items-center gap-4 flex-wrap">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Include:</span>
+            <label class="flex items-center gap-1.5 cursor-pointer select-none">
+              <input type="checkbox" id="tij-inc-store" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
+              <span>Store Header</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer select-none">
+              <input type="checkbox" id="tij-inc-name" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
+              <span>Item Name</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer select-none">
+              <input type="checkbox" id="tij-inc-price" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
+              <span>Price</span>
+            </label>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Barcode Density:</span>
+            <select id="tij-bar-width" onchange="app.updateTijPreview()" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none cursor-pointer">
+              <option value="2.0" selected>Standard (2.0 px - High Density)</option>
+              <option value="2.3">Thick Bars (2.3 px - High Contrast)</option>
+              <option value="2.6">Bold Bars (2.6 px - Rough Brown Boxes)</option>
+            </select>
+          </div>
         </div>
 
         <!-- Live 1-Bit BMP Canvas Preview -->

@@ -2507,9 +2507,10 @@ const app = {
     const incStore = document.getElementById('tij-inc-store')?.checked ?? true;
     const incName = document.getElementById('tij-inc-name')?.checked ?? true;
     const incPrice = document.getElementById('tij-inc-price')?.checked ?? true;
+    const barWidth = Number(document.getElementById('tij-bar-width')?.value) || 2.0;
     const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || this.barcodeStickerState.storeName || 'DELICIOUS SUPERSTAR FOODS';
 
-    return { layout, incStore, incName, incPrice, invert: false, storeName };
+    return { layout, incStore, incName, incPrice, barWidth, invert: false, storeName };
   },
 
   updateTijPreview() {
@@ -2553,7 +2554,7 @@ const app = {
     canvas.height = height;
     const ctx = canvas.getContext('2d');
 
-    // Fill white background
+    // Fill pristine white background
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, width, height);
     ctx.imageSmoothingEnabled = false;
@@ -2566,79 +2567,106 @@ const app = {
     const incStore = options.incStore ?? true;
     const incName = options.incName ?? true;
     const incPrice = options.incPrice ?? true;
+    const barWidth = options.barWidth || 2.0;
     const storeName = (options.storeName || this.barcodeStickerState.storeName || 'DELICIOUS SUPERSTAR FOODS').trim();
 
     ctx.fillStyle = '#000000';
 
     if (isFull) {
-      let curY = 6;
+      // Dynamic height balancing for 152 px cartridge height
+      let availableBarHeight = 58;
+      if (!incStore) availableBarHeight += 12;
+      if (!incPrice) availableBarHeight += 12;
+      if (!incName) availableBarHeight += 14;
+      availableBarHeight = Math.min(84, availableBarHeight);
+
+      // Calculate total height to center content vertically
+      const totalEstimatedHeight = 
+        (incStore ? 15 : 0) + 
+        (incName ? 18 : 0) + 
+        availableBarHeight + 
+        23 + // Barcode number height (18px font + 5px gap)
+        (incPrice ? 20 : 0);
+
+      let curY = Math.max(3, Math.floor((height - totalEstimatedHeight) / 2));
+
+      // 1. Store Header
       if (incStore) {
-        ctx.font = '900 13px sans-serif';
+        ctx.font = '900 12px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(storeName.toUpperCase(), width / 2, curY);
-        curY += 16;
+        curY += 15;
       }
 
+      // 2. Product Name / Spec
       if (incName) {
-        ctx.font = '900 16px sans-serif';
+        ctx.font = '900 15px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         const displayTitle = (item.item_name || 'Product') + (spec ? ` (${spec})` : '');
         ctx.fillText(displayTitle, width / 2, curY);
-        curY += 20;
+        curY += 18;
       }
 
+      // 3. Barcode Bars (Increased height + wide quiet zones for handheld scanner reading)
       const bcCanvas = document.createElement('canvas');
       try {
         window.JsBarcode(bcCanvas, barcodeVal, {
           format: 'CODE128',
-          width: 2,
-          height: 48,
+          width: barWidth,
+          height: availableBarHeight,
           displayValue: false,
-          margin: 0,
+          margin: 6,
           background: '#FFFFFF',
           lineColor: '#000000'
         });
         const bcX = Math.round((width - bcCanvas.width) / 2);
         ctx.drawImage(bcCanvas, bcX, curY);
-        curY += 50;
+        curY += availableBarHeight + 3;
       } catch (e) {
         ctx.font = 'bold 16px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(`|||| ${barcodeVal} ||||`, width / 2, curY);
-        curY += 30;
+        curY += 28;
       }
 
-      ctx.font = 'bold 13px monospace';
+      // 4. Barcode Number (Enlarged, bold, OCR-style spaced digits for effortless scanning & reading)
+      ctx.font = '900 18px "Consolas", "Courier New", monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(barcodeVal, width / 2, curY);
-      curY += 16;
+      const formattedBc = barcodeVal.length <= 14 ? barcodeVal.split('').join(' ') : barcodeVal;
+      ctx.fillText(formattedBc, width / 2, curY);
+      curY += 22;
 
+      // 5. Price
       if (incPrice) {
-        ctx.font = '900 18px sans-serif';
+        ctx.font = '900 17px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(`Price: Rs. ${price.toLocaleString()}`, width / 2, curY);
       }
     } else {
-      let curY = 8;
+      // Compact Barcode-Only layout
+      const barHeight = incPrice ? 92 : 108;
+      const totalEstimatedHeight = barHeight + 28 + (incPrice ? 20 : 0);
+      let curY = Math.max(4, Math.floor((height - totalEstimatedHeight) / 2));
+
       const bcCanvas = document.createElement('canvas');
       try {
         window.JsBarcode(bcCanvas, barcodeVal, {
           format: 'CODE128',
-          width: 2.2,
-          height: 85,
+          width: barWidth,
+          height: barHeight,
           displayValue: false,
-          margin: 0,
+          margin: 6,
           background: '#FFFFFF',
           lineColor: '#000000'
         });
         const bcX = Math.round((width - bcCanvas.width) / 2);
         ctx.drawImage(bcCanvas, bcX, curY);
-        curY += 92;
+        curY += barHeight + 4;
       } catch (e) {
         ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
@@ -2647,17 +2675,19 @@ const app = {
         curY += 40;
       }
 
-      ctx.font = 'bold 22px monospace';
+      // Large bold barcode digits
+      ctx.font = '900 24px "Consolas", "Courier New", monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(barcodeVal, width / 2, curY);
-      curY += 24;
+      const formattedBc = barcodeVal.length <= 14 ? barcodeVal.split('').join(' ') : barcodeVal;
+      ctx.fillText(formattedBc, width / 2, curY);
+      curY += 28;
 
       if (incPrice) {
-        ctx.font = '900 15px sans-serif';
+        ctx.font = '900 16px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.fillText(`Rs. ${price.toLocaleString()}`, width / 2, curY);
+        ctx.fillText(`Price: Rs. ${price.toLocaleString()}`, width / 2, curY);
       }
     }
 

@@ -2507,10 +2507,9 @@ const app = {
     const incStore = document.getElementById('tij-inc-store')?.checked ?? true;
     const incName = document.getElementById('tij-inc-name')?.checked ?? true;
     const incPrice = document.getElementById('tij-inc-price')?.checked ?? true;
-    const invert = document.getElementById('tij-invert')?.checked ?? false;
     const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || this.barcodeStickerState.storeName || 'DELICIOUS SUPERSTAR FOODS';
 
-    return { layout, incStore, incName, incPrice, invert, storeName };
+    return { layout, incStore, incName, incPrice, invert: false, storeName };
   },
 
   updateTijPreview() {

@@ -963,8 +963,8 @@
         </div>
 
         <!-- Element Toggles -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-4 text-xs font-bold text-slate-700">
-          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider w-full sm:w-auto">Include:</span>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-4 text-xs font-bold text-slate-700">
+          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Include:</span>
           <label class="flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" id="tij-inc-store" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
             <span>Store Header</span>
@@ -977,14 +977,10 @@
             <input type="checkbox" id="tij-inc-price" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
             <span>Price</span>
           </label>
-          <label class="flex items-center gap-1.5 cursor-pointer select-none ml-auto text-slate-500">
-            <input type="checkbox" id="tij-invert" onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
-            <span>Invert Colors (White on Black)</span>
-          </label>
         </div>
 
         <!-- Live 1-Bit BMP Canvas Preview -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col items-center">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col items-center">
           <div class="w-full flex justify-between items-center pb-2 mb-2 border-b border-slate-100 text-xs font-bold text-slate-500">
             <span class="flex items-center gap-1.5 font-black text-slate-700 text-[11px] uppercase tracking-wider">
               <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i> Exact 1-Bit Bitmap Preview
@@ -992,23 +988,10 @@
             <span id="tij-dimensions-label" class="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700">480 × 152 px</span>
           </div>
 
-          <div class="w-full bg-slate-200 p-4 rounded-xl flex items-center justify-center overflow-x-auto border border-dashed border-slate-300">
+          <div class="w-full bg-slate-100 p-4 rounded-xl flex items-center justify-center overflow-x-auto border border-dashed border-slate-300">
             <canvas id="tij-preview-canvas" class="border border-slate-400 bg-white shadow-sm max-w-full" style="image-rendering: pixelated;"></canvas>
           </div>
-          <span class="text-[10px] font-bold text-slate-400 mt-1.5">This exact black-and-white bitmap is what the DC-1750 ink nozzles spray onto your box or shoper</span>
-        </div>
-
-        <!-- 3-Step Handheld Guide -->
-        <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-emerald-900">
-          <i data-lucide="info" class="w-4 h-4 text-emerald-700 shrink-0 mt-0.5"></i>
-          <div>
-            <div class="font-black text-emerald-950 uppercase text-[10px] tracking-wider mb-0.5">How to load into DC-1750 Handheld Printer:</div>
-            <div class="text-[11px] font-semibold text-emerald-800 leading-snug">
-              1. Click <b>"Save This Item (.BMP)"</b> and choose your USB flash drive.<br>
-              2. Plug the USB flash drive into the side USB port of the DC-1750.<br>
-              3. On the DC-1750 touch screen, tap <b>Insert Picture / Image</b>, select the .bmp file, and roll to print!
-            </div>
-          </div>
+          <span class="text-[10px] font-bold text-slate-400 mt-2">This exact black-and-white bitmap is what the DC-1750 ink nozzles spray onto your box or shoper</span>
         </div>
       </div>
 

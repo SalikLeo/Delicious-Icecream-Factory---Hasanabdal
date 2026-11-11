@@ -1351,10 +1351,9 @@ window.Purchases = {
             <tr style="background: #fff; border-bottom: 1.5px solid #000;">
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 25px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Raw Material Description</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 45px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Quantity</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Cost / Unit</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 95px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Quantity</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 80px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Cost / Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 90px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
             </tr>
           </thead>
           <tbody>
@@ -1362,8 +1361,7 @@ window.Purchases = {
               <tr>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${idx + 1}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 800; font-size: 9.5px; color: #000;">${it.material_name}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; text-transform: uppercase; font-size: 9px; color: #000;">${it.unit || ''}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.qty}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.qty} ${it.unit || ''}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Number(it.unit_cost).toLocaleString()}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.total_cost).toLocaleString()}</td>
               </tr>
@@ -1371,20 +1369,20 @@ window.Purchases = {
           </tbody>
           <tfoot>
             <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
-              <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase; color: #000;">Grand Total Purchase Bill:</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase; color: #000;">Grand Total Purchase Bill:</td>
               <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(totalBill).toLocaleString()}</td>
             </tr>
             <tr>
-              <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; color: #000;">Amount Paid (${p.payment_method || 'Cash'}):</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; color: #000;">Amount Paid (${p.payment_method || 'Cash'}):</td>
               <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(paidAmt).toLocaleString()}</td>
             </tr>
             <tr>
-              <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Remaining Balance Due (This Invoice):</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Remaining Balance Due (This Invoice):</td>
               <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(remainingDue).toLocaleString()}</td>
             </tr>
             ${supplierCurrentBal !== null ? `
               <tr style="border-top: 1.5px solid #000;">
-                <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; text-transform: uppercase; color: #000;">Supplier Total Outstanding Balance:</td>
+                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; text-transform: uppercase; color: #000;">Supplier Total Outstanding Balance:</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(supplierCurrentBal).toLocaleString()}</td>
               </tr>
             ` : ''}

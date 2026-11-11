@@ -37,14 +37,19 @@ window.Proposals = {
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" onclick="Proposals.printReport()"
+                    class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                    title="Print Sales Report (A5)">
+              <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i> Print Sales Report
+            </button>
             <button type="button" onclick="app.navigate('item-sales')"
                     class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95" title="View item-wise carton sales breakdown">
               <i data-lucide="package" class="w-4 h-4 text-amber-400"></i> Item Sales
             </button>
             <button type="button" onclick="app.navigate('shop-sales')"
                     class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-4 h-4"></i> New Shop Delivery
+              <i data-lucide="plus" class="w-4 h-4"></i> + New Shop Delivery
             </button>
           </div>
         </div>
@@ -713,5 +718,163 @@ window.Proposals = {
       }
     });
     }, 'deleting delivery order invoice');
+  },
+
+  printReport() {
+    const list = this.filteredDeliveries || [];
+    if (list.length === 0) {
+      return app.showAlert({ title: 'No Data to Print', message: 'No delivery sales records found for the selected period or filters.' });
+    }
+
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Delicious Superstar Foods';
+    const phone = settings.phone || settings.company_phone || '0315-6795995';
+    const address = settings.address || settings.company_address || 'Hasan Abdal';
+    const tagline = settings.tagline || 'Delicious Superstar Foods & Ice Cream Products';
+    const date = new Date().toLocaleDateString('en-GB');
+
+    let periodDesc = 'All Historical Sales Records';
+    if (this.periodType === 'day') {
+      periodDesc = `Daily Sales Report (${this.selectedDate || 'Today'})`;
+    } else if (this.periodType === 'month') {
+      const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      periodDesc = `Monthly Sales Report (${monthNames[Number(this.selectedMonth)] || ''} ${this.selectedYear})`;
+    } else if (this.periodType === 'year') {
+      periodDesc = `Annual Sales Report (${this.selectedYear})`;
+    } else if (this.periodType === 'custom') {
+      periodDesc = `Custom Period (${this.startDate} to ${this.endDate})`;
+    }
+
+    if (this.selectedCarId) {
+      const c = (this.cars || []).find(x => String(x.id) === String(this.selectedCarId));
+      if (c) periodDesc += ` • Car: ${c.car_number}`;
+    }
+    if (this.selectedShopId) {
+      const s = (this.shops || []).find(x => String(x.id) === String(this.selectedShopId));
+      if (s) periodDesc += ` • Shop: ${s.name}`;
+    }
+
+    const totalCartons = list.reduce((sum, d) => sum + Math.max(0, (Number(d.total_cartons_delivered) || 0) - (Number(d.total_cartons_returned) || 0)), 0);
+    const totalSales = list.reduce((sum, d) => sum + (Number(d.total_amount) || 0), 0);
+    const totalCash = list.reduce((sum, d) => sum + (Number(d.received_amount) || 0), 0);
+    const totalPending = list.reduce((sum, d) => sum + (Number(d.remaining_balance) || 0), 0);
+
+    const html = `
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px 8px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
+        
+        <!-- Factory Header -->
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">${company}</h1>
+          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 600;">${tagline}</p>
+          <p style="font-size: 8.5px; color: #64748b; margin: 1px 0 0 0;">${address} • Phone: ${phone}</p>
+          <div style="margin-top: 5px; display: inline-block; padding: 2px 10px; background: #0f172a; color: #fff; font-size: 9.5px; font-weight: 900; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.8px;">
+            FACTORY SALES &amp; DISPATCH REPORT
+          </div>
+        </div>
+
+        <!-- Filter & Summary Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; margin-bottom: 6px; padding: 5px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+          <div>
+            <div><b>Report Period:</b> ${periodDesc}</div>
+            <div><b>Total Deliveries:</b> ${list.length} orders</div>
+          </div>
+          <div style="text-align: right;">
+            <div><b>Printed Date:</b> ${date}</div>
+            <div><b>Cartons Dispatched:</b> <b>${totalCartons} Ctns</b></div>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards in Printout -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 9px;">
+          <div style="background: #f1f5f9; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;">
+            <span style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: 800; display: block;">Total Billed Sale</span>
+            <span style="font-size: 11px; font-weight: 900; color: #0f172a;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
+          </div>
+          <div style="background: #ecfdf5; padding: 4px; border: 1px solid #a7f3d0; border-radius: 4px;">
+            <span style="font-size: 8px; color: #065f46; text-transform: uppercase; font-weight: 800; display: block;">Cash Received</span>
+            <span style="font-size: 11px; font-weight: 900; color: #047857;">Rs. ${Math.round(totalCash).toLocaleString()}</span>
+          </div>
+          <div style="background: #fef2f2; padding: 4px; border: 1px solid #fecaca; border-radius: 4px;">
+            <span style="font-size: 8px; color: #991b1b; text-transform: uppercase; font-weight: 800; display: block;">Khata Balance Due</span>
+            <span style="font-size: 11px; font-weight: 900; color: #b91c1c;">Rs. ${Math.round(totalPending).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <!-- Deliveries Table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 8.5px; margin-top: 4px;">
+          <thead>
+            <tr style="background: #f1f5f9; border-bottom: 1.5px solid #0f172a;">
+              <th style="border: 1px solid #cbd5e1; padding: 4px 3px; text-align: center; width: 18px;">#</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 4px; text-align: left; width: 62px;">Date</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 4px; text-align: left; width: 55px;">Invoice #</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 4px; text-align: left;">Car &amp; Driver</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 4px; text-align: left;">Shop / Customer</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 3px; text-align: center; width: 34px;">Ctns</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 4px; text-align: right; width: 58px;">Total (Rs.)</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 4px; text-align: right; width: 58px;">Received</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 4px; text-align: right; width: 58px;">Balance</th>
+              <th style="border: 1px solid #cbd5e1; padding: 4px 3px; text-align: center; width: 38px;">Mode</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map((d, idx) => {
+              const remainingCtns = Math.max(0, (Number(d.total_cartons_delivered) || 0) - (Number(d.total_cartons_returned) || 0));
+              const dt = (d.date || d.created_at || '').slice(0, 10);
+              return `
+                <tr>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 2px; text-align: center;">${idx + 1}</td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 4px; white-space: nowrap;">${dt}</td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 4px; font-weight: 700; font-family: monospace;">${d.invoice_no}</td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 4px;">
+                    <b>${d.car_number || '—'}</b>${d.driver_name ? `<br><span style="color:#64748b; font-size:7.5px;">${d.driver_name}</span>` : ''}
+                  </td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 4px;">
+                    <b>${d.shop_name || 'Walk-in'}</b>
+                  </td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 2px; text-align: center; font-weight: 800;">
+                    ${remainingCtns}
+                  </td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 4px; text-align: right; font-weight: 800;">
+                    ${Math.round(d.total_amount).toLocaleString()}
+                  </td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 4px; text-align: right; font-weight: 800; color: #15803d;">
+                    ${Math.round(d.received_amount).toLocaleString()}
+                  </td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 4px; text-align: right; font-weight: 900; color: ${d.remaining_balance > 0 ? '#b91c1c' : '#475569'};">
+                    ${Math.round(d.remaining_balance).toLocaleString()}
+                  </td>
+                  <td style="border: 1px solid #e2e8f0; padding: 3px 2px; text-align: center; font-size: 8px;">
+                    ${d.payment_method || 'Cash'}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background: #f8fafc; font-weight: 900; border-top: 1.5px solid #0f172a;">
+              <td colspan="5" style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; text-transform: uppercase;">GRAND TOTALS (${list.length} ORDERS):</td>
+              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">${totalCartons}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Rs. ${Math.round(totalSales).toLocaleString()}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; color: #15803d;">Rs. ${Math.round(totalCash).toLocaleString()}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; color: ${totalPending > 0 ? '#b91c1c' : '#475569'};">Rs. ${Math.round(totalPending).toLocaleString()}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 4px;"></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Signatures -->
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 8.5px;">
+          <div style="border-top: 1px dashed #64748b; width: 35%; text-align: center; padding-top: 4px;">
+            Sales / Driver Signature
+          </div>
+          <div style="border-top: 1px dashed #64748b; width: 35%; text-align: center; padding-top: 4px;">
+            Factory Manager Signature
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    app.showA5Preview(html, `Sales & Dispatch Report (${date})`);
   }
 };

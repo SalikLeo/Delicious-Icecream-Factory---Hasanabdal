@@ -273,14 +273,6 @@ window.ShopSales = {
             </div>
             <p class="text-xs text-slate-300 font-medium">Fast carton sales, barcode scanning, Khata debt tracking, and A5 thermal/laser bill printing.</p>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="app.navigate('proposals')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="history" class="w-4 h-4 text-amber-400"></i> Sales History
-            </button>
-            <button onclick="ShopSales.resetForm()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Form
-            </button>
-          </div>
         </div>
 
         <!-- Top Controls: Vehicle & Shop Selection -->

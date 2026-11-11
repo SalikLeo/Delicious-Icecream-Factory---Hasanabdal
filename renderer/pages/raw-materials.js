@@ -278,8 +278,13 @@ window.RawMaterials = {
         </div>
         <div class="flex items-center gap-4 flex-wrap font-bold text-slate-600">
           <div>Movements: <span class="font-black text-slate-900 font-mono">${stats.totalMovements}</span></div>
-          <div>Purchased: <span class="font-black text-emerald-700 font-mono">+${stats.totalAdded} units</span> (${stats.purchasesCount} orders)</div>
-          <div>Factory Consumed: <span class="font-black text-rose-700 font-mono">-${stats.totalConsumed} units</span> (${stats.productionCount} batches)</div>
+          <div>Purchased: <span class="font-black text-emerald-700 font-mono">+${stats.totalAdded} units (Rs. ${stats.purchasedWorth.toLocaleString()})</span> (${stats.purchasesCount} orders)</div>
+          <div>Factory Consumed: <span class="font-black text-rose-700 font-mono">-${stats.totalConsumed} units (Rs. ${stats.consumedWorth.toLocaleString()})</span> (${stats.productionCount} batches)</div>
+          <button type="button" onclick="app.navigate('reports'); setTimeout(() => Reports.switchTab('raw'), 100);"
+                  class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 rounded-lg border border-emerald-300 font-black text-[11px] shadow-2xs transition-all flex items-center gap-1 cursor-pointer ml-auto"
+                  title="View complete tabular Raw Materials Report">
+            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-emerald-600"></i> Full Report
+          </button>
         </div>
       </div>
     `;
@@ -477,12 +482,29 @@ window.RawMaterials = {
     const prodLogs = list.filter(l => l.action === 'PRODUCTION' || (l.qty_change || 0) < 0);
     const totalAdded = purchaseLogs.reduce((sum, l) => sum + Math.max(0, l.qty_change || 0), 0);
     const totalConsumed = prodLogs.reduce((sum, l) => sum + Math.abs(l.qty_change || 0), 0);
+
+    let purchasedWorth = 0;
+    purchaseLogs.forEach(l => {
+      const mat = (this.materials || []).find(m => m.id === l.material_id);
+      const cost = mat ? (Number(mat.cost_price) || 0) : 0;
+      purchasedWorth += Math.max(0, l.qty_change || 0) * cost;
+    });
+
+    let consumedWorth = 0;
+    prodLogs.forEach(l => {
+      const mat = (this.materials || []).find(m => m.id === l.material_id);
+      const cost = mat ? (Number(mat.cost_price) || 0) : 0;
+      consumedWorth += Math.abs(l.qty_change || 0) * cost;
+    });
+
     return {
       totalMovements: list.length,
       purchasesCount: purchaseLogs.length,
       productionCount: prodLogs.length,
       totalAdded: Math.round(totalAdded * 10) / 10,
-      totalConsumed: Math.round(totalConsumed * 10) / 10
+      totalConsumed: Math.round(totalConsumed * 10) / 10,
+      purchasedWorth: Math.round(purchasedWorth),
+      consumedWorth: Math.round(consumedWorth)
     };
   },
 

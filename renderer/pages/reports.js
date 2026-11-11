@@ -565,8 +565,10 @@ window.Reports = {
   async renderRawReport(container) {
     const rawListAll = await window.api.getRawMaterials() || [];
     const purchasesAll = await window.api.getRawMaterialPurchases() || [];
+    const logsAll = await window.api.getRawMaterialLogs() || [];
     this.rawMaterials = rawListAll;
     this.rawMaterialsPurchases = purchasesAll;
+    this.rawMaterialsLogs = logsAll;
 
     const categories = [...new Set(rawListAll.map(m => m.category).filter(Boolean))].sort();
 
@@ -674,32 +676,73 @@ window.Reports = {
   renderRawBody() {
     const rawListAll = this.rawMaterials || [];
     const purchasesAll = this.rawMaterialsPurchases || [];
+    const logsAll = this.rawMaterialsLogs || [];
 
-    // Filter purchases by period
+    // Filter purchases & logs by period
     let filteredPurchases = purchasesAll;
+    let filteredLogs = logsAll;
     if (this.periodType === 'daily' && this.selectedDate) {
-      filteredPurchases = purchasesAll.filter(p => p.date === this.selectedDate);
+      filteredPurchases = purchasesAll.filter(p => (p.date || '').slice(0, 10) === this.selectedDate);
+      filteredLogs = logsAll.filter(l => (l.date || '').slice(0, 10) === this.selectedDate);
     } else if (this.periodType === 'monthly' && this.selectedDate) {
       const ym = this.selectedDate.slice(0, 7);
       filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(ym));
+      filteredLogs = logsAll.filter(l => l.date && l.date.startsWith(ym));
     } else if (this.periodType === 'annual' && this.selectedDate) {
       const y = this.selectedDate.slice(0, 4);
       filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(y));
+      filteredLogs = logsAll.filter(l => l.date && l.date.startsWith(y));
     } else if (this.periodType === 'custom') {
-      if (this.startDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
-      if (this.endDate) filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
+      if (this.startDate) {
+        filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
+        filteredLogs = filteredLogs.filter(l => (l.date || '').slice(0, 10) >= this.startDate);
+      }
+      if (this.endDate) {
+        filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
+        filteredLogs = filteredLogs.filter(l => (l.date || '').slice(0, 10) <= this.endDate);
+      }
     }
 
-    // Purchases mapped by material
+    // Purchases mapped by material (handles multi-item purchases)
     const purchasesByMaterial = {};
     let totalPurchasedCostInPeriod = 0;
     filteredPurchases.forEach(p => {
-      const mid = p.material_id;
-      if (!purchasesByMaterial[mid]) purchasesByMaterial[mid] = { qty: 0, cost: 0, count: 0 };
-      purchasesByMaterial[mid].qty += (p.quantity || 0);
-      purchasesByMaterial[mid].cost += (p.total_price || 0);
-      purchasesByMaterial[mid].count += 1;
-      totalPurchasedCostInPeriod += (p.total_price || 0);
+      const items = Array.isArray(p.items) && p.items.length > 0 ? p.items : [{
+        material_id: p.material_id,
+        qty: p.qty,
+        total_cost: p.total_cost || p.total_price || 0
+      }];
+      items.forEach(it => {
+        const mid = it.material_id;
+        if (!purchasesByMaterial[mid]) purchasesByMaterial[mid] = { qty: 0, cost: 0, count: 0 };
+        const q = Number(it.qty) || 0;
+        const c = Number(it.total_cost) || 0;
+        purchasesByMaterial[mid].qty += q;
+        purchasesByMaterial[mid].cost += c;
+        purchasesByMaterial[mid].count += 1;
+        totalPurchasedCostInPeriod += c;
+      });
+    });
+
+    // Consumption / Usage mapped by material (from production logs)
+    const usageByMaterial = {};
+    let totalConsumedCostInPeriod = 0;
+    let consumedBatchesCount = 0;
+    filteredLogs.forEach(l => {
+      const change = Number(l.qty_change) || 0;
+      if (change < 0 || l.action === 'PRODUCTION' || l.action === 'PRODUCTION_USED') {
+        const mid = l.material_id;
+        const qtyUsed = Math.abs(change);
+        if (!usageByMaterial[mid]) usageByMaterial[mid] = { qty: 0, cost: 0, count: 0 };
+        const mat = rawListAll.find(m => m.id === mid);
+        const unitCost = mat ? (Number(mat.cost_price) || 0) : 0;
+        const usedCost = qtyUsed * unitCost;
+        usageByMaterial[mid].qty += qtyUsed;
+        usageByMaterial[mid].cost += usedCost;
+        usageByMaterial[mid].count += 1;
+        totalConsumedCostInPeriod += usedCost;
+        consumedBatchesCount += 1;
+      }
     });
 
     // Filter materials by selected category
@@ -719,21 +762,21 @@ window.Reports = {
       <!-- KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Total Registered Materials</p>
-          <h3 class="text-xl font-black text-slate-900 mt-1">${rawList.length} Items</h3>
-          <p class="text-[11px] font-bold text-slate-400 mt-0.5">${this.selectedRawCategory ? `Filtered by ${this.selectedRawCategory}` : 'All categories'}</p>
-        </div>
-
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Stock Valuation</p>
+          <p class="text-[10px] font-black uppercase text-slate-400">Available Stock Valuation</p>
           <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalValuation).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Current Stock at Cost</p>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">${rawList.length} Materials on Hand</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Purchases in Period</p>
+          <p class="text-[10px] font-black uppercase text-slate-400">Purchased in Period</p>
           <h3 class="text-xl font-black text-blue-700 mt-1">Rs. ${Math.round(totalPurchasedCostInPeriod).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${filteredPurchases.length} POs (${this.formatPeriodDate(this.selectedDate)})</p>
+          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${filteredPurchases.length} Purchase Orders (${this.formatPeriodDate(this.selectedDate)})</p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <p class="text-[10px] font-black uppercase text-slate-400">Used in Production (Period)</p>
+          <h3 class="text-xl font-black text-rose-700 mt-1">Rs. ${Math.round(totalConsumedCostInPeriod).toLocaleString()}</h3>
+          <p class="text-[11px] font-bold text-rose-600 mt-0.5">${consumedBatchesCount} Consumptions in Period</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
@@ -749,46 +792,52 @@ window.Reports = {
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2 px-3 border-r border-slate-200">Material Name</th>
-                <th class="py-2 px-3 border-r border-slate-200">Category</th>
-                <th class="py-2 px-2 text-center border-r border-slate-200">Unit</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Inward / Purchased (Period)</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Remaining Stock Balance</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Total Value (Rs.)</th>
-                <th class="py-2 px-3 text-center">Stock Alert Status</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Material Name</th>
+                <th class="py-2.5 px-3 border-r border-slate-200">Category</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Purchased in Period</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Used / Consumed</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Available Stock</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Available Worth (Rs.)</th>
+                <th class="py-2.5 px-3 text-center">Status</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${rawList.map(m => {
                 const isLow = m.current_stock <= m.min_stock_alert;
                 const pur = purchasesByMaterial[m.id];
+                const use = usageByMaterial[m.id];
                 return `
                   <tr class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${m.name}</td>
-                    <td class="py-1.5 px-3 text-slate-500 text-xs border-r border-slate-200">${m.category}</td>
-                    <td class="py-1.5 px-2 text-center font-bold text-slate-600 border-r border-slate-200">${m.unit}</td>
-                    <td class="py-1.5 px-3 text-right tabular-nums border-r border-slate-200">
+                    <td class="py-2 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${m.name}</td>
+                    <td class="py-2 px-3 text-slate-500 text-xs border-r border-slate-200">${m.category || 'General'}</td>
+                    <td class="py-2 px-3 text-right tabular-nums border-r border-slate-200">
                       ${pur && pur.qty > 0 ? `
-                        <span class="font-black text-blue-700">+${pur.qty} <span class="text-[10px] text-blue-500">${m.unit}</span></span>
-                        <div class="text-[10px] font-bold text-slate-400">Rs. ${Math.round(pur.cost).toLocaleString()}</div>
-                      ` : '<span class="text-slate-400 font-normal">None in period</span>'}
+                        <span class="font-black text-blue-700">+${pur.qty} <span class="text-[10px] text-blue-500">${m.unit || ''}</span></span>
+                        <div class="text-[10px] font-bold text-slate-500">Rs. ${Math.round(pur.cost).toLocaleString()}</div>
+                      ` : '<span class="text-slate-300 font-normal">-</span>'}
                     </td>
-                    <td class="py-1.5 px-3 text-right font-black text-xs text-slate-900 tabular-nums border-r border-slate-200">
-                      ${m.current_stock} <span class="text-[10px] text-slate-400 font-bold">${m.unit}</span>
+                    <td class="py-2 px-3 text-right tabular-nums border-r border-slate-200">
+                      ${use && use.qty > 0 ? `
+                        <span class="font-black text-rose-700">-${use.qty} <span class="text-[10px] text-rose-500">${m.unit || ''}</span></span>
+                        <div class="text-[10px] font-bold text-slate-500">Rs. ${Math.round(use.cost).toLocaleString()}</div>
+                      ` : '<span class="text-slate-300 font-normal">-</span>'}
                     </td>
-                    <td class="py-1.5 px-3 text-right text-slate-600 tabular-nums border-r border-slate-200">Rs. ${m.cost_price}</td>
-                    <td class="py-1.5 px-3 text-right font-black text-emerald-800 tabular-nums border-r border-slate-200">
+                    <td class="py-2 px-3 text-right font-black text-xs text-slate-900 tabular-nums border-r border-slate-200">
+                      ${m.current_stock} <span class="text-[10px] text-slate-400 font-bold">${m.unit || ''}</span>
+                    </td>
+                    <td class="py-2 px-3 text-right text-slate-600 tabular-nums border-r border-slate-200">Rs. ${m.cost_price}</td>
+                    <td class="py-2 px-3 text-right font-black text-emerald-800 tabular-nums border-r border-slate-200">
                       Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}
                     </td>
-                    <td class="py-1.5 px-3 text-center">
+                    <td class="py-2 px-3 text-center">
                       ${isLow ? `
                         <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black">
-                          ⚠️ Low Stock (Alert &le; ${m.min_stock_alert})
+                          ⚠️ Low Stock
                         </span>
                       ` : `
                         <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
-                          ✓ Adequate Stock
+                          In Stock
                         </span>
                       `}
                     </td>
@@ -796,6 +845,26 @@ window.Reports = {
                 `;
               }).join('')}
             </tbody>
+            <tfoot class="bg-slate-100/90 font-black text-xs text-slate-900 border-t-2 border-slate-300">
+              <tr>
+                <td colspan="2" class="py-2.5 px-3 uppercase tracking-wider text-[11px] border-r border-slate-200">
+                  TOTALS (${rawList.length} MATERIALS)
+                </td>
+                <td class="py-2.5 px-3 text-right font-mono text-blue-700 border-r border-slate-200">
+                  Rs. ${Math.round(totalPurchasedCostInPeriod).toLocaleString()}
+                </td>
+                <td class="py-2.5 px-3 text-right font-mono text-rose-700 border-r border-slate-200">
+                  Rs. ${Math.round(totalConsumedCostInPeriod).toLocaleString()}
+                </td>
+                <td colspan="2" class="py-2.5 px-3 text-right text-slate-500 border-r border-slate-200">
+                  Total Available Stock Value:
+                </td>
+                <td class="py-2.5 px-3 text-right font-mono text-emerald-800 border-r border-slate-200">
+                  Rs. ${Math.round(totalValuation).toLocaleString()}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -1493,8 +1562,72 @@ window.Reports = {
   },
 
   async printRawReport() {
-    const s = this.settings;
+    const s = this.settings || {};
     let rawList = await window.api.getRawMaterials() || [];
+    const purchasesAll = await window.api.getRawMaterialPurchases() || [];
+    const logsAll = await window.api.getRawMaterialLogs() || [];
+
+    // Filter purchases & logs by period
+    let filteredPurchases = purchasesAll;
+    let filteredLogs = logsAll;
+    if (this.periodType === 'daily' && this.selectedDate) {
+      filteredPurchases = purchasesAll.filter(p => (p.date || '').slice(0, 10) === this.selectedDate);
+      filteredLogs = logsAll.filter(l => (l.date || '').slice(0, 10) === this.selectedDate);
+    } else if (this.periodType === 'monthly' && this.selectedDate) {
+      const ym = this.selectedDate.slice(0, 7);
+      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(ym));
+      filteredLogs = logsAll.filter(l => l.date && l.date.startsWith(ym));
+    } else if (this.periodType === 'annual' && this.selectedDate) {
+      const y = this.selectedDate.slice(0, 4);
+      filteredPurchases = purchasesAll.filter(p => p.date && p.date.startsWith(y));
+      filteredLogs = logsAll.filter(l => l.date && l.date.startsWith(y));
+    } else if (this.periodType === 'custom') {
+      if (this.startDate) {
+        filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) >= this.startDate);
+        filteredLogs = filteredLogs.filter(l => (l.date || '').slice(0, 10) >= this.startDate);
+      }
+      if (this.endDate) {
+        filteredPurchases = filteredPurchases.filter(p => (p.date || '').slice(0, 10) <= this.endDate);
+        filteredLogs = filteredLogs.filter(l => (l.date || '').slice(0, 10) <= this.endDate);
+      }
+    }
+
+    const purchasesByMaterial = {};
+    let totalPurchasedCost = 0;
+    filteredPurchases.forEach(p => {
+      const items = Array.isArray(p.items) && p.items.length > 0 ? p.items : [{
+        material_id: p.material_id,
+        qty: p.qty,
+        total_cost: p.total_cost || p.total_price || 0
+      }];
+      items.forEach(it => {
+        const mid = it.material_id;
+        if (!purchasesByMaterial[mid]) purchasesByMaterial[mid] = { qty: 0, cost: 0 };
+        const q = Number(it.qty) || 0;
+        const c = Number(it.total_cost) || 0;
+        purchasesByMaterial[mid].qty += q;
+        purchasesByMaterial[mid].cost += c;
+        totalPurchasedCost += c;
+      });
+    });
+
+    const usageByMaterial = {};
+    let totalConsumedCost = 0;
+    filteredLogs.forEach(l => {
+      const change = Number(l.qty_change) || 0;
+      if (change < 0 || l.action === 'PRODUCTION' || l.action === 'PRODUCTION_USED') {
+        const mid = l.material_id;
+        const qtyUsed = Math.abs(change);
+        if (!usageByMaterial[mid]) usageByMaterial[mid] = { qty: 0, cost: 0 };
+        const mat = rawList.find(m => m.id === mid);
+        const unitCost = mat ? (Number(mat.cost_price) || 0) : 0;
+        const usedCost = qtyUsed * unitCost;
+        usageByMaterial[mid].qty += qtyUsed;
+        usageByMaterial[mid].cost += usedCost;
+        totalConsumedCost += usedCost;
+      }
+    });
+
     if (this.selectedRawCategory) {
       rawList = rawList.filter(m => m.category === this.selectedRawCategory);
     }
@@ -1509,12 +1642,12 @@ window.Reports = {
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          RAW MATERIALS STOCK &amp; REMAINING BALANCE SHEET
+          RAW MATERIALS PURCHASE, USAGE &amp; STOCK REPORT
         </div>
 
         <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
-            <div><strong>Factory Stage:</strong> Stage 1: Raw Materials Inventory</div>
+            <div><strong>Factory Stage:</strong> Stage 1: Raw Materials Stock Control</div>
             <div><strong>Category:</strong> ${this.selectedRawCategory || 'All Categories'} (${rawList.length} Items)</div>
           </div>
           <div style="text-align: right;">
@@ -1525,34 +1658,67 @@ window.Reports = {
 
         <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Material</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 45px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Remaining Balance</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cost / Unit</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Value (Rs.)</th>
+            <tr style="border-bottom: 1.5px solid #000; background: #fff;">
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Material Description</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Purchased</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Consumed</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Available Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Cost/Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Worth (Rs.)</th>
             </tr>
           </thead>
           <tbody>
-            ${rawList.map(m => `
-              <tr>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 700; color: #000;">${m.name}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000;">${m.category}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; color: #000;">${m.unit}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; font-weight: 800; color: #000;">${m.current_stock} ${m.unit}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${m.cost_price}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}</td>
-              </tr>
-            `).join('')}
+            ${rawList.map(m => {
+              const pur = purchasesByMaterial[m.id];
+              const use = usageByMaterial[m.id];
+              return `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 3px 5px; font-size: 8.5px; font-weight: 700; color: #000;">
+                    ${m.name} <span style="font-size: 7.5px; font-weight: 500; color: #444;">(${m.category || 'General'})</span>
+                  </td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; color: #000;">
+                    ${pur && pur.qty > 0 ? `+${pur.qty} ${m.unit || ''}` : '-'}
+                  </td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; color: #000;">
+                    ${use && use.qty > 0 ? `-${use.qty} ${m.unit || ''}` : '-'}
+                  </td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; font-weight: 800; color: #000;">
+                    ${m.current_stock} ${m.unit || ''}
+                  </td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; color: #000;">
+                    Rs. ${m.cost_price}
+                  </td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-family: monospace; font-size: 8.5px; font-weight: 800; color: #000;">
+                    Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
             ${rawList.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No raw materials found.</td></tr>' : ''}
           </tbody>
+          <tfoot>
+            <tr style="border-top: 1.5px solid #000; font-weight: 900; background: #fff;">
+              <td style="border: 1px solid #000; padding: 4px 5px; text-transform: uppercase;">Totals:</td>
+              <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">Rs. ${Math.round(totalPurchasedCost).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">Rs. ${Math.round(totalConsumedCost).toLocaleString()}</td>
+              <td colspan="2" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">Total Available Value:</td>
+              <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-family: monospace;">Rs. ${Math.round(totalVal).toLocaleString()}</td>
+            </tr>
+          </tfoot>
         </table>
 
-        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
-          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; font-weight: 900; font-size: 10.5px;">
-            <span>Total Raw Material Valuation:</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(totalVal).toLocaleString()}</span>
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 6px 10px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000; line-height: 1.6;">
+          <div style="display: flex; justify-content: space-between;">
+            <span>Total Raw Material Purchases (${this.periodType.toUpperCase()}):</span>
+            <span style="font-weight: 800; font-family: monospace;">Rs. ${Math.round(totalPurchasedCost).toLocaleString()}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Total Factory Usage / Consumption in Batches:</span>
+            <span style="font-weight: 800; font-family: monospace;">Rs. ${Math.round(totalConsumedCost).toLocaleString()}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 3px; margin-top: 3px; font-weight: 900; font-size: 10px;">
+            <span>Current Available Stock Worth on Hand:</span>
+            <span style="font-family: monospace;">Rs. ${Math.round(totalVal).toLocaleString()}</span>
           </div>
         </div>
 
@@ -1562,6 +1728,8 @@ window.Reports = {
         </div>
       </div>
     `;
+
+    app.showA5Preview(html, 'Raw Material Stock Balance Sheet');
 
     app.showA5Preview(html, 'Raw Material Stock Balance Sheet');
   },

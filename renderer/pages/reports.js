@@ -485,7 +485,9 @@ window.Reports = {
   },
 
   isFilteredFromCurrent() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = (window.app && typeof app.getTodayDate === 'function')
+      ? app.getTodayDate()
+      : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
     if (this.periodType === 'custom') return true;
     if (this.periodType !== 'daily') return true;
     if (this.selectedDate && this.selectedDate !== today) return true;
@@ -496,7 +498,9 @@ window.Reports = {
   },
 
   resetToCurrent() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = (window.app && typeof app.getTodayDate === 'function')
+      ? app.getTodayDate()
+      : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
     this.periodType = 'daily';
     this.selectedDate = today;
     this.startDate = today;

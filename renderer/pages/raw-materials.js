@@ -14,6 +14,11 @@ window.RawMaterials = {
 
   async render(container) {
     this.container = container;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    this.selectedDate = today;
+    this.startDate = today;
+    this.endDate = today;
     await this.loadData();
   },
 
@@ -363,7 +368,9 @@ window.RawMaterials = {
   },
 
   isFilteredFromCurrent() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = (window.app && typeof app.getTodayDate === 'function')
+      ? app.getTodayDate()
+      : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
     if (this.selectedCategory && this.selectedCategory !== 'all') return true;
     if (this.periodType === 'custom') return true;
     if (this.periodType !== 'day') return true;
@@ -372,7 +379,9 @@ window.RawMaterials = {
   },
 
   resetToCurrent() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = (window.app && typeof app.getTodayDate === 'function')
+      ? app.getTodayDate()
+      : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
     this.selectedCategory = 'all';
     this.periodType = 'day';
     this.selectedDate = today;

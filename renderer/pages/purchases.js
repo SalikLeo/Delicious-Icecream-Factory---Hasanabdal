@@ -456,7 +456,7 @@ window.Purchases = {
 
       return `
         <tr class="hover:bg-slate-50/80 transition-colors">
-          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${p.date || '—'}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(p.date, p.created_at)}</td>
           <td class="py-2.5 px-3 font-mono font-black text-slate-900 whitespace-nowrap border-r border-slate-200">${p.invoice_no || `PUR-${p.id}`}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 min-w-[200px]">
             ${itemsHtml}
@@ -781,9 +781,7 @@ window.Purchases = {
                 <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Payment Method</label>
                 <select id="pmo-payment-method" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 shadow-2xs">
                   <option value="Cash" ${p && p.payment_method === 'Cash' ? 'selected' : ''}>💵 Cash</option>
-                  <option value="Bank" ${p && p.payment_method === 'Bank' ? 'selected' : ''}>💳 Bank / Online</option>
-                  <option value="Cheque" ${p && p.payment_method === 'Cheque' ? 'selected' : ''}>📄 Cheque</option>
-                  <option value="Credit" ${p && p.payment_method === 'Credit' ? 'selected' : ''}>📋 Credit (Khata)</option>
+                  <option value="Online" ${p && (p.payment_method === 'Online' || p.payment_method === 'Bank') ? 'selected' : ''}>💳 Online</option>
                 </select>
               </div>
             </div>
@@ -875,18 +873,6 @@ window.Purchases = {
                          oninput="Purchases.calcModalSummary()"
                          class="w-full px-2.5 py-1.5 text-base font-black text-emerald-800 bg-emerald-50/30 border border-emerald-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-200 font-mono tabular-nums">
                   
-                  <!-- Payment Quick Shortcut Pills -->
-                  <div class="flex items-center gap-1.5 mt-2">
-                    <button type="button" onclick="Purchases.setPaymentShortcut('full')" class="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-black text-[10px] rounded cursor-pointer">
-                      Full Paid
-                    </button>
-                    <button type="button" onclick="Purchases.setPaymentShortcut('half')" class="px-2 py-0.5 bg-blue-100 hover:bg-blue-200 text-blue-800 font-black text-[10px] rounded cursor-pointer">
-                      50% Half
-                    </button>
-                    <button type="button" onclick="Purchases.setPaymentShortcut('credit')" class="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-800 font-black text-[10px] rounded cursor-pointer">
-                      Full Credit (Rs. 0)
-                    </button>
-                  </div>
                 </div>
 
                 <!-- Pending Balance to Supplier Khata -->
@@ -1351,7 +1337,7 @@ window.Purchases = {
             ${p.supplier_phone ? `<div><b>Contact:</b> ${p.supplier_phone}</div>` : ''}
           </div>
           <div style="text-align: right;">
-            <div><b>Date:</b> ${p.date || '—'}</div>
+            <div><b>Date &amp; Time:</b> ${app.formatDateTime(p.date, p.created_at)}</div>
             <div><b>Payment Mode:</b> ${p.payment_method || 'Cash'}</div>
             <div><b>Status:</b> ${remainingDue > 0 ? '<span style="color:#b91c1c; font-weight:900;">Khata Credit Due</span>' : '<span style="color:#15803d; font-weight:900;">Fully Paid</span>'}</div>
           </div>
@@ -1470,7 +1456,7 @@ window.Purchases = {
               const pending = Number(p.remaining_balance) || 0;
               return `
                 <tr>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px;">${p.date || '—'}</td>
+                  <td style="border: 1px solid #e2e8f0; padding: 4px;">${app.formatDateTime(p.date, p.created_at)}</td>
                   <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 700;">${p.invoice_no || `PUR-${p.id}`}</td>
                   <td style="border: 1px solid #e2e8f0; padding: 4px;">${p.supplier_official_name || p.supplier_name || 'Walk-in'}</td>
                   <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 700;">${summaryName}</td>

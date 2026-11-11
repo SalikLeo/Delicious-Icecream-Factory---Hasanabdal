@@ -234,8 +234,7 @@ window.Suppliers = {
                 <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Payment Method</label>
                 <select id="spf-method" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
                   <option value="Cash">💵 Cash</option>
-                  <option value="Online">💳 Bank / Online</option>
-                  <option value="Cheque">📄 Cheque</option>
+                  <option value="Online">💳 Online</option>
                 </select>
               </div>
               <div>
@@ -510,7 +509,7 @@ window.Suppliers = {
 
               return `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${e.date || '—'}</td>
+                  <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
                   <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${e.invoice_no || `REF-${e.id}`}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isPurchase ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}">
@@ -812,7 +811,7 @@ window.Suppliers = {
             ${s && s.contact_person ? `<div><b>Contact:</b> ${s.contact_person} (${s.phone || ''})</div>` : ''}
           </div>
           <div style="text-align: right;">
-            <div><b>Date:</b> ${pay ? (pay.date || '') : new Date().toLocaleDateString('en-GB')}</div>
+            <div><b>Date &amp; Time:</b> ${app.formatDateTime(pay ? (pay.date || pay.created_at) : new Date(), pay ? pay.created_at : null)}</div>
             <div><b>Payment Method:</b> ${pay ? (pay.payment_method || 'Cash') : 'Cash'}</div>
           </div>
         </div>
@@ -877,7 +876,7 @@ window.Suppliers = {
       return `
         <tr>
           <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: center;">${idx + 1}</td>
-          <td style="border: 1px solid #e2e8f0; padding: 5px;">${e.date || '—'}</td>
+          <td style="border: 1px solid #e2e8f0; padding: 5px;">${app.formatDateTime(e.date, e.created_at)}</td>
           <td style="border: 1px solid #e2e8f0; padding: 5px; font-weight: 700;">${e.invoice_no || `REF-${e.id}`}</td>
           <td style="border: 1px solid #e2e8f0; padding: 5px;">${isPurchase ? 'Purchase' : 'Payment'} • ${e.summary_name || e.notes || ''}</td>
           <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: right; font-weight: 800;">${debit > 0 ? `Rs. ${Math.round(debit).toLocaleString()}` : '-'}</td>

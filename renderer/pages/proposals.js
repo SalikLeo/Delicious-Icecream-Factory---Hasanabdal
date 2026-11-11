@@ -819,7 +819,7 @@ window.Proposals = {
           <tbody>
             ${list.map((d, idx) => {
               const remainingCtns = Math.max(0, (Number(d.total_cartons_delivered) || 0) - (Number(d.total_cartons_returned) || 0));
-              const dt = (d.date || d.created_at || '').slice(0, 10);
+              const dt = app.formatDateTime(d.date, d.created_at);
               return `
                 <tr>
                   <td style="border: 1px solid #e2e8f0; padding: 3px 2px; text-align: center;">${idx + 1}</td>

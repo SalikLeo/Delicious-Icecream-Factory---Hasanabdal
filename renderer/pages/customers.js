@@ -219,8 +219,7 @@ window.Customers = {
                 <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Payment Method</label>
                 <select id="pf-method" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
                   <option value="Cash">💵 Cash</option>
-                  <option value="Online">💳 Bank / Online</option>
-                  <option value="Cheque">📄 Cheque</option>
+                  <option value="Online">💳 Online</option>
                 </select>
               </div>
               <div>

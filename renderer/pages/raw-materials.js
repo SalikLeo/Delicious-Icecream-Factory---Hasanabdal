@@ -969,20 +969,19 @@ window.RawMaterials = {
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 font-mono">
               </div>
               <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Payment Mode</label>
-                <select id="po-payment-mode" onchange="RawMaterials.onPaymentModeChange(this.value)"
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Payment Method</label>
+                <select id="po-payment-mode"
                         class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer">
-                  <option value="Cash">Cash (Full Paid)</option>
-                  <option value="Credit">Khata Credit (Pay Later)</option>
-                  <option value="Partial">Partial Payment</option>
+                  <option value="Cash">💵 Cash</option>
+                  <option value="Online">💳 Online</option>
                 </select>
               </div>
             </div>
-            <div id="po-partial-row" class="hidden bg-amber-50/60 p-3 rounded-xl border border-amber-200">
-              <label class="block text-[11px] font-black uppercase text-amber-900 tracking-wider mb-1">Cash Paid Now (Rs.)</label>
-              <input type="number" step="any" min="0" id="po-paid-amount" placeholder="0" oninput="RawMaterials.calcPartialBalance()"
-                     class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-amber-500 tabular-nums">
-              <p id="po-partial-pending-text" class="text-[11px] font-bold text-rose-600 mt-1"></p>
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Amount Paid Now (Rs.)</label>
+              <input type="number" step="any" min="0" id="po-paid-amount" placeholder="0" oninput="delete this.dataset.autoFilled; RawMaterials.calcPartialBalance()"
+                     class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
+              <p id="po-partial-pending-text" class="text-[11px] font-bold text-slate-500 mt-1"></p>
             </div>
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes / Remarks</label>
@@ -1127,10 +1126,12 @@ window.RawMaterials = {
     const total = qty * cost;
     const display = document.getElementById('po-total-display');
     if (display) display.textContent = `Rs. ${Math.round(total).toLocaleString()}`;
-    const mode = document.getElementById('po-payment-mode')?.value;
-    if (mode === 'Partial') {
-      this.calcPartialBalance();
+    const paidInput = document.getElementById('po-paid-amount');
+    if (paidInput && (!paidInput.value || Number(paidInput.value) === 0 || paidInput.dataset.autoFilled === 'true')) {
+      paidInput.value = total > 0 ? total : 0;
+      paidInput.dataset.autoFilled = 'true';
     }
+    this.calcPartialBalance();
   },
 
   onSupplierSelectChange(val) {
@@ -1152,29 +1153,22 @@ window.RawMaterials = {
     }
   },
 
-  onPaymentModeChange(val) {
-    const partialRow = document.getElementById('po-partial-row');
-    const paidInput = document.getElementById('po-paid-amount');
-    const totalCost = (Number(document.getElementById('po-qty')?.value) || 0) * (Number(document.getElementById('po-cost')?.value) || 0);
-
-    if (val === 'Partial') {
-      if (partialRow) partialRow.classList.remove('hidden');
-      if (paidInput && !paidInput.value) paidInput.value = Math.round(totalCost / 2);
-      this.calcPartialBalance();
-    } else {
-      if (partialRow) partialRow.classList.add('hidden');
-    }
-  },
-
   calcPartialBalance() {
     const qty = Number(document.getElementById('po-qty')?.value) || 0;
     const cost = Number(document.getElementById('po-cost')?.value) || 0;
     const total = qty * cost;
-    const paid = Number(document.getElementById('po-paid-amount')?.value) || 0;
+    const paidInput = document.getElementById('po-paid-amount');
+    const paid = Number(paidInput?.value) || 0;
     const pending = Math.max(0, total - paid);
     const textEl = document.getElementById('po-partial-pending-text');
     if (textEl) {
-      textEl.textContent = `Remaining Rs. ${Math.round(pending).toLocaleString()} will be added to Supplier Khata`;
+      if (pending > 0) {
+        textEl.className = 'text-[11px] font-bold text-rose-600 mt-1';
+        textEl.textContent = `Pending Rs. ${Math.round(pending).toLocaleString()} will be added to Supplier Khata`;
+      } else {
+        textEl.className = 'text-[11px] font-bold text-emerald-600 mt-1';
+        textEl.textContent = 'Bill fully settled (Rs. 0 pending)';
+      }
     }
   },
 
@@ -1257,20 +1251,16 @@ window.RawMaterials = {
 
     const paymentMode = document.getElementById('po-payment-mode')?.value || 'Cash';
     const totalCost = qty * unitCost;
-    let paidAmount = totalCost;
+    const paidVal = document.getElementById('po-paid-amount')?.value;
+    const paidAmount = paidVal !== '' && paidVal != null ? Math.max(0, Math.min(totalCost, Number(paidVal) || 0)) : totalCost;
+    const pending = totalCost - paidAmount;
 
-    if (paymentMode === 'Credit') {
-      if (!supplierId) {
-        app.showAlert({ title: 'Supplier Required', message: 'Please select a registered supplier for Credit / Khata purchases.' });
-        return;
-      }
-      paidAmount = 0;
-    } else if (paymentMode === 'Partial') {
-      if (!supplierId) {
-        app.showAlert({ title: 'Supplier Required', message: 'Please select a registered supplier for Partial / Khata purchases.' });
-        return;
-      }
-      paidAmount = Math.max(0, Math.min(totalCost, Number(document.getElementById('po-paid-amount')?.value) || 0));
+    if (pending > 0 && !supplierId) {
+      app.showAlert({ 
+        title: 'Supplier Required', 
+        message: `Please select a registered supplier to record the pending balance of Rs. ${Math.round(pending).toLocaleString()} in their Khata.` 
+      });
+      return;
     }
 
     const data = {

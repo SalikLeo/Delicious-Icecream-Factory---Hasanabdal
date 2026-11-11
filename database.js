@@ -2289,9 +2289,100 @@ function createIcecreamFactoryTables() {
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS suppliers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      contact_person TEXT,
+      phone TEXT,
+      address TEXT,
+      city TEXT DEFAULT 'Hasan Abdal',
+      amount REAL DEFAULT 0,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS supplier_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      supplier_id INTEGER NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+      amount REAL NOT NULL,
+      payment_method TEXT DEFAULT 'Cash',
+      receipt_no TEXT,
+      date TEXT NOT NULL,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS raw_material_purchase_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      purchase_id INTEGER NOT NULL REFERENCES raw_material_purchases(id) ON DELETE CASCADE,
+      material_id INTEGER NOT NULL REFERENCES raw_materials(id),
+      material_name TEXT NOT NULL,
+      unit TEXT,
+      qty REAL NOT NULL,
+      unit_cost REAL NOT NULL,
+      total_cost REAL NOT NULL,
+      notes TEXT
+    );
   `);
 
   try {
+    const rmpCols = db.prepare("PRAGMA table_info(raw_material_purchases)").all().map(c => c.name);
+    if (!rmpCols.includes('supplier_id')) db.exec('ALTER TABLE raw_material_purchases ADD COLUMN supplier_id INTEGER REFERENCES suppliers(id)');
+    if (!rmpCols.includes('paid_amount')) db.exec('ALTER TABLE raw_material_purchases ADD COLUMN paid_amount REAL DEFAULT 0');
+    if (!rmpCols.includes('remaining_balance')) db.exec('ALTER TABLE raw_material_purchases ADD COLUMN remaining_balance REAL DEFAULT 0');
+    if (!rmpCols.includes('payment_method')) db.exec("ALTER TABLE raw_material_purchases ADD COLUMN payment_method TEXT DEFAULT 'Cash'");
+    if (!rmpCols.includes('items_count')) db.exec('ALTER TABLE raw_material_purchases ADD COLUMN items_count INTEGER DEFAULT 1');
+
+    // Populate suppliers from companies and existing purchases if suppliers table is empty
+    const supCount = db.prepare('SELECT COUNT(*) as c FROM suppliers').get()?.c || 0;
+    if (supCount === 0) {
+      try {
+        const comps = db.prepare("SELECT name, phone, address, amount, contact_person FROM companies WHERE name IS NOT NULL AND TRIM(name) != ''").all();
+        for (const c of comps) {
+          db.prepare('INSERT INTO suppliers (name, phone, address, amount, contact_person) VALUES (?, ?, ?, ?, ?)')
+            .run(c.name.trim(), c.phone || '', c.address || '', Number(c.amount) || 0, c.contact_person || '');
+        }
+      } catch (e) {}
+
+      try {
+        const purSups = db.prepare("SELECT DISTINCT supplier_name FROM raw_material_purchases WHERE supplier_name IS NOT NULL AND TRIM(supplier_name) != ''").all();
+        for (const ps of purSups) {
+          const name = ps.supplier_name.trim();
+          const exists = db.prepare('SELECT id FROM suppliers WHERE LOWER(name) = LOWER(?)').get(name);
+          if (!exists) {
+            db.prepare('INSERT INTO suppliers (name, amount) VALUES (?, 0)').run(name);
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Link existing purchases to supplier_id where matching
+    try {
+      const unlinked = db.prepare("SELECT id, supplier_name, total_cost, paid_amount, remaining_balance FROM raw_material_purchases WHERE supplier_id IS NULL AND supplier_name IS NOT NULL AND TRIM(supplier_name) != ''").all();
+      for (const p of unlinked) {
+        const s = db.prepare('SELECT id FROM suppliers WHERE LOWER(name) = LOWER(?)').get(p.supplier_name.trim());
+        if (s) {
+          db.prepare('UPDATE raw_material_purchases SET supplier_id = ? WHERE id = ?').run(s.id, p.id);
+        }
+      }
+      // Ensure legacy purchases have paid_amount = total_cost if null/zero
+      db.exec("UPDATE raw_material_purchases SET paid_amount = total_cost WHERE (paid_amount IS NULL OR paid_amount = 0) AND (remaining_balance IS NULL OR remaining_balance = 0) AND total_cost > 0");
+    } catch (e) {}
+
+    // Populate raw_material_purchase_items for legacy purchases if missing
+    try {
+      const purRows = db.prepare('SELECT * FROM raw_material_purchases').all();
+      for (const p of purRows) {
+        const hasItems = db.prepare('SELECT id FROM raw_material_purchase_items WHERE purchase_id = ? LIMIT 1').get(p.id);
+        if (!hasItems && p.material_id) {
+          db.prepare(`
+            INSERT INTO raw_material_purchase_items (purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).run(p.id, p.material_id, p.material_name, p.unit || 'KG', p.qty || 1, p.unit_cost || 0, p.total_cost || 0);
+        }
+      }
+    } catch (e) {}
     db.exec(`
       UPDATE raw_material_purchases 
       SET invoice_no = 'PUR-' || id 
@@ -2510,92 +2601,220 @@ function deleteRawMaterial(id) {
   return { success: true };
 }
 
+function getNextPurchaseInvoiceNo() {
+  const rows = db.prepare('SELECT id, invoice_no FROM raw_material_purchases').all();
+  if (!rows || rows.length === 0) return 'PUR-1';
+
+  let maxNum = 0;
+  for (const r of rows) {
+    if (r.invoice_no) {
+      const match = String(r.invoice_no).match(/(\d+)$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    if (r.id && r.id > maxNum) maxNum = Math.max(maxNum, r.id);
+  }
+  return `PUR-${maxNum + 1}`;
+}
+
 function addRawMaterialPurchase(data) {
-  const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(data.material_id);
-  if (!mat) return { error: 'Raw material not found' };
+  // Support both multi-item (data.items) and single-item (data.material_id) formats
+  let items = Array.isArray(data.items) && data.items.length > 0 ? data.items : [];
+  if (items.length === 0 && data.material_id) {
+    items = [{
+      material_id: data.material_id,
+      qty: data.qty,
+      unit_cost: data.unit_cost,
+      notes: data.notes || ''
+    }];
+  }
 
-  const qty = Number(data.qty) || 0;
-  const unitCost = Number(data.unit_cost) || 0;
-  const totalCost = qty * unitCost;
+  if (items.length === 0) {
+    return { error: 'Please add at least one raw material to this purchase.' };
+  }
+
+  // Validate materials
+  const validatedItems = [];
+  let totalCost = 0;
+  for (const it of items) {
+    const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+    if (!mat) {
+      return { error: `Raw material ID ${it.material_id} not found.` };
+    }
+    const q = Number(it.qty) || 0;
+    const c = Number(it.unit_cost) || 0;
+    if (q <= 0) {
+      return { error: `Quantity for "${mat.name}" must be greater than 0.` };
+    }
+    const lineTotal = q * c;
+    totalCost += lineTotal;
+    validatedItems.push({
+      material_id: mat.id,
+      material_name: mat.name,
+      unit: mat.unit,
+      qty: q,
+      unit_cost: c,
+      total_cost: lineTotal,
+      current_stock: mat.current_stock || 0
+    });
+  }
+
   const date = data.date || new Date().toISOString().split('T')[0];
+  const paymentMethod = data.payment_method || 'Cash';
+  const notes = data.notes || '';
 
+  // Supplier handling
+  let supplierId = data.supplier_id ? Number(data.supplier_id) : null;
+  let supplierName = (data.supplier_name || '').trim();
+
+  if (supplierId) {
+    const s = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(supplierId);
+    if (s) {
+      supplierName = s.name;
+    }
+  } else if (supplierName && supplierName.toLowerCase() !== 'walk-in' && supplierName.toLowerCase() !== 'cash') {
+    let existing = db.prepare('SELECT * FROM suppliers WHERE LOWER(name) = LOWER(?)').get(supplierName);
+    if (!existing) {
+      const resSup = db.prepare('INSERT INTO suppliers (name, phone, amount) VALUES (?, ?, 0)')
+        .run(supplierName, data.supplier_phone || '');
+      supplierId = resSup.lastInsertRowid;
+    } else {
+      supplierId = existing.id;
+    }
+  }
+
+  // Financials: Total Bill, Amount Paid, Remaining Balance (Pending)
+  let paidAmount = totalCost;
+  if (data.paid_amount !== undefined && data.paid_amount !== null && data.paid_amount !== '') {
+    paidAmount = Math.max(0, Math.min(totalCost, Number(data.paid_amount) || 0));
+  } else if (paymentMethod === 'Credit') {
+    paidAmount = 0;
+  }
+  const remainingBalance = Math.max(0, totalCost - paidAmount);
+
+  // Generate Sequential Invoice Number (e.g. PUR-1, PUR-2)
   let invoiceNo = data.invoice_no ? String(data.invoice_no).trim() : '';
   if (!invoiceNo) {
-    const last = db.prepare("SELECT id, invoice_no FROM raw_material_purchases WHERE invoice_no LIKE 'PUR-%' ORDER BY id DESC LIMIT 1").get();
-    let nextNum = 1;
-    if (last && last.invoice_no) {
-      const match = last.invoice_no.match(/PUR-(\d+)/i);
-      if (match) {
-        nextNum = parseInt(match[1]) + 1;
-      } else {
-        nextNum = (last.id || 0) + 1;
-      }
-    } else {
-      const totalCount = db.prepare('SELECT COUNT(*) as c FROM raw_material_purchases').get().c;
-      nextNum = totalCount + 1;
-    }
-    invoiceNo = `PUR-${nextNum}`;
+    invoiceNo = getNextPurchaseInvoiceNo();
   }
 
   let purchaseId;
   const tx = db.transaction(() => {
+    const primary = validatedItems[0];
+    const summaryName = validatedItems.length === 1 
+      ? primary.material_name 
+      : `${primary.material_name} (+${validatedItems.length - 1} more items)`;
+
     const res = db.prepare(`
-      INSERT INTO raw_material_purchases (material_id, material_name, qty, unit, unit_cost, total_cost, supplier_name, invoice_no, date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO raw_material_purchases (
+        material_id, material_name, qty, unit, unit_cost, total_cost,
+        supplier_id, supplier_name, invoice_no, date, notes,
+        paid_amount, remaining_balance, payment_method, items_count
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      mat.id,
-      mat.name,
-      qty,
-      mat.unit,
-      unitCost,
+      primary.material_id,
+      summaryName,
+      primary.qty,
+      primary.unit,
+      primary.unit_cost,
       totalCost,
-      data.supplier_name || '',
+      supplierId,
+      supplierName || 'Walk-in / Cash',
       invoiceNo,
       date,
-      data.notes || ''
+      notes,
+      paidAmount,
+      remainingBalance,
+      paymentMethod,
+      validatedItems.length
     );
     purchaseId = res.lastInsertRowid;
 
-    const stockBefore = mat.current_stock;
-    const stockAfter = stockBefore + qty;
+    // Insert items into raw_material_purchase_items & update stock
+    for (const it of validatedItems) {
+      db.prepare(`
+        INSERT INTO raw_material_purchase_items (
+          purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        purchaseId,
+        it.material_id,
+        it.material_name,
+        it.unit,
+        it.qty,
+        it.unit_cost,
+        it.total_cost
+      );
 
-    db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?').run(stockAfter, unitCost, mat.id);
+      const stockBefore = it.current_stock;
+      const stockAfter = stockBefore + it.qty;
 
-    db.prepare(`
-      INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
-      VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, ?)
-    `).run(
-      mat.id,
-      mat.name,
-      qty,
-      stockBefore,
-      stockAfter,
-      purchaseId,
-      date,
-      `Purchased ${qty} ${mat.unit} from ${data.supplier_name || 'Supplier'} @ Rs. ${unitCost}`
-    );
+      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?')
+        .run(stockAfter, it.unit_cost, it.material_id);
+
+      db.prepare(`
+        INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+        VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, ?)
+      `).run(
+        it.material_id,
+        it.material_name,
+        it.qty,
+        stockBefore,
+        stockAfter,
+        purchaseId,
+        date,
+        `Purchased ${it.qty} ${it.unit} (${invoiceNo}) from ${supplierName || 'Supplier'} @ Rs. ${it.unit_cost}`
+      );
+    }
+
+    // Update supplier's outstanding payable balance (e.g., 20000 total, 5000 paid => 15000 added to supplier balance)
+    if (supplierId && remainingBalance > 0) {
+      db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?')
+        .run(remainingBalance, supplierId);
+    }
   });
 
   tx();
-  return { success: true, purchaseId, newStock: mat.current_stock + qty };
+
+  return {
+    success: true,
+    purchaseId,
+    invoiceNo,
+    totalCost,
+    paidAmount,
+    remainingBalance,
+    supplierId,
+    supplierName
+  };
 }
 
 function getRawMaterialPurchases(filters = {}) {
   let query = `
-    SELECT p.*, rm.category as material_category
+    SELECT p.*, 
+           s.phone as supplier_phone,
+           s.address as supplier_address,
+           (SELECT COUNT(*) FROM raw_material_purchase_items WHERE purchase_id = p.id) as items_count_actual,
+           rm.category as material_category
     FROM raw_material_purchases p
+    LEFT JOIN suppliers s ON p.supplier_id = s.id
     LEFT JOIN raw_materials rm ON p.material_id = rm.id
     WHERE 1=1
   `;
   const params = [];
 
-  if (filters.material_id) {
-    query += ' AND p.material_id = ?';
-    params.push(Number(filters.material_id));
+  if (filters.supplier_id) {
+    query += ' AND p.supplier_id = ?';
+    params.push(Number(filters.supplier_id));
   }
   if (filters.supplier_name) {
     query += ' AND p.supplier_name = ?';
     params.push(filters.supplier_name);
+  }
+  if (filters.material_id) {
+    query += ' AND (p.material_id = ? OR EXISTS (SELECT 1 FROM raw_material_purchase_items WHERE purchase_id = p.id AND material_id = ?))';
+    params.push(Number(filters.material_id), Number(filters.material_id));
   }
   if (filters.search) {
     const s = `%${filters.search}%`;
@@ -2626,76 +2845,185 @@ function getRawMaterialPurchases(filters = {}) {
   }
 
   query += ' ORDER BY p.date DESC, p.id DESC';
-  return db.prepare(query).all(...params);
+  const purchases = db.prepare(query).all(...params);
+
+  // Attach items to each purchase
+  for (const p of purchases) {
+    p.items = db.prepare(`
+      SELECT pi.*, rm.category as material_category
+      FROM raw_material_purchase_items pi
+      LEFT JOIN raw_materials rm ON pi.material_id = rm.id
+      WHERE pi.purchase_id = ?
+    `).all(p.id);
+
+    if (!p.items || p.items.length === 0) {
+      p.items = [{
+        material_id: p.material_id,
+        material_name: p.material_name,
+        qty: p.qty,
+        unit: p.unit,
+        unit_cost: p.unit_cost,
+        total_cost: p.total_cost
+      }];
+    }
+  }
+
+  return purchases;
 }
 
 function getRawMaterialPurchase(id) {
-  return db.prepare(`
-    SELECT p.*, rm.category as material_category
+  const p = db.prepare(`
+    SELECT p.*, s.phone as supplier_phone, s.address as supplier_address, s.amount as supplier_current_balance,
+           rm.category as material_category
     FROM raw_material_purchases p
+    LEFT JOIN suppliers s ON p.supplier_id = s.id
     LEFT JOIN raw_materials rm ON p.material_id = rm.id
     WHERE p.id = ?
   `).get(id);
+  if (!p) return null;
+
+  p.items = db.prepare(`
+    SELECT pi.*, rm.category as material_category
+    FROM raw_material_purchase_items pi
+    LEFT JOIN raw_materials rm ON pi.material_id = rm.id
+    WHERE pi.purchase_id = ?
+  `).all(id);
+
+  if (!p.items || p.items.length === 0) {
+    p.items = [{
+      id: 1,
+      purchase_id: p.id,
+      material_id: p.material_id,
+      material_name: p.material_name,
+      unit: p.unit,
+      qty: p.qty,
+      unit_cost: p.unit_cost,
+      total_cost: p.total_cost
+    }];
+  }
+
+  return p;
 }
 
 function updateRawMaterialPurchase(id, data) {
   const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
   if (!p) return { error: 'Purchase record not found' };
 
-  const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(data.material_id || p.material_id);
-  if (!mat) return { error: 'Raw material not found' };
+  // For clean updates, we revert old stock & old supplier balance, then re-apply
+  const oldItems = db.prepare('SELECT * FROM raw_material_purchase_items WHERE purchase_id = ?').all(id);
+  const itemsToRevert = oldItems.length > 0 ? oldItems : [{
+    material_id: p.material_id,
+    qty: p.qty
+  }];
 
-  const newQty = Number(data.qty) || 0;
-  const newCost = Number(data.unit_cost) || 0;
-  const newTotal = newQty * newCost;
-  const newDate = data.date || p.date;
-  const newInvoiceNo = (data.invoice_no && String(data.invoice_no).trim()) ? String(data.invoice_no).trim() : (p.invoice_no || `PUR-${id}`);
+  let items = Array.isArray(data.items) && data.items.length > 0 ? data.items : [];
+  if (items.length === 0 && data.material_id) {
+    items = [{
+      material_id: data.material_id,
+      qty: data.qty,
+      unit_cost: data.unit_cost
+    }];
+  }
+
+  if (items.length === 0) {
+    return { error: 'Please specify at least one material.' };
+  }
+
+  const validatedItems = [];
+  let totalCost = 0;
+  for (const it of items) {
+    const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+    if (!mat) return { error: `Raw material ID ${it.material_id} not found.` };
+    const q = Number(it.qty) || 0;
+    const c = Number(it.unit_cost) || 0;
+    const lineTotal = q * c;
+    totalCost += lineTotal;
+    validatedItems.push({
+      material_id: mat.id,
+      material_name: mat.name,
+      unit: mat.unit,
+      qty: q,
+      unit_cost: c,
+      total_cost: lineTotal
+    });
+  }
+
+  let paidAmount = totalCost;
+  if (data.paid_amount !== undefined && data.paid_amount !== null && data.paid_amount !== '') {
+    paidAmount = Math.max(0, Math.min(totalCost, Number(data.paid_amount) || 0));
+  }
+  const remainingBalance = Math.max(0, totalCost - paidAmount);
+
+  const date = data.date || p.date;
+  const invoiceNo = data.invoice_no ? String(data.invoice_no).trim() : (p.invoice_no || `PUR-${id}`);
+  const supplierId = data.supplier_id ? Number(data.supplier_id) : p.supplier_id;
+  const supplierName = data.supplier_name || p.supplier_name;
 
   const tx = db.transaction(() => {
-    if (mat.id === p.material_id) {
-      const diffQty = newQty - p.qty;
-      const newStock = Math.max(0, (mat.current_stock || 0) + diffQty);
-      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?').run(newStock, newCost, mat.id);
-    } else {
-      const oldMat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(p.material_id);
-      if (oldMat) {
-        const revertedOldStock = Math.max(0, (oldMat.current_stock || 0) - p.qty);
-        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(revertedOldStock, oldMat.id);
+    // 1. Revert old stock
+    for (const it of itemsToRevert) {
+      const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+      if (mat) {
+        const revStock = Math.max(0, (mat.current_stock || 0) - (it.qty || 0));
+        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(revStock, mat.id);
       }
-      const newStock = (mat.current_stock || 0) + newQty;
-      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?').run(newStock, newCost, mat.id);
     }
+
+    // 2. Revert old supplier balance
+    if (p.supplier_id && p.remaining_balance > 0) {
+      db.prepare('UPDATE suppliers SET amount = MAX(0, amount - ?) WHERE id = ?').run(p.remaining_balance, p.supplier_id);
+    }
+
+    // 3. Clear old items
+    db.prepare('DELETE FROM raw_material_purchase_items WHERE purchase_id = ?').run(id);
+
+    // 4. Update header
+    const primary = validatedItems[0];
+    const summaryName = validatedItems.length === 1 ? primary.material_name : `${primary.material_name} (+${validatedItems.length - 1} more items)`;
 
     db.prepare(`
       UPDATE raw_material_purchases
-      SET material_id = ?, material_name = ?, qty = ?, unit = ?, unit_cost = ?, total_cost = ?, supplier_name = ?, invoice_no = ?, date = ?, notes = ?
+      SET material_id = ?, material_name = ?, qty = ?, unit = ?, unit_cost = ?, total_cost = ?,
+          supplier_id = ?, supplier_name = ?, invoice_no = ?, date = ?, notes = ?,
+          paid_amount = ?, remaining_balance = ?, payment_method = ?, items_count = ?
       WHERE id = ?
     `).run(
-      mat.id,
-      mat.name,
-      newQty,
-      mat.unit,
-      newCost,
-      newTotal,
-      data.supplier_name || '',
-      newInvoiceNo,
-      newDate,
+      primary.material_id,
+      summaryName,
+      primary.qty,
+      primary.unit,
+      primary.unit_cost,
+      totalCost,
+      supplierId,
+      supplierName,
+      invoiceNo,
+      date,
       data.notes || '',
+      paidAmount,
+      remainingBalance,
+      data.payment_method || p.payment_method || 'Cash',
+      validatedItems.length,
       id
     );
 
-    db.prepare(`
-      UPDATE raw_material_logs
-      SET material_id = ?, material_name = ?, qty_change = ?, date = ?, notes = ?
-      WHERE reference_id = ? AND action = 'PURCHASE'
-    `).run(
-      mat.id,
-      mat.name,
-      newQty,
-      newDate,
-      `Purchased ${newQty} ${mat.unit} from ${data.supplier_name || 'Supplier'} @ Rs. ${newCost} (Updated)`,
-      id
-    );
+    // 5. Insert new items and apply new stock
+    for (const it of validatedItems) {
+      db.prepare(`
+        INSERT INTO raw_material_purchase_items (
+          purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(id, it.material_id, it.material_name, it.unit, it.qty, it.unit_cost, it.total_cost);
+
+      const mat = db.prepare('SELECT current_stock FROM raw_materials WHERE id = ?').get(it.material_id);
+      const newStock = (mat ? mat.current_stock : 0) + it.qty;
+      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?')
+        .run(newStock, it.unit_cost, it.material_id);
+    }
+
+    // 6. Apply new supplier balance
+    if (supplierId && remainingBalance > 0) {
+      db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?').run(remainingBalance, supplierId);
+    }
   });
 
   tx();
@@ -2706,35 +3034,232 @@ function deleteRawMaterialPurchase(id) {
   const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
   if (!p) return { error: 'Purchase record not found' };
 
-  const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(p.material_id);
+  const items = db.prepare('SELECT * FROM raw_material_purchase_items WHERE purchase_id = ?').all(id);
+  const itemsToRevert = items.length > 0 ? items : [{
+    material_id: p.material_id,
+    material_name: p.material_name,
+    qty: p.qty,
+    unit: p.unit
+  }];
+
   const tx = db.transaction(() => {
-    if (mat) {
-      const newStock = Math.max(0, (mat.current_stock || 0) - (p.qty || 0));
-      db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(newStock, mat.id);
-      db.prepare(`
-        INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
-        VALUES (?, ?, 'PURCHASE_CANCELLED', ?, ?, ?, ?, date('now'), ?)
-      `).run(
-        mat.id,
-        mat.name,
-        -(p.qty || 0),
-        mat.current_stock,
-        newStock,
-        p.id,
-        `Deleted Purchase #${p.invoice_no || p.id} (-${p.qty} ${p.unit})`
-      );
+    // 1. Revert stock
+    for (const it of itemsToRevert) {
+      const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+      if (mat) {
+        const newStock = Math.max(0, (mat.current_stock || 0) - (it.qty || 0));
+        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(newStock, mat.id);
+        db.prepare(`
+          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+          VALUES (?, ?, 'PURCHASE_CANCELLED', ?, ?, ?, ?, date('now'), ?)
+        `).run(
+          mat.id,
+          mat.name,
+          -(it.qty || 0),
+          mat.current_stock,
+          newStock,
+          p.id,
+          `Deleted Purchase #${p.invoice_no || p.id} (-${it.qty} ${it.unit || mat.unit})`
+        );
+      }
     }
+
+    // 2. Revert supplier balance
+    if (p.supplier_id && p.remaining_balance > 0) {
+      db.prepare('UPDATE suppliers SET amount = MAX(0, amount - ?) WHERE id = ?')
+        .run(p.remaining_balance, p.supplier_id);
+    }
+
+    // 3. Delete records
     db.prepare("DELETE FROM raw_material_logs WHERE reference_id = ? AND action = 'PURCHASE'").run(p.id);
-    db.prepare('DELETE FROM raw_material_purchases WHERE id = ?').run(id);
+    db.prepare('DELETE FROM raw_material_purchase_items WHERE purchase_id = ?').run(p.id);
+    db.prepare('DELETE FROM raw_material_purchases WHERE id = ?').run(p.id);
   });
 
   tx();
   return { success: true };
 }
 
+// --- SUPPLIERS & VENDOR KHATA MANAGEMENT ---
+function getSuppliers() {
+  const sups = db.prepare('SELECT * FROM suppliers ORDER BY name ASC').all();
+  // Attach total orders & total spend for each supplier
+  for (const s of sups) {
+    const stats = db.prepare(`
+      SELECT COUNT(*) as orders_count, COALESCE(SUM(total_cost), 0) as total_spend
+      FROM raw_material_purchases
+      WHERE supplier_id = ? OR (supplier_name = ? AND supplier_id IS NULL)
+    `).get(s.id, s.name);
+    s.orders_count = stats?.orders_count || 0;
+    s.total_spend = stats?.total_spend || 0;
+  }
+  return sups;
+}
+
+function getSupplier(id) {
+  const s = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+  if (!s) return null;
+  const stats = db.prepare(`
+    SELECT COUNT(*) as orders_count, COALESCE(SUM(total_cost), 0) as total_spend
+    FROM raw_material_purchases
+    WHERE supplier_id = ? OR (supplier_name = ? AND supplier_id IS NULL)
+  `).get(s.id, s.name);
+  s.orders_count = stats?.orders_count || 0;
+  s.total_spend = stats?.total_spend || 0;
+  return s;
+}
+
+function saveSupplier(data) {
+  let supplierId;
+  const transaction = db.transaction(() => {
+    if (data.id) {
+      const { id, ...updates } = data;
+      const clause = Object.keys(updates).map(k => `${k} = @${k}`).join(', ');
+      db.prepare(`UPDATE suppliers SET ${clause} WHERE id = @id`).run(data);
+      supplierId = data.id;
+    } else {
+      const keys = Object.keys(data);
+      const placeholders = keys.map(k => `@${k}`).join(', ');
+      const info = db.prepare(`INSERT INTO suppliers (${keys.join(', ')}) VALUES (${placeholders})`).run(data);
+      supplierId = info.lastInsertRowid;
+    }
+  });
+  transaction();
+  return { success: true, id: supplierId };
+}
+
+function deleteSupplier(id) {
+  const s = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+  if (!s) return { error: 'Supplier not found' };
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM supplier_payments WHERE supplier_id = ?').run(id);
+    db.prepare('UPDATE raw_material_purchases SET supplier_id = NULL WHERE supplier_id = ?').run(id);
+    db.prepare('DELETE FROM suppliers WHERE id = ?').run(id);
+  })();
+  return { success: true };
+}
+
+function paySupplier(data) {
+  if (!data.supplier_id) return { error: 'Supplier ID is required' };
+  const amount = Number(data.amount) || 0;
+  if (amount <= 0) return { error: 'Payment amount must be greater than 0' };
+
+  const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(data.supplier_id);
+  if (!supplier) return { error: 'Supplier not found' };
+
+  const currentBalance = Number(supplier.amount) || 0;
+  if (currentBalance <= 0) {
+    return { error: 'This supplier has no outstanding balance' };
+  }
+  if (amount > currentBalance) {
+    return { error: `Paid amount (Rs. ${amount.toLocaleString()}) cannot be more than the balance due to supplier (Rs. ${currentBalance.toLocaleString()})` };
+  }
+
+  const date = data.date || new Date().toISOString().split('T')[0];
+  const todayStr = date.replace(/-/g, '');
+  let countToday = db.prepare('SELECT COUNT(*) as c FROM supplier_payments WHERE date = ?').get(date)?.c || 0;
+  let receiptNo = `PAY-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
+  while (db.prepare('SELECT id FROM supplier_payments WHERE receipt_no = ?').get(receiptNo)) {
+    countToday++;
+    receiptNo = `PAY-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
+  }
+
+  let paymentId;
+  let newBalance = 0;
+  db.transaction(() => {
+    const res = db.prepare(`
+      INSERT INTO supplier_payments (supplier_id, amount, payment_method, receipt_no, date, notes)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      data.supplier_id,
+      amount,
+      data.payment_method || 'Cash',
+      receiptNo,
+      date,
+      data.notes || ''
+    );
+    paymentId = res.lastInsertRowid;
+    newBalance = Math.max(0, currentBalance - amount);
+    db.prepare('UPDATE suppliers SET amount = ? WHERE id = ?').run(newBalance, data.supplier_id);
+  })();
+
+  return {
+    success: true,
+    id: paymentId,
+    receipt_no: receiptNo,
+    supplier_id: data.supplier_id,
+    supplier_name: supplier.name,
+    amount_paid: amount,
+    previous_balance: currentBalance,
+    new_balance: newBalance,
+    date,
+    payment_method: data.payment_method || 'Cash',
+    notes: data.notes || ''
+  };
+}
+
+function deleteSupplierPayment(id) {
+  const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(id);
+  if (!payment) return { error: 'Payment not found' };
+
+  db.transaction(() => {
+    db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?').run(payment.amount, payment.supplier_id);
+    db.prepare('DELETE FROM supplier_payments WHERE id = ?').run(id);
+  })();
+
+  return { success: true };
+}
+
+function getSupplierLedger(supplierId) {
+  const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(supplierId);
+  if (!supplier) return null;
+
+  // Purchases (Debit to factory / Credit to supplier payable account)
+  const purchases = db.prepare(`
+    SELECT p.id, p.invoice_no, p.date, p.created_at, p.total_cost, p.paid_amount, p.remaining_balance,
+           p.payment_method, p.notes,
+           'purchase' as record_type,
+           COALESCE(p.items_count, 1) as items_count,
+           p.material_name as summary_name
+    FROM raw_material_purchases p
+    WHERE p.supplier_id = ? OR (p.supplier_name = ? AND p.supplier_id IS NULL)
+  `).all(supplierId, supplier.name);
+
+  // Attach items to each purchase
+  for (const p of purchases) {
+    p.items = db.prepare('SELECT * FROM raw_material_purchase_items WHERE purchase_id = ?').all(p.id);
+  }
+
+  // Payments Made to Supplier
+  const payments = db.prepare(`
+    SELECT sp.id, sp.receipt_no as invoice_no, sp.date, sp.created_at, 0 as total_cost, sp.amount as paid_amount, 0 as remaining_balance,
+           sp.payment_method, sp.notes,
+           'payment' as record_type,
+           0 as items_count,
+           'Payment to Supplier' as summary_name
+    FROM supplier_payments sp
+    WHERE sp.supplier_id = ?
+  `).all(supplierId);
+
+  // Combine and sort chronologically
+  const entries = [...purchases, ...payments].sort((a, b) => {
+    const da = new Date(a.date).getTime() || 0;
+    const db = new Date(b.date).getTime() || 0;
+    if (da !== db) return da - db;
+    return a.id - b.id;
+  });
+
+  return {
+    supplier,
+    current_balance: supplier.amount || 0,
+    entries
+  };
+}
+
 function getRawMaterialSuppliers() {
   const rows = db.prepare(`
-    SELECT DISTINCT name as supplier_name FROM companies WHERE name IS NOT NULL AND TRIM(name) != ''
+    SELECT DISTINCT name as supplier_name FROM suppliers WHERE name IS NOT NULL AND TRIM(name) != ''
     UNION
     SELECT DISTINCT supplier_name FROM raw_material_purchases WHERE supplier_name IS NOT NULL AND TRIM(supplier_name) != ''
     ORDER BY supplier_name ASC
@@ -4164,6 +4689,9 @@ module.exports = {
   // Stage 1: Raw Materials
   getRawMaterials, getRawMaterial, saveRawMaterial, deleteRawMaterial, addRawMaterialPurchase, getRawMaterialLogs,
   getRawMaterialPurchases, getRawMaterialPurchase, updateRawMaterialPurchase, deleteRawMaterialPurchase, getRawMaterialSuppliers,
+  getNextPurchaseInvoiceNo,
+  // Suppliers & Vendor Khata
+  getSuppliers, getSupplier, saveSupplier, deleteSupplier, paySupplier, deleteSupplierPayment, getSupplierLedger,
   // Stage 2: Single Items Production
   getIcecreamItems, getIcecreamItem, saveIcecreamItem, deleteIcecreamItem, runProductionBatch, getProductionBatches, deleteProductionBatch,
   // Stage 3: Packed Cartons

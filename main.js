@@ -234,6 +234,16 @@ ipcMain.handle('get-raw-material-purchase', (event, id) => db.getRawMaterialPurc
 ipcMain.handle('update-raw-material-purchase', (event, id, data) => db.updateRawMaterialPurchase(id, data));
 ipcMain.handle('delete-raw-material-purchase', (event, id) => db.deleteRawMaterialPurchase(id));
 ipcMain.handle('get-raw-material-suppliers', () => db.getRawMaterialSuppliers());
+ipcMain.handle('get-next-purchase-invoice-no', () => db.getNextPurchaseInvoiceNo());
+
+// Suppliers & Vendor Khata IPC
+ipcMain.handle('get-suppliers', () => db.getSuppliers());
+ipcMain.handle('get-supplier', (event, id) => db.getSupplier(id));
+ipcMain.handle('save-supplier', (event, data) => db.saveSupplier(data));
+ipcMain.handle('delete-supplier', (event, id) => db.deleteSupplier(id));
+ipcMain.handle('pay-supplier', (event, data) => db.paySupplier(data));
+ipcMain.handle('delete-supplier-payment', (event, id) => db.deleteSupplierPayment(id));
+ipcMain.handle('get-supplier-ledger', (event, supplierId) => db.getSupplierLedger(supplierId));
 
 // Stage 2: Single Items Production
 ipcMain.handle('get-icecream-items', () => db.getIcecreamItems());

@@ -106,6 +106,16 @@ contextBridge.exposeInMainWorld('api', {
   updateRawMaterialPurchase: (id, data) => ipcRenderer.invoke('update-raw-material-purchase', id, data),
   deleteRawMaterialPurchase: (id) => ipcRenderer.invoke('delete-raw-material-purchase', id),
   getRawMaterialSuppliers: () => ipcRenderer.invoke('get-raw-material-suppliers'),
+  getNextPurchaseInvoiceNo: () => ipcRenderer.invoke('get-next-purchase-invoice-no'),
+
+  // Suppliers & Vendor Khata
+  getSuppliers: () => ipcRenderer.invoke('get-suppliers'),
+  getSupplier: (id) => ipcRenderer.invoke('get-supplier', id),
+  saveSupplier: (data) => ipcRenderer.invoke('save-supplier', data),
+  deleteSupplier: (id) => ipcRenderer.invoke('delete-supplier', id),
+  paySupplier: (data) => ipcRenderer.invoke('pay-supplier', data),
+  deleteSupplierPayment: (id) => ipcRenderer.invoke('delete-supplier-payment', id),
+  getSupplierLedger: (supplierId) => ipcRenderer.invoke('get-supplier-ledger', supplierId),
 
   // Stage 2: Single Items Production
   getIcecreamItems: () => ipcRenderer.invoke('get-icecream-items'),

@@ -59,9 +59,6 @@ window.RawMaterials = {
             <button onclick="RawMaterials.openAddModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
               <i data-lucide="plus-circle" class="w-4 h-4 text-white"></i> Add New Material
             </button>
-            <button onclick="RawMaterials.openPurchaseModal()" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-900 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Purchase / Stock-In
-            </button>
             <button onclick="RawMaterials.printReport()" class="px-3.5 py-2.5 bg-slate-800/90 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer" title="Print Stock Sheet">
               <i data-lucide="printer" class="w-4 h-4"></i> Print
             </button>
@@ -636,7 +633,7 @@ window.RawMaterials = {
                   </td>
                   <td class="py-1.5 px-3 text-right">
                     <div class="flex items-center justify-end gap-1.5">
-                      <button onclick="RawMaterials.openPurchaseModal(${m.id})" title="Stock-In / Add Purchase" class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
+                      <button onclick="Purchases.openPurchaseModal(null, { material_id: ${m.id} })" title="Record Purchase for this Material" class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                       </button>
                       <button onclick="RawMaterials.openEditModal(${m.id})" title="Edit Material" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">

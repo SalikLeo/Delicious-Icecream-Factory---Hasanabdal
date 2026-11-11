@@ -319,7 +319,10 @@ const app = {
 
     // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(btn => {
-      const isCurrent = btn.id === `nav-${page}` || ((page === 'companies' || page === 'purchases' || page === 'item-purchases' || page === 'suppliers') && (btn.id === 'nav-purchases' || btn.id === 'nav-companies')) || (page === 'item-sales' && (btn.id === 'nav-proposals' || btn.id === 'nav-sales-history'));
+      const isCurrent = btn.id === `nav-${page}` ||
+        ((page === 'purchases' || page === 'item-purchases') && btn.id === 'nav-purchases') ||
+        ((page === 'suppliers' || page === 'companies') && btn.id === 'nav-suppliers') ||
+        (page === 'item-sales' && (btn.id === 'nav-proposals' || btn.id === 'nav-sales-history'));
       const icon = btn.querySelector('.nav-icon');
       const text = btn.querySelector('.nav-text');
       if (isCurrent) {

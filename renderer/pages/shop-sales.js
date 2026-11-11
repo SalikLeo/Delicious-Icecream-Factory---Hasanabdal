@@ -590,8 +590,6 @@ window.ShopSales = {
       <div id="shop-quick-modal-container"></div>
       <!-- Quick Load Stock into Car Modal Container -->
       <div id="car-load-quick-modal-container"></div>
-      <!-- Sale Return Modal Container -->
-      <div id="sale-return-modal-container"></div>
     `;
 
     if (window.lucide) lucide.createIcons({ root: this.container });
@@ -2270,27 +2268,54 @@ window.ShopSales = {
   },
 
   // ---------------- Return Modal & Stock Adjustment ----------------
-  async openReturnModal(deliveryId) {
-    const delivery = await window.api.getShopDelivery(deliveryId);
-    if (!delivery) {
-      app.showAlert({ title: 'Invoice Not Found', message: 'Could not find delivery sale record.' });
-      return;
+  getReturnModalContainer() {
+    let modalEl = document.getElementById('sale-return-modal-container');
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.id = 'sale-return-modal-container';
+      document.body.appendChild(modalEl);
+    } else if (modalEl.parentElement !== document.body) {
+      document.body.appendChild(modalEl);
     }
+    return modalEl;
+  },
 
-    this.currentReturnDelivery = delivery;
-    this.returnDestination = 'car';
-    this.returnAdjustmentType = delivery.shop_id ? 'khata' : 'cash';
-    this.returnItemQuantities = {};
+  async openReturnModal(deliveryId) {
+    try {
+      const delivery = await window.api.getShopDelivery(deliveryId);
+      if (!delivery) {
+        app.showAlert({ title: 'Invoice Not Found', message: 'Could not find delivery sale record.' });
+        return;
+      }
 
-    (delivery.items || []).forEach(it => {
-      this.returnItemQuantities[it.id] = 0;
-    });
+      this.currentReturnDelivery = delivery;
+      this.returnDestination = delivery.car_id ? 'car' : 'stock';
+      this.returnAdjustmentType = delivery.shop_id ? 'khata' : 'cash';
+      this.returnItemQuantities = {};
+      this.returnReason = '';
 
-    this.renderReturnModal();
+      const items = delivery.items || [];
+      // If 1 item or single delivery, auto-populate available quantity so user can return immediately
+      if (items.length === 1) {
+        const it = items[0];
+        const maxAvailable = Math.max(0, (Number(it.delivered_cartons) || 0) - (Number(it.returned_cartons) || 0));
+        this.returnItemQuantities[it.id] = maxAvailable;
+      } else {
+        items.forEach(it => {
+          const maxAvailable = Math.max(0, (Number(it.delivered_cartons) || 0) - (Number(it.returned_cartons) || 0));
+          this.returnItemQuantities[it.id] = maxAvailable > 0 ? maxAvailable : 0;
+        });
+      }
+
+      this.renderReturnModal();
+    } catch (err) {
+      console.error('Failed to open return modal:', err);
+      app.showAlert({ title: 'Return Error', message: err.message || 'Could not open return modal.' });
+    }
   },
 
   renderReturnModal() {
-    const modalEl = document.getElementById('sale-return-modal-container');
+    const modalEl = this.getReturnModalContainer();
     if (!modalEl) return;
 
     const delivery = this.currentReturnDelivery;
@@ -2306,7 +2331,7 @@ window.ShopSales = {
       totalRefundAmount += retQty * (Number(it.carton_price) || 0);
     });
 
-    const isCarSelected = this.returnDestination === 'car';
+    const isCarSelected = this.returnDestination === 'car' && delivery.car_id;
     const isKhataSelected = this.returnAdjustmentType === 'khata';
 
     modalEl.innerHTML = `
@@ -2323,9 +2348,9 @@ window.ShopSales = {
               <h3 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
                 <i data-lucide="rotate-ccw" class="w-5 h-5 text-amber-400"></i> Return Cartons for ${delivery.shop_name}
               </h3>
-              <p class="text-[11px] text-slate-300 font-medium">Delivered via ${delivery.car_number || 'Vehicle'} (${delivery.driver_name || 'Driver'}) on ${delivery.date}</p>
+              <p class="text-[11px] text-slate-300 font-medium">Delivered via ${delivery.car_number || 'Direct Warehouse'} (${delivery.driver_name || 'Direct'}) on ${delivery.date}</p>
             </div>
-            <button onclick="ShopSales.closeReturnModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors">
+            <button onclick="ShopSales.closeReturnModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors" title="Close">
               <i data-lucide="x" class="w-4 h-4"></i>
             </button>
           </div>
@@ -2337,22 +2362,24 @@ window.ShopSales = {
               <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">
                 1. Where should returned cartons go? *
               </label>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <!-- Stay in Car Option -->
-                <div onclick="ShopSales.setModalReturnDestination('car')"
-                     class="p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${isCarSelected ? 'border-blue-500 bg-blue-50/70 shadow-xs' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'} flex items-start gap-3">
-                  <div class="w-9 h-9 rounded-xl ${isCarSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'} flex items-center justify-center shrink-0">
-                    <i data-lucide="truck" class="w-5 h-5"></i>
-                  </div>
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                      <span class="font-black text-xs text-slate-900">Stay in That Car</span>
-                      <input type="radio" name="modal_ret_dest" value="car" ${isCarSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600">
+              <div class="grid grid-cols-1 ${delivery.car_id ? 'sm:grid-cols-2' : ''} gap-3">
+                ${delivery.car_id ? `
+                  <!-- Stay in Car Option -->
+                  <div onclick="ShopSales.setModalReturnDestination('car')"
+                       class="p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${isCarSelected ? 'border-blue-500 bg-blue-50/70 shadow-xs' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'} flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl ${isCarSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'} flex items-center justify-center shrink-0">
+                      <i data-lucide="truck" class="w-5 h-5"></i>
                     </div>
-                    <p class="text-[11px] font-bold text-blue-900 mt-0.5">${delivery.car_number || 'Delivering Vehicle'}</p>
-                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Kept in driver's vehicle inventory for selling to next shops.</p>
+                    <div class="flex-1">
+                      <div class="flex items-center justify-between">
+                        <span class="font-black text-xs text-slate-900">Stay in That Car</span>
+                        <input type="radio" name="modal_ret_dest" value="car" ${isCarSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600">
+                      </div>
+                      <p class="text-[11px] font-bold text-blue-900 mt-0.5">${delivery.car_number || 'Delivering Vehicle'}</p>
+                      <p class="text-[10px] text-slate-500 font-medium mt-0.5">Kept in driver's vehicle inventory for selling to next shops.</p>
+                    </div>
                   </div>
-                </div>
+                ` : ''}
 
                 <!-- Return to Factory Stock Option -->
                 <div onclick="ShopSales.setModalReturnDestination('stock')"
@@ -2374,9 +2401,19 @@ window.ShopSales = {
 
             <!-- Step 2: Items Table with Quantity to Return -->
             <div>
-              <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">
-                2. Specify Items &amp; Return Quantities *
-              </label>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500">
+                  2. Specify Items &amp; Return Quantities *
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="ShopSales.setModalReturnAll()" class="px-2 py-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200 cursor-pointer transition-all">
+                    Return All
+                  </button>
+                  <button type="button" onclick="ShopSales.setModalReturnNone()" class="px-2 py-0.5 text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200 cursor-pointer transition-all">
+                    Reset (0)
+                  </button>
+                </div>
+              </div>
               <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
                 <table class="w-full text-left text-xs border-collapse">
                   <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
@@ -2418,7 +2455,7 @@ window.ShopSales = {
                                         class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all">
                                   <i data-lucide="minus" class="w-3 h-3"></i>
                                 </button>
-                                <input type="number" min="0" max="${maxAvailable}" value="${curVal}"
+                                <input type="number" id="modal-ret-input-${it.id}" min="0" max="${maxAvailable}" value="${curVal}"
                                        oninput="ShopSales.onModalItemReturnQtyChange(${it.id}, ${maxAvailable}, this.value)"
                                        class="w-12 px-1 py-1 text-center font-black text-xs text-rose-700 bg-white border border-rose-300 rounded-lg outline-none tabular-nums focus:border-rose-500 shadow-2xs">
                                 <button type="button" onclick="ShopSales.stepModalItemReturnQty(${it.id}, ${maxAvailable}, 1)"
@@ -2431,7 +2468,7 @@ window.ShopSales = {
                           <td class="py-2 px-2 text-right font-bold text-slate-600 border-r border-slate-200 tabular-nums">
                             Rs. ${it.carton_price}
                           </td>
-                          <td class="py-2 px-3 text-right font-black text-rose-700 tabular-nums">
+                          <td id="modal-ret-line-${it.id}" class="py-2 px-3 text-right font-black text-rose-700 tabular-nums">
                             Rs. ${Math.round(lineRefund).toLocaleString()}
                           </td>
                         </tr>
@@ -2450,15 +2487,17 @@ window.ShopSales = {
                   3. Financial Adjustment
                 </label>
                 <div class="space-y-1.5">
+                  ${delivery.shop_id ? `
+                    <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                      <input type="radio" name="modal_ret_adj" value="khata" ${isKhataSelected ? 'checked' : ''} onchange="ShopSales.setModalAdjustmentType('khata')" class="text-amber-500">
+                      <div>
+                        <span class="text-xs font-black text-slate-900 block">Credit Shop Khata Balance</span>
+                        <span class="text-[10px] text-slate-500 font-medium">Reduces shop outstanding debt by refund amount</span>
+                      </div>
+                    </label>
+                  ` : ''}
                   <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
-                    <input type="radio" name="modal_ret_adj" value="khata" ${isKhataSelected ? 'checked' : ''} onchange="ShopSales.setModalAdjustmentType('khata')" class="text-amber-500">
-                    <div>
-                      <span class="text-xs font-black text-slate-900 block">Credit Shop Khata Balance</span>
-                      <span class="text-[10px] text-slate-500 font-medium">Reduces shop outstanding debt by refund amount</span>
-                    </div>
-                  </label>
-                  <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
-                    <input type="radio" name="modal_ret_adj" value="cash" ${!isKhataSelected ? 'checked' : ''} onchange="ShopSales.setModalAdjustmentType('cash')" class="text-emerald-500">
+                    <input type="radio" name="modal_ret_adj" value="cash" ${!isKhataSelected || !delivery.shop_id ? 'checked' : ''} onchange="ShopSales.setModalAdjustmentType('cash')" class="text-emerald-500">
                     <div>
                       <span class="text-xs font-black text-slate-900 block">Cash Refund Given</span>
                       <span class="text-[10px] text-slate-500 font-medium">Cash was returned / refunded directly to customer</span>
@@ -2473,7 +2512,8 @@ window.ShopSales = {
                   Return Remarks / Reason (Optional)
                 </label>
                 <textarea id="modal-ret-reason" rows="3" placeholder="e.g. Broken packaging, melted during transit, shopkeeper reduced order..."
-                          class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-400"></textarea>
+                          oninput="ShopSales.returnReason = this.value"
+                          class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-400">${this.returnReason || ''}</textarea>
               </div>
             </div>
 
@@ -2484,12 +2524,12 @@ window.ShopSales = {
             <div class="flex items-center gap-4 text-xs">
               <div>
                 <span class="text-[10px] font-black uppercase text-slate-400 block">Total Returning:</span>
-                <span class="font-black text-sm text-slate-900">${totalRetCartons} Cartons</span>
+                <span id="modal-ret-total-cartons" class="font-black text-sm text-slate-900">${totalRetCartons} Cartons</span>
               </div>
               <div class="h-8 w-px bg-slate-200"></div>
               <div>
                 <span class="text-[10px] font-black uppercase text-slate-400 block">Total Refund:</span>
-                <span class="font-black text-base text-rose-600">Rs. ${Math.round(totalRefundAmount).toLocaleString()}</span>
+                <span id="modal-ret-total-refund" class="font-black text-base text-rose-600">Rs. ${Math.round(totalRefundAmount).toLocaleString()}</span>
               </div>
             </div>
 
@@ -2498,7 +2538,7 @@ window.ShopSales = {
                       class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl cursor-pointer transition-all">
                 Cancel
               </button>
-              <button type="button" onclick="ShopSales.submitReturnModal()"
+              <button type="button" id="modal-ret-submit-btn" onclick="ShopSales.submitReturnModal()"
                       ${totalRetCartons === 0 ? 'disabled' : ''}
                       class="px-5 py-2.5 ${totalRetCartons === 0 ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md cursor-pointer active:scale-95'} font-black text-xs rounded-xl transition-all flex items-center gap-2">
                 <i data-lucide="check" class="w-4 h-4"></i> Confirm Return &amp; Print Note
@@ -2514,32 +2554,96 @@ window.ShopSales = {
   },
 
   setModalReturnDestination(dest) {
+    const reasonEl = document.getElementById('modal-ret-reason');
+    if (reasonEl) this.returnReason = reasonEl.value;
     this.returnDestination = dest;
     this.renderReturnModal();
   },
 
   setModalAdjustmentType(adj) {
+    const reasonEl = document.getElementById('modal-ret-reason');
+    if (reasonEl) this.returnReason = reasonEl.value;
     this.returnAdjustmentType = adj;
     this.renderReturnModal();
+  },
+
+  setModalReturnAll() {
+    const delivery = this.currentReturnDelivery;
+    if (!delivery) return;
+    (delivery.items || []).forEach(it => {
+      const maxAvailable = Math.max(0, (Number(it.delivered_cartons) || 0) - (Number(it.returned_cartons) || 0));
+      this.returnItemQuantities[it.id] = maxAvailable;
+      const inp = document.getElementById(`modal-ret-input-${it.id}`);
+      if (inp) inp.value = maxAvailable;
+    });
+    this.updateReturnTotalsUI();
+  },
+
+  setModalReturnNone() {
+    const delivery = this.currentReturnDelivery;
+    if (!delivery) return;
+    (delivery.items || []).forEach(it => {
+      this.returnItemQuantities[it.id] = 0;
+      const inp = document.getElementById(`modal-ret-input-${it.id}`);
+      if (inp) inp.value = 0;
+    });
+    this.updateReturnTotalsUI();
   },
 
   onModalItemReturnQtyChange(itemId, maxAvailable, val) {
     const parsed = Math.max(0, Math.min(maxAvailable, parseInt(val) || 0));
     this.returnItemQuantities[itemId] = parsed;
-    this.renderReturnModal();
+    this.updateReturnTotalsUI();
   },
 
   stepModalItemReturnQty(itemId, maxAvailable, delta) {
     const cur = Number(this.returnItemQuantities[itemId]) || 0;
     const next = Math.max(0, Math.min(maxAvailable, cur + delta));
     this.returnItemQuantities[itemId] = next;
-    this.renderReturnModal();
+    const inp = document.getElementById(`modal-ret-input-${itemId}`);
+    if (inp) inp.value = next;
+    this.updateReturnTotalsUI();
+  },
+
+  updateReturnTotalsUI() {
+    const delivery = this.currentReturnDelivery;
+    if (!delivery) return;
+    const items = delivery.items || [];
+    let totalRetCartons = 0;
+    let totalRefundAmount = 0;
+
+    items.forEach(it => {
+      const retQty = Number(this.returnItemQuantities[it.id]) || 0;
+      totalRetCartons += retQty;
+      const lineRefund = retQty * (Number(it.carton_price) || 0);
+      totalRefundAmount += lineRefund;
+      const lineRefundEl = document.getElementById(`modal-ret-line-${it.id}`);
+      if (lineRefundEl) lineRefundEl.textContent = `Rs. ${Math.round(lineRefund).toLocaleString()}`;
+    });
+
+    const totalCtnsEl = document.getElementById('modal-ret-total-cartons');
+    if (totalCtnsEl) totalCtnsEl.textContent = `${totalRetCartons} Cartons`;
+
+    const totalRefundEl = document.getElementById('modal-ret-total-refund');
+    if (totalRefundEl) totalRefundEl.textContent = `Rs. ${Math.round(totalRefundAmount).toLocaleString()}`;
+
+    const submitBtn = document.getElementById('modal-ret-submit-btn');
+    if (submitBtn) {
+      if (totalRetCartons === 0) {
+        submitBtn.disabled = true;
+        submitBtn.className = 'px-5 py-2.5 bg-slate-300 text-slate-500 cursor-not-allowed font-black text-xs rounded-xl transition-all flex items-center gap-2';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.className = 'px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md cursor-pointer active:scale-95 font-black text-xs rounded-xl transition-all flex items-center gap-2';
+      }
+    }
   },
 
   closeReturnModal() {
     this.currentReturnDelivery = null;
     this.returnItemQuantities = {};
-    const modalEl = document.getElementById('sale-return-modal-container');
+    this.returnReason = '';
+    const modalEl = this.getReturnModalContainer();
     if (modalEl) modalEl.innerHTML = '';
   },
 
@@ -2554,7 +2658,7 @@ window.ShopSales = {
     }
 
     const reasonEl = document.getElementById('modal-ret-reason');
-    const reason = reasonEl ? reasonEl.value.trim() : '';
+    const reason = reasonEl ? reasonEl.value.trim() : (this.returnReason || '');
 
     const payload = {
       delivery_id: delivery.id,
@@ -2578,17 +2682,17 @@ window.ShopSales = {
       app.showToast(`Return ${res.returnNo} processed! Sale reduced by Rs. ${Math.round(res.totalRefund).toLocaleString()} (${res.totalCartonsReturned} cartons returned to ${res.returnDest === 'car' ? 'Car' : 'Factory Stock'}).`, 'success');
       this.closeReturnModal();
 
-      // Refresh whichever page is active
-      if (window.Proposals && typeof window.Proposals.loadData === 'function' && app.currentPage === 'proposals') {
+      // Refresh all related views immediately
+      if (window.Proposals && typeof window.Proposals.loadData === 'function') {
         window.Proposals.loadData();
       }
-      if (window.Reports && typeof window.Reports.loadData === 'function' && app.currentPage === 'reports') {
+      if (window.Reports && typeof window.Reports.loadData === 'function') {
         window.Reports.loadData();
       }
-      if (window.Customers && typeof window.Customers.loadData === 'function' && app.currentPage === 'customers') {
+      if (window.Customers && typeof window.Customers.loadData === 'function') {
         window.Customers.loadData();
       }
-      if (app.currentPage === 'shop-sales') {
+      if (window.ShopSales && typeof window.ShopSales.loadData === 'function' && app.currentPage === 'shop-sales') {
         this.loadData();
       }
 

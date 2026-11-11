@@ -3727,8 +3727,12 @@ function processShopReturn(data) {
 
   const date = data.date || new Date().toISOString().split('T')[0];
   const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_returns WHERE date = ?').get(date).c + 1;
-  const returnNo = `RET-${todayStr}-${String(countToday).padStart(3, '0')}`;
+  let returnSeq = db.prepare('SELECT COUNT(*) as c FROM shop_returns WHERE date = ?').get(date).c + 1;
+  let returnNo = `RET-${todayStr}-${String(returnSeq).padStart(3, '0')}`;
+  while (db.prepare('SELECT id FROM shop_returns WHERE return_no = ?').get(returnNo)) {
+    returnSeq++;
+    returnNo = `RET-${todayStr}-${String(returnSeq).padStart(3, '0')}`;
+  }
   const returnDest = (data.return_destination || 'car').toLowerCase(); // 'car' or 'stock'
   const adjType = data.adjustment_type || 'khata'; // 'khata' or 'cash'
 
@@ -3829,7 +3833,6 @@ function processShopReturn(data) {
     if (adjType === 'cash') {
       // Cash refund given back to customer from sale proceeds
       newReceivedAmount = Math.max(0, newReceivedAmount - totalRefund);
-      newRemainingBalance = Math.max(0, newTotalAmount - newReceivedAmount);
     } else {
       // Khata adjustment: reduce bill debt balance first
       newRemainingBalance = Math.max(0, newRemainingBalance - totalRefund);
@@ -3839,6 +3842,9 @@ function processShopReturn(data) {
           .run(totalRefund, delivery.shop_id);
       }
     }
+
+    newReceivedAmount = Math.min(newTotalAmount, newReceivedAmount);
+    newRemainingBalance = Math.max(0, newTotalAmount - newReceivedAmount);
 
     db.prepare(`
       UPDATE shop_deliveries 

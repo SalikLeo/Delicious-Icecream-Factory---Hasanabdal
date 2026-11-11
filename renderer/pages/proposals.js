@@ -625,6 +625,8 @@ window.Proposals = {
       else if (d.payment_method === 'Online') badgeClass = 'bg-blue-100 text-blue-800';
       else if (d.payment_method === 'Credit') badgeClass = 'bg-amber-100 text-amber-800';
 
+      const remainingCtns = Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
+
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
           <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
@@ -638,7 +640,7 @@ window.Proposals = {
             <div class="text-[10px] text-slate-400 leading-tight">${d.shop_phone || d.shop_address || ''}</div>
           </td>
           <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/30 border-r border-slate-200">
-            <div>${Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0))}</div>
+            <div>${remainingCtns}</div>
             ${(d.total_cartons_returned || 0) > 0 ? `
               <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${d.total_cartons_returned} cartons returned (orig: ${d.total_cartons_delivered})">
                 -${d.total_cartons_returned} ret
@@ -662,8 +664,9 @@ window.Proposals = {
           <td class="py-1.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1.5">
               <button type="button" onclick="ShopSales.openReturnModal(${d.id})"
-                      class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
-                      title="Process Return (Keep in car or return to factory stock)">
+                      class="w-7 h-7 rounded-lg ${remainingCtns <= 0 ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200/80 cursor-pointer active:scale-95 shadow-2xs'} flex items-center justify-center transition-all"
+                      ${remainingCtns <= 0 ? 'disabled' : ''}
+                      title="${remainingCtns <= 0 ? 'All cartons on this delivery have already been returned' : 'Process Return (Keep in car or return to factory stock)'}">
                 <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
               </button>
               <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})"

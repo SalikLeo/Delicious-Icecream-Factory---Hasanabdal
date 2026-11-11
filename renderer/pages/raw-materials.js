@@ -879,9 +879,16 @@ window.RawMaterials = {
     if (window.lucide) lucide.createIcons({ root: modalEl });
   },
 
-  openPurchaseModal(defaultMaterialId = null) {
+  async openPurchaseModal(defaultMaterialId = null) {
     const modalEl = document.getElementById('rm-modal-container');
     if (!modalEl) return;
+
+    let suppliers = [];
+    try {
+      suppliers = await window.api.getSuppliers() || [];
+    } catch (e) {
+      suppliers = [];
+    }
 
     const defaultMaterial = defaultMaterialId ? this.materials.find(x => x.id === Number(defaultMaterialId)) : null;
 
@@ -937,17 +944,45 @@ window.RawMaterials = {
               <span class="text-xs font-black text-emerald-900">Total Purchase Cost:</span>
               <span id="po-total-display" class="text-lg font-black text-emerald-700 tabular-nums">Rs. 0</span>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Supplier Name</label>
-                <input type="text" id="po-supplier" placeholder="e.g. Dairy Milk Farms..."
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider">Select Supplier</label>
+                <button type="button" onclick="RawMaterials.quickAddSupplier()" class="text-[11px] font-black text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer">
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> + New Supplier
+                </button>
               </div>
+              <select id="po-supplier-id" onchange="RawMaterials.onSupplierSelectChange(this.value)"
+                      class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer">
+                <option value="">-- Direct Cash / Walk-in Supplier --</option>
+                ${suppliers.map(s => {
+                  const bal = Number(s.amount) || 0;
+                  const balText = bal > 0 ? `• Due: Rs. ${Math.round(bal).toLocaleString()}` : '• Clear';
+                  return `<option value="${s.id}" data-name="${s.name}" data-balance="${bal}">${s.name} ${s.phone ? `(${s.phone})` : ''} ${balText}</option>`;
+                }).join('')}
+              </select>
+              <div id="po-supplier-bal-info" class="mt-1.5 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hidden"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Purchase Date</label>
                 <input type="date" id="po-date" value="${new Date().toISOString().split('T')[0]}"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 font-mono">
               </div>
+              <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Payment Mode</label>
+                <select id="po-payment-mode" onchange="RawMaterials.onPaymentModeChange(this.value)"
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer">
+                  <option value="Cash">Cash (Full Paid)</option>
+                  <option value="Credit">Khata Credit (Pay Later)</option>
+                  <option value="Partial">Partial Payment</option>
+                </select>
+              </div>
+            </div>
+            <div id="po-partial-row" class="hidden bg-amber-50/60 p-3 rounded-xl border border-amber-200">
+              <label class="block text-[11px] font-black uppercase text-amber-900 tracking-wider mb-1">Cash Paid Now (Rs.)</label>
+              <input type="number" step="any" min="0" id="po-paid-amount" placeholder="0" oninput="RawMaterials.calcPartialBalance()"
+                     class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-amber-500 tabular-nums">
+              <p id="po-partial-pending-text" class="text-[11px] font-bold text-rose-600 mt-1"></p>
             </div>
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes / Remarks</label>
@@ -1092,6 +1127,87 @@ window.RawMaterials = {
     const total = qty * cost;
     const display = document.getElementById('po-total-display');
     if (display) display.textContent = `Rs. ${Math.round(total).toLocaleString()}`;
+    const mode = document.getElementById('po-payment-mode')?.value;
+    if (mode === 'Partial') {
+      this.calcPartialBalance();
+    }
+  },
+
+  onSupplierSelectChange(val) {
+    const sel = document.getElementById('po-supplier-id');
+    const badge = document.getElementById('po-supplier-bal-info');
+    if (!sel || !badge) return;
+    const opt = sel.options[sel.selectedIndex];
+    if (!val || !opt) {
+      badge.classList.add('hidden');
+      badge.innerHTML = '';
+      return;
+    }
+    const bal = Number(opt.getAttribute('data-balance')) || 0;
+    badge.classList.remove('hidden');
+    if (bal > 0) {
+      badge.innerHTML = `<span class="text-rose-600 font-black">Current Payable to Supplier: Rs. ${Math.round(bal).toLocaleString()}</span>`;
+    } else {
+      badge.innerHTML = `<span class="text-emerald-700 font-bold">No outstanding balance (All Clear)</span>`;
+    }
+  },
+
+  onPaymentModeChange(val) {
+    const partialRow = document.getElementById('po-partial-row');
+    const paidInput = document.getElementById('po-paid-amount');
+    const totalCost = (Number(document.getElementById('po-qty')?.value) || 0) * (Number(document.getElementById('po-cost')?.value) || 0);
+
+    if (val === 'Partial') {
+      if (partialRow) partialRow.classList.remove('hidden');
+      if (paidInput && !paidInput.value) paidInput.value = Math.round(totalCost / 2);
+      this.calcPartialBalance();
+    } else {
+      if (partialRow) partialRow.classList.add('hidden');
+    }
+  },
+
+  calcPartialBalance() {
+    const qty = Number(document.getElementById('po-qty')?.value) || 0;
+    const cost = Number(document.getElementById('po-cost')?.value) || 0;
+    const total = qty * cost;
+    const paid = Number(document.getElementById('po-paid-amount')?.value) || 0;
+    const pending = Math.max(0, total - paid);
+    const textEl = document.getElementById('po-partial-pending-text');
+    if (textEl) {
+      textEl.textContent = `Remaining Rs. ${Math.round(pending).toLocaleString()} will be added to Supplier Khata`;
+    }
+  },
+
+  async quickAddSupplier() {
+    const name = await new Promise(resolve => {
+      app.showPrompt({
+        title: 'Add New Supplier',
+        message: 'Enter supplier / vendor company name:',
+        placeholder: 'e.g. Dairy Milk Farms...',
+        confirmText: 'Save Supplier',
+        onConfirm: (val) => resolve(val ? val.trim() : null),
+        onCancel: () => resolve(null)
+      });
+    });
+    if (!name) return;
+
+    const res = await window.api.saveSupplier({ name, amount: 0 });
+    if (res && res.success) {
+      app.showToast(`Supplier "${name}" added!`, 'success');
+      const sel = document.getElementById('po-supplier-id');
+      if (sel) {
+        const opt = document.createElement('option');
+        opt.value = res.id;
+        opt.textContent = `${name} • Clear`;
+        opt.setAttribute('data-name', name);
+        opt.setAttribute('data-balance', '0');
+        opt.selected = true;
+        sel.appendChild(opt);
+        this.onSupplierSelectChange(res.id);
+      }
+    } else {
+      app.showAlert({ title: 'Error', message: res.error || 'Failed to add supplier.' });
+    }
   },
 
   closeModal() {
@@ -1134,11 +1250,37 @@ window.RawMaterials = {
       return;
     }
 
+    const supplierSel = document.getElementById('po-supplier-id');
+    const supplierId = supplierSel && supplierSel.value ? Number(supplierSel.value) : null;
+    const selectedOpt = supplierSel && supplierSel.selectedIndex >= 0 ? supplierSel.options[supplierSel.selectedIndex] : null;
+    const supplierName = selectedOpt && supplierId ? (selectedOpt.getAttribute('data-name') || selectedOpt.text.split('•')[0].trim()) : '';
+
+    const paymentMode = document.getElementById('po-payment-mode')?.value || 'Cash';
+    const totalCost = qty * unitCost;
+    let paidAmount = totalCost;
+
+    if (paymentMode === 'Credit') {
+      if (!supplierId) {
+        app.showAlert({ title: 'Supplier Required', message: 'Please select a registered supplier for Credit / Khata purchases.' });
+        return;
+      }
+      paidAmount = 0;
+    } else if (paymentMode === 'Partial') {
+      if (!supplierId) {
+        app.showAlert({ title: 'Supplier Required', message: 'Please select a registered supplier for Partial / Khata purchases.' });
+        return;
+      }
+      paidAmount = Math.max(0, Math.min(totalCost, Number(document.getElementById('po-paid-amount')?.value) || 0));
+    }
+
     const data = {
       material_id: matId,
       qty,
       unit_cost: unitCost,
-      supplier_name: document.getElementById('po-supplier').value,
+      supplier_id: supplierId,
+      supplier_name: supplierName || 'Walk-in / Cash',
+      payment_method: paymentMode,
+      paid_amount: paidAmount,
       date: document.getElementById('po-date').value,
       notes: document.getElementById('po-notes').value
     };
@@ -1148,6 +1290,12 @@ window.RawMaterials = {
       this.closeModal();
       app.showToast(`Stock-In complete! New stock: ${res.newStock}`, 'success');
       await this.loadData();
+      if (window.Purchases && typeof window.Purchases.loadData === 'function') {
+        window.Purchases.loadData();
+      }
+      if (window.Suppliers && typeof window.Suppliers.loadData === 'function') {
+        window.Suppliers.loadData();
+      }
     } else {
       app.showAlert({ title: 'Error', message: res.error || 'Failed to add purchase.' });
     }

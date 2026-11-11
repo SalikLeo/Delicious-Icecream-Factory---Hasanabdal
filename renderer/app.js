@@ -2460,6 +2460,405 @@ const app = {
     }
   },
 
+  // ==========================================
+  // DC-1750 Handheld TIJ 1-Bit BMP Export
+  // ==========================================
+  openTijExportModal() {
+    const modal = document.getElementById('tij-export-modal');
+    if (!modal) return;
+
+    const item = this.barcodeStickerState.activeItem;
+    if (!item) {
+      this.showToast('Please select a product first', 'error');
+      return;
+    }
+
+    const isShoper = item.package_type === 'shoper';
+    const spec = item.pieces_per_carton ? `${item.pieces_per_carton} pcs/${isShoper ? 'shoper' : 'ctn'}` : (item.category_label || '');
+    const price = Number(item.retail_price || item.sale_price || 0);
+
+    const nameEl = document.getElementById('tij-item-name');
+    const bcEl = document.getElementById('tij-item-barcode');
+    const priceEl = document.getElementById('tij-item-price');
+    const specEl = document.getElementById('tij-item-spec');
+
+    if (nameEl) nameEl.textContent = item.item_name || 'Product';
+    if (bcEl) bcEl.textContent = item.barcode ? `Barcode: #${item.barcode}` : 'No Barcode Assigned';
+    if (priceEl) priceEl.textContent = `Rs. ${price.toLocaleString()}`;
+    if (specEl) specEl.textContent = spec;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.lucide) lucide.createIcons({ root: modal });
+
+    this.updateTijPreview();
+  },
+
+  closeTijExportModal() {
+    const modal = document.getElementById('tij-export-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  },
+
+  getTijExportOptions() {
+    const layout = document.querySelector('input[name="tij-layout"]:checked')?.value || 'full';
+    const incStore = document.getElementById('tij-inc-store')?.checked ?? true;
+    const incName = document.getElementById('tij-inc-name')?.checked ?? true;
+    const incPrice = document.getElementById('tij-inc-price')?.checked ?? true;
+    const invert = document.getElementById('tij-invert')?.checked ?? false;
+    const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || this.barcodeStickerState.storeName || 'DELICIOUS SUPERSTAR FOODS';
+
+    return { layout, incStore, incName, incPrice, invert, storeName };
+  },
+
+  updateTijPreview() {
+    const item = this.barcodeStickerState.activeItem;
+    if (!item) return;
+
+    const options = this.getTijExportOptions();
+    const renderedCanvas = this.renderTijCanvas(item, options);
+
+    const previewCanvas = document.getElementById('tij-preview-canvas');
+    const dimLabel = document.getElementById('tij-dimensions-label');
+
+    if (previewCanvas) {
+      previewCanvas.width = renderedCanvas.width;
+      previewCanvas.height = renderedCanvas.height;
+      const ctx = previewCanvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(renderedCanvas, 0, 0);
+
+      // Apply CSS visual inversion if requested so preview matches 100%
+      if (options.invert) {
+        previewCanvas.style.filter = 'invert(1)';
+      } else {
+        previewCanvas.style.filter = 'none';
+      }
+    }
+
+    if (dimLabel) {
+      dimLabel.textContent = `${renderedCanvas.width} × ${renderedCanvas.height} px (12.7 mm TIJ)`;
+    }
+  },
+
+  renderTijCanvas(item, options = {}) {
+    const layout = options.layout || 'full';
+    const isFull = layout === 'full';
+    const width = isFull ? 480 : 360;
+    const height = 152; // Standard 12.7 mm HP 2.5 TIJ height at 300 DPI
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    // Fill white background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, width, height);
+    ctx.imageSmoothingEnabled = false;
+
+    const barcodeVal = String(item.barcode || '').trim() || '123456789012';
+    const isShoper = item.package_type === 'shoper';
+    const spec = item.pieces_per_carton ? `${item.pieces_per_carton} pcs/${isShoper ? 'shoper' : 'ctn'}` : (item.category_label || '');
+    const price = Number(item.retail_price || item.sale_price || 0);
+
+    const incStore = options.incStore ?? true;
+    const incName = options.incName ?? true;
+    const incPrice = options.incPrice ?? true;
+    const storeName = (options.storeName || this.barcodeStickerState.storeName || 'DELICIOUS SUPERSTAR FOODS').trim();
+
+    ctx.fillStyle = '#000000';
+
+    if (isFull) {
+      let curY = 6;
+      if (incStore) {
+        ctx.font = '900 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(storeName.toUpperCase(), width / 2, curY);
+        curY += 16;
+      }
+
+      if (incName) {
+        ctx.font = '900 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const displayTitle = (item.item_name || 'Product') + (spec ? ` (${spec})` : '');
+        ctx.fillText(displayTitle, width / 2, curY);
+        curY += 20;
+      }
+
+      const bcCanvas = document.createElement('canvas');
+      try {
+        window.JsBarcode(bcCanvas, barcodeVal, {
+          format: 'CODE128',
+          width: 2,
+          height: 48,
+          displayValue: false,
+          margin: 0,
+          background: '#FFFFFF',
+          lineColor: '#000000'
+        });
+        const bcX = Math.round((width - bcCanvas.width) / 2);
+        ctx.drawImage(bcCanvas, bcX, curY);
+        curY += 50;
+      } catch (e) {
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`|||| ${barcodeVal} ||||`, width / 2, curY);
+        curY += 30;
+      }
+
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(barcodeVal, width / 2, curY);
+      curY += 16;
+
+      if (incPrice) {
+        ctx.font = '900 18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`Price: Rs. ${price.toLocaleString()}`, width / 2, curY);
+      }
+    } else {
+      let curY = 8;
+      const bcCanvas = document.createElement('canvas');
+      try {
+        window.JsBarcode(bcCanvas, barcodeVal, {
+          format: 'CODE128',
+          width: 2.2,
+          height: 85,
+          displayValue: false,
+          margin: 0,
+          background: '#FFFFFF',
+          lineColor: '#000000'
+        });
+        const bcX = Math.round((width - bcCanvas.width) / 2);
+        ctx.drawImage(bcCanvas, bcX, curY);
+        curY += 92;
+      } catch (e) {
+        ctx.font = 'bold 20px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(barcodeVal, width / 2, curY);
+        curY += 40;
+      }
+
+      ctx.font = 'bold 22px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(barcodeVal, width / 2, curY);
+      curY += 24;
+
+      if (incPrice) {
+        ctx.font = '900 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`Rs. ${price.toLocaleString()}`, width / 2, curY);
+      }
+    }
+
+    return canvas;
+  },
+
+  canvasTo1BitBMP(canvas, invert = false) {
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+
+    const rowSize = Math.ceil(width / 32) * 4;
+    const imageSize = rowSize * height;
+    const fileSize = 62 + imageSize;
+
+    const buffer = new ArrayBuffer(fileSize);
+    const view = new DataView(buffer);
+    const bytes = new Uint8Array(buffer);
+
+    // BITMAPFILEHEADER (14 bytes)
+    view.setUint16(0, 0x4D42, true); // 'BM'
+    view.setUint32(2, fileSize, true);
+    view.setUint16(6, 0, true);
+    view.setUint16(8, 0, true);
+    view.setUint32(10, 62, true);
+
+    // BITMAPINFOHEADER (40 bytes)
+    view.setUint32(14, 40, true);
+    view.setInt32(18, width, true);
+    view.setInt32(22, height, true); // bottom-up
+    view.setUint16(26, 1, true); // planes
+    view.setUint16(28, 1, true); // 1bpp
+    view.setUint32(30, 0, true); // BI_RGB
+    view.setUint32(34, imageSize, true);
+    view.setInt32(38, 11811, true); // 300 DPI
+    view.setInt32(42, 11811, true); // 300 DPI
+    view.setUint32(46, 2, true); // 2 colors
+    view.setUint32(50, 0, true);
+
+    // PALETTE (8 bytes)
+    // Color 0: Black (#000000)
+    bytes[54] = 0; bytes[55] = 0; bytes[56] = 0; bytes[57] = 0;
+    // Color 1: White (#FFFFFF)
+    bytes[58] = 255; bytes[59] = 255; bytes[60] = 255; bytes[61] = 0;
+
+    // PIXEL DATA (Bottom-up)
+    const offset = 62;
+    for (let y = height - 1; y >= 0; y--) {
+      const rowOffset = offset + (height - 1 - y) * rowSize;
+      let byteVal = 0;
+      let bitIndex = 0;
+      let byteInRow = 0;
+
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+        const isWhite = (a < 128) || (brightness > 128);
+
+        // Map: in normal mode, white is bit 1, black is bit 0. Invert flips it.
+        const bit = invert ? (isWhite ? 0 : 1) : (isWhite ? 1 : 0);
+
+        if (bit) {
+          byteVal |= (1 << (7 - bitIndex));
+        }
+
+        bitIndex++;
+        if (bitIndex === 8) {
+          bytes[rowOffset + byteInRow] = byteVal;
+          byteInRow++;
+          byteVal = 0;
+          bitIndex = 0;
+        }
+      }
+
+      if (bitIndex > 0) {
+        bytes[rowOffset + byteInRow] = byteVal;
+        byteInRow++;
+      }
+    }
+
+    // Convert to Base64 in safe chunks
+    let binary = '';
+    const chunk = 8192;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  },
+
+  async saveCurrentTijBmp() {
+    const item = this.barcodeStickerState.activeItem;
+    if (!item) return;
+
+    const options = this.getTijExportOptions();
+    const canvas = this.renderTijCanvas(item, options);
+    const base64Data = this.canvasTo1BitBMP(canvas, options.invert);
+
+    const safeName = (item.item_name || 'PRODUCT')
+      .replace(/[^a-zA-Z0-9_\-]/g, '_')
+      .replace(/_+/g, '_')
+      .toUpperCase();
+    const bcSuffix = item.barcode ? `_${item.barcode}` : '';
+    const defaultName = `${safeName}${bcSuffix}.bmp`;
+
+    try {
+      if (window.api && window.api.saveBmpFile) {
+        const res = await window.api.saveBmpFile({ defaultName, base64Data });
+        if (res && res.success) {
+          this.showToast(`Saved 1-Bit BMP to ${res.filePath}! Ready to copy to USB and load on DC-1750.`, 'success');
+        } else if (res && !res.canceled) {
+          this.showToast('Save failed: ' + (res.error || 'Unknown error'), 'error');
+        }
+      } else {
+        // Fallback: browser download
+        const a = document.createElement('a');
+        a.href = 'data:image/bmp;base64,' + base64Data;
+        a.download = defaultName;
+        a.click();
+        this.showToast(`Downloaded ${defaultName} for USB drive`, 'success');
+      }
+    } catch (err) {
+      console.error('Error saving BMP:', err);
+      this.showToast('Failed to save BMP: ' + err.message, 'error');
+    }
+  },
+
+  async exportAllCartonsToTIJ() {
+    let cartons = this.barcodeStickerState.allProducts || [];
+    if (cartons.length === 0) {
+      try {
+        const dbCartons = (await window.api.getPackedCartons()) || [];
+        cartons = dbCartons.map(c => ({
+          id: c.id,
+          item_name: c.carton_name,
+          package_type: c.package_type || 'carton',
+          barcode: c.barcode || '',
+          retail_price: c.carton_sale_price || 0,
+          category_label: `${c.pieces_per_carton} pcs/${c.package_type === 'shoper' ? 'shoper' : 'ctn'}`,
+          pieces_per_carton: c.pieces_per_carton
+        }));
+      } catch (e) {
+        console.error('Failed to load cartons for batch export:', e);
+      }
+    }
+
+    if (cartons.length === 0) {
+      this.showToast('No packed cartons or shopers found to export.', 'error');
+      return;
+    }
+
+    const options = this.getTijExportOptions();
+
+    // Generate BMP for each carton
+    const files = [];
+    cartons.forEach(c => {
+      const canvas = this.renderTijCanvas(c, options);
+      const base64Data = this.canvasTo1BitBMP(canvas, options.invert);
+      const safeName = (c.item_name || 'PRODUCT')
+        .replace(/[^a-zA-Z0-9_\-]/g, '_')
+        .replace(/_+/g, '_')
+        .toUpperCase();
+      const bcSuffix = c.barcode ? `_${c.barcode}` : `_${c.id}`;
+      files.push({
+        fileName: `${safeName}${bcSuffix}.bmp`,
+        base64Data
+      });
+    });
+
+    try {
+      this.showToast(`Preparing ${files.length} BMP barcode files for USB drive...`, 'info');
+      if (window.api && window.api.saveBmpBatch) {
+        const res = await window.api.saveBmpBatch({ files });
+        if (res && res.success) {
+          this.showToast(`Exported all ${res.count} BMP files to "${res.targetDir}"! Plug USB into DC-1750 to use.`, 'success');
+        } else if (res && !res.canceled) {
+          this.showToast('Batch export failed: ' + (res.error || 'Unknown error'), 'error');
+        }
+      } else {
+        // Fallback: download one by one
+        files.forEach(f => {
+          const a = document.createElement('a');
+          a.href = 'data:image/bmp;base64,' + f.base64Data;
+          a.download = f.fileName;
+          a.click();
+        });
+        this.showToast(`Downloaded ${files.length} BMP files`, 'success');
+      }
+    } catch (err) {
+      console.error('Error batch exporting TIJ files:', err);
+      this.showToast('Batch export failed: ' + err.message, 'error');
+    }
+  },
+
   // Calculator State & Logic
   calcState: {
     current: '0',

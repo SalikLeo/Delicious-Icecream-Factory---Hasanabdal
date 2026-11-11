@@ -159,10 +159,12 @@ contextBridge.exposeInMainWorld('api', {
   setKv: (key, value) => ipcRenderer.invoke('set-kv', key, value),
   saveAllKv: (data) => ipcRenderer.invoke('save-all-kv', data),
 
-  // Thermal Printing
+  // Thermal Printing & TIJ Export
   printReceipt: (options) => ipcRenderer.invoke('print-receipt', options),
   printBarcodeStickers: (options) => ipcRenderer.invoke('print-barcode-stickers', options),
   getPrinters: () => ipcRenderer.invoke('get-printers'),
+  saveBmpFile: (data) => ipcRenderer.invoke('save-bmp-file', data),
+  saveBmpBatch: (data) => ipcRenderer.invoke('save-bmp-batch', data),
 
   // App Zoom & Scale
   getZoomFactor: () => ipcRenderer.invoke('get-zoom-factor'),

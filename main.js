@@ -680,6 +680,56 @@ ipcMain.handle('print-barcode-stickers', async (event, options = {}) => {
   }
 });
 
+// TIJ 1-Bit BMP Export IPC for DC-1750 Handheld Printer
+ipcMain.handle('save-bmp-file', async (event, { defaultName, base64Data }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showSaveDialog(win, {
+    title: 'Export 1-Bit BMP Barcode for DC-1750 Handheld Printer',
+    defaultPath: defaultName || 'BARCODE.bmp',
+    filters: [
+      { name: 'Monochrome Bitmap Image (*.bmp)', extensions: ['bmp'] }
+    ]
+  });
+
+  if (!result.canceled && result.filePath) {
+    try {
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(result.filePath, buffer);
+      return { success: true, filePath: result.filePath };
+    } catch (err) {
+      console.error('Failed to save BMP file:', err);
+      return { success: false, error: err.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
+ipcMain.handle('save-bmp-batch', async (event, { folderName, files }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select USB Flash Drive or Folder to Export All DC-1750 Barcodes',
+    properties: ['openDirectory', 'createDirectory']
+  });
+
+  if (!result.canceled && result.filePaths && result.filePaths[0]) {
+    try {
+      const targetDir = result.filePaths[0];
+      let savedCount = 0;
+      for (const file of files) {
+        const filePath = path.join(targetDir, file.fileName);
+        const buffer = Buffer.from(file.base64Data, 'base64');
+        fs.writeFileSync(filePath, buffer);
+        savedCount++;
+      }
+      return { success: true, targetDir, count: savedCount };
+    } catch (err) {
+      console.error('Failed to batch save BMP files:', err);
+      return { success: false, error: err.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
 // App Zoom Controls IPC
 ipcMain.handle('get-zoom-factor', (event) => {
   const saved = getSavedAppZoom();

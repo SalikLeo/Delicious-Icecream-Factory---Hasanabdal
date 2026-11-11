@@ -867,15 +867,167 @@
               </div>
             </div>
 
-            <!-- Big Print Button -->
-            <div class="mt-3 pt-2.5 border-t border-slate-100">
+            <!-- Action Buttons: Speed-X Print & DC-1750 TIJ Export -->
+            <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-2">
               <button type="button" id="bsm-submit-print-btn" onclick="app.executeStickerPrint()"
                       class="w-full py-3 px-5 bg-amber-500 hover:bg-amber-400 active:scale-[0.99] text-slate-950 font-black text-sm rounded-xl shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer">
                 <i data-lucide="printer" class="w-4 h-4"></i>
                 <span id="bsm-submit-print-text">Print 1 Sticker Now</span>
               </button>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="app.openTijExportModal()"
+                        class="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        title="Export 1-Bit BMP file for DC-1750 Handheld Thermal Inkjet Printer">
+                  <i data-lucide="usb" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Export for Handheld TIJ (USB)</span>
+                </button>
+
+                <button type="button" onclick="app.exportAllCartonsToTIJ()"
+                        class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 active:scale-[0.99] text-slate-800 font-bold text-xs rounded-xl border border-slate-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        title="Batch export all cartons & shopers as 1-Bit BMP files to USB Drive">
+                  <i data-lucide="folder-archive" class="w-4 h-4 text-blue-600"></i>
+                  <span>Export All to USB</span>
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DC-1750 Handheld Thermal Inkjet (TIJ) 1-Bit BMP Export Modal -->
+  <div id="tij-export-modal" onclick="if(event.target === this) app.closeTijExportModal()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs hidden items-center justify-center z-[1350] no-print p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200" id="tij-export-card">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black shadow-md shrink-0">
+            <i data-lucide="usb" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-black tracking-tight text-white uppercase">DC-1750 Handheld TIJ Barcode Exporter</h3>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-400/30">
+                1-Bit Monochrome .BMP
+              </span>
+            </div>
+            <p class="text-[11px] font-bold text-slate-400">Export high-contrast bitmap graphics directly for DC-1750 / DC Jet handheld inkjet marking</p>
+          </div>
+        </div>
+        <button type="button" onclick="app.closeTijExportModal()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" title="Close (Esc)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4 custom-scrollbar bg-slate-50/50">
+        <!-- Target Product Summary -->
+        <div class="p-3 bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center justify-between gap-3">
+          <div>
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Product to Export</span>
+            <h4 id="tij-item-name" class="font-black text-sm text-slate-900 mt-0.5">Chocbar Carton</h4>
+            <div class="flex items-center gap-2 text-xs font-bold text-slate-600 mt-1">
+              <span class="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded" id="tij-item-barcode">Barcode: #473541957559</span>
+              <span class="text-slate-300">•</span>
+              <span id="tij-item-price">Rs. 4,000</span>
+              <span class="text-slate-300">•</span>
+              <span id="tij-item-spec">20 pcs/ctn</span>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200">
+            HP 2.5 TIJ 300 DPI
+          </span>
+        </div>
+
+        <!-- Format Preset -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+          <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider">TIJ Layout Format &amp; Cartridge Height</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 bg-slate-50 cursor-pointer transition-all select-none has-checked:border-emerald-500 has-checked:bg-emerald-50/40">
+              <input type="radio" name="tij-layout" value="full" checked onchange="app.updateTijPreview()" class="mt-0.5 text-emerald-600">
+              <div>
+                <span class="text-xs font-black text-slate-900 block">Full Carton Mark (Standard)</span>
+                <span class="text-[10px] font-bold text-slate-500">Store Name + Item + Barcode + Price (480 × 152 px / 12.7 mm)</span>
+              </div>
+            </label>
+            <label class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 bg-slate-50 cursor-pointer transition-all select-none has-checked:border-emerald-500 has-checked:bg-emerald-50/40">
+              <input type="radio" name="tij-layout" value="barcode-only" onchange="app.updateTijPreview()" class="mt-0.5 text-emerald-600">
+              <div>
+                <span class="text-xs font-black text-slate-900 block">Barcode Only (Compact)</span>
+                <span class="text-[10px] font-bold text-slate-500">Barcode Bars + Digits only (360 × 152 px / 12.7 mm)</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Element Toggles -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-4 text-xs font-bold text-slate-700">
+          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider w-full sm:w-auto">Include:</span>
+          <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" id="tij-inc-store" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
+            <span>Store Header</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" id="tij-inc-name" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
+            <span>Item Name</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" id="tij-inc-price" checked onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
+            <span>Price</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer select-none ml-auto text-slate-500">
+            <input type="checkbox" id="tij-invert" onchange="app.updateTijPreview()" class="w-4 h-4 rounded text-emerald-600">
+            <span>Invert Colors (White on Black)</span>
+          </label>
+        </div>
+
+        <!-- Live 1-Bit BMP Canvas Preview -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col items-center">
+          <div class="w-full flex justify-between items-center pb-2 mb-2 border-b border-slate-100 text-xs font-bold text-slate-500">
+            <span class="flex items-center gap-1.5 font-black text-slate-700 text-[11px] uppercase tracking-wider">
+              <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i> Exact 1-Bit Bitmap Preview
+            </span>
+            <span id="tij-dimensions-label" class="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700">480 × 152 px</span>
+          </div>
+
+          <div class="w-full bg-slate-200 p-4 rounded-xl flex items-center justify-center overflow-x-auto border border-dashed border-slate-300">
+            <canvas id="tij-preview-canvas" class="border border-slate-400 bg-white shadow-sm max-w-full" style="image-rendering: pixelated;"></canvas>
+          </div>
+          <span class="text-[10px] font-bold text-slate-400 mt-1.5">This exact black-and-white bitmap is what the DC-1750 ink nozzles spray onto your box or shoper</span>
+        </div>
+
+        <!-- 3-Step Handheld Guide -->
+        <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-emerald-900">
+          <i data-lucide="info" class="w-4 h-4 text-emerald-700 shrink-0 mt-0.5"></i>
+          <div>
+            <div class="font-black text-emerald-950 uppercase text-[10px] tracking-wider mb-0.5">How to load into DC-1750 Handheld Printer:</div>
+            <div class="text-[11px] font-semibold text-emerald-800 leading-snug">
+              1. Click <b>"Save This Item (.BMP)"</b> and choose your USB flash drive.<br>
+              2. Plug the USB flash drive into the side USB port of the DC-1750.<br>
+              3. On the DC-1750 touch screen, tap <b>Insert Picture / Image</b>, select the .bmp file, and roll to print!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer Action Buttons -->
+      <div class="p-4 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <button type="button" onclick="app.closeTijExportModal()" class="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Close
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="app.exportAllCartonsToTIJ()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+            <i data-lucide="folder-archive" class="w-4 h-4 text-blue-400"></i>
+            <span>Export ALL Cartons to USB</span>
+          </button>
+
+          <button type="button" onclick="app.saveCurrentTijBmp()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>Save This Item (.BMP)</span>
+          </button>
         </div>
       </div>
     </div>

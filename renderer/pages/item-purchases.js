@@ -971,117 +971,99 @@ window.ItemPurchases = {
       });
 
       const rowsHtml = list.map((item, idx) => `
-        <tr style="border-bottom: 1px solid #e2e8f0; ${idx % 2 === 1 ? 'background-color: #f8fafc;' : ''}">
-          <td style="padding: 5px 6px; text-align: center; font-size: 10px; color: #64748b; font-family: monospace;">${idx + 1}</td>
-          <td style="padding: 5px 6px; font-weight: bold; font-size: 11px; color: #0f172a;">${item.material_name}</td>
-          <td style="padding: 5px 6px; text-align: center; font-size: 10px; color: #475569;">${item.category}</td>
-          <td style="padding: 5px 6px; text-align: center; font-size: 10px; text-transform: uppercase;">${item.unit}</td>
-          <td style="padding: 5px 6px; text-align: right; font-weight: bold; font-size: 11px; font-family: monospace;">${item.totalQty.toLocaleString()}</td>
-          <td style="padding: 5px 6px; text-align: right; font-size: 10px; font-family: monospace;">Rs. ${item.avgCost.toFixed(2)}</td>
-          <td style="padding: 5px 6px; text-align: right; font-size: 10px; font-family: monospace;">Rs. ${item.lastCost.toLocaleString()}</td>
-          <td style="padding: 5px 6px; text-align: right; font-weight: bold; font-size: 11px; color: #047857; font-family: monospace;">Rs. ${item.totalSpend.toLocaleString()}</td>
-          <td style="padding: 5px 6px; text-align: center; font-size: 10px; font-weight: bold;">${item.ordersCount}</td>
-          <td style="padding: 5px 6px; font-size: 9.5px; color: #475569;">${item.suppliers.join(', ') || '-'}</td>
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 700; color: #000; font-family: monospace;">${idx + 1}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 800; font-size: 9.5px; color: #000;">${item.material_name}</td>
+          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; color: #000;">${item.category}</td>
+          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; text-transform: uppercase; color: #000;">${item.unit}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; font-family: -apple-system, monospace; color: #000;">${item.totalQty.toLocaleString()}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; font-family: -apple-system, monospace; color: #000;">Rs. ${item.avgCost.toFixed(2)}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; font-family: -apple-system, monospace; color: #000;">Rs. ${item.lastCost.toLocaleString()}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000; font-family: -apple-system, monospace;">Rs. ${item.totalSpend.toLocaleString()}</td>
+          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 800; color: #000;">${item.ordersCount}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-size: 8.5px; color: #000;">${item.suppliers.join(', ') || '-'}</td>
         </tr>
       `).join('');
 
       const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Item Wise Purchases Report</title>
-          <style>
-            @page { size: A5 landscape; margin: 8mm; }
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; color: #0f172a; font-size: 10.5px; }
-            .header-table { width: 100%; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px; }
-            .kpi-table { width: 100%; margin-bottom: 8px; border-collapse: collapse; }
-            .kpi-box { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; text-align: center; }
-            .kpi-val { font-size: 13px; font-weight: 800; color: #0f172a; }
-            .kpi-lbl { font-size: 8.5px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-            table.data-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-            table.data-table th { background-color: #0f172a; color: #ffffff; font-size: 9px; text-transform: uppercase; padding: 5px 6px; letter-spacing: 0.5px; }
-            table.data-table td { font-size: 10px; }
-            .footer-row td { background: #e2e8f0; font-weight: 800; border-top: 2px solid #0f172a; padding: 6px; font-size: 10.5px; }
-          </style>
-        </head>
-        <body>
-          <table class="header-table">
-            <tr>
-              <td>
-                <h2 style="margin: 0; font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase;">${companyName}</h2>
-                <div style="font-size: 9.5px; color: #475569; margin-top: 1px;">${address} â€¢ Tel: ${phone}</div>
-                <div style="font-size: 10px; font-weight: 800; color: #047857; margin-top: 2px;">ITEM WISE RAW MATERIAL PURCHASES REPORT</div>
-              </td>
-              <td style="text-align: right; vertical-align: top;">
-                <div style="font-size: 10px; font-weight: 800; color: #0f172a;">PERIOD: <span style="color: #047857;">${periodLabel}</span></div>
-                <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Generated: ${new Date().toLocaleString()}</div>
-              </td>
-            </tr>
-          </table>
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
+          <!-- Factory Header -->
+          <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+            <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${companyName}</h1>
+            <div style="font-size: 9.5px; color: #000; margin-top: 1px; font-weight: 600;">${address} • Tel: ${phone}</div>
+          </div>
 
-          <table class="kpi-table">
-            <tr>
-              <td style="width: 25%; padding-right: 4px;">
-                <div class="kpi-box">
-                  <div class="kpi-lbl">Total Spend</div>
-                  <div class="kpi-val" style="color: #047857;">Rs. ${totalSpend.toLocaleString()}</div>
-                </div>
-              </td>
-              <td style="width: 25%; padding-right: 4px;">
-                <div class="kpi-box">
-                  <div class="kpi-lbl">Total Quantity</div>
-                  <div class="kpi-val">${totalQty.toLocaleString()} Units</div>
-                </div>
-              </td>
-              <td style="width: 25%; padding-right: 4px;">
-                <div class="kpi-box">
-                  <div class="kpi-lbl">Raw Materials</div>
-                  <div class="kpi-val">${list.length} Items</div>
-                </div>
-              </td>
-              <td style="width: 25%;">
-                <div class="kpi-box">
-                  <div class="kpi-lbl">Total Orders</div>
-                  <div class="kpi-val">${totalOrders}</div>
-                </div>
-              </td>
-            </tr>
-          </table>
+          <!-- Document Title -->
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+            ITEM WISE RAW MATERIAL PURCHASES REPORT
+          </div>
 
-          <table class="data-table">
+          <!-- Filter & Summary Bar -->
+          <div class="a5-meta-box" style="display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+            <div style="line-height: 1.45;">
+              <div><strong>Period:</strong> ${periodLabel}</div>
+              <div><strong>Raw Materials:</strong> ${list.length} Items</div>
+            </div>
+            <div style="text-align: right; line-height: 1.45;">
+              <div><strong>Total Orders:</strong> ${totalOrders}</div>
+              <div><strong>Generated:</strong> ${app.formatDate ? app.formatDate(new Date()) : new Date().toLocaleDateString()}</div>
+            </div>
+          </div>
+
+          <!-- KPI Summary Cards -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 9.5px;">
+            <div style="background: #fff; padding: 4px; border: 1px solid #000;">
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 800; display: block;">Total Spend</span>
+              <span style="font-size: 11px; font-weight: 900; color: #000; font-family: -apple-system, monospace;">Rs. ${totalSpend.toLocaleString()}</span>
+            </div>
+            <div style="background: #fff; padding: 4px; border: 1px solid #000;">
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 800; display: block;">Total Quantity Purchased</span>
+              <span style="font-size: 11px; font-weight: 900; color: #000; font-family: -apple-system, monospace;">${totalQty.toLocaleString()} Units</span>
+            </div>
+          </div>
+
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
             <thead>
-              <tr>
-                <th style="width: 24px; text-align: center;">#</th>
-                <th style="text-align: left;">Material Name</th>
-                <th style="text-align: center; width: 65px;">Category</th>
-                <th style="text-align: center; width: 45px;">Unit</th>
-                <th style="text-align: right; width: 65px;">Qty Bought</th>
-                <th style="text-align: right; width: 65px;">Avg Cost</th>
-                <th style="text-align: right; width: 65px;">Last Cost</th>
-                <th style="text-align: right; width: 85px;">Total Spend</th>
-                <th style="text-align: center; width: 45px;">Orders</th>
-                <th style="text-align: left;">Suppliers</th>
+              <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 22px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Material Name</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Qty</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Avg Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Last Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Spend</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Orders</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Suppliers</th>
               </tr>
             </thead>
             <tbody>
               ${rowsHtml}
             </tbody>
             <tfoot>
-              <tr class="footer-row">
-                <td style="text-align: center;">â€¢</td>
-                <td colspan="3">GRAND TOTAL (${list.length} RAW MATERIALS)</td>
-                <td style="text-align: right; font-family: monospace;">${totalQty.toLocaleString()}</td>
-                <td style="text-align: right; font-family: monospace;">Rs. ${(totalQty > 0 ? (totalSpend / totalQty) : 0).toFixed(2)}</td>
-                <td></td>
-                <td style="text-align: right; color: #047857; font-family: monospace;">Rs. ${totalSpend.toLocaleString()}</td>
-                <td style="text-align: center; font-family: monospace;">${totalOrders}</td>
-                <td></td>
+              <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
+                <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000;">•</td>
+                <td colspan="3" style="border: 1px solid #000; padding: 4px 6px; text-transform: uppercase; color: #000;">GRAND TOTAL (${list.length} RAW MATERIALS):</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; color: #000;">${totalQty.toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${(totalQty > 0 ? (totalSpend / totalQty) : 0).toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 4px;"></td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${totalSpend.toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-family: -apple-system, monospace; color: #000;">${totalOrders}</td>
+                <td style="border: 1px solid #000; padding: 4px;"></td>
               </tr>
             </tfoot>
           </table>
-        </body>
-        </html>
+
+          <!-- Signatures -->
+          <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+              Purchase Officer Signature
+            </div>
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+              Factory Auditor Signature
+            </div>
+          </div>
+        </div>
       `;
 
       app.hideLoading();

@@ -1320,85 +1320,86 @@ window.Purchases = {
     const supplierCurrentBal = p.supplier_current_balance != null ? Number(p.supplier_current_balance) : null;
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 12px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
-          <h1 style="font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">${company}</h1>
-          ${address ? `<p style="font-size: 10px; color: #475569; margin: 2px 0 0 0;">${address}</p>` : ''}
-          ${phone ? `<p style="font-size: 10px; color: #475569; margin: 1px 0 0 0;">Tel: ${phone}</p>` : ''}
-          <div style="margin-top: 6px; display: inline-block; padding: 3px 12px; background: #0f172a; color: #fff; font-size: 10px; font-weight: 900; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px;">
-            RAW MATERIAL INWARD / PURCHASE VOUCHER
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          ${address ? `<p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>` : ''}
+          ${phone ? `<p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">Tel: ${phone}</p>` : ''}
+        </div>
+
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          RAW MATERIAL INWARD / PURCHASE VOUCHER
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+          <div style="line-height: 1.45;">
+            <div><strong>Purchase Order / Inv #:</strong> #${p.invoice_no || `PUR-${p.id}`}</div>
+            <div><strong>Supplier:</strong> ${p.supplier_official_name || p.supplier_name || 'Walk-in / Cash'}</div>
+            ${p.supplier_phone ? `<div><strong>Contact:</strong> ${p.supplier_phone}</div>` : ''}
+          </div>
+          <div style="text-align: right; line-height: 1.45;">
+            <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(p.date, p.created_at)}</div>
+            <div><strong>Payment Mode:</strong> ${p.payment_method || 'Cash'}</div>
+            <div><strong>Status:</strong> ${remainingDue > 0 ? 'Khata Credit Due' : 'Fully Paid'}</div>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
-          <div>
-            <div><b>Purchase Order / Inv #:</b> #${p.invoice_no || `PUR-${p.id}`}</div>
-            <div><b>Supplier:</b> ${p.supplier_official_name || p.supplier_name || 'Walk-in / Cash'}</div>
-            ${p.supplier_phone ? `<div><b>Contact:</b> ${p.supplier_phone}</div>` : ''}
-          </div>
-          <div style="text-align: right;">
-            <div><b>Date &amp; Time:</b> ${app.formatDateTime(p.date, p.created_at)}</div>
-            <div><b>Payment Mode:</b> ${p.payment_method || 'Cash'}</div>
-            <div><b>Status:</b> ${remainingDue > 0 ? '<span style="color:#b91c1c; font-weight:900;">Khata Credit Due</span>' : '<span style="color:#15803d; font-weight:900;">Fully Paid</span>'}</div>
-          </div>
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9; border-bottom: 1.5px solid #0f172a;">
-              <th style="border: 1px solid #cbd5e1; padding: 5px; text-align: center; width: 28px;">S#</th>
-              <th style="border: 1px solid #cbd5e1; padding: 5px; text-align: left;">Raw Material Description</th>
-              <th style="border: 1px solid #cbd5e1; padding: 5px; text-align: center; width: 45px;">Unit</th>
-              <th style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; width: 65px;">Quantity</th>
-              <th style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; width: 75px;">Cost / Unit</th>
-              <th style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; width: 85px;">Total (Rs.)</th>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 25px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Raw Material Description</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 45px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Quantity</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Cost / Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             ${items.map((it, idx) => `
               <tr>
-                <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: center;">${idx + 1}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 5px; font-weight: 800;">${it.material_name}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: center; text-transform: uppercase;">${it.unit || ''}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: right; font-weight: 800;">${it.qty}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: right;">Rs. ${Number(it.unit_cost).toLocaleString()}</td>
-                <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: right; font-weight: 900;">Rs. ${Math.round(it.total_cost).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 800; font-size: 9.5px; color: #000;">${it.material_name}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; text-transform: uppercase; font-size: 9px; color: #000;">${it.unit || ''}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.qty}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Number(it.unit_cost).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.total_cost).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
-            <tr style="background: #f8fafc; font-weight: 900; border-top: 1.5px solid #0f172a;">
-              <td colspan="5" style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; text-transform: uppercase;">Grand Total Purchase Bill:</td>
-              <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; font-size: 11px;">Rs. ${Math.round(totalBill).toLocaleString()}</td>
+            <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
+              <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase; color: #000;">Grand Total Purchase Bill:</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(totalBill).toLocaleString()}</td>
             </tr>
             <tr>
-              <td colspan="5" style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; font-weight: 800; color: #15803d;">Amount Paid (${p.payment_method || 'Cash'}):</td>
-              <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; font-weight: 900; color: #15803d;">Rs. ${Math.round(paidAmt).toLocaleString()}</td>
+              <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; color: #000;">Amount Paid (${p.payment_method || 'Cash'}):</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(paidAmt).toLocaleString()}</td>
             </tr>
-            <tr style="background: #fef2f2;">
-              <td colspan="5" style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; font-weight: 900; color: #b91c1c;">Remaining Balance Due (This Invoice):</td>
-              <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; font-weight: 900; color: #b91c1c; font-size: 11px;">Rs. ${Math.round(remainingDue).toLocaleString()}</td>
+            <tr>
+              <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Remaining Balance Due (This Invoice):</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(remainingDue).toLocaleString()}</td>
             </tr>
             ${supplierCurrentBal !== null ? `
-              <tr style="background: #f8fafc; border-top: 1.5px solid #64748b;">
-                <td colspan="5" style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; font-weight: 900; text-transform: uppercase;">Supplier Total Outstanding Balance:</td>
-                <td style="border: 1px solid #cbd5e1; padding: 5px; text-align: right; font-weight: 900; font-size: 11px; color: ${supplierCurrentBal > 0 ? '#b91c1c' : '#15803d'};">Rs. ${Math.round(supplierCurrentBal).toLocaleString()}</td>
+              <tr style="border-top: 1.5px solid #000;">
+                <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; text-transform: uppercase; color: #000;">Supplier Total Outstanding Balance:</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(supplierCurrentBal).toLocaleString()}</td>
               </tr>
             ` : ''}
           </tfoot>
         </table>
 
         ${p.notes ? `
-          <div style="margin-top: 8px; font-size: 9.5px; color: #475569; padding: 6px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 4px;">
+          <div style="margin-top: 6px; font-size: 9.5px; color: #000; padding: 5px 8px; background: #fff; border: 1px solid #000;">
             <b>Notes / Remarks:</b> ${p.notes}
           </div>
         ` : ''}
 
-        <div style="margin-top: 35px; display: flex; justify-content: space-between; font-size: 9px;">
-          <div style="border-top: 1px dashed #64748b; width: 35%; text-align: center; padding-top: 4px;">
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 9px;">
+          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Store Keeper Signature
           </div>
-          <div style="border-top: 1px dashed #64748b; width: 35%; text-align: center; padding-top: 4px;">
+          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Supplier / Receiver Signature
           </div>
         </div>
@@ -1429,23 +1430,23 @@ window.Purchases = {
             : 'All Historical Purchases')));
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">${company}</h1>
-          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 700;">RAW MATERIAL PURCHASES REPORT</p>
-          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Period: ${periodDesc} | Printed: ${date}</p>
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 700;">RAW MATERIAL PURCHASES REPORT</p>
+          <p style="font-size: 9px; color: #000; margin: 1px 0 0 0;">Period: ${periodDesc} | Printed: ${date}</p>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 6px;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Date</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Invoice #</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Supplier</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Items</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Total Bill</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Paid</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Pending</th>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Invoice #</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Supplier</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Items</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Bill</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Paid</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Pending</th>
             </tr>
           </thead>
           <tbody>
@@ -1456,32 +1457,32 @@ window.Purchases = {
               const pending = Number(p.remaining_balance) || 0;
               return `
                 <tr>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px;">${app.formatDateTime(p.date, p.created_at)}</td>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 700;">${p.invoice_no || `PUR-${p.id}`}</td>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px;">${p.supplier_official_name || p.supplier_name || 'Walk-in'}</td>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px; font-weight: 700;">${summaryName}</td>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; font-weight: 900;">Rs. ${Math.round(p.total_cost).toLocaleString()}</td>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; color: #15803d; font-weight: 800;">Rs. ${Math.round(paid).toLocaleString()}</td>
-                  <td style="border: 1px solid #e2e8f0; padding: 4px; text-align: right; color: ${pending > 0 ? '#b91c1c' : '#475569'}; font-weight: 900;">Rs. ${Math.round(pending).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000;">${app.formatDateTime(p.date, p.created_at)}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-weight: 700; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">${p.invoice_no || `PUR-${p.id}`}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000;">${p.supplier_official_name || p.supplier_name || 'Walk-in'}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-weight: 700; font-size: 8.5px; color: #000;">${summaryName}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${Math.round(p.total_cost).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${Math.round(paid).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${Math.round(pending).toLocaleString()}</td>
                 </tr>
               `;
             }).join('')}
           </tbody>
           <tfoot>
-            <tr style="background: #f8fafc; font-weight: 900; border-top: 1.5px solid #0f172a;">
-              <td colspan="4" style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">TOTAL (${list.length} ORDERS):</td>
-              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Rs. ${Math.round(totalCost).toLocaleString()}</td>
-              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; color: #15803d;">Rs. ${Math.round(totalPaid).toLocaleString()}</td>
-              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; color: #b91c1c;">Rs. ${Math.round(totalPending).toLocaleString()}</td>
+            <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
+              <td colspan="4" style="border: 1px solid #000; padding: 4px; text-align: right; text-transform: uppercase; color: #000;">TOTAL (${list.length} ORDERS):</td>
+              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalCost).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalPaid).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalPending).toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
 
         <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 8.5px;">
-          <div style="border-top: 1px dashed #64748b; width: 40%; text-align: center; padding-top: 4px;">
+          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Store Incharge Signature
           </div>
-          <div style="border-top: 1px dashed #64748b; width: 40%; text-align: center; padding-top: 4px;">
+          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Factory Manager Signature
           </div>
         </div>

@@ -93,11 +93,20 @@
     break-after: avoid;
   }
 
-  .receipt-a5 *, .a5-container * {
+  .receipt-a5 *, .a5-container *, .invoice-a5 * {
     color: #000000 !important;
     border-color: #000000 !important;
     text-shadow: none !important;
     box-shadow: none !important;
+  }
+
+  /* Force pure white background on all containers, boxes, badges & tables in print */
+  .receipt-a5, .invoice-a5, .receipt-80mm, .a5-container,
+  .receipt-a5 div, .receipt-a5 table, .receipt-a5 tr, .receipt-a5 th, .receipt-a5 td, .receipt-a5 span,
+  .a5-container div, .a5-container table, .a5-container tr, .a5-container th, .a5-container td,
+  .a5-meta-box, .a5-summary-box, .a5-table, .a5-table th, .a5-table td, .a5-table tr {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 
   /* Typography & Table rules for A5 format */

@@ -794,50 +794,51 @@ window.Suppliers = {
     const address = settings.company_address || '';
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 12px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
-          <h1 style="font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">${company}</h1>
-          ${address ? `<p style="font-size: 10px; color: #475569; margin: 2px 0 0 0;">${address}</p>` : ''}
-          ${phone ? `<p style="font-size: 10px; color: #475569; margin: 1px 0 0 0;">Tel: ${phone}</p>` : ''}
-          <div style="margin-top: 6px; display: inline-block; padding: 3px 12px; background: #047857; color: #fff; font-size: 10px; font-weight: 900; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px;">
-            SUPPLIER PAYMENT VOUCHER
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          ${address ? `<p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>` : ''}
+          ${phone ? `<p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">Tel: ${phone}</p>` : ''}
+        </div>
+
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          SUPPLIER PAYMENT VOUCHER
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+          <div style="line-height: 1.45;">
+            <div><strong>Receipt / Ref #:</strong> #${pay ? pay.invoice_no : `SP-${paymentId}`}</div>
+            <div><strong>Paid To Supplier:</strong> ${s ? s.name : 'Supplier'}</div>
+            ${s && s.contact_person ? `<div><strong>Contact:</strong> ${s.contact_person} (${s.phone || ''})</div>` : ''}
+          </div>
+          <div style="text-align: right; line-height: 1.45;">
+            <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(pay ? (pay.date || pay.created_at) : new Date(), pay ? pay.created_at : null)}</div>
+            <div><strong>Payment Mode:</strong> ${pay ? (pay.payment_method || 'Cash') : 'Cash'}</div>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
-          <div>
-            <div><b>Receipt / Ref #:</b> #${pay ? pay.invoice_no : `SP-${paymentId}`}</div>
-            <div><b>Paid To Supplier:</b> ${s ? s.name : 'Supplier'}</div>
-            ${s && s.contact_person ? `<div><b>Contact:</b> ${s.contact_person} (${s.phone || ''})</div>` : ''}
-          </div>
-          <div style="text-align: right;">
-            <div><b>Date &amp; Time:</b> ${app.formatDateTime(pay ? (pay.date || pay.created_at) : new Date(), pay ? pay.created_at : null)}</div>
-            <div><b>Payment Method:</b> ${pay ? (pay.payment_method || 'Cash') : 'Cash'}</div>
-          </div>
-        </div>
-
-        <div style="background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 8px; padding: 14px; text-align: center; margin: 15px 0;">
-          <span style="font-size: 11px; font-weight: 800; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px; display: block;">AMOUNT PAID</span>
-          <span style="font-size: 24px; font-weight: 900; color: #047857; font-family: monospace; display: block; margin-top: 4px;">
+        <div style="background: #fff; border: 1.5px solid #000; padding: 10px; text-align: center; margin: 8px 0; color: #000;">
+          <span style="font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase; letter-spacing: 0.5px; display: block;">AMOUNT PAID</span>
+          <span style="font-size: 22px; font-weight: 900; color: #000; font-family: monospace; display: block; margin-top: 3px;">
             Rs. ${pay ? Math.round(Number(pay.paid_amount) || 0).toLocaleString() : '0'}
           </span>
-          ${pay && pay.notes ? `<p style="font-size: 10px; color: #047857; margin: 6px 0 0 0; font-weight: 600;">Remarks: ${pay.notes}</p>` : ''}
+          ${pay && pay.notes ? `<p style="font-size: 9.5px; color: #000; margin: 4px 0 0 0; font-weight: 600;">Remarks: ${pay.notes}</p>` : ''}
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 10px;">
-          <tr style="background: #f8fafc;">
-            <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight: 800;">Supplier Current Outstanding Balance:</td>
-            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: right; font-weight: 900; font-size: 11px; color: ${s && s.amount > 0 ? '#b91c1c' : '#15803d'};">
+        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 6px; background: #fff;">
+          <tr>
+            <td style="border: 1px solid #000; padding: 5px 8px; font-weight: 800; color: #000;">Supplier Current Outstanding Balance:</td>
+            <td style="border: 1px solid #000; padding: 5px 8px; text-align: right; font-weight: 900; font-family: monospace; font-size: 11px; color: #000;">
               Rs. ${s ? Math.round(Number(s.amount) || 0).toLocaleString() : '0'}
             </td>
           </tr>
         </table>
 
-        <div style="margin-top: 50px; display: flex; justify-content: space-between; font-size: 9px;">
-          <div style="border-top: 1px dashed #64748b; width: 35%; text-align: center; padding-top: 4px;">
+        <div style="margin-top: 35px; display: flex; justify-content: space-between; font-size: 9px;">
+          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Paid By (Factory Cashier)
           </div>
-          <div style="border-top: 1px dashed #64748b; width: 35%; text-align: center; padding-top: 4px;">
+          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Received By (Supplier / Vendor)
           </div>
         </div>
@@ -875,13 +876,13 @@ window.Suppliers = {
 
       return `
         <tr>
-          <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: center;">${idx + 1}</td>
-          <td style="border: 1px solid #e2e8f0; padding: 5px;">${app.formatDateTime(e.date, e.created_at)}</td>
-          <td style="border: 1px solid #e2e8f0; padding: 5px; font-weight: 700;">${e.invoice_no || `REF-${e.id}`}</td>
-          <td style="border: 1px solid #e2e8f0; padding: 5px;">${isPurchase ? 'Purchase' : 'Payment'} • ${e.summary_name || e.notes || ''}</td>
-          <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: right; font-weight: 800;">${debit > 0 ? `Rs. ${Math.round(debit).toLocaleString()}` : '-'}</td>
-          <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: right; font-weight: 800; color: #15803d;">${credit > 0 ? `Rs. ${Math.round(credit).toLocaleString()}` : '-'}</td>
-          <td style="border: 1px solid #e2e8f0; padding: 5px; text-align: right; font-weight: 900; color: ${runningBalance > 0 ? '#b91c1c' : '#15803d'};">
+          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9px; color: #000;">${idx + 1}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9px; color: #000;">${app.formatDateTime(e.date, e.created_at)}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 700; font-family: monospace; font-size: 9px; color: #000;">${e.invoice_no || `REF-${e.id}`}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9px; color: #000;">${isPurchase ? 'Purchase' : 'Payment'} • ${e.summary_name || e.notes || ''}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: monospace; font-size: 9px; color: #000;">${debit > 0 ? `Rs. ${Math.round(debit).toLocaleString()}` : '-'}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: monospace; font-size: 9px; color: #000;">${credit > 0 ? `Rs. ${Math.round(credit).toLocaleString()}` : '-'}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: monospace; font-size: 9px; color: #000;">
             Rs. ${Math.round(runningBalance).toLocaleString()}
           </td>
         </tr>
@@ -889,47 +890,47 @@ window.Suppliers = {
     }).join('');
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">${company}</h1>
-          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 700;">SUPPLIER KHATA LEDGER STATEMENT</p>
-          <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">Statement Date: ${date}</p>
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 700;">SUPPLIER KHATA LEDGER STATEMENT</p>
+          <p style="font-size: 9px; color: #000; margin: 1px 0 0 0;">Statement Date: ${date}</p>
         </div>
 
-        <div style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 8px; padding: 6px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
-          <div>
-            <div><b>Supplier:</b> ${s.name}</div>
-            ${s.contact_person ? `<div><b>Contact:</b> ${s.contact_person} (${s.phone || ''})</div>` : ''}
-            ${s.city ? `<div><b>Location:</b> ${s.city} ${s.address || ''}</div>` : ''}
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+          <div style="line-height: 1.45;">
+            <div><strong>Supplier:</strong> ${s.name}</div>
+            ${s.contact_person ? `<div><strong>Contact:</strong> ${s.contact_person} (${s.phone || ''})</div>` : ''}
+            ${s.city ? `<div><strong>Location:</strong> ${s.city} ${s.address || ''}</div>` : ''}
           </div>
-          <div style="text-align: right;">
-            <div><b>Total Billed:</b> Rs. ${Math.round(totalPurchased).toLocaleString()}</div>
-            <div><b>Total Paid:</b> Rs. ${Math.round(totalPaid).toLocaleString()}</div>
-            <div><b>Current Balance Due:</b> <span style="font-weight: 900; color: ${s.amount > 0 ? '#b91c1c' : '#15803d'};">Rs. ${Math.round(Number(s.amount) || 0).toLocaleString()}</span></div>
+          <div style="text-align: right; line-height: 1.45;">
+            <div><strong>Total Billed:</strong> Rs. ${Math.round(totalPurchased).toLocaleString()}</div>
+            <div><strong>Total Paid:</strong> Rs. ${Math.round(totalPaid).toLocaleString()}</div>
+            <div><strong>Current Balance Due:</strong> <span style="font-weight: 900;">Rs. ${Math.round(Number(s.amount) || 0).toLocaleString()}</span></div>
           </div>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; font-size: 8.5px; margin-top: 6px;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center; width: 20px;">#</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Date</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Ref #</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: left;">Description</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Billed</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Paid</th>
-              <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Running Due</th>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 22px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Ref #</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Description</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Billed</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Paid</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Running Due</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || `<tr><td colspan="7" style="padding: 10px; text-align: center; color: #94a3b8;">No transactions found.</td></tr>`}
+            ${rows || `<tr><td colspan="7" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No transactions found.</td></tr>`}
           </tbody>
           <tfoot>
-            <tr style="background: #f8fafc; font-weight: 900; border-top: 1.5px solid #0f172a;">
-              <td colspan="4" style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">GRAND TOTALS:</td>
-              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right;">Rs. ${Math.round(totalPurchased).toLocaleString()}</td>
-              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; color: #15803d;">Rs. ${Math.round(totalPaid).toLocaleString()}</td>
-              <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: right; color: ${s.amount > 0 ? '#b91c1c' : '#15803d'};">
+            <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase; color: #000;">GRAND TOTALS:</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace; color: #000;">Rs. ${Math.round(totalPurchased).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace; color: #000;">Rs. ${Math.round(totalPaid).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace; color: #000;">
                 Rs. ${Math.round(Number(s.amount) || 0).toLocaleString()}
               </td>
             </tr>
@@ -937,10 +938,10 @@ window.Suppliers = {
         </table>
 
         <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 8.5px;">
-          <div style="border-top: 1px dashed #64748b; width: 40%; text-align: center; padding-top: 4px;">
+          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Factory Accountant Signature
           </div>
-          <div style="border-top: 1px dashed #64748b; width: 40%; text-align: center; padding-top: 4px;">
+          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
             Supplier Confirmation Signature
           </div>
         </div>

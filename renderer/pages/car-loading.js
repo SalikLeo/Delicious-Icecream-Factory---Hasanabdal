@@ -1214,6 +1214,69 @@ window.CarLoading = {
     });
   },
 
+  openEditLoadingModal(batchId) {
+    const batch = (this.dispatches || []).find(d => d.id === batchId);
+    if (!batch) return;
+    const modalEl = document.getElementById('car-modal-container');
+    if (!modalEl) return;
+    const dVal = (batch.date || '').split('T')[0] || new Date().toISOString().split('T')[0];
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 animate-in fade-in duration-150" onclick="if(event.target===this) CarLoading.closeModal()">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden">
+          <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i>
+              <h3 class="font-black text-sm text-white">Edit Loading Record (${batch.dispatch_no})</h3>
+            </div>
+            <button onclick="CarLoading.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <form onsubmit="CarLoading.saveEditedLoading(event, ${batch.id})" class="p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Vehicle &amp; Total Cartons</label>
+              <input type="text" value="${batch.car_number} (${batch.total_cartons} ctns) — Driver: ${batch.driver_name}" disabled class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Loading Date *</label>
+              <input type="date" id="edit-loading-date" value="${dVal}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Gatepass Remarks / Notes</label>
+              <textarea id="edit-loading-notes" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-amber-500">${batch.notes || ''}</textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" onclick="CarLoading.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black cursor-pointer shadow-md">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+  },
+
+  async saveEditedLoading(e, batchId) {
+    e.preventDefault();
+    const date = document.getElementById('edit-loading-date')?.value;
+    const notes = document.getElementById('edit-loading-notes')?.value;
+    try {
+      app.showLoading?.();
+      const res = await window.api.updateCarLoadingBatch(batchId, { date, notes });
+      app.hideLoading?.();
+      if (res && res.error) {
+        app.showAlert({ title: 'Error', message: res.error });
+        return;
+      }
+      this.closeModal();
+      app.showToast('Loading record updated successfully', 'success');
+      await this.loadData();
+      this.renderUI();
+    } catch (err) {
+      app.hideLoading?.();
+      app.showAlert({ title: 'Error', message: err.message });
+    }
+  },
+
   renderHistoryView() {
     let list = [...this.dispatches];
     if (this.searchQuery) {
@@ -1312,6 +1375,11 @@ window.CarLoading = {
                             title="Print Loading Slip (A5)">
                       <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                     </button>
+                    <button onclick="CarLoading.openEditLoadingModal(${d.id})"
+                            class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                            title="Edit Loading Record">
+                      <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                    </button>
                     <button onclick="CarLoading.deleteLoadingBatch(${d.id})"
                             class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
                             title="Delete Loading Record">
@@ -1379,6 +1447,69 @@ window.CarLoading = {
         }
       }
     });
+  },
+
+  openEditLoadingModal(batchId) {
+    const batch = (this.dispatches || []).find(d => d.id === batchId);
+    if (!batch) return;
+    const modalEl = document.getElementById('car-modal-container');
+    if (!modalEl) return;
+    const dVal = (batch.date || '').split('T')[0] || new Date().toISOString().split('T')[0];
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 animate-in fade-in duration-150" onclick="if(event.target===this) CarLoading.closeModal()">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden">
+          <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i>
+              <h3 class="font-black text-sm text-white">Edit Loading Record (${batch.dispatch_no})</h3>
+            </div>
+            <button onclick="CarLoading.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <form onsubmit="CarLoading.saveEditedLoading(event, ${batch.id})" class="p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Vehicle &amp; Total Cartons</label>
+              <input type="text" value="${batch.car_number} (${batch.total_cartons} ctns) — Driver: ${batch.driver_name}" disabled class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Loading Date *</label>
+              <input type="date" id="edit-loading-date" value="${dVal}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Gatepass Remarks / Notes</label>
+              <textarea id="edit-loading-notes" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-amber-500">${batch.notes || ''}</textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" onclick="CarLoading.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black cursor-pointer shadow-md">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+  },
+
+  async saveEditedLoading(e, batchId) {
+    e.preventDefault();
+    const date = document.getElementById('edit-loading-date')?.value;
+    const notes = document.getElementById('edit-loading-notes')?.value;
+    try {
+      app.showLoading?.();
+      const res = await window.api.updateCarLoadingBatch(batchId, { date, notes });
+      app.hideLoading?.();
+      if (res && res.error) {
+        app.showAlert({ title: 'Error', message: res.error });
+        return;
+      }
+      this.closeModal();
+      app.showToast('Loading record updated successfully', 'success');
+      await this.loadData();
+      this.renderUI();
+    } catch (err) {
+      app.hideLoading?.();
+      app.showAlert({ title: 'Error', message: err.message });
+    }
   },
 
   switchTab(tab) {

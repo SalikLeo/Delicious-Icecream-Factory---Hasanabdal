@@ -725,7 +725,7 @@ window.Production = {
                 </div>
               </th>
               <th class="py-2 px-3 border-r border-slate-200">Raw Materials Used</th>
-              <th class="py-2 px-3 text-right">Action</th>
+              <th class="py-2 px-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -740,10 +740,18 @@ window.Production = {
                 <td class="py-1.5 px-3 text-right font-mono text-slate-700 tabular-nums border-r border-slate-200">Rs. ${b.unit_cost}</td>
                 <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(b.total_cost).toLocaleString()}</td>
                 <td class="py-1.5 px-3 text-slate-600 text-[11px] max-w-xs truncate border-r border-slate-200">${b.raw_materials_summary || 'Standard ingredients'}</td>
-                <td class="py-1.5 px-3 text-right">
-                  <button onclick="Production.deleteBatch(${b.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs ml-auto" title="Delete &amp; Reverse Stock">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                  </button>
+                <td class="py-1.5 px-3 text-center whitespace-nowrap">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button onclick="Production.printBatchSlip(${b.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Print Production Batch Slip (A5)">
+                      <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="Production.openEditBatchModal(${b.id})" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Batch Details">
+                      <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="Production.deleteBatch(${b.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete &amp; Reverse Stock">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             `).join('')}
@@ -763,6 +771,10 @@ window.Production = {
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-900 text-xs tabular-nums bg-cyan-50/70">
                 Rs. ${Math.round(grandTotalBatchCost).toLocaleString()}
               </td>
+              <td class="py-2.5 px-3 text-slate-400 font-bold text-xs border-r border-slate-300">-</td>
+              <td class="py-2.5 px-3"></td>
+            </tr>
+          </tfoot>
               <td class="py-2.5 px-3 border-r border-slate-300 text-slate-400 font-bold text-center">-</td>
               <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
             </tr>
@@ -1419,5 +1431,166 @@ window.Production = {
     `;
 
     app.showA5Preview(html, 'Production Stock Report (A5)');
+  },
+
+  async printBatchSlip(batchId) {
+    try {
+      app.showLoading();
+      const batch = await window.api.getProductionBatch(batchId);
+      app.hideLoading();
+      if (!batch) {
+        app.showAlert({ title: 'Error', message: 'Production batch record not found.' });
+        return;
+      }
+
+      const settings = app.settings || {};
+      const company = settings.company_name || 'Delicious Superstar Foods';
+      const address = settings.address || 'Hasan Abdal';
+      const phone = settings.phone || '0315-6795995';
+      const materials = batch.materials || [];
+
+      const html = `
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
+          <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+            <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+            <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>
+            <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">Tel: ${phone}</p>
+          </div>
+
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+            PRODUCTION FLOOR BATCH SLIP
+          </div>
+
+          <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+            <div>
+              <div><strong>Batch Number:</strong> ${batch.batch_number}</div>
+              <div><strong>Item Produced:</strong> <strong>${batch.item_name}</strong></div>
+              <div><strong>Produced Pieces:</strong> <strong>+${batch.produced_pieces.toLocaleString()} pcs</strong></div>
+            </div>
+            <div style="text-align: right;">
+              <div><strong>Production Date:</strong> ${app.formatDateTime(batch.date, batch.created_at)}</div>
+              <div><strong>Cost Per Piece:</strong> Rs. ${batch.unit_cost}</div>
+              <div><strong>Total Batch Cost:</strong> <strong>Rs. ${Math.round(batch.total_cost).toLocaleString()}</strong></div>
+            </div>
+          </div>
+
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+            <thead>
+              <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 24px; font-weight: 900; color: #000;">#</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; color: #000;">Recipe Raw Material</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 80px; font-weight: 900; color: #000;">Qty Consumed</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; color: #000;">Unit Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; color: #000;">Total Line Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${materials.length > 0 ? materials.map((m, idx) => `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000;">${idx + 1}</td>
+                  <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 800; color: #000;">${m.material_name}</td>
+                  <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; color: #000;">${m.qty_used} ${m.unit}</td>
+                  <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace; color: #000;">Rs. ${m.unit_cost}</td>
+                  <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace; font-weight: 800; color: #000;">Rs. ${Math.round(m.line_cost).toLocaleString()}</td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td colspan="5" style="border: 1px solid #000; padding: 8px; text-align: center; color: #000;">
+                    ${batch.raw_materials_summary || 'Standard ingredients consumed.'}
+                  </td>
+                </tr>
+              `}
+            </tbody>
+            <tfoot>
+              <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
+                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase;">Total Batch Manufacturing Cost:</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace;">Rs. ${Math.round(batch.total_cost).toLocaleString()}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          ${batch.notes ? `
+            <div style="border: 1px solid #000; padding: 4px 8px; font-size: 9px; margin-top: 4px; background: #fff; color: #000;">
+              <strong>Remarks:</strong> ${batch.notes}
+            </div>
+          ` : ''}
+
+          <div class="a5-signatures" style="margin-top: 35px; display: flex; justify-content: space-between; font-size: 9px;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+              Production Floor Supervisor
+            </div>
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+              Quality Assurance Officer
+            </div>
+          </div>
+        </div>
+      `;
+
+      app.showA5Preview(html, `Production Batch Slip (${batch.batch_number})`);
+    } catch (err) {
+      app.hideLoading();
+      app.showAlert({ title: 'Error', message: err.message });
+    }
+  },
+
+  openEditBatchModal(batchId) {
+    const batch = (this.batches || []).find(b => b.id === batchId);
+    if (!batch) return;
+    const container = this.getModalContainer();
+    const dVal = (batch.date || '').split('T')[0] || new Date().toISOString().split('T')[0];
+
+    container.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 animate-in fade-in duration-150" onclick="if(event.target===this) Production.closeModal()">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden">
+          <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i>
+              <h3 class="font-black text-sm text-white">Edit Production Batch (${batch.batch_number})</h3>
+            </div>
+            <button onclick="Production.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <form onsubmit="Production.saveEditedBatch(event, ${batch.id})" class="p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Item &amp; Pieces Produced</label>
+              <input type="text" value="${batch.item_name} (+${batch.produced_pieces.toLocaleString()} pcs)" disabled class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Production Date *</label>
+              <input type="date" id="edit-batch-date" value="${dVal}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Remarks / Quality Notes</label>
+              <textarea id="edit-batch-notes" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-amber-500">${batch.notes || ''}</textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" onclick="Production.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black cursor-pointer shadow-md">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: container });
+  },
+
+  async saveEditedBatch(e, batchId) {
+    e.preventDefault();
+    const date = document.getElementById('edit-batch-date')?.value;
+    const notes = document.getElementById('edit-batch-notes')?.value;
+    try {
+      app.showLoading();
+      const res = await window.api.updateProductionBatch(batchId, { date, notes });
+      app.hideLoading();
+      if (res && res.error) {
+        app.showAlert({ title: 'Error', message: res.error });
+        return;
+      }
+      this.closeModal();
+      app.showToast('Production batch updated successfully', 'success');
+      await this.loadData();
+    } catch (err) {
+      app.hideLoading();
+      app.showAlert({ title: 'Error', message: err.message });
+    }
   }
 };

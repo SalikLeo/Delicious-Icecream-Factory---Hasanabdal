@@ -679,6 +679,11 @@ window.Proposals = {
                       title="Print Delivery Invoice &amp; Bill (A5)">
                 <i data-lucide="printer" class="w-3.5 h-3.5"></i>
               </button>
+              <button type="button" onclick="Proposals.openEditDeliveryModal(${d.id})"
+                      class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                      title="Edit Delivery Order Details">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
               <button type="button" onclick="Proposals.deleteDeliveryOrder(${d.id}, '${d.invoice_no}')"
                       class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
                       title="Delete Delivery Order">
@@ -709,6 +714,10 @@ window.Proposals = {
             return;
           }
           await this.loadData();
+          if (window.Customers && typeof Customers.loadData === 'function') {
+            await Customers.loadData();
+            if (Customers.selectedShopId) Customers.selectShop(Customers.selectedShopId);
+          }
           app.showAlert({ title: 'Deleted', message: `Delivery order ${invoiceNo} removed successfully.` });
         } catch (e) {
           app.showAlert({ title: 'Error', message: e.message });
@@ -718,6 +727,102 @@ window.Proposals = {
       }
     });
     }, 'deleting delivery order invoice');
+  },
+
+  async openEditDeliveryModal(id) {
+    let d = (this.deliveries || []).find(item => item.id == id);
+    if (!d) {
+      try {
+        const fetched = await window.api.getShopDelivery(id);
+        if (fetched && !fetched.error) d = fetched;
+      } catch (err) {}
+    }
+    if (!d) return app.showAlert({ title: 'Error', message: 'Delivery record not found.' });
+
+    const rawDate = d.date ? d.date.split(' ')[0] : new Date().toISOString().split('T')[0];
+    const rawTime = d.date && d.date.includes(' ') ? d.date.split(' ')[1].slice(0, 5) : '12:00';
+    const currentMethod = (d.payment_method || 'Cash').toLowerCase().includes('online') ? 'Online' : 'Cash';
+
+    const content = `
+      <form onsubmit="Proposals.saveEditedDelivery(event, ${d.id})" class="space-y-4">
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span>Invoice: <strong class="text-slate-800 font-mono">${d.invoice_no || ('INV-' + d.id)}</strong></span>
+            <span>Shop: <strong class="text-slate-800">${d.shop_name || 'Walk-in'}</strong></span>
+          </div>
+          <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-200">
+            <span>Total Bill: <strong class="text-emerald-700">Rs. ${Number(d.total_amount || 0).toLocaleString()}</strong></span>
+            <span>Paid: <strong class="text-slate-800">Rs. ${Number(d.paid_amount || 0).toLocaleString()}</strong></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
+            <input type="date" id="edit-del-date" value="${rawDate}" required
+                   class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label>
+            <select id="edit-del-method" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+              <option value="Cash" ${currentMethod === 'Cash' ? 'selected' : ''}>Cash</option>
+              <option value="Online" ${currentMethod === 'Online' ? 'selected' : ''}>Online</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Notes / Remarks</label>
+          <textarea id="edit-del-notes" rows="2"
+                    placeholder="Delivery notes, vehicle remarks..."
+                    class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">${d.notes || ''}</textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="app.closeModal()"
+                  class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-50 cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    `;
+
+    app.showModal({
+      title: `Edit Delivery Details #${d.invoice_no || d.id}`,
+      content,
+      maxWidth: 'max-w-md'
+    });
+  },
+
+  async saveEditedDelivery(e, id) {
+    e.preventDefault();
+    const date = document.getElementById('edit-del-date')?.value;
+    const method = document.getElementById('edit-del-method')?.value || 'Cash';
+    const notes = document.getElementById('edit-del-notes')?.value || '';
+
+    try {
+      app.showLoading();
+      const res = await window.api.updateShopDelivery(id, { date, payment_method: method, notes });
+      if (res && res.error) {
+        app.showAlert({ title: 'Error', message: res.error });
+        return;
+      }
+      app.closeModal();
+      await this.loadData();
+      if (window.Customers && typeof Customers.loadData === 'function') {
+        await Customers.loadData();
+        if (Customers.selectedShopId) Customers.selectShop(Customers.selectedShopId);
+      }
+      app.showAlert({ title: 'Updated', message: 'Delivery details updated successfully.' });
+    } catch (err) {
+      app.showAlert({ title: 'Error', message: err.message });
+    } finally {
+      app.hideLoading();
+    }
   },
 
   printReport() {

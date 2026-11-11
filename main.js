@@ -229,6 +229,8 @@ ipcMain.handle('save-raw-material', (event, data) => db.saveRawMaterial(data));
 ipcMain.handle('delete-raw-material', (event, id) => db.deleteRawMaterial(id));
 ipcMain.handle('add-raw-material-purchase', (event, data) => db.addRawMaterialPurchase(data));
 ipcMain.handle('get-raw-material-logs', (event, filters) => db.getRawMaterialLogs(filters));
+ipcMain.handle('delete-raw-material-log', (event, id, revertStock) => db.deleteRawMaterialLog(id, revertStock));
+ipcMain.handle('update-raw-material-log', (event, id, data) => db.updateRawMaterialLog(id, data));
 ipcMain.handle('get-raw-material-purchases', (event, filters) => db.getRawMaterialPurchases(filters));
 ipcMain.handle('get-raw-material-purchase', (event, id) => db.getRawMaterialPurchase(id));
 ipcMain.handle('update-raw-material-purchase', (event, id, data) => db.updateRawMaterialPurchase(id, data));
@@ -243,6 +245,7 @@ ipcMain.handle('save-supplier', (event, data) => db.saveSupplier(data));
 ipcMain.handle('delete-supplier', (event, id) => db.deleteSupplier(id));
 ipcMain.handle('pay-supplier', (event, data) => db.paySupplier(data));
 ipcMain.handle('delete-supplier-payment', (event, id) => db.deleteSupplierPayment(id));
+ipcMain.handle('update-supplier-payment', (event, id, data) => db.updateSupplierPayment(id, data));
 ipcMain.handle('get-supplier-ledger', (event, supplierId) => db.getSupplierLedger(supplierId));
 
 // Stage 2: Single Items Production
@@ -252,6 +255,8 @@ ipcMain.handle('save-icecream-item', (event, data) => db.saveIcecreamItem(data))
 ipcMain.handle('delete-icecream-item', (event, id) => db.deleteIcecreamItem(id));
 ipcMain.handle('run-production-batch', (event, data) => db.runProductionBatch(data));
 ipcMain.handle('get-production-batches', (event, filters) => db.getProductionBatches(filters));
+ipcMain.handle('get-production-batch', (event, id) => db.getProductionBatch(id));
+ipcMain.handle('update-production-batch', (event, id, data) => db.updateProductionBatch(id, data));
 ipcMain.handle('delete-production-batch', (event, id) => db.deleteProductionBatch(id));
 
 // Stage 3: Packed Cartons (Sellable Inventory)
@@ -263,6 +268,8 @@ ipcMain.handle('delete-packed-carton', (event, id) => db.deletePackedCarton(id))
 ipcMain.handle('increment-stickers-printed', (event, data) => db.incrementCartonStickersPrinted(data?.id, data?.qty));
 ipcMain.handle('run-carton-packing', (event, data) => db.runCartonPacking(data));
 ipcMain.handle('get-packing-batches', (event, filters) => db.getPackingBatches(filters));
+ipcMain.handle('get-packing-batch', (event, id) => db.getPackingBatch(id));
+ipcMain.handle('update-packing-batch', (event, id, data) => db.updatePackingBatch(id, data));
 ipcMain.handle('delete-packing-batch', (event, id) => db.deletePackingBatch(id));
 
 // Stage 4: Cars & Delivery Loading
@@ -275,11 +282,13 @@ ipcMain.handle('load-car-stock', (event, data) => db.loadCarStock(data));
 ipcMain.handle('unload-car-stock', (event, data) => db.unloadCarStock(data));
 ipcMain.handle('get-car-loading-batches', (event, carId) => db.getCarLoadingBatches(carId));
 ipcMain.handle('get-car-loading-batch', (event, id) => db.getCarLoadingBatch(id));
+ipcMain.handle('update-car-loading-batch', (event, id, data) => db.updateCarLoadingBatch(id, data));
 ipcMain.handle('delete-car-loading-batch', (event, id) => db.deleteCarLoadingBatch(id));
 
 // Stage 5: Shop Deliveries, Sales & Returns
 ipcMain.handle('get-next-delivery-invoice-no', (event, date) => db.getNextDeliveryInvoiceNo(date));
 ipcMain.handle('save-shop-delivery', (event, data) => db.saveShopDelivery(data));
+ipcMain.handle('update-shop-delivery', (event, id, data) => db.updateShopDelivery(id, data));
 ipcMain.handle('process-shop-return', (event, data) => db.processShopReturn(data));
 ipcMain.handle('get-shop-deliveries', (event, filters) => db.getShopDeliveries(filters));
 ipcMain.handle('get-shop-returns', (event, deliveryId) => db.getShopReturns(deliveryId));
@@ -287,6 +296,7 @@ ipcMain.handle('get-shop-delivery', (event, id) => db.getShopDelivery(id));
 ipcMain.handle('get-shop-return', (event, id) => db.getShopReturn(id));
 ipcMain.handle('delete-shop-delivery', (event, id) => db.deleteShopDelivery(id));
 ipcMain.handle('receive-shop-payment', (event, data) => db.receiveShopPayment(data));
+ipcMain.handle('update-shop-payment', (event, id, data) => db.updateShopPayment(id, data));
 ipcMain.handle('get-shop-ledger', (event, shopId) => db.getShopLedger(shopId));
 ipcMain.handle('delete-shop-payment', (event, id) => db.deleteShopPayment(id));
 ipcMain.handle('get-car-sales-report', (event, carId, fromDate, toDate) => db.getCarSalesReport(carId, fromDate, toDate));

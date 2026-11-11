@@ -501,17 +501,41 @@ window.Customers = {
                   </td>
                   <td class="py-1.5 px-3 text-center">
                     ${isDelivery ? `
-                      <button type="button" onclick="ShopSales.printDeliveryInvoice(${e.id})"
-                              class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
-                              title="Print Delivery Bill (A5)">
-                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                      </button>
+                      <div class="flex items-center justify-center gap-1">
+                        <button type="button" onclick="ShopSales.printDeliveryInvoice(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Print Delivery Bill (A5)">
+                          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" onclick="Proposals.openEditDeliveryModal(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Edit Delivery Order Details">
+                          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" onclick="Proposals.deleteDeliveryOrder(${e.id}, '${e.invoice_no}')"
+                                class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Delete Delivery Order">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
                     ` : `
-                      <button type="button" onclick="Customers.printPaymentReceipt(${e.id})"
-                              class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
-                              title="Print Payment Receipt (A5)">
-                        <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
-                      </button>
+                      <div class="flex items-center justify-center gap-1">
+                        <button type="button" onclick="Customers.printPaymentReceipt(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Print Payment Receipt (A5)">
+                          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" onclick="Customers.openEditPaymentModal(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Edit Payment Receipt">
+                          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" onclick="Customers.deletePayment(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Delete Payment (reverts balance)">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
                     `}
                   </td>
                 </tr>
@@ -973,5 +997,126 @@ window.Customers = {
     `;
 
     app.showA5Preview(html, `Cash Receipt - ${data.receipt_no}`);
+  },
+
+  openEditPaymentModal(paymentId) {
+    const shop = (this.shops || []).find(s => s.id === this.selectedShopId) || {};
+    const ledger = this.activeLedger;
+    const pay = ledger?.entries?.find(e => e.id === Number(paymentId) && e.record_type === 'payment');
+    if (!pay) return app.showAlert({ title: 'Error', message: 'Payment record not found.' });
+
+    const rawDate = pay.date ? pay.date.split(' ')[0] : new Date().toISOString().split('T')[0];
+    const currentMethod = (pay.payment_method || 'Cash').toLowerCase().includes('online') ? 'Online' : 'Cash';
+
+    const content = `
+      <form onsubmit="Customers.saveEditedPayment(event, ${pay.id})" class="space-y-4">
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span>Shop: <strong class="text-slate-800">${shop.name || 'Customer'}</strong></span>
+            <span>Receipt: <strong class="text-slate-800 font-mono">${pay.invoice_no || ('PAY-' + pay.id)}</strong></span>
+          </div>
+          <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-200">
+            <span>Amount Received: <strong class="text-emerald-700">Rs. ${Number(pay.received_amount || 0).toLocaleString()}</strong></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Date</label>
+            <input type="date" id="edit-shop-pay-date" value="${rawDate}" required
+                   class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label>
+            <select id="edit-shop-pay-method" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+              <option value="Cash" ${currentMethod === 'Cash' ? 'selected' : ''}>Cash</option>
+              <option value="Online" ${currentMethod === 'Online' ? 'selected' : ''}>Online</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Notes / Remarks</label>
+          <input type="text" id="edit-shop-pay-notes" value="${pay.notes || ''}"
+                 placeholder="Collected by driver, cheque #, online transaction ID..."
+                 class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="app.closeModal()"
+                  class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-50 cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    `;
+
+    app.showModal({
+      title: `Edit Payment Receipt #${pay.invoice_no || pay.id}`,
+      content,
+      maxWidth: 'max-w-md'
+    });
+  },
+
+  async saveEditedPayment(e, paymentId) {
+    e.preventDefault();
+    const date = document.getElementById('edit-shop-pay-date')?.value;
+    const payment_method = document.getElementById('edit-shop-pay-method')?.value || 'Cash';
+    const notes = document.getElementById('edit-shop-pay-notes')?.value || '';
+
+    try {
+      app.showLoading();
+      const res = await window.api.updateShopPayment(paymentId, { date, payment_method, notes });
+      if (res && res.error) {
+        app.showAlert({ title: 'Error', message: res.error });
+        return;
+      }
+      app.closeModal();
+      await this.loadData();
+      if (this.selectedShopId) this.selectShop(this.selectedShopId);
+      app.showAlert({ title: 'Updated', message: 'Shop payment details updated successfully.' });
+    } catch (err) {
+      app.showAlert({ title: 'Error', message: err.message });
+    } finally {
+      app.hideLoading();
+    }
+  },
+
+  async deletePayment(paymentId) {
+    const allowed = await app.checkActionPassword('Delete Shop Payment');
+    if (!allowed) return;
+
+    const ok = await new Promise(resolve => {
+      app.showConfirm({
+        title: 'Delete Shop Payment?',
+        message: 'Are you sure you want to delete this payment record?<br><br><span class="text-rose-600 font-bold">This will add the payment amount back to the shop\'s outstanding khata balance!</span>',
+        confirmText: 'Yes, Revert Payment',
+        confirmColor: 'red',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false)
+      });
+    });
+
+    if (ok) {
+      try {
+        app.showLoading();
+        const res = await window.api.deleteShopPayment(paymentId);
+        if (res && res.success) {
+          app.showToast('Payment deleted and shop khata balance reverted', 'success');
+          await this.loadData();
+          if (this.selectedShopId) this.selectShop(this.selectedShopId);
+        } else {
+          app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to revert payment.' });
+        }
+      } catch (err) {
+        app.showAlert({ title: 'Error', message: err.message });
+      } finally {
+        app.hideLoading();
+      }
+    }
   }
 };

@@ -735,7 +735,8 @@ window.RawMaterials = {
                   ${this.getSortIcon('stock_after')}
                 </div>
               </th>
-              <th class="py-2 px-3">Details / Notes</th>
+              <th class="py-2 px-3 border-r border-slate-200">Details / Notes</th>
+              <th class="py-2 px-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -763,7 +764,23 @@ window.RawMaterials = {
                   </td>
                   <td class="py-1.5 px-3 text-right font-mono text-slate-500 tabular-nums border-r border-slate-200">${log.stock_before ?? '-'} ${matUnit && log.stock_before !== undefined && log.stock_before !== null ? `<span class="text-[11px] font-bold text-slate-500">${matUnit}</span>` : ''}</td>
                   <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">${log.stock_after ?? '-'} ${matUnit && log.stock_after !== undefined && log.stock_after !== null ? `<span class="text-xs font-black text-slate-700 ml-0.5">${matUnit}</span>` : ''}</td>
-                  <td class="py-1.5 px-3 text-slate-500 text-[11px]">${log.notes || ''}</td>
+                  <td class="py-1.5 px-3 text-slate-500 text-[11px] border-r border-slate-200">${log.notes || ''}</td>
+                  <td class="py-1.5 px-3 text-center whitespace-nowrap">
+                    <div class="flex items-center justify-center gap-1.5">
+                      <button onclick="RawMaterials.viewLog(${log.id})" title="View / Print Document (A5)"
+                              class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button onclick="RawMaterials.editLog(${log.id})" title="Edit Details / Notes"
+                              class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button onclick="RawMaterials.deleteLogEntry(${log.id})" title="Delete Transaction"
+                              class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               `;
             }).join('')}
@@ -781,7 +798,8 @@ window.RawMaterials = {
               </td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
-              <td class="py-2.5 px-3 text-slate-400 font-bold text-xs">-</td>
+              <td class="py-2.5 px-3 text-slate-400 font-bold text-xs border-r border-slate-300">-</td>
+              <td class="py-2.5 px-3"></td>
             </tr>
           </tfoot>
         </table>
@@ -1373,5 +1391,193 @@ window.RawMaterials = {
     `;
 
     app.showA5Preview(html, 'Raw Materials Stock Report (A5)');
+  },
+
+  async viewLog(id) {
+    const log = (this.logs || []).find(l => l.id === id);
+    if (!log) return;
+    if (log.action === 'PURCHASE' && log.reference_id && window.Purchases) {
+      return Purchases.viewReceipt(log.reference_id);
+    }
+    if ((log.action === 'PRODUCTION_USED' || log.action === 'PRODUCTION') && log.reference_id && window.Production) {
+      return Production.printBatchSlip(log.reference_id);
+    }
+    this.printLogSlip(log);
+  },
+
+  printLogSlip(log) {
+    if (!log) return;
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Delicious Superstar Foods';
+    const address = settings.address || 'Hasan Abdal';
+    const phone = settings.phone || '0315-6795995';
+    const mat = (this.materials || []).find(m => m.id === log.material_id);
+    const unit = mat ? mat.unit : '';
+    const isAdd = (log.qty_change || 0) > 0;
+
+    const html = `
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>
+          <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">Tel: ${phone}</p>
+        </div>
+
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          RAW MATERIAL STOCK MOVEMENT SLIP
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+          <div>
+            <div><strong>Log Ref #:</strong> #LOG-${log.id}</div>
+            <div><strong>Action Type:</strong> ${log.action || 'Stock Adjustment'}</div>
+            ${log.reference_id ? `<div><strong>Source Ref:</strong> #${log.reference_id}</div>` : ''}
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(log.date, log.created_at)}</div>
+            <div><strong>Material:</strong> <strong>${log.material_name}</strong></div>
+          </div>
+        </div>
+
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin: 6px 0; background: #fff;">
+          <thead>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; color: #000;">Item / Raw Material</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: 900; color: #000;">Quantity Change</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Stock Before</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Stock After</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #000; padding: 6px; font-weight: 800; color: #000;">${log.material_name}</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: 900; color: #000;">${isAdd ? '+' : ''}${log.qty_change} ${unit}</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: right; font-family: monospace; color: #000;">${log.stock_before ?? '-'} ${unit}</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: right; font-family: monospace; font-weight: 900; color: #000;">${log.stock_after ?? '-'} ${unit}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        ${log.notes ? `
+          <div style="border: 1px solid #000; padding: 5px 8px; font-size: 9.5px; margin-top: 6px; background: #fff; color: #000;">
+            <strong>Details / Notes:</strong> ${log.notes}
+          </div>
+        ` : ''}
+
+        <div class="a5-signatures" style="margin-top: 35px; display: flex; justify-content: space-between; font-size: 9px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            Store Keeper Signature
+          </div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            Factory Manager Signature
+          </div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, `Stock Movement Memo (#LOG-${log.id})`);
+  },
+
+  async editLog(id) {
+    const log = (this.logs || []).find(l => l.id === id);
+    if (!log) return;
+    if (log.action === 'PURCHASE' && log.reference_id && window.Purchases) {
+      return Purchases.openPurchaseModal(log.reference_id);
+    }
+    this.openEditLogModal(log);
+  },
+
+  openEditLogModal(log) {
+    const container = this.getModalContainer();
+    const dVal = (log.date || '').split('T')[0] || new Date().toISOString().split('T')[0];
+
+    container.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 animate-in fade-in duration-150" onclick="if(event.target===this) RawMaterials.closeModal()">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden transform scale-100 transition-all">
+          <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i>
+              <h3 class="font-black text-sm text-white">Edit Stock Movement Log (#LOG-${log.id})</h3>
+            </div>
+            <button onclick="RawMaterials.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <form onsubmit="RawMaterials.saveEditedLog(event, ${log.id})" class="p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Material</label>
+              <input type="text" value="${log.material_name} (${log.qty_change > 0 ? '+' : ''}${log.qty_change})" disabled class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Transaction Date *</label>
+              <input type="date" id="edit-log-date" value="${dVal}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 mb-1">Details / Remarks</label>
+              <textarea id="edit-log-notes" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-amber-500">${log.notes || ''}</textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" onclick="RawMaterials.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black cursor-pointer shadow-md">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: container });
+  },
+
+  async saveEditedLog(e, logId) {
+    e.preventDefault();
+    const date = document.getElementById('edit-log-date')?.value;
+    const notes = document.getElementById('edit-log-notes')?.value;
+    try {
+      app.showLoading();
+      const res = await window.api.updateRawMaterialLog(logId, { date, notes });
+      app.hideLoading();
+      if (res && res.error) {
+        app.showAlert({ title: 'Error', message: res.error });
+        return;
+      }
+      this.closeModal();
+      app.showToast('Stock log updated successfully', 'success');
+      await this.loadData();
+    } catch (err) {
+      app.hideLoading();
+      app.showAlert({ title: 'Error', message: err.message });
+    }
+  },
+
+  async deleteLogEntry(id) {
+    const log = (this.logs || []).find(l => l.id === id);
+    if (!log) return;
+    if (log.action === 'PURCHASE' && log.reference_id && window.Purchases) {
+      return Purchases.deletePurchase(log.reference_id);
+    }
+    if ((log.action === 'PRODUCTION_USED' || log.action === 'PRODUCTION') && log.reference_id && window.Production) {
+      return Production.deleteBatch(log.reference_id);
+    }
+    app.authorizeAction(() => {
+      app.showConfirm({
+        title: 'Delete Stock Movement Log?',
+        message: `Are you sure you want to delete this log entry for "${log.material_name}"? This action will remove the history record.`,
+        confirmText: 'Yes, Delete',
+        confirmColor: 'bg-rose-600 hover:bg-rose-700 text-white',
+        onConfirm: async () => {
+          try {
+            app.showLoading();
+            const res = await window.api.deleteRawMaterialLog(id, false);
+            app.hideLoading();
+            if (res && res.error) {
+              app.showAlert({ title: 'Error', message: res.error });
+              return;
+            }
+            app.showToast('Stock movement log deleted successfully', 'success');
+            await this.loadData();
+          } catch (err) {
+            app.hideLoading();
+            app.showAlert({ title: 'Error', message: err.message });
+          }
+        }
+      });
+    }, 'delete stock log');
   }
 };

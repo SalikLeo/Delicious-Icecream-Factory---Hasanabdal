@@ -528,17 +528,34 @@ window.Suppliers = {
                   </td>
                   <td class="py-1.5 px-3 text-center">
                     ${isPurchase ? `
-                      <button type="button" onclick="Purchases.viewReceipt(${e.id})"
-                              class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
-                              title="Print Purchase Inward Voucher (A5)">
-                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                      </button>
+                      <div class="flex items-center justify-center gap-1">
+                        <button type="button" onclick="Purchases.viewReceipt(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Print Purchase Inward Voucher (A5)">
+                          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" onclick="Purchases.openPurchaseModal(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Edit Purchase">
+                          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" onclick="Purchases.deletePurchase(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Delete Purchase (reverts stock &amp; balance)">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
                     ` : `
                       <div class="flex items-center justify-center gap-1">
                         <button type="button" onclick="Suppliers.printPaymentReceipt(${e.id})"
                                 class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
                                 title="Print Payment Receipt (A5)">
-                          <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+                          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" onclick="Suppliers.openEditPaymentModal(${e.id})"
+                                class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                title="Edit Payment Details">
+                          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                         </button>
                         <button type="button" onclick="Suppliers.deletePayment(${e.id})"
                                 class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
@@ -775,6 +792,92 @@ window.Suppliers = {
       } else {
         app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to revert payment.' });
       }
+    }
+  },
+
+  openEditPaymentModal(paymentId) {
+    const entries = this.activeLedger ? this.activeLedger.entries : [];
+    const pay = entries.find(e => e.id === Number(paymentId) && e.record_type === 'payment');
+    if (!pay) return app.showAlert({ title: 'Error', message: 'Payment record not found.' });
+
+    const rawDate = pay.date ? pay.date.split(' ')[0] : new Date().toISOString().split('T')[0];
+    const currentMethod = (pay.payment_method || 'Cash').toLowerCase().includes('online') ? 'Online' : 'Cash';
+    const s = (this.activeLedger && this.activeLedger.supplier) ? this.activeLedger.supplier : {};
+
+    const content = `
+      <form onsubmit="Suppliers.saveEditedPayment(event, ${pay.id})" class="space-y-4">
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span>Supplier: <strong class="text-slate-800">${s.name || 'Vendor'}</strong></span>
+            <span>Receipt: <strong class="text-slate-800 font-mono">PAY-${pay.id}</strong></span>
+          </div>
+          <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-200">
+            <span>Amount Paid: <strong class="text-emerald-700">Rs. ${Number(pay.amount || 0).toLocaleString()}</strong></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Date</label>
+            <input type="date" id="edit-sup-pay-date" value="${rawDate}" required
+                   class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label>
+            <select id="edit-sup-pay-method" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+              <option value="Cash" ${currentMethod === 'Cash' ? 'selected' : ''}>Cash</option>
+              <option value="Online" ${currentMethod === 'Online' ? 'selected' : ''}>Online</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Notes / Remarks</label>
+          <input type="text" id="edit-sup-pay-notes" value="${pay.notes || ''}"
+                 placeholder="Cheque #, transaction ref, remarks..."
+                 class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-emerald-500 bg-white">
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="app.closeModal()"
+                  class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-50 cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    `;
+
+    app.showModal({
+      title: `Edit Payment Record #PAY-${pay.id}`,
+      content,
+      maxWidth: 'max-w-md'
+    });
+  },
+
+  async saveEditedPayment(e, paymentId) {
+    e.preventDefault();
+    const date = document.getElementById('edit-sup-pay-date')?.value;
+    const payment_method = document.getElementById('edit-sup-pay-method')?.value || 'Cash';
+    const notes = document.getElementById('edit-sup-pay-notes')?.value || '';
+
+    try {
+      app.showLoading();
+      const res = await window.api.updateSupplierPayment(paymentId, { date, payment_method, notes });
+      if (res && res.error) {
+        app.showAlert({ title: 'Error', message: res.error });
+        return;
+      }
+      app.closeModal();
+      await this.loadData();
+      app.showAlert({ title: 'Updated', message: 'Supplier payment details updated.' });
+    } catch (err) {
+      app.showAlert({ title: 'Error', message: err.message });
+    } finally {
+      app.hideLoading();
     }
   },
 

@@ -763,6 +763,82 @@ const Expenses = {
     if (window.lucide) lucide.createIcons();
   },
 
+  async printExpenseVoucher(id) {
+    const exp = (this.expenses || []).find(e => e.id == id);
+    if (!exp) return app.showAlert({ title: 'Error', message: 'Expense record not found.' });
+
+    if (!this.settings || !this.settings.company_name) {
+      try {
+        this.settings = await window.api.getSettings();
+      } catch (e) {
+        console.error("Error fetching settings for expense receipt:", e);
+      }
+    }
+    const settings = this.settings || {};
+    const company = settings.company_name || 'DELICIOUS SUPERSTAR FOODS';
+    const address = settings.address || 'Hasan Abdal';
+    const phone = settings.phone || '0315-6795995';
+
+    const voucherHtml = `
+      <div class="a5-container">
+        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${company}</div>
+          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${address} • Phone: ${phone}</div>
+        </div>
+
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 4px 10px; font-size: 12px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 8px 0;">
+          PAYMENT / EXPENSE VOUCHER
+        </div>
+
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 6px 10px; margin-bottom: 10px; display: flex; justify-content: space-between; font-size: 9.5px; line-height: 1.6; background: #fff; color: #000;">
+          <div>
+            <div><strong>Voucher No:</strong> <span style="font-family: monospace; font-weight: 800;">EXP-${exp.id}</span></div>
+            <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(exp.date, exp.created_at)}</div>
+            <div><strong>Category:</strong> <span style="font-weight: 800; text-transform: uppercase;">${exp.category || 'General'}</span></div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Paid By / Account:</strong> <span style="font-weight: 800;">${exp.paid_by || 'Factory Cash'}</span></div>
+            <div><strong>Payment Mode:</strong> Cash / Factory Expense</div>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9.5px; border: 1.5px solid #000;">
+          <thead>
+            <tr style="border-bottom: 1.5px solid #000; background: #fff;">
+              <th style="padding: 6px 8px; text-align: left; font-weight: 900; width: 75%; border-right: 1px solid #000;">Particulars / Description</th>
+              <th style="padding: 6px 8px; text-align: right; font-weight: 900; width: 25%;">Amount (Rs.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1.5px solid #000;">
+              <td style="padding: 10px 8px; border-right: 1px solid #000; vertical-align: top;">
+                <div style="font-weight: 800; font-size: 10px; text-transform: uppercase;">${exp.description || 'Factory Expense'}</div>
+                <div style="font-size: 8.5px; color: #333; margin-top: 3px;">Category: ${exp.category}</div>
+              </td>
+              <td style="padding: 10px 8px; text-align: right; font-weight: 900; font-size: 12px; vertical-align: top;">
+                Rs. ${Number(exp.amount || 0).toLocaleString()}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="background: #fff; font-weight: 900;">
+              <td style="padding: 6px 8px; text-align: right; border-right: 1px solid #000; font-size: 10px; text-transform: uppercase;">Total Paid Amount:</td>
+              <td style="padding: 6px 8px; text-align: right; font-size: 12px;">Rs. ${Number(exp.amount || 0).toLocaleString()}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Prepared By</div>
+          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Verified By</div>
+          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Received By / Payee</div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(voucherHtml, `Expense-Voucher-EXP-${exp.id}`);
+  },
+
   renderList(list) {
     this.currentFilteredExpenses = list || [];
     const tbody = document.getElementById('expenses-list');
@@ -799,6 +875,7 @@ const Expenses = {
         <td class="px-4 py-1 text-right font-bold tabular-nums text-slate-800 border-r border-slate-200 text-xs">${app.formatCurrency(e.amount)}</td>
         <td class="px-4 py-1 text-right font-medium no-print">
           <div class="flex items-center justify-end gap-1.5 transition-opacity">
+            <button onclick="Expenses.printExpenseVoucher(${e.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Print Expense Voucher (A5)"><i data-lucide="printer" class="w-3.5 h-3.5"></i></button>
             <button onclick="Expenses.openFormById(${e.id})" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Expense"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
             <button onclick="Expenses.deleteExpense(${e.id})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Expense"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </div>

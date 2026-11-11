@@ -101,6 +101,8 @@ contextBridge.exposeInMainWorld('api', {
   deleteRawMaterial: (id) => ipcRenderer.invoke('delete-raw-material', id),
   addRawMaterialPurchase: (data) => ipcRenderer.invoke('add-raw-material-purchase', data),
   getRawMaterialLogs: (filters) => ipcRenderer.invoke('get-raw-material-logs', filters),
+  deleteRawMaterialLog: (id, revertStock) => ipcRenderer.invoke('delete-raw-material-log', id, revertStock),
+  updateRawMaterialLog: (id, data) => ipcRenderer.invoke('update-raw-material-log', id, data),
   getRawMaterialPurchases: (filters) => ipcRenderer.invoke('get-raw-material-purchases', filters),
   getRawMaterialPurchase: (id) => ipcRenderer.invoke('get-raw-material-purchase', id),
   updateRawMaterialPurchase: (id, data) => ipcRenderer.invoke('update-raw-material-purchase', id, data),
@@ -115,6 +117,7 @@ contextBridge.exposeInMainWorld('api', {
   deleteSupplier: (id) => ipcRenderer.invoke('delete-supplier', id),
   paySupplier: (data) => ipcRenderer.invoke('pay-supplier', data),
   deleteSupplierPayment: (id) => ipcRenderer.invoke('delete-supplier-payment', id),
+  updateSupplierPayment: (id, data) => ipcRenderer.invoke('update-supplier-payment', id, data),
   getSupplierLedger: (supplierId) => ipcRenderer.invoke('get-supplier-ledger', supplierId),
 
   // Stage 2: Single Items Production
@@ -124,6 +127,8 @@ contextBridge.exposeInMainWorld('api', {
   deleteIcecreamItem: (id) => ipcRenderer.invoke('delete-icecream-item', id),
   runProductionBatch: (data) => ipcRenderer.invoke('run-production-batch', data),
   getProductionBatches: (filters) => ipcRenderer.invoke('get-production-batches', filters),
+  getProductionBatch: (id) => ipcRenderer.invoke('get-production-batch', id),
+  updateProductionBatch: (id, data) => ipcRenderer.invoke('update-production-batch', id, data),
   deleteProductionBatch: (id) => ipcRenderer.invoke('delete-production-batch', id),
 
   // Stage 3: Carton Packing (Sellable Inventory)
@@ -135,6 +140,8 @@ contextBridge.exposeInMainWorld('api', {
   incrementStickersPrinted: (data) => ipcRenderer.invoke('increment-stickers-printed', data),
   runCartonPacking: (data) => ipcRenderer.invoke('run-carton-packing', data),
   getPackingBatches: (filters) => ipcRenderer.invoke('get-packing-batches', filters),
+  getPackingBatch: (id) => ipcRenderer.invoke('get-packing-batch', id),
+  updatePackingBatch: (id, data) => ipcRenderer.invoke('update-packing-batch', id, data),
   deletePackingBatch: (id) => ipcRenderer.invoke('delete-packing-batch', id),
 
   // Stage 4: Cars & Delivery Loading
@@ -147,11 +154,13 @@ contextBridge.exposeInMainWorld('api', {
   unloadCarStock: (data) => ipcRenderer.invoke('unload-car-stock', data),
   getCarLoadingBatches: (carId) => ipcRenderer.invoke('get-car-loading-batches', carId),
   getCarLoadingBatch: (id) => ipcRenderer.invoke('get-car-loading-batch', id),
+  updateCarLoadingBatch: (id, data) => ipcRenderer.invoke('update-car-loading-batch', id, data),
   deleteCarLoadingBatch: (id) => ipcRenderer.invoke('delete-car-loading-batch', id),
 
   // Stage 5: Shop Deliveries, Sales & Returns
   getNextDeliveryInvoiceNo: (date) => ipcRenderer.invoke('get-next-delivery-invoice-no', date),
   saveShopDelivery: (data) => ipcRenderer.invoke('save-shop-delivery', data),
+  updateShopDelivery: (id, data) => ipcRenderer.invoke('update-shop-delivery', id, data),
   processShopReturn: (data) => ipcRenderer.invoke('process-shop-return', data),
   getShopDeliveries: (filters) => ipcRenderer.invoke('get-shop-deliveries', filters),
   getShopReturns: (deliveryId) => ipcRenderer.invoke('get-shop-returns', deliveryId),
@@ -159,6 +168,7 @@ contextBridge.exposeInMainWorld('api', {
   getShopReturn: (id) => ipcRenderer.invoke('get-shop-return', id),
   deleteShopDelivery: (id) => ipcRenderer.invoke('delete-shop-delivery', id),
   receiveShopPayment: (data) => ipcRenderer.invoke('receive-shop-payment', data),
+  updateShopPayment: (id, data) => ipcRenderer.invoke('update-shop-payment', id, data),
   getShopLedger: (shopId) => ipcRenderer.invoke('get-shop-ledger', shopId),
   deleteShopPayment: (id) => ipcRenderer.invoke('delete-shop-payment', id),
   getCarSalesReport: (carId, fromDate, toDate) => ipcRenderer.invoke('get-car-sales-report', carId, fromDate, toDate),

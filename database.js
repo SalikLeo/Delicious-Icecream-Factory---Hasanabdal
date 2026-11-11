@@ -3211,6 +3211,19 @@ function deleteSupplierPayment(id) {
   return { success: true };
 }
 
+function updateSupplierPayment(id, data = {}) {
+  const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(id);
+  if (!payment) return { error: 'Supplier payment not found' };
+
+  const notes = data.notes !== undefined ? data.notes : payment.notes;
+  const paymentMethod = data.payment_method || payment.payment_method;
+  const date = data.date || payment.date;
+
+  db.prepare('UPDATE supplier_payments SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
+    .run(notes, paymentMethod, date, id);
+  return { success: true };
+}
+
 function getSupplierLedger(supplierId) {
   const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(supplierId);
   if (!supplier) return null;
@@ -3290,6 +3303,32 @@ function getRawMaterialLogs(filters = {}) {
 
   query += ' ORDER BY id DESC LIMIT 200';
   return db.prepare(query).all(...params);
+}
+
+function deleteRawMaterialLog(id, revertStock = true) {
+  const log = db.prepare('SELECT * FROM raw_material_logs WHERE id = ?').get(id);
+  if (!log) return { error: 'Log not found' };
+
+  db.transaction(() => {
+    if (revertStock && log.material_id && log.qty_change) {
+      db.prepare('UPDATE raw_materials SET current_stock = MAX(0, current_stock - ?) WHERE id = ?')
+        .run(log.qty_change, log.material_id);
+    }
+    db.prepare('DELETE FROM raw_material_logs WHERE id = ?').run(id);
+  })();
+
+  return { success: true };
+}
+
+function updateRawMaterialLog(id, data = {}) {
+  const log = db.prepare('SELECT * FROM raw_material_logs WHERE id = ?').get(id);
+  if (!log) return { error: 'Log not found' };
+
+  const notes = data.notes !== undefined ? data.notes : log.notes;
+  const date = data.date || log.date;
+
+  db.prepare('UPDATE raw_material_logs SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+  return { success: true };
 }
 
 // --- STAGE 2: SINGLE ITEMS PRODUCTION ---
@@ -3473,6 +3512,23 @@ function getProductionBatches(filters = {}) {
 
   query += ' ORDER BY pb.id DESC LIMIT 100';
   return db.prepare(query).all(...params);
+}
+
+function getProductionBatch(id) {
+  const batch = db.prepare('SELECT * FROM production_batches WHERE id = ?').get(id);
+  if (!batch) return null;
+  batch.materials = db.prepare('SELECT * FROM production_batch_materials WHERE batch_id = ?').all(id);
+  return batch;
+}
+
+function updateProductionBatch(id, data = {}) {
+  const batch = db.prepare('SELECT * FROM production_batches WHERE id = ?').get(id);
+  if (!batch) return { error: 'Batch not found' };
+
+  const notes = data.notes !== undefined ? data.notes : batch.notes;
+  const date = data.date || batch.date;
+  db.prepare('UPDATE production_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+  return { success: true };
 }
 
 function deleteProductionBatch(id) {
@@ -3709,6 +3765,20 @@ function getPackingBatches(filters = {}) {
 
   query += ' ORDER BY pb.id DESC LIMIT 100';
   return db.prepare(query).all(...params);
+}
+
+function getPackingBatch(id) {
+  return db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
+}
+
+function updatePackingBatch(id, data = {}) {
+  const batch = db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
+  if (!batch) return { error: 'Packing batch not found' };
+
+  const notes = data.notes !== undefined ? data.notes : batch.notes;
+  const date = data.date || batch.date;
+  db.prepare('UPDATE packing_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+  return { success: true };
 }
 
 function deletePackingBatch(id) {
@@ -4024,6 +4094,16 @@ function deleteCarLoadingBatch(id) {
   } catch (err) {
     return { error: err.message };
   }
+}
+
+function updateCarLoadingBatch(id, data = {}) {
+  const batch = db.prepare('SELECT * FROM car_loading_batches WHERE id = ?').get(id);
+  if (!batch) return { error: 'Loading record not found' };
+
+  const notes = data.notes !== undefined ? data.notes : batch.notes;
+  const date = data.date || batch.date;
+  db.prepare('UPDATE car_loading_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+  return { success: true };
 }
 
 function getNextDeliveryInvoiceNo() {
@@ -4570,6 +4650,32 @@ function deleteShopPayment(id) {
   return { success: true };
 }
 
+function updateShopDelivery(id, data = {}) {
+  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
+  if (!delivery) return { error: 'Delivery invoice not found' };
+
+  const notes = data.notes !== undefined ? data.notes : delivery.notes;
+  const paymentMethod = data.payment_method || delivery.payment_method;
+  const date = data.date || delivery.date;
+
+  db.prepare('UPDATE shop_deliveries SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
+    .run(notes, paymentMethod, date, id);
+  return { success: true };
+}
+
+function updateShopPayment(id, data = {}) {
+  const payment = db.prepare('SELECT * FROM shop_payments WHERE id = ?').get(id);
+  if (!payment) return { error: 'Shop payment not found' };
+
+  const notes = data.notes !== undefined ? data.notes : payment.notes;
+  const paymentMethod = data.payment_method || payment.payment_method;
+  const date = data.date || payment.date;
+
+  db.prepare('UPDATE shop_payments SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
+    .run(notes, paymentMethod, date, id);
+  return { success: true };
+}
+
 function getCarSalesReport(carId, fromDate = null, toDate = null) {
   const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
   if (!car) return { error: 'Car not found' };
@@ -4688,18 +4794,19 @@ function getIcecreamFactorySummary() {
 module.exports = {
   // Stage 1: Raw Materials
   getRawMaterials, getRawMaterial, saveRawMaterial, deleteRawMaterial, addRawMaterialPurchase, getRawMaterialLogs,
+  deleteRawMaterialLog, updateRawMaterialLog,
   getRawMaterialPurchases, getRawMaterialPurchase, updateRawMaterialPurchase, deleteRawMaterialPurchase, getRawMaterialSuppliers,
   getNextPurchaseInvoiceNo,
   // Suppliers & Vendor Khata
-  getSuppliers, getSupplier, saveSupplier, deleteSupplier, paySupplier, deleteSupplierPayment, getSupplierLedger,
+  getSuppliers, getSupplier, saveSupplier, deleteSupplier, paySupplier, deleteSupplierPayment, updateSupplierPayment, getSupplierLedger,
   // Stage 2: Single Items Production
-  getIcecreamItems, getIcecreamItem, saveIcecreamItem, deleteIcecreamItem, runProductionBatch, getProductionBatches, deleteProductionBatch,
+  getIcecreamItems, getIcecreamItem, saveIcecreamItem, deleteIcecreamItem, runProductionBatch, getProductionBatches, getProductionBatch, updateProductionBatch, deleteProductionBatch,
   // Stage 3: Packed Cartons
-  getPackedCartons, getPackedCarton, findCartonByBarcode, savePackedCarton, deletePackedCarton, incrementCartonStickersPrinted, runCartonPacking, getPackingBatches, deletePackingBatch,
+  getPackedCartons, getPackedCarton, findCartonByBarcode, savePackedCarton, deletePackedCarton, incrementCartonStickersPrinted, runCartonPacking, getPackingBatches, getPackingBatch, updatePackingBatch, deletePackingBatch,
   // Stage 4: Cars & Delivery Loading
-  getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch, deleteCarLoadingBatch,
+  getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch, updateCarLoadingBatch, deleteCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns
-  saveShopDelivery, getNextDeliveryInvoiceNo, getShopDeliveries, getShopDelivery, deleteShopDelivery, receiveShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
+  saveShopDelivery, getNextDeliveryInvoiceNo, getShopDeliveries, getShopDelivery, updateShopDelivery, deleteShopDelivery, receiveShopPayment, updateShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
   processShopReturn, getShopReturns, getShopReturn,
 
   init, getDbPath, getDbPathForBranch, close, backupDatabase, clearAllData,

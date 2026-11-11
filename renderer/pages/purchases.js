@@ -792,16 +792,12 @@ window.Purchases = {
                 <label class="text-[11px] font-black uppercase text-blue-900 tracking-wider flex items-center gap-1.5">
                   <i data-lucide="users" class="w-3.5 h-3.5 text-blue-600"></i> Select Supplier / Vendor *
                 </label>
-                <button type="button" onclick="Purchases.quickAddNewSupplier()" 
-                        class="text-[11px] font-black text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer">
-                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> + Add New Supplier
-                </button>
               </div>
 
               <div class="flex items-center gap-2">
-                <select id="pmo-supplier-id" onchange="Purchases.onModalSupplierChange(this.value)"
-                        class="flex-1 px-3.5 py-2.5 bg-white border border-blue-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200">
-                  <option value="">-- Direct Cash / Walk-in Supplier --</option>
+                <select id="pmo-supplier-id" onchange="Purchases.onModalSupplierChange(this.value)" required
+                        class="flex-1 px-3.5 py-2.5 bg-white border border-blue-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+                  <option value="" ${!selectedSupplierId ? 'selected' : ''} disabled>-- Select Supplier (Required) --</option>
                   ${suppliers.map(s => {
                     const bal = Number(s.amount) || 0;
                     const balText = bal > 0 ? `• Balance Due: Rs. ${Math.round(bal).toLocaleString()}` : `• All Clear`;
@@ -816,8 +812,8 @@ window.Purchases = {
 
               <!-- Supplier Current Balance Banner -->
               <div id="pmo-supplier-badge" class="mt-2 text-xs flex items-center justify-between font-bold text-slate-700 bg-white/80 px-3 py-1.5 rounded-lg border border-blue-100">
-                <span id="pmo-supplier-name-info">Direct Cash / Walk-in Purchase</span>
-                <span id="pmo-supplier-balance-info" class="text-emerald-700 font-mono font-black">Current Balance: Rs. 0</span>
+                <span id="pmo-supplier-name-info">${selectedSupplierId ? 'Supplier Selected' : 'No Supplier Selected'}</span>
+                <span id="pmo-supplier-balance-info" class="text-slate-500 font-mono font-bold">${selectedSupplierId ? 'Calculating...' : 'Please select supplier above'}</span>
               </div>
             </div>
 
@@ -1044,9 +1040,9 @@ window.Purchases = {
         balanceInfo.className = bal > 0 ? 'text-rose-600 font-mono font-black' : 'text-emerald-700 font-mono font-black';
       }
     } else {
-      if (nameInfo) nameInfo.textContent = 'Direct Cash / Walk-in Supplier';
+      if (nameInfo) nameInfo.textContent = 'No Supplier Selected';
       if (balanceInfo) {
-        balanceInfo.textContent = 'Current Balance: Rs. 0';
+        balanceInfo.textContent = 'Please select supplier above';
         balanceInfo.className = 'text-slate-500 font-mono font-bold';
       }
     }
@@ -1176,8 +1172,14 @@ window.Purchases = {
     }
 
     const supplierId = document.getElementById('pmo-supplier-id').value;
+    if (!supplierId) {
+      return app.showAlert({
+        title: 'Supplier Required',
+        message: 'Please select a supplier from the list to record this raw material purchase.'
+      });
+    }
     const supplierObj = (this.suppliersList || []).find(s => s.id === Number(supplierId));
-    const supplierName = supplierObj ? supplierObj.name : 'Walk-in / Cash';
+    const supplierName = supplierObj ? supplierObj.name : '';
 
     const date = document.getElementById('pmo-date').value;
     const paymentMethod = document.getElementById('pmo-payment-method').value;

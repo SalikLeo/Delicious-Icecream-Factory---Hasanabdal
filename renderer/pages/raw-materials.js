@@ -964,14 +964,11 @@ window.RawMaterials = {
             </div>
             <div>
               <div class="flex items-center justify-between mb-1">
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider">Select Supplier</label>
-                <button type="button" onclick="RawMaterials.quickAddSupplier()" class="text-[11px] font-black text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer">
-                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> + New Supplier
-                </button>
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider">Select Supplier (Required) *</label>
               </div>
-              <select id="po-supplier-id" onchange="RawMaterials.onSupplierSelectChange(this.value)"
+              <select id="po-supplier-id" onchange="RawMaterials.onSupplierSelectChange(this.value)" required
                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 cursor-pointer">
-                <option value="">-- Direct Cash / Walk-in Supplier --</option>
+                <option value="" disabled selected>-- Select Supplier (Required) --</option>
                 ${suppliers.map(s => {
                   const bal = Number(s.amount) || 0;
                   const balText = bal > 0 ? `• Due: Rs. ${Math.round(bal).toLocaleString()}` : '• Clear';
@@ -1264,6 +1261,13 @@ window.RawMaterials = {
 
     const supplierSel = document.getElementById('po-supplier-id');
     const supplierId = supplierSel && supplierSel.value ? Number(supplierSel.value) : null;
+    if (!supplierId) {
+      app.showAlert({ 
+        title: 'Supplier Required', 
+        message: 'Please select a registered supplier from the list to record this purchase.' 
+      });
+      return;
+    }
     const selectedOpt = supplierSel && supplierSel.selectedIndex >= 0 ? supplierSel.options[supplierSel.selectedIndex] : null;
     const supplierName = selectedOpt && supplierId ? (selectedOpt.getAttribute('data-name') || selectedOpt.text.split('•')[0].trim()) : '';
 

@@ -641,7 +641,6 @@ window.Proposals = {
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
           <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
-          <td class="py-2 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(d.date, d.created_at)}</td>
           <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
           <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
           <td class="py-1.5 px-3 border-r border-slate-200">

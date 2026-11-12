@@ -590,12 +590,14 @@ window.Proposals = {
 
   updateStats() {
     let totalCartons = 0;
+    let totalReturned = 0;
     let totalSales = 0;
     let totalCash = 0;
     let totalDue = 0;
 
     this.filteredDeliveries.forEach(d => {
       totalCartons += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
+      totalReturned += (Number(d.total_cartons_returned) || 0);
       totalSales += (d.total_amount || 0);
       totalCash += (d.received_amount || 0);
       totalDue += (d.remaining_balance || 0);
@@ -608,7 +610,9 @@ window.Proposals = {
     const dEl = document.getElementById('prop-stat-due');
 
     if (cEl) cEl.textContent = `${this.filteredDeliveries.length}`;
-    if (ctEl) ctEl.textContent = `${totalCartons} Ctns`;
+    if (ctEl) {
+      ctEl.innerHTML = `${totalCartons}${totalReturned > 0 ? ` <span class="text-rose-600 text-xs font-bold font-mono">(-${totalReturned})</span>` : ''} <span class="text-xs font-bold text-slate-400">Ctns</span>`;
+    }
     if (tEl) tEl.textContent = `Rs. ${Math.round(totalSales).toLocaleString()}`;
     if (csEl) csEl.textContent = `Rs. ${Math.round(totalCash).toLocaleString()}`;
     if (dEl) dEl.textContent = `Rs. ${Math.round(totalDue).toLocaleString()}`;
@@ -636,6 +640,7 @@ window.Proposals = {
     }
 
     let totalCartons = 0;
+    let totalReturned = 0;
     let totalSales = 0;
     let totalCash = 0;
     let totalDue = 0;
@@ -647,7 +652,9 @@ window.Proposals = {
       else if (d.payment_method === 'Credit') badgeClass = 'bg-amber-100 text-amber-800';
 
       const remainingCtns = Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
+      const retCtns = Number(d.total_cartons_returned) || 0;
       totalCartons += remainingCtns;
+      totalReturned += retCtns;
       totalSales += (Number(d.total_amount) || 0);
       totalCash += (Number(d.received_amount) || 0);
       totalDue += (Number(d.remaining_balance) || 0);
@@ -726,7 +733,7 @@ window.Proposals = {
             </div>
           </td>
           <td class="py-2.5 px-2 text-center font-black text-xs text-blue-800 bg-blue-100/40 border-r border-slate-200 tabular-nums">
-            ${totalCartons}
+            <span>${totalCartons}</span>${totalReturned > 0 ? `<span class="text-rose-600 font-bold text-[11px] ml-0.5" title="${totalReturned} cartons returned (orig: ${totalCartons + totalReturned})">(-${totalReturned})</span>` : ''}
           </td>
           <td class="py-2.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
             Rs. ${Math.round(totalSales).toLocaleString()}
@@ -908,6 +915,7 @@ window.Proposals = {
     }
 
     const totalCartons = list.reduce((sum, d) => sum + Math.max(0, (Number(d.total_cartons_delivered) || 0) - (Number(d.total_cartons_returned) || 0)), 0);
+    const totalReturned = list.reduce((sum, d) => sum + (Number(d.total_cartons_returned) || 0), 0);
     const totalSales = list.reduce((sum, d) => sum + (Number(d.total_amount) || 0), 0);
     const totalCash = list.reduce((sum, d) => sum + (Number(d.received_amount) || 0), 0);
     const totalPending = list.reduce((sum, d) => sum + (Number(d.remaining_balance) || 0), 0);
@@ -935,7 +943,7 @@ window.Proposals = {
           </div>
           <div style="text-align: right; line-height: 1.45;">
             <div><strong>Printed Date:</strong> ${date}</div>
-            <div><strong>Cartons Dispatched:</strong> <b>${totalCartons} Ctns</b></div>
+            <div><strong>Cartons Dispatched:</strong> <b>${totalCartons}${totalReturned > 0 ? ` (-${totalReturned})` : ''} Ctns</b></div>
           </div>
         </div>
 
@@ -1008,7 +1016,7 @@ window.Proposals = {
           <tfoot>
             <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
               <td colspan="5" style="border: 1px solid #000; padding: 4px; text-align: right; text-transform: uppercase; color: #000;">GRAND TOTALS (${list.length} ORDERS):</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000;">${totalCartons}</td>
+              <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000;">${totalCartons}${totalReturned > 0 ? ` (-${totalReturned})` : ''}</td>
               <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalSales).toLocaleString()}</td>
               <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalCash).toLocaleString()}</td>
               <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalPending).toLocaleString()}</td>

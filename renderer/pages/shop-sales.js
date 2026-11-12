@@ -1665,8 +1665,8 @@ window.ShopSales = {
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number</label>
-                <input type="text" id="qs-phone" placeholder="0300-1234567"
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number *</label>
+                <input type="text" id="qs-phone" required placeholder="0300-1234567"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400 font-mono">
               </div>
               <div>

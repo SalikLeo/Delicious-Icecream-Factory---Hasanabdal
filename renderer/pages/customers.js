@@ -107,8 +107,8 @@ window.Customers = {
       </div>
 
       <!-- Shop Add/Edit Modal -->
-      <div id="shop-edit-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 flex flex-col">
+      <div id="shop-edit-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4 cursor-pointer" onclick="if(event.target === this) Customers.closeShopModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 flex flex-col cursor-default" onclick="event.stopPropagation()">
           <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
             <h3 class="font-black text-sm text-white flex items-center gap-2" id="shop-modal-title">
               <i data-lucide="store" class="w-4 h-4 text-amber-400"></i> Add New Shop
@@ -134,28 +134,21 @@ window.Customers = {
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
               </div>
               <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number</label>
-                <input type="text" id="sf-phone" placeholder="0300-1234567"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">City / Area</label>
-                <input type="text" id="sf-city" placeholder="e.g. Hasan Abdal, Attock"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
-              </div>
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Opening Khata Balance (Rs.)</label>
-                <input type="number" step="any" min="0" id="sf-amount" placeholder="0"
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number *</label>
+                <input type="text" id="sf-phone" required placeholder="0300-1234567"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
               </div>
             </div>
 
             <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Opening Khata Balance (Rs.)</label>
+              <input type="number" step="any" min="0" id="sf-amount" placeholder="0"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
+            </div>
+
+            <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Shop Address</label>
-              <input type="text" id="sf-address" placeholder="e.g. Main GT Road, Near Bus Stand"
+              <input type="text" id="sf-address" placeholder="e.g. Main GT Road, Near Bus Stand, Hasan Abdal"
                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-amber-400">
             </div>
 
@@ -178,8 +171,8 @@ window.Customers = {
       </div>
 
       <!-- Receive Payment Modal -->
-      <div id="shop-payment-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200 flex flex-col">
+      <div id="shop-payment-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4 cursor-pointer" onclick="if(event.target === this) Customers.closePaymentModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200 flex flex-col cursor-default" onclick="event.stopPropagation()">
           <div class="p-4 bg-emerald-800 text-white flex justify-between items-center">
             <h3 class="font-black text-sm text-white flex items-center gap-2">
               <i data-lucide="hand-coins" class="w-4 h-4 text-emerald-300"></i> Receive Cash Payment
@@ -598,7 +591,6 @@ window.Customers = {
     const fName = document.getElementById('sf-name');
     const fOwner = document.getElementById('sf-owner');
     const fPhone = document.getElementById('sf-phone');
-    const fCity = document.getElementById('sf-city');
     const fAmount = document.getElementById('sf-amount');
     const fAddress = document.getElementById('sf-address');
     const fNotes = document.getElementById('sf-notes');
@@ -610,9 +602,8 @@ window.Customers = {
       if (fName) fName.value = s.name || '';
       if (fOwner) fOwner.value = s.owner_name || '';
       if (fPhone) fPhone.value = s.phone || '';
-      if (fCity) fCity.value = s.city || '';
       if (fAmount) fAmount.value = s.opening_balance !== undefined && s.opening_balance !== null ? s.opening_balance : (s.amount || 0);
-      if (fAddress) fAddress.value = s.address || '';
+      if (fAddress) fAddress.value = s.address || s.city || '';
       if (fNotes) fNotes.value = s.notes || '';
     } else {
       if (title) title.innerHTML = '<i data-lucide="store" class="w-4 h-4 text-amber-400"></i> Add New Shop';
@@ -620,7 +611,6 @@ window.Customers = {
       if (fName) fName.value = '';
       if (fOwner) fOwner.value = '';
       if (fPhone) fPhone.value = '';
-      if (fCity) fCity.value = 'Hasan Abdal';
       if (fAmount) fAmount.value = '0';
       if (fAddress) fAddress.value = '';
       if (fNotes) fNotes.value = '';
@@ -646,16 +636,23 @@ window.Customers = {
     try {
       app.showLoading();
       const id = document.getElementById('sf-id')?.value;
+      const phone = document.getElementById('sf-phone')?.value?.trim();
+      if (!phone) {
+        app.showAlert({ title: 'Phone Required', message: 'Please enter a valid phone number for the shop.' });
+        return;
+      }
+      const existingShop = id ? this.shops.find(x => x.id === Number(id)) : null;
       const openingBal = Number(document.getElementById('sf-amount')?.value) || 0;
+      const addressVal = document.getElementById('sf-address')?.value?.trim() || '';
       const data = {
         name: document.getElementById('sf-name')?.value?.trim(),
-        owner_name: document.getElementById('sf-owner')?.value?.trim(),
-        phone: document.getElementById('sf-phone')?.value?.trim(),
-        city: document.getElementById('sf-city')?.value?.trim() || 'Hasan Abdal',
+        owner_name: document.getElementById('sf-owner')?.value?.trim() || '',
+        phone: phone,
+        city: addressVal ? addressVal.split(',')[0].trim() : (existingShop?.city || 'Hasan Abdal'),
         opening_balance: openingBal,
         amount: openingBal,
-        address: document.getElementById('sf-address')?.value?.trim(),
-        notes: document.getElementById('sf-notes')?.value?.trim()
+        address: addressVal,
+        notes: document.getElementById('sf-notes')?.value?.trim() || ''
       };
       if (id) data.id = Number(id);
 

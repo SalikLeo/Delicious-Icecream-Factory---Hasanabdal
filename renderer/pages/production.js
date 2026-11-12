@@ -61,7 +61,7 @@ window.Production = {
               <i data-lucide="play-circle" class="w-4 h-4 text-white"></i> Run Production (Make Pieces)
             </button>
             <button onclick="Production.openItemModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer">
-              <i data-lucide="plus" class="w-4 h-4 text-cyan-400"></i> New Flavor / Item
+              <i data-lucide="plus" class="w-4 h-4 text-cyan-400"></i> + New Item
             </button>
             <button onclick="Production.printReport()" class="px-3.5 py-2.5 bg-slate-800/90 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer" title="Print Production Report">
               <i data-lucide="printer" class="w-4 h-4"></i> Print
@@ -73,7 +73,7 @@ window.Production = {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Ice Cream Flavors / Items</p>
+              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Ice Cream Items</p>
               <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalItems} <span class="text-xs font-bold text-slate-400">types</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-black">
@@ -118,7 +118,7 @@ window.Production = {
             <!-- Search -->
             <div class="relative w-full sm:w-56">
               <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" id="prd-search" placeholder="${this.activeTab === 'catalog' ? 'Search flavor, item name...' : 'Search batch #, item, ingredient...'}"
+              <input type="text" id="prd-search" placeholder="${this.activeTab === 'catalog' ? 'Search item name...' : 'Search batch #, item, ingredient...'}"
                      value="${this.searchQuery}" oninput="Production.onSearch(this.value)"
                      class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-cyan-400">
               <button type="button" id="prd-search-clear" onclick="Production.clearSearch()" title="Clear search"
@@ -537,7 +537,7 @@ window.Production = {
               <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="Production.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
-                  <span>Item / Flavor</span>
+                  <span>Item Name</span>
                   ${this.getSortIcon('name')}
                 </div>
               </th>
@@ -592,7 +592,6 @@ window.Production = {
                   <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="font-black text-slate-900 text-xs">${it.name}</div>
-                    ${it.flavor && it.flavor.trim() && it.flavor.trim().toLowerCase() !== 'standard flavor' ? `<div class="text-[10px] text-slate-400 font-medium leading-tight">${it.flavor.trim()}</div>` : ''}
                   </td>
                   <td class="py-1.5 px-3 text-center border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-800 font-mono text-[10px] font-black border border-cyan-200 whitespace-nowrap">
@@ -1242,11 +1241,6 @@ window.Production = {
               <input type="text" id="ii-name" required value="${it.name || ''}" placeholder="e.g. Chocbar, Ice Loly, Mango Bar..."
                      class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-cyan-500">
             </div>
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Flavor / Description</label>
-              <input type="text" id="ii-flavor" value="${it.flavor || ''}" placeholder="e.g. Rich Chocolate, Orange Twist..."
-                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-cyan-500">
-            </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Cost To Make 1 Pc (Rs.)</label>
@@ -1293,7 +1287,7 @@ window.Production = {
     const data = {
       id: id ? Number(id) : null,
       name: (document.getElementById('ii-name').value || '').trim(),
-      flavor: (document.getElementById('ii-flavor').value || '').trim(),
+      flavor: document.getElementById('ii-flavor') ? (document.getElementById('ii-flavor').value || '').trim() : '',
       unit_cost: Number(document.getElementById('ii-cost').value) || 0,
       retail_piece_price: Number(document.getElementById('ii-retail').value) || 0,
       current_single_stock: Number(document.getElementById('ii-stock').value) || 0,
@@ -1487,7 +1481,7 @@ window.Production = {
           <thead>
             <tr>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item / Flavor</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item Name</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pieces in Stock</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Cost/Piece</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 90px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Cost Value</th>
@@ -1498,7 +1492,7 @@ window.Production = {
             ${this.items.map((it, idx) => `
               <tr>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${it.name}${it.flavor && it.flavor.trim() && it.flavor.trim().toLowerCase() !== 'standard flavor' ? ` <span style="font-weight: 500;">(${it.flavor.trim()})</span>` : ''}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${it.name}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.current_single_stock} pcs</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.unit_cost}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.current_single_stock * it.unit_cost).toLocaleString()}</td>

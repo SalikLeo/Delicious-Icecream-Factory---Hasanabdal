@@ -648,7 +648,6 @@ window.RawMaterials = {
                   <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="font-black text-slate-900 text-xs">${m.name}</div>
-                    ${m.notes ? `<div class="text-[10px] text-slate-400 font-normal leading-tight">${m.notes}</div>` : ''}
                   </td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px] uppercase">${m.category || 'General'}</span>

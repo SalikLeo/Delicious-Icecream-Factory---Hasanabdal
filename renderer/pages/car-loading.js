@@ -578,7 +578,8 @@ window.CarLoading = {
                                   <th class="py-2 px-3 text-center border-r border-slate-200">Packing Spec</th>
                                   <th class="py-2 px-3 text-right border-r border-slate-200">Loaded Qty</th>
                                   <th class="py-2 px-3 text-right border-r border-slate-200">Unit Sale Rate</th>
-                                  <th class="py-2 px-3 text-right">Total Value</th>
+                                  <th class="py-2 px-3 text-right border-r border-slate-200">Total Value</th>
+                                  <th class="py-2 px-2 text-center w-28">Action</th>
                                 </tr>
                               </thead>
                               <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -603,8 +604,16 @@ window.CarLoading = {
                                     <td class="py-1.5 px-3 text-right border-r border-slate-200 font-mono font-bold text-slate-700 tabular-nums">
                                       Rs. ${(it.carton_sale_price || 0).toLocaleString()}
                                     </td>
-                                    <td class="py-1.5 px-3 text-right font-black text-emerald-700 tabular-nums">
+                                    <td class="py-1.5 px-3 text-right border-r border-slate-200 font-black text-emerald-700 tabular-nums">
                                       Rs. ${Math.round(it.loaded_value || 0).toLocaleString()}
+                                    </td>
+                                    <td class="py-1.5 px-2 text-center">
+                                      <button type="button" onclick="CarLoading.openUnloadModal(${it.carton_id}, ${c.id})"
+                                              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                              title="Unload / Move back to Factory Stock">
+                                        <i data-lucide="package-minus" class="w-3.5 h-3.5 text-rose-600"></i>
+                                        <span>To Stock</span>
+                                      </button>
                                     </td>
                                   </tr>
                                 `;
@@ -616,7 +625,8 @@ window.CarLoading = {
                                   <td class="py-2 px-3 text-center border-r border-slate-200 text-slate-400 font-bold">-</td>
                                   <td class="py-2 px-3 text-right border-r border-slate-200 text-blue-700 tabular-nums">${loaded} ctns</td>
                                   <td class="py-2 px-3 text-right border-r border-slate-200 text-slate-400 font-bold">-</td>
-                                  <td class="py-2 px-3 text-right text-emerald-700 tabular-nums">Rs. ${Math.round(loadedValue).toLocaleString()}</td>
+                                  <td class="py-2 px-3 text-right border-r border-slate-200 text-emerald-700 tabular-nums">Rs. ${Math.round(loadedValue).toLocaleString()}</td>
+                                  <td class="py-2 px-2 text-center text-slate-400 font-bold">-</td>
                                 </tr>
                               </tfoot>
                             </table>
@@ -1790,8 +1800,9 @@ window.CarLoading = {
     }
   },
 
-  async openUnloadModal(cartonId) {
-    const activeCar = this.cars.find(c => c.id === this.selectedCarId);
+  async openUnloadModal(cartonId, carId = null) {
+    if (carId) this.selectedCarId = carId;
+    const activeCar = this.cars.find(c => c.id === (carId || this.selectedCarId));
     if (!activeCar) return;
 
     const modalEl = document.getElementById('car-modal-container');
@@ -1818,8 +1829,8 @@ window.CarLoading = {
                 <i data-lucide="package-minus" class="w-4 h-4"></i>
               </div>
               <div>
-                <h3 class="text-sm font-black tracking-tight text-white">Remove Cartons from Car</h3>
-                <p class="text-[10px] text-slate-400 font-medium">Return cartons back to factory warehouse stock</p>
+                <h3 class="text-sm font-black tracking-tight text-white">Unload Cartons to Factory Stock</h3>
+                <p class="text-[10px] text-slate-400 font-medium">Return cartons back to factory stock</p>
               </div>
             </div>
             <button onclick="CarLoading.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -1843,7 +1854,7 @@ window.CarLoading = {
                 <span class="font-black text-blue-800 tabular-nums">${loadedQty} ctns</span>
               </div>
               <div class="flex justify-between items-center text-xs">
-                <span class="text-slate-500 font-bold">Factory Warehouse Stock:</span>
+                <span class="text-slate-500 font-bold">Factory Stock:</span>
                 <span class="font-black text-purple-700 tabular-nums">${warehouseStock} ctns</span>
               </div>
             </div>
@@ -1879,7 +1890,7 @@ window.CarLoading = {
                 <span class="font-black text-slate-800 tabular-nums" id="unload-car-after">0 ctns</span>
               </div>
               <div class="flex justify-between text-slate-600 font-bold">
-                <span>Factory warehouse after:</span>
+                <span>Factory stock after:</span>
                 <span class="font-black text-emerald-800 tabular-nums" id="unload-factory-after">${warehouseStock + loadedQty} ctns</span>
               </div>
             </div>
@@ -1887,7 +1898,7 @@ window.CarLoading = {
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button type="button" onclick="CarLoading.closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
               <button type="submit" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-2 transition-all">
-                <i data-lucide="corner-up-left" class="w-4 h-4"></i> Move Back to Inventory Stock
+                <i data-lucide="corner-up-left" class="w-4 h-4"></i> Move Back to Factory Stock
               </button>
             </div>
           </form>

@@ -295,7 +295,7 @@ window.ShopSales = {
                   ) : ''}
                 </span>
                 <button type="button" onclick="ShopSales.openQuickLoadCarModal()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs" title="Load stock into this car right now">
-                  <i data-lucide="package-plus" class="w-3.5 h-3.5"></i> + Load Stock
+                  <i data-lucide="package-plus" class="w-3.5 h-3.5"></i> Load Stock
                 </button>
               </div>
             </div>

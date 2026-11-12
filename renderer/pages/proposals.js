@@ -49,7 +49,7 @@ window.Proposals = {
             </button>
             <button type="button" onclick="app.navigate('shop-sales')"
                     class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-4 h-4"></i> + New Shop Delivery
+              <i data-lucide="plus" class="w-4 h-4"></i> New Sale
             </button>
           </div>
         </div>

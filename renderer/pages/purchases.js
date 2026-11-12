@@ -55,7 +55,7 @@ window.Purchases = {
             </button>
             <button type="button" onclick="Purchases.openPurchaseModal()"
                     class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-4 h-4"></i> + Record Purchase
+              <i data-lucide="plus" class="w-4 h-4"></i> Record Purchase
             </button>
           </div>
         </div>
@@ -401,7 +401,7 @@ window.Purchases = {
               <h4 class="text-sm font-black text-slate-600">No Raw Material Purchases Found</h4>
               <p class="text-xs text-slate-400 mt-1">Try selecting a different date range or record a new purchase.</p>
               <button onclick="Purchases.openPurchaseModal()" class="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2">
-                <i data-lucide="plus" class="w-4 h-4"></i> + Record First Purchase
+                <i data-lucide="plus" class="w-4 h-4"></i> Record First Purchase
               </button>
             </div>
           </td>
@@ -828,7 +828,7 @@ window.Purchases = {
                 </span>
                 <button type="button" onclick="Purchases.addModalItemRow()"
                         class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
-                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> + Add Another Material
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Another Material
                 </button>
               </div>
 

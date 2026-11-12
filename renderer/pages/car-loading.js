@@ -1840,11 +1840,15 @@ window.CarLoading = {
 
     const carton = (this.cartons || []).find(c => c.id === cartonId);
     const cartonName = it.carton_name || (carton ? carton.carton_name : 'Carton');
+    const isShoper = it.package_type === 'shoper' || (carton && carton.package_type === 'shoper') || (cartonName || '').toLowerCase().includes('shoper');
+    const unitLabelPlural = isShoper ? 'Shopers' : 'Cartons';
+    const unitLabelPluralLower = isShoper ? 'shopers' : 'cartons';
+    const unitLabelShort = isShoper ? 'shopers' : 'ctns';
     const loadedQty = it.cartons_loaded || 0;
     const warehouseStock = (carton ? carton.factory_carton_stock : it.factory_carton_stock) || 0;
 
     modalEl.innerHTML = `
-      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CarLoading.closeModal()">
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 animate-in fade-in duration-150" onclick="if(event.target===this) CarLoading.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
           <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
             <div class="flex items-center gap-2.5">
@@ -1852,8 +1856,8 @@ window.CarLoading = {
                 <i data-lucide="package-minus" class="w-4 h-4"></i>
               </div>
               <div>
-                <h3 class="text-sm font-black tracking-tight text-white">Unload Cartons to Factory Stock</h3>
-                <p class="text-[10px] text-slate-400 font-medium">Return cartons back to factory stock</p>
+                <h3 class="text-sm font-black tracking-tight text-white">Unload ${unitLabelPlural} to Factory Stock</h3>
+                <p class="text-[10px] text-slate-400 font-medium">Return ${unitLabelPluralLower} back to factory stock</p>
               </div>
             </div>
             <button onclick="CarLoading.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -1862,6 +1866,8 @@ window.CarLoading = {
           <form onsubmit="CarLoading.handleUnloadSubmit(event)" class="p-6 space-y-4">
             <input type="hidden" id="unload-car-id" value="${activeCar.id}">
             <input type="hidden" id="unload-carton-id" value="${cartonId}">
+            <input type="hidden" id="unload-max-qty" value="${loadedQty}">
+            <input type="hidden" id="unload-unit-label" value="${unitLabelShort}">
             
             <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
               <div class="flex justify-between items-center text-xs">
@@ -1874,53 +1880,55 @@ window.CarLoading = {
               </div>
               <div class="flex justify-between items-center text-xs pt-1.5 border-t border-slate-200">
                 <span class="text-slate-500 font-bold">Currently in Car:</span>
-                <span class="font-black text-blue-800 tabular-nums">${loadedQty} ctns</span>
+                <span class="font-black text-blue-800 tabular-nums">${loadedQty} ${unitLabelShort}</span>
               </div>
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-500 font-bold">Factory Stock:</span>
-                <span class="font-black text-purple-700 tabular-nums">${warehouseStock} ctns</span>
+                <span class="font-black text-purple-700 tabular-nums">${warehouseStock} ${unitLabelShort}</span>
               </div>
             </div>
 
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1.5">
-                Cartons to Move Back to Factory Stock *
+                ${unitLabelPlural} to Move Back to Factory Stock *
               </label>
               <div class="flex items-center gap-2">
-                <button type="button" onclick="CarLoading.stepUnloadQty(-1, ${loadedQty}, ${warehouseStock})"
+                <button type="button" onclick="CarLoading.stepUnloadQty(-1, ${loadedQty}, ${warehouseStock}, '${unitLabelShort}')"
                         class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all border border-slate-200 shadow-2xs">
                   <i data-lucide="minus" class="w-4 h-4"></i>
                 </button>
                 <input type="number" id="unload-qty" required min="1" max="${loadedQty}" value="${loadedQty}"
-                       oninput="CarLoading.updateUnloadPreview(${loadedQty}, ${warehouseStock})"
+                       oninput="CarLoading.handleUnloadInputChange(${loadedQty}, ${warehouseStock}, '${unitLabelShort}')"
+                       onblur="CarLoading.handleUnloadInputBlur(${loadedQty}, ${warehouseStock}, '${unitLabelShort}')"
+                       onkeydown="CarLoading.handleUnloadKeydown(event, ${loadedQty}, ${warehouseStock}, '${unitLabelShort}')"
                        class="flex-1 px-3.5 py-2.5 bg-white border-2 border-rose-300 rounded-xl text-base font-black text-slate-900 outline-none focus:border-rose-500 font-mono text-center">
-                <button type="button" onclick="CarLoading.stepUnloadQty(1, ${loadedQty}, ${warehouseStock})"
+                <button type="button" onclick="CarLoading.stepUnloadQty(1, ${loadedQty}, ${warehouseStock}, '${unitLabelShort}')"
                         class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all border border-slate-200 shadow-2xs">
                   <i data-lucide="plus" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="document.getElementById('unload-qty').value = ${loadedQty}; CarLoading.updateUnloadPreview(${loadedQty}, ${warehouseStock})"
+                <button type="button" onclick="CarLoading.setUnloadQty(${loadedQty}, ${loadedQty}, ${warehouseStock}, '${unitLabelShort}')"
                         class="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-black cursor-pointer transition-colors shadow-2xs"
-                        title="Unload all cartons">
+                        title="Unload all ${unitLabelPluralLower}">
                   All (${loadedQty})
                 </button>
               </div>
-              <p class="text-[10px] text-slate-400 font-medium mt-1">Specify how many cartons to remove from this car and restore to factory inventory.</p>
+              <p class="text-[10px] text-slate-400 font-medium mt-1">Specify how many ${unitLabelPluralLower} to remove from this car and restore to factory inventory (Maximum: ${loadedQty} ${unitLabelShort}).</p>
             </div>
 
             <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
               <div class="flex justify-between text-slate-600 font-bold">
                 <span>Car stock after remove:</span>
-                <span class="font-black text-slate-800 tabular-nums" id="unload-car-after">0 ctns</span>
+                <span class="font-black text-slate-800 tabular-nums" id="unload-car-after">0 ${unitLabelShort}</span>
               </div>
               <div class="flex justify-between text-slate-600 font-bold">
                 <span>Factory stock after:</span>
-                <span class="font-black text-emerald-800 tabular-nums" id="unload-factory-after">${warehouseStock + loadedQty} ctns</span>
+                <span class="font-black text-emerald-800 tabular-nums" id="unload-factory-after">${warehouseStock + loadedQty} ${unitLabelShort}</span>
               </div>
             </div>
 
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button type="button" onclick="CarLoading.closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
-              <button type="submit" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-2 transition-all">
+              <button type="submit" id="unload-submit-btn" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-2 transition-all">
                 <i data-lucide="corner-up-left" class="w-4 h-4"></i> Move Back to Factory Stock
               </button>
             </div>
@@ -1935,34 +1943,118 @@ window.CarLoading = {
     }, 50);
   },
 
-  stepUnloadQty(delta, maxQty, warehouseStock) {
+  handleUnloadInputChange(maxQty, warehouseStock, unitLabel = 'ctns') {
+    const inp = document.getElementById('unload-qty');
+    if (!inp) return;
+    const rawVal = inp.value;
+    if (rawVal === '') {
+      this.updateUnloadPreview(maxQty, warehouseStock, 0, unitLabel);
+      return;
+    }
+    let num = parseInt(rawVal, 10);
+    if (isNaN(num)) num = 0;
+
+    if (num > maxQty) {
+      num = maxQty;
+      inp.value = maxQty;
+      app.showToast(`Cannot enter more than loaded in car (${maxQty} ${unitLabel})`, 'warning');
+    } else if (num < 0) {
+      num = 0;
+      inp.value = 0;
+    }
+
+    this.updateUnloadPreview(maxQty, warehouseStock, num, unitLabel);
+  },
+
+  handleUnloadInputBlur(maxQty, warehouseStock, unitLabel = 'ctns') {
+    const inp = document.getElementById('unload-qty');
+    if (!inp) return;
+    let num = parseInt(inp.value, 10);
+    if (isNaN(num) || num < 1) {
+      num = 1;
+      inp.value = 1;
+    } else if (num > maxQty) {
+      num = maxQty;
+      inp.value = maxQty;
+    }
+    this.updateUnloadPreview(maxQty, warehouseStock, num, unitLabel);
+  },
+
+  handleUnloadKeydown(e, maxQty, warehouseStock, unitLabel = 'ctns') {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.stepUnloadQty(1, maxQty, warehouseStock, unitLabel);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.stepUnloadQty(-1, maxQty, warehouseStock, unitLabel);
+    }
+  },
+
+  setUnloadQty(qty, maxQty, warehouseStock, unitLabel = 'ctns') {
+    const inp = document.getElementById('unload-qty');
+    if (!inp) return;
+    const safeQty = Math.max(1, Math.min(qty, maxQty));
+    inp.value = safeQty;
+    this.updateUnloadPreview(maxQty, warehouseStock, safeQty, unitLabel);
+  },
+
+  stepUnloadQty(delta, maxQty, warehouseStock, unitLabel = 'ctns') {
     const inp = document.getElementById('unload-qty');
     if (!inp) return;
     let val = (parseInt(inp.value, 10) || 0) + delta;
     if (val < 1) val = 1;
-    if (val > maxQty) val = maxQty;
+    if (val > maxQty) {
+      val = maxQty;
+      app.showToast(`Cannot exceed ${maxQty} ${unitLabel} (currently inside car)`, 'warning');
+    }
     inp.value = val;
-    this.updateUnloadPreview(maxQty, warehouseStock);
+    this.updateUnloadPreview(maxQty, warehouseStock, val, unitLabel);
   },
 
-  updateUnloadPreview(loadedQty, warehouseStock) {
-    const qty = Number(document.getElementById('unload-qty')?.value) || 0;
-    const carAfter = Math.max(0, loadedQty - qty);
-    const factoryAfter = warehouseStock + qty;
+  updateUnloadPreview(loadedQty, warehouseStock, currentVal = null, unitLabel = 'ctns') {
+    const inp = document.getElementById('unload-qty');
+    const qty = currentVal !== null ? currentVal : (Number(inp?.value) || 0);
+    const safeQty = Math.min(loadedQty, Math.max(0, qty));
+    const carAfter = Math.max(0, loadedQty - safeQty);
+    const factoryAfter = warehouseStock + safeQty;
     const carAfterEl = document.getElementById('unload-car-after');
     const factoryAfterEl = document.getElementById('unload-factory-after');
-    if (carAfterEl) carAfterEl.textContent = `${carAfter} ctns`;
-    if (factoryAfterEl) factoryAfterEl.textContent = `${factoryAfter} ctns`;
+    if (carAfterEl) carAfterEl.textContent = `${carAfter} ${unitLabel}`;
+    if (factoryAfterEl) factoryAfterEl.textContent = `${factoryAfter} ${unitLabel}`;
+
+    const submitBtn = document.getElementById('unload-submit-btn');
+    if (submitBtn) {
+      if (qty <= 0 || qty > loadedQty) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      }
+    }
   },
 
   async handleUnloadSubmit(e) {
     e.preventDefault();
     const carId = Number(document.getElementById('unload-car-id')?.value);
     const cartonId = Number(document.getElementById('unload-carton-id')?.value);
-    const qty = Number(document.getElementById('unload-qty')?.value);
+    const maxQty = Number(document.getElementById('unload-max-qty')?.value) || 0;
+    const unitLabel = document.getElementById('unload-unit-label')?.value || 'ctns';
+    const inp = document.getElementById('unload-qty');
+    let qty = Number(inp?.value);
 
     if (!carId || !cartonId || isNaN(qty) || qty <= 0) {
-      app.showAlert({ title: 'Invalid Quantity', message: 'Please enter a valid quantity of cartons to unload.' });
+      app.showAlert({ title: 'Invalid Quantity', message: `Please enter a valid quantity of ${unitLabel} to unload.` });
+      return;
+    }
+
+    if (qty > maxQty) {
+      inp.value = maxQty;
+      this.updateUnloadPreview(maxQty, 0, maxQty, unitLabel);
+      app.showAlert({
+        title: 'Quantity Exceeded',
+        message: `Value cannot exceed ${maxQty} ${unitLabel} (currently inside this car). Value has been adjusted to ${maxQty}.`
+      });
       return;
     }
 
@@ -1976,7 +2068,7 @@ window.CarLoading = {
 
       if (res && res.success) {
         this.closeModal();
-        app.showToast(`Moved ${qty} carton(s) back to factory stock!`, 'success');
+        app.showToast(`Moved ${qty} ${unitLabel} back to factory stock!`, 'success');
         await this.loadData();
       } else {
         app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to unload cartons.' });

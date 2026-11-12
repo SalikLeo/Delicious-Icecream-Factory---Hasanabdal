@@ -2589,8 +2589,24 @@ window.ShopSales = {
   },
 
   onModalItemReturnQtyChange(itemId, maxAvailable, val) {
-    const parsed = Math.max(0, Math.min(maxAvailable, parseInt(val) || 0));
-    this.returnItemQuantities[itemId] = parsed;
+    if (val === '') {
+      this.returnItemQuantities[itemId] = 0;
+      this.updateReturnTotalsUI();
+      return;
+    }
+    let raw = parseInt(val, 10);
+    if (isNaN(raw)) raw = 0;
+    if (raw > maxAvailable) {
+      raw = maxAvailable;
+      const inp = document.getElementById(`modal-ret-input-${itemId}`);
+      if (inp) inp.value = maxAvailable;
+      app.showToast(`Cannot return more than delivered (${maxAvailable})`, 'warning');
+    } else if (raw < 0) {
+      raw = 0;
+      const inp = document.getElementById(`modal-ret-input-${itemId}`);
+      if (inp) inp.value = 0;
+    }
+    this.returnItemQuantities[itemId] = raw;
     this.updateReturnTotalsUI();
   },
 

@@ -357,20 +357,25 @@ window.Customers = {
       return;
     }
 
-    container.innerHTML = this.filteredShops.map(s => {
+    container.innerHTML = this.filteredShops.map((s, idx) => {
       const isSelected = s.id === this.selectedShopId;
       const bal = Number(s.amount) || 0;
       return `
         <div onclick="Customers.selectShop(${s.id})"
              class="py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}">
-          <div class="min-w-0">
-            <h4 class="font-black text-xs text-slate-900 truncate">${s.name}</h4>
-            <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 leading-tight">
-              <span>${s.owner_name || 'No Owner'}</span>
-              <span>•</span>
-              <span>${s.city || 'Wah Cantt'}</span>
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-100 text-slate-500 font-bold'} font-mono text-[11px] flex items-center justify-center shrink-0 border ${isSelected ? 'border-amber-400' : 'border-slate-200'}">
+              ${idx + 1}
+            </span>
+            <div class="min-w-0">
+              <h4 class="font-black text-xs text-slate-900 truncate">${s.name}</h4>
+              <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 leading-tight">
+                <span>${s.owner_name || 'No Owner'}</span>
+                <span>•</span>
+                <span>${s.city || 'Wah Cantt'}</span>
+              </div>
+              ${s.phone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">${window.app && app.formatPhone ? app.formatPhone(s.phone) : s.phone}</div>` : ''}
             </div>
-            ${s.phone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">${window.app && app.formatPhone ? app.formatPhone(s.phone) : s.phone}</div>` : ''}
           </div>
 
           <div class="text-right shrink-0">

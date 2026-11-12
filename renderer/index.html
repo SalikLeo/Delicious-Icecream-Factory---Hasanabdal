@@ -711,9 +711,9 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-          <button onclick="app.closePreview()" class="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">Discard</button>
-          <button id="confirm-print-btn" onclick="app.confirmPrint()" class="px-8 py-2.5 rounded-xl text-sm font-black text-white bg-slate-900 hover:shadow-xl hover:shadow-slate-200 flex items-center gap-2 group">
-            <i data-lucide="printer" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> Confirm & Print
+          <button onclick="app.closePreview()" class="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 cursor-pointer transition-all">Close</button>
+          <button id="confirm-print-btn" onclick="app.confirmPrint()" class="px-8 py-2.5 rounded-xl text-sm font-black text-white bg-slate-900 hover:bg-slate-800 hover:shadow-xl hover:shadow-slate-200 flex items-center gap-2 group cursor-pointer transition-all active:scale-95">
+            <i data-lucide="printer" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span>Print</span>
           </button>
         </div>
       </div>

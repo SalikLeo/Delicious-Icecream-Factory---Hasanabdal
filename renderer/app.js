@@ -1798,9 +1798,14 @@ const app = {
 
     const printBtn = document.getElementById('confirm-print-btn');
     if (printBtn) {
-      const confirmLabel = options.confirmText || 'Confirm & Print';
+      const confirmLabel = options.confirmText || 'Print';
       printBtn.innerHTML = `<i data-lucide="printer" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span>${confirmLabel}</span>`;
       printBtn.onclick = () => this.confirmPrint();
+    }
+
+    const cancelBtn = modal ? modal.querySelector('button[onclick*="closePreview"]') : null;
+    if (cancelBtn) {
+      cancelBtn.textContent = options.cancelText || (options.onConfirm ? 'Discard' : 'Close');
     }
 
     this.previewOnConfirm = options.onConfirm || null;

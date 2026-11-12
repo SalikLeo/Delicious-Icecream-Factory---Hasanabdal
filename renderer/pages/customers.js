@@ -95,6 +95,11 @@ window.Customers = {
             <div id="shops-list-container" class="flex-1 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
               <!-- Injected by renderShopsList() -->
             </div>
+
+            <!-- Sticky Footer for Total (# and amount) -->
+            <div id="shops-list-footer" class="p-2.5 px-3 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center justify-between text-xs">
+              <!-- Injected by renderShopsList() -->
+            </div>
           </div>
 
           <!-- Right 7 Cols: Shop Details & Ledger Statement -->
@@ -346,6 +351,7 @@ window.Customers = {
 
   renderShopsList() {
     const container = document.getElementById('shops-list-container');
+    const footer = document.getElementById('shops-list-footer');
     if (!container) return;
 
     if (this.filteredShops.length === 0) {
@@ -354,12 +360,22 @@ window.Customers = {
           No shops found matching your search.
         </div>
       `;
+      if (footer) {
+        footer.innerHTML = `
+          <div class="flex items-center justify-between w-full text-slate-400 font-bold text-[11px]">
+            <span>Total: 0 Shops</span>
+            <span>Rs. 0</span>
+          </div>
+        `;
+      }
       return;
     }
 
+    let totalAmount = 0;
     container.innerHTML = this.filteredShops.map((s, idx) => {
       const isSelected = s.id === this.selectedShopId;
       const bal = Number(s.amount) || 0;
+      totalAmount += bal;
       return `
         <div onclick="Customers.selectShop(${s.id})"
              class="py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}">
@@ -387,6 +403,21 @@ window.Customers = {
         </div>
       `;
     }).join('');
+
+    if (footer) {
+      footer.innerHTML = `
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-black uppercase text-slate-400">Total:</span>
+          <span class="font-mono font-black text-xs text-slate-800 px-2 py-0.5 rounded-md bg-slate-200/80 border border-slate-300/60">${this.filteredShops.length} Shops</span>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-black uppercase text-slate-400 block leading-tight">Total Balance</span>
+          <span class="font-black text-xs font-mono tabular-nums ${totalAmount > 0 ? 'text-rose-600' : 'text-emerald-700'}">
+            Rs. ${Math.round(totalAmount).toLocaleString()}
+          </span>
+        </div>
+      `;
+    }
   },
 
   async selectShop(id) {

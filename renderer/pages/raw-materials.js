@@ -901,23 +901,32 @@ window.RawMaterials = {
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Opening Stock</label>
                 <input type="number" step="any" min="0" id="rm-stock" value="${isEdit ? (m.current_stock ?? '') : ''}" placeholder="0"
+                       oninput="RawMaterials.calcMaterialValue()"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
               </div>
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Cost Price / Unit (Rs.)</label>
                 <input type="number" step="any" min="0" id="rm-cost" value="${isEdit ? (m.cost_price ?? '') : ''}" placeholder="0"
+                       oninput="RawMaterials.calcMaterialValue()"
                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
               </div>
             </div>
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Min Stock Alert Level</label>
-              <input type="number" step="any" min="0" id="rm-min-alert" value="${isEdit ? (m.min_stock_alert ?? '') : ''}" placeholder="5"
-                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
-            </div>
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes</label>
-              <input type="text" id="rm-notes" value="${m.notes || ''}" placeholder="Supplier, grade, storage location..."
-                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Min Stock Alert Level</label>
+                <input type="number" step="any" min="0" id="rm-min-alert" value="${isEdit ? (m.min_stock_alert ?? '') : ''}" placeholder="5"
+                       class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500 tabular-nums">
+              </div>
+              <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Stock Value (Rs.)</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">Rs.</span>
+                  <input type="text" id="rm-value-display" readonly
+                         value="${isEdit ? Math.round((Number(m.current_stock) || 0) * (Number(m.cost_price) || 0)).toLocaleString() : '0'}"
+                         placeholder="0"
+                         class="w-full pl-9 pr-3.5 py-2 bg-slate-100/90 border border-slate-300 rounded-xl text-xs font-mono font-black text-emerald-800 outline-none tabular-nums select-none cursor-default">
+                </div>
+              </div>
             </div>
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button type="button" onclick="RawMaterials.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
@@ -1194,6 +1203,15 @@ window.RawMaterials = {
     }
   },
 
+  calcMaterialValue() {
+    const stock = Number(document.getElementById('rm-stock')?.value) || 0;
+    const cost = Number(document.getElementById('rm-cost')?.value) || 0;
+    const valDisplay = document.getElementById('rm-value-display');
+    if (valDisplay) {
+      valDisplay.value = Math.round(stock * cost).toLocaleString();
+    }
+  },
+
   calcPurchaseTotal() {
     const qty = Number(document.getElementById('po-qty')?.value) || 0;
     const cost = Number(document.getElementById('po-cost')?.value) || 0;
@@ -1294,7 +1312,7 @@ window.RawMaterials = {
       current_stock: Number(document.getElementById('rm-stock').value) || 0,
       cost_price: Number(document.getElementById('rm-cost').value) || 0,
       min_stock_alert: Number(document.getElementById('rm-min-alert').value) || 0,
-      notes: document.getElementById('rm-notes').value
+      notes: document.getElementById('rm-notes') ? document.getElementById('rm-notes').value : ''
     };
 
     const res = await window.api.saveRawMaterial(data);

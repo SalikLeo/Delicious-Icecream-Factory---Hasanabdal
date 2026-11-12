@@ -2068,27 +2068,58 @@ window.CarLoading = {
       return;
     }
 
-    app.showLoading();
-    try {
-      const res = await window.api.unloadCarStock({
-        car_id: carId,
-        carton_id: cartonId,
-        cartons_to_unload: qty
-      });
+    const activeCar = this.cars.find(c => c.id === carId);
+    const carName = activeCar ? `${activeCar.car_number}${activeCar.driver_name ? ` (${activeCar.driver_name})` : ''}` : 'Vehicle';
+    const carton = (this.cartons || []).find(c => c.id === cartonId);
+    const cartonName = carton ? carton.carton_name : 'Product';
 
-      if (res && res.success) {
-        this.closeModal();
-        app.showToast(`Moved ${qty} ${unitLabel} back to factory stock!`, 'success');
-        await this.loadData();
-      } else {
-        app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to unload cartons.' });
+    app.showConfirm({
+      title: 'Confirm Unloading Stock',
+      message: `
+        <div class="space-y-2.5 text-left mt-2 text-xs">
+          <p class="text-slate-600 font-medium">Are you sure you want to unload cartons from this vehicle back into factory cold storage?</p>
+          <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200 space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Vehicle:</span>
+              <span class="font-black text-slate-900">${carName}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Product:</span>
+              <span class="font-black text-slate-900">${cartonName}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-amber-900 font-bold">Returning To Factory:</span>
+              <span class="font-mono font-black text-amber-800 text-sm">${qty} ${unitLabel}</span>
+            </div>
+          </div>
+        </div>
+      `,
+      confirmText: 'Confirm & Unload',
+      confirmColor: 'orange',
+      onConfirm: async () => {
+        app.showLoading();
+        try {
+          const res = await window.api.unloadCarStock({
+            car_id: carId,
+            carton_id: cartonId,
+            cartons_to_unload: qty
+          });
+
+          if (res && res.success) {
+            this.closeModal();
+            app.showToast(`Moved ${qty} ${unitLabel} back to factory stock!`, 'success');
+            await this.loadData();
+          } else {
+            app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to unload cartons.' });
+          }
+        } catch (err) {
+          console.error('Unload stock error:', err);
+          app.showAlert({ title: 'Error', message: err.message || 'An unexpected error occurred.' });
+        } finally {
+          app.hideLoading();
+        }
       }
-    } catch (err) {
-      console.error('Unload stock error:', err);
-      app.showAlert({ title: 'Error', message: err.message || 'An unexpected error occurred.' });
-    } finally {
-      app.hideLoading();
-    }
+    });
   },
 
   async deleteCar(id, returnToCarsList = false) {

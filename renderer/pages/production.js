@@ -1349,14 +1349,70 @@ window.Production = {
       materials
     };
 
-    const res = await window.api.runProductionBatch(data);
-    if (res && res.success) {
-      this.closeModal();
-      app.showToast(`Production Run ${res.batchNumber} complete! +${pieces} pieces added to stock.`, 'success');
-      await this.loadData();
-    } else {
-      app.showAlert({ title: 'Production Error', message: res.error || 'Failed to complete production run.' });
-    }
+    const selectedItem = (this.items || []).find(x => x.id === itemId);
+    const itemName = selectedItem ? selectedItem.name : 'Finished Item';
+    const totalBatchCost = pieces * unitCost;
+
+    const materialsListHtml = materials.map(m => {
+      const mat = (this.materials || []).find(x => x.id === m.material_id);
+      return `<li class="flex justify-between items-center py-1 text-xs border-b border-slate-100 last:border-b-0">
+        <span class="font-bold text-slate-700">${mat ? mat.name : 'Material'}</span>
+        <span class="font-mono font-black text-cyan-800">-${m.qty_used} ${mat ? mat.unit : ''}</span>
+      </li>`;
+    }).join('');
+
+    app.showConfirm({
+      title: 'Confirm Production Batch Run',
+      message: `
+        <div class="space-y-3 text-left mt-2 text-xs">
+          <p class="text-slate-600 font-medium">Please confirm running this production batch to add pieces to stock and deduct materials:</p>
+          <div class="p-3 bg-cyan-50/70 rounded-xl border border-cyan-200 space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-cyan-900 font-bold">Producing:</span>
+              <span class="font-black text-cyan-950">${itemName}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-cyan-900 font-bold">Pieces Produced:</span>
+              <span class="font-mono font-black text-cyan-800 text-sm">+${pieces.toLocaleString()} pcs</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Unit Cost:</span>
+              <span class="font-mono font-bold text-slate-800">Rs. ${unitCost} / pc (Total: Rs. ${Math.round(totalBatchCost).toLocaleString()})</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Production Date:</span>
+              <span class="font-mono font-bold text-slate-800">${data.date}</span>
+            </div>
+          </div>
+
+          ${materials.length > 0 ? `
+            <div class="p-2.5 bg-white rounded-xl border border-slate-200">
+              <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-wider">Raw Materials To Deduct (${materials.length}):</div>
+              <ul class="max-h-32 overflow-y-auto custom-scrollbar divide-y divide-slate-100 pr-1">
+                ${materialsListHtml}
+              </ul>
+            </div>
+          ` : ''}
+        </div>
+      `,
+      confirmText: 'Confirm & Run Production',
+      confirmColor: 'blue',
+      onConfirm: async () => {
+        app.showLoading?.();
+        try {
+          const res = await window.api.runProductionBatch(data);
+          if (res && res.success) {
+            this.closeModal();
+            app.showToast(`Production Run ${res.batchNumber} complete! +${pieces} pieces added to stock.`, 'success');
+            await this.loadData();
+          } else {
+            app.showAlert({ title: 'Production Error', message: res.error || 'Failed to complete production run.' });
+          }
+        } finally {
+          app.hideLoading?.();
+        }
+      }
+    });
   },
 
   async deleteItem(id) {

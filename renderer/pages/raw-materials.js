@@ -1356,20 +1356,73 @@ window.RawMaterials = {
       notes: document.getElementById('po-notes').value
     };
 
-    const res = await window.api.addRawMaterialPurchase(data);
-    if (res && res.success) {
-      this.closeModal();
-      app.showToast(`Stock-In complete! New stock: ${res.newStock}`, 'success');
-      await this.loadData();
-      if (window.Purchases && typeof window.Purchases.loadData === 'function') {
-        window.Purchases.loadData();
+    const selMat = (this.materials || []).find(m => m.id === matId);
+    const matName = selMat ? selMat.name : 'Material';
+    const unit = selMat ? selMat.unit : '';
+
+    app.showConfirm({
+      title: 'Confirm Quick Stock-In',
+      message: `
+        <div class="space-y-3 text-left mt-2 text-xs">
+          <p class="text-slate-600 font-medium">Please confirm stocking in this raw material:</p>
+          <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-emerald-900 font-bold">Raw Material:</span>
+              <span class="font-black text-emerald-950">${matName}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-emerald-900 font-bold">Quantity Received:</span>
+              <span class="font-mono font-black text-emerald-800 text-sm">+${qty} ${unit}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Supplier:</span>
+              <span class="font-black text-slate-900">${supplierName || 'Walk-in / Cash'}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Total Bill:</span>
+              <span class="font-mono font-black text-slate-900">Rs. ${Math.round(totalCost).toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Paid Now:</span>
+              <span class="font-mono font-black text-emerald-700">Rs. ${Math.round(paidAmount).toLocaleString()}</span>
+            </div>
+            ${pending > 0 ? `
+              <div class="flex justify-between border-t border-rose-200 pt-1 text-rose-700 font-black">
+                <span>Added to Supplier Khata:</span>
+                <span class="font-mono">Rs. ${Math.round(pending).toLocaleString()}</span>
+              </div>
+            ` : `
+              <div class="text-[11px] font-bold text-emerald-700 pt-0.5">
+                ✓ Fully paid. No debt added to khata.
+              </div>
+            `}
+          </div>
+        </div>
+      `,
+      confirmText: 'Confirm & Stock-In',
+      confirmColor: 'green',
+      onConfirm: async () => {
+        app.showLoading?.();
+        try {
+          const res = await window.api.addRawMaterialPurchase(data);
+          if (res && res.success) {
+            this.closeModal();
+            app.showToast(`Stock-In complete! New stock: ${res.newStock} ${unit}`, 'success');
+            await this.loadData();
+            if (window.Purchases && typeof window.Purchases.loadData === 'function') {
+              window.Purchases.loadData();
+            }
+            if (window.Suppliers && typeof window.Suppliers.loadData === 'function') {
+              window.Suppliers.loadData();
+            }
+          } else {
+            app.showAlert({ title: 'Error', message: res.error || 'Failed to add purchase.' });
+          }
+        } finally {
+          app.hideLoading?.();
+        }
       }
-      if (window.Suppliers && typeof window.Suppliers.loadData === 'function') {
-        window.Suppliers.loadData();
-      }
-    } else {
-      app.showAlert({ title: 'Error', message: res.error || 'Failed to add purchase.' });
-    }
+    });
   },
 
   async deleteMaterial(id) {

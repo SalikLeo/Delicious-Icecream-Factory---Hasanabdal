@@ -994,24 +994,63 @@ const Expenses = {
   async saveForm(e) {
     e.preventDefault();
     const id = document.getElementById('exp-id').value;
-    const data = {
-      date: document.getElementById('exp-date').value,
-      category: document.getElementById('exp-cat').value,
-      amount: parseFloat(document.getElementById('exp-amount').value),
-      description: document.getElementById('exp-desc').value
-    };
+    const isEdit = Boolean(id);
+    const date = document.getElementById('exp-date').value;
+    const category = document.getElementById('exp-cat').value;
+    const amount = parseFloat(document.getElementById('exp-amount').value);
+    const description = document.getElementById('exp-desc').value.trim();
+
+    if (!amount || amount <= 0) {
+      app.showAlert({ title: 'Invalid Amount', message: 'Please enter a valid expense amount greater than Rs. 0' });
+      return;
+    }
+
+    const data = { date, category, amount, description };
     if (id) data.id = parseInt(id);
 
-    app.showLoading();
-    try {
-      await window.api.saveExpense(data);
-      this.closeForm();
-      await this.loadData();
-    } catch(err) {
-      console.error(err);
-    } finally {
-      app.hideLoading();
-    }
+    app.showConfirm({
+      title: isEdit ? 'Confirm Update Expense' : 'Confirm Record Expense',
+      message: `
+        <div class="space-y-2.5 text-left mt-2 text-xs">
+          <p class="text-slate-600 font-medium">Please confirm recording this factory outflow expense:</p>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Category:</span>
+              <span class="font-black text-slate-900">${category}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Expense Amount:</span>
+              <span class="font-mono font-black text-rose-700">Rs. ${Math.round(amount).toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Date:</span>
+              <span class="font-mono font-bold text-slate-800">${date}</span>
+            </div>
+            ${description ? `
+              <div class="border-t border-slate-200/80 pt-1 text-[11px] text-slate-600">
+                <span class="font-bold text-slate-500">Remarks:</span> ${description}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `,
+      confirmText: isEdit ? 'Save Changes' : 'Confirm & Save Expense',
+      confirmColor: 'green',
+      onConfirm: async () => {
+        app.showLoading();
+        try {
+          await window.api.saveExpense(data);
+          this.closeForm();
+          app.showToast(`Expense of Rs. ${Math.round(amount).toLocaleString()} saved successfully!`, 'success');
+          await this.loadData();
+        } catch(err) {
+          console.error(err);
+          app.showAlert({ title: 'Error', message: err.message || 'Failed to save expense.' });
+        } finally {
+          app.hideLoading();
+        }
+      }
+    });
   },
 
   deleteExpense(id) {

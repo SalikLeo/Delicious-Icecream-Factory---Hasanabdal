@@ -1661,26 +1661,68 @@ window.CartonPacking = {
       date: document.getElementById('pk-date').value
     };
 
-    const res = await window.api.runCartonPacking(data);
-    if (res && res.success) {
-      this.closeModal();
-      const isShoper = c?.package_type === 'shoper';
-      const unitPlural = isShoper ? 'shopers' : 'cartons';
-      app.showToast(`Packed +${cartonsPacked} ${unitPlural} successfully! (${res.totalPiecesNeeded} pcs consumed)`, 'success');
-      await this.loadData();
-    } else {
-      // Show error inline in modal instead of popup alert
-      const warning = document.getElementById('pk-insufficient-warning');
-      const submitBtn = document.getElementById('pk-submit-btn');
-      if (warning) {
-        warning.classList.remove('hidden');
-        warning.textContent = `⚠️ ${res.error || 'Failed to pack.'}`;
+    const isShoper = c?.package_type === 'shoper';
+    const unitLabel = isShoper ? 'Shoper' : 'Carton';
+    const unitPlural = isShoper ? 'shopers' : 'cartons';
+
+    app.showConfirm({
+      title: 'Confirm Carton Packing Session',
+      message: `
+        <div class="space-y-3 text-left mt-2 text-xs">
+          <p class="text-slate-600 font-medium">Please confirm packing loose pieces into finished ${unitPlural}:</p>
+          <div class="p-3 bg-purple-50/70 rounded-xl border border-purple-200 space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-purple-900 font-bold">Product:</span>
+              <span class="font-black text-purple-950">${c?.carton_name || 'Carton'}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-purple-900 font-bold">Packing Into:</span>
+              <span class="font-mono font-black text-purple-800 text-sm">+${cartonsPacked} ${unitPlural}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Loose Pcs Consumed:</span>
+              <span class="font-mono font-black text-rose-700">-${totalPcsNeeded} pcs (${pcsPerCarton} pcs / ${unitLabel.toLowerCase()})</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Carton Sale Rate:</span>
+              <span class="font-mono font-bold text-slate-800">Rs. ${salePrice.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600 font-bold">Date:</span>
+              <span class="font-mono font-bold text-slate-800">${data.date}</span>
+            </div>
+          </div>
+        </div>
+      `,
+      confirmText: 'Confirm & Pack',
+      confirmColor: 'blue',
+      onConfirm: async () => {
+        app.showLoading?.();
+        try {
+          const res = await window.api.runCartonPacking(data);
+          if (res && res.success) {
+            this.closeModal();
+            app.showToast(`Packed +${cartonsPacked} ${unitPlural} successfully! (${res.totalPiecesNeeded} pcs consumed)`, 'success');
+            await this.loadData();
+          } else {
+            // Show error inline in modal instead of popup alert
+            const warning = document.getElementById('pk-insufficient-warning');
+            const submitBtn = document.getElementById('pk-submit-btn');
+            if (warning) {
+              warning.textContent = `⚠️ Cannot Pack: ${res?.error || 'Failed to complete packing'}`;
+              warning.classList.remove('hidden');
+            }
+            if (submitBtn) {
+              submitBtn.disabled = true;
+              submitBtn.classList.remove('bg-purple-600', 'hover:bg-purple-500', 'cursor-pointer');
+              submitBtn.classList.add('bg-slate-300', 'cursor-not-allowed', 'opacity-60');
+            }
+          }
+        } finally {
+          app.hideLoading?.();
+        }
       }
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
-      }
-    }
+    });
   },
 
   generateConfigBarcode() {

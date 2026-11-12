@@ -3290,12 +3290,12 @@ function getSupplierLedger(supplierId) {
     WHERE sp.supplier_id = ?
   `).all(supplierId);
 
-  // Combine and sort chronologically
+  // Combine and sort latest first (newest date/id first)
   const entries = [...purchases, ...payments].sort((a, b) => {
     const da = new Date(a.date).getTime() || 0;
     const db = new Date(b.date).getTime() || 0;
-    if (da !== db) return da - db;
-    return a.id - b.id;
+    if (da !== db) return db - da;
+    return (b.id || 0) - (a.id || 0);
   });
 
   return {
@@ -4683,17 +4683,17 @@ function getShopLedger(shopId) {
     WHERE sp.shop_id = ?
   `).all(shopId);
 
-  // Combine and sort chronologically
+  // Combine and sort latest first (newest date/id first)
   const entries = [...deliveries, ...payments].sort((a, b) => {
-    const da = new Date(a.date).getTime();
-    const db = new Date(b.date).getTime();
-    if (da !== db) return da - db;
-    return a.id - b.id;
+    const da = new Date(a.date).getTime() || 0;
+    const db = new Date(b.date).getTime() || 0;
+    if (da !== db) return db - da;
+    return (b.id || 0) - (a.id || 0);
   });
 
-  // If shop has an opening balance, add it as the starting entry
+  // If shop has an opening balance, add it at the bottom (oldest entry)
   if (openingBalance > 0) {
-    entries.unshift({
+    entries.push({
       id: 0,
       invoice_no: 'START',
       date: shop.created_at || '2026-01-01',

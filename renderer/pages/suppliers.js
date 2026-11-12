@@ -826,6 +826,11 @@ window.Suppliers = {
       return app.showAlert({ title: 'Invalid Payment', message: 'Please enter a valid payment amount.' });
     }
 
+    const supplier = this.suppliers.find(s => s.id === supplierId);
+    const supplierName = supplier ? supplier.name : 'Supplier';
+    const curBal = supplier ? (Number(supplier.amount) || 0) : 0;
+    const newBal = Math.max(0, curBal - amount);
+
     const payload = {
       supplier_id: supplierId,
       amount,
@@ -834,23 +839,57 @@ window.Suppliers = {
       notes
     };
 
-    const res = await window.api.paySupplier(payload);
-    if (res && res.success) {
-      this.closePaymentModal();
-      app.showToast(`Paid Rs. ${Math.round(amount).toLocaleString()} to ${res.supplier_name}. New Balance: Rs. ${Math.round(res.new_balance).toLocaleString()}`, 'success');
-      
-      await this.loadData();
-      if (window.Purchases && Purchases.container) {
-        Purchases.loadData();
-      }
+    app.showConfirm({
+      title: 'Confirm Supplier Payment',
+      message: `
+        <div class="space-y-2.5 text-left mt-2 text-xs">
+          <p class="text-slate-600 font-medium">Please confirm recording cash outflow payment to supplier:</p>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Supplier:</span>
+              <span class="font-black text-slate-900">${supplierName}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Paid Outflow Amount:</span>
+              <span class="font-mono font-black text-emerald-700">Rs. ${Math.round(amount).toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Remaining Payable Balance:</span>
+              <span class="font-mono font-black ${newBal > 0 ? 'text-rose-600' : 'text-slate-700'}">Rs. ${Math.round(newBal).toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Payment Method:</span>
+              <span class="font-black text-slate-900">${paymentMethod}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-bold">Payment Date:</span>
+              <span class="font-mono font-bold text-slate-800">${date}</span>
+            </div>
+          </div>
+        </div>
+      `,
+      confirmText: 'Confirm & Pay',
+      confirmColor: 'green',
+      onConfirm: async () => {
+        const res = await window.api.paySupplier(payload);
+        if (res && res.success) {
+          this.closePaymentModal();
+          app.showToast(`Paid Rs. ${Math.round(amount).toLocaleString()} to ${res.supplier_name}. New Balance: Rs. ${Math.round(res.new_balance).toLocaleString()}`, 'success');
+          
+          await this.loadData();
+          if (window.Purchases && Purchases.container) {
+            Purchases.loadData();
+          }
 
-      // Automatically show A5 payment receipt preview
-      setTimeout(() => {
-        this.printPaymentReceipt(res.id);
-      }, 200);
-    } else {
-      app.showAlert({ title: 'Payment Failed', message: (res && res.error) || 'Failed to record supplier payment.' });
-    }
+          // Automatically show A5 payment receipt preview
+          setTimeout(() => {
+            this.printPaymentReceipt(res.id);
+          }, 200);
+        } else {
+          app.showAlert({ title: 'Payment Failed', message: (res && res.error) || 'Failed to record supplier payment.' });
+        }
+      }
+    });
   },
 
   async deletePayment(paymentId) {
@@ -1051,17 +1090,35 @@ window.Suppliers = {
     const company = settings.company_name || 'Delicious Superstar Foods';
     const date = new Date().toLocaleDateString('en-GB');
 
-    let runningBalance = 0;
     let totalPurchased = 0;
     let totalPaid = 0;
 
-    const rows = entries.map((e, idx) => {
+    // 1. Calculate running balance chronologically (oldest first)
+    const chronological = [...entries].sort((a, b) => {
+      const da = new Date(a.date).getTime() || 0;
+      const db = new Date(b.date).getTime() || 0;
+      if (da !== db) return da - db;
+      return (a.id || 0) - (b.id || 0);
+    });
+
+    let runningBalance = 0;
+    chronological.forEach(e => {
       const isPurchase = e.record_type === 'purchase';
       const debit = isPurchase ? (Number(e.total_cost) || 0) : 0;
       const credit = Number(e.paid_amount) || 0;
       totalPurchased += debit;
       totalPaid += credit;
       runningBalance = runningBalance + debit - credit;
+      e._runningBalance = runningBalance;
+    });
+
+    // 2. Display latest first
+    const displayEntries = [...chronological].reverse();
+
+    const rows = displayEntries.map((e, idx) => {
+      const isPurchase = e.record_type === 'purchase';
+      const debit = isPurchase ? (Number(e.total_cost) || 0) : 0;
+      const credit = Number(e.paid_amount) || 0;
 
       return `
         <tr>
@@ -1072,7 +1129,7 @@ window.Suppliers = {
           <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: monospace; font-size: 9px; color: #000;">${debit > 0 ? `Rs. ${Math.round(debit).toLocaleString()}` : '-'}</td>
           <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: monospace; font-size: 9px; color: #000;">${credit > 0 ? `Rs. ${Math.round(credit).toLocaleString()}` : '-'}</td>
           <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: monospace; font-size: 9px; color: #000;">
-            Rs. ${Math.round(runningBalance).toLocaleString()}
+            Rs. ${Math.round(e._runningBalance || 0).toLocaleString()}
           </td>
         </tr>
       `;

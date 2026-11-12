@@ -904,29 +904,64 @@ window.Customers = {
         return;
       }
 
-      app.showLoading();
       const paymentMethod = document.getElementById('pf-method')?.value || 'Cash';
       const date = document.getElementById('pf-date')?.value || new Date().toISOString().split('T')[0];
       const notes = document.getElementById('pf-notes')?.value || '';
+      const newBal = Math.max(0, currentBalance - amount);
 
-      const res = await window.api.receiveShopPayment({
-        shop_id: shopId,
-        amount,
-        payment_method: paymentMethod,
-        date,
-        notes
+      app.showConfirm({
+        title: 'Confirm Cash Receipt',
+        message: `
+          <div class="space-y-2.5 text-left mt-2 text-xs">
+            <p class="text-slate-600 font-medium">Please confirm receiving cash recovery payment from shop customer:</p>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <div class="flex justify-between">
+                <span class="text-slate-500 font-bold">Shop / Customer:</span>
+                <span class="font-black text-slate-900">${shop.name}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500 font-bold">Cash Received:</span>
+                <span class="font-mono font-black text-emerald-700">Rs. ${Math.round(amount).toLocaleString()}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500 font-bold">Remaining Khata Balance:</span>
+                <span class="font-mono font-black ${newBal > 0 ? 'text-rose-600' : 'text-emerald-700'}">Rs. ${Math.round(newBal).toLocaleString()}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500 font-bold">Payment Method:</span>
+                <span class="font-black text-slate-900">${paymentMethod}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500 font-bold">Payment Date:</span>
+                <span class="font-mono font-bold text-slate-800">${date}</span>
+              </div>
+            </div>
+          </div>
+        `,
+        confirmText: 'Receive & Print Receipt',
+        confirmColor: 'green',
+        onConfirm: async () => {
+          app.showLoading();
+          const res = await window.api.receiveShopPayment({
+            shop_id: shopId,
+            amount,
+            payment_method: paymentMethod,
+            date,
+            notes
+          });
+
+          if (res && res.error) {
+            app.showAlert({ title: 'Error', message: res.error });
+            return;
+          }
+
+          this.closePaymentModal();
+          await this.loadData();
+
+          // Print A5 Payment Voucher Receipt
+          this.printPaymentVoucherReceipt(res);
+        }
       });
-
-      if (res && res.error) {
-        app.showAlert({ title: 'Error', message: res.error });
-        return;
-      }
-
-      this.closePaymentModal();
-      await this.loadData();
-
-      // Print A5 Payment Voucher Receipt
-      this.printPaymentVoucherReceipt(res);
 
     } catch(err) {
       app.showAlert({ title: 'Error', message: err.message });

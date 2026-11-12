@@ -1213,39 +1213,112 @@ window.Purchases = {
       items: validItems
     };
 
-    let res;
-    if (purchaseId) {
-      res = await window.api.updateRawMaterialPurchase(purchaseId, payload);
-    } else {
-      res = await window.api.addRawMaterialPurchase(payload);
-    }
+    const isEdit = Boolean(purchaseId);
+    const materialsListHtml = validItems.map(it => {
+      const mat = (this.materials || []).find(m => m.id === it.material_id);
+      return `
+        <li class="flex justify-between items-center py-1.5 text-xs border-b border-slate-100 last:border-b-0">
+          <div>
+            <span class="font-black text-slate-800">${mat ? mat.name : 'Material'}</span>
+            <span class="text-[10px] text-slate-500 font-bold block">${it.qty} ${mat ? mat.unit : ''} × Rs. ${Math.round(it.unit_cost).toLocaleString()}</span>
+          </div>
+          <span class="font-mono font-black text-slate-900">Rs. ${Math.round(it.total_cost).toLocaleString()}</span>
+        </li>
+      `;
+    }).join('');
 
-    if (res && res.success) {
-      const newPurchaseId = purchaseId || res.id;
-      this.closeModal();
-      
-      const successMsg = remainingBalance > 0
-        ? `Purchase recorded! Rs. ${Math.round(paidAmount).toLocaleString()} paid, Rs. ${Math.round(remainingBalance).toLocaleString()} added to ${supplierName}'s Khata.`
-        : `Stock-In purchase recorded successfully!`;
-      app.showToast(successMsg, 'success');
+    const confirmHtml = `
+      <div class="space-y-3 text-left mt-2">
+        <p class="text-xs text-slate-600 font-semibold leading-relaxed">
+          Please confirm ${isEdit ? 'changes to this raw material purchase' : 'recording this stock-in order & khata entry'}:
+        </p>
 
-      await this.loadData();
-      if (window.Suppliers && typeof Suppliers.loadData === 'function') {
-        Suppliers.loadData();
-      }
-      if (window.RawMaterials && RawMaterials.container) {
-        RawMaterials.loadData();
-      }
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-bold">Supplier:</span>
+            <span class="font-black text-slate-900">${supplierName || 'Direct / Walk-in'}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-bold">Payment Method:</span>
+            <span class="font-black text-slate-900">${paymentMethod}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-bold">Purchase Date:</span>
+            <span class="font-mono font-bold text-slate-800">${date}</span>
+          </div>
+        </div>
 
-      // Automatically show A5 receipt preview
-      if (newPurchaseId) {
-        setTimeout(() => {
-          this.viewReceipt(newPurchaseId);
-        }, 200);
+        <div class="p-2.5 bg-white rounded-xl border border-slate-200">
+          <div class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-wider">Purchased Materials (${validItems.length}):</div>
+          <ul class="max-h-36 overflow-y-auto custom-scrollbar divide-y divide-slate-100 pr-1">
+            ${materialsListHtml}
+          </ul>
+        </div>
+
+        <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 text-xs space-y-1">
+          <div class="flex justify-between font-black">
+            <span class="text-slate-700">Total Purchase Bill:</span>
+            <span class="font-mono text-slate-900">Rs. ${Math.round(grandTotal).toLocaleString()}</span>
+          </div>
+          <div class="flex justify-between font-black">
+            <span class="text-emerald-700">Amount Paid Now:</span>
+            <span class="font-mono text-emerald-800">Rs. ${Math.round(paidAmount).toLocaleString()}</span>
+          </div>
+          ${remainingBalance > 0 ? `
+            <div class="flex justify-between font-black border-t border-rose-200 pt-1 text-rose-700">
+              <span>Added to Supplier Khata:</span>
+              <span class="font-mono">Rs. ${Math.round(remainingBalance).toLocaleString()}</span>
+            </div>
+          ` : `
+            <div class="text-[11px] font-bold text-emerald-700 pt-0.5">
+              ✓ Fully paid. No balance added to khata.
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+
+    app.showConfirm({
+      title: isEdit ? 'Confirm Purchase Changes' : 'Confirm Purchase & Stock-In',
+      message: confirmHtml,
+      confirmText: isEdit ? 'Save Changes' : 'Confirm & Stock-In',
+      confirmColor: 'green',
+      onConfirm: async () => {
+        let res;
+        if (purchaseId) {
+          res = await window.api.updateRawMaterialPurchase(purchaseId, payload);
+        } else {
+          res = await window.api.addRawMaterialPurchase(payload);
+        }
+
+        if (res && res.success) {
+          const newPurchaseId = purchaseId || res.id;
+          this.closeModal();
+          
+          const successMsg = remainingBalance > 0
+            ? `Purchase recorded! Rs. ${Math.round(paidAmount).toLocaleString()} paid, Rs. ${Math.round(remainingBalance).toLocaleString()} added to ${supplierName}'s Khata.`
+            : `Stock-In purchase recorded successfully!`;
+          app.showToast(successMsg, 'success');
+
+          await this.loadData();
+          if (window.Suppliers && typeof Suppliers.loadData === 'function') {
+            Suppliers.loadData();
+          }
+          if (window.RawMaterials && RawMaterials.container) {
+            RawMaterials.loadData();
+          }
+
+          // Automatically show A5 receipt preview
+          if (newPurchaseId) {
+            setTimeout(() => {
+              this.viewReceipt(newPurchaseId);
+            }, 200);
+          }
+        } else {
+          app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to save purchase.' });
+        }
       }
-    } else {
-      app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to save purchase.' });
-    }
+    });
   },
 
   closeModal() {

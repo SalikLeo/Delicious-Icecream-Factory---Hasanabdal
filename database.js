@@ -394,6 +394,19 @@ function createTables() {
     if (!shopCols.includes('city')) db.exec("ALTER TABLE shops ADD COLUMN city TEXT DEFAULT 'Hasan Abdal'");
     if (!shopCols.includes('notes')) db.exec('ALTER TABLE shops ADD COLUMN notes TEXT');
     if (!shopCols.includes('amount')) db.exec('ALTER TABLE shops ADD COLUMN amount REAL DEFAULT 0');
+    if (!shopCols.includes('opening_balance')) db.exec('ALTER TABLE shops ADD COLUMN opening_balance REAL DEFAULT 0');
+
+    // Auto-backfill opening_balance for any existing shops where opening_balance is 0 but starting balance existed
+    const zeroOpeningShops = db.prepare('SELECT id, amount FROM shops WHERE opening_balance IS NULL OR opening_balance = 0').all();
+    for (const s of zeroOpeningShops) {
+      const deliv = db.prepare('SELECT COALESCE(SUM(total_amount - received_amount), 0) as net_unpaid FROM shop_deliveries WHERE shop_id = ?').get(s.id);
+      const pays = db.prepare('SELECT COALESCE(SUM(amount), 0) as total_paid FROM shop_payments WHERE shop_id = ?').get(s.id);
+      const netTx = (deliv?.net_unpaid || 0) - (pays?.total_paid || 0);
+      const calculatedOpening = Math.max(0, Math.round(((s.amount || 0) - netTx) * 100) / 100);
+      if (calculatedOpening > 0) {
+        db.prepare('UPDATE shops SET opening_balance = ? WHERE id = ?').run(calculatedOpening, s.id);
+      }
+    }
   } catch(e) {}
 
   // Favorites
@@ -1796,11 +1809,28 @@ function saveShop(data) {
   let shopId;
   const transaction = db.transaction(() => {
     if (data.id) {
+      const existing = db.prepare('SELECT * FROM shops WHERE id = ?').get(data.id);
+      if (existing) {
+        if (data.opening_balance !== undefined) {
+          const oldOpening = Number(existing.opening_balance) || 0;
+          const newOpening = Number(data.opening_balance) || 0;
+          const diff = newOpening - oldOpening;
+          data.amount = Math.max(0, (Number(existing.amount) || 0) + diff);
+          data.opening_balance = newOpening;
+        } else if (data.amount !== undefined) {
+          data.amount = Number(data.amount) || 0;
+        }
+      }
       const { id, ...updates } = data;
       const clause = Object.keys(updates).map(k => `${k} = @${k}`).join(', ');
       db.prepare(`UPDATE shops SET ${clause} WHERE id = @id`).run(data);
       shopId = data.id;
     } else {
+      if (data.opening_balance === undefined && data.amount !== undefined) {
+        data.opening_balance = Number(data.amount) || 0;
+      } else if (data.opening_balance !== undefined && data.amount === undefined) {
+        data.amount = Number(data.opening_balance) || 0;
+      }
       const keys = Object.keys(data);
       const placeholders = keys.map(k => `@${k}`).join(', ');
       const info = db.prepare(`INSERT INTO shops (${keys.join(', ')}) VALUES (${placeholders})`).run(data);
@@ -4613,6 +4643,21 @@ function getShopLedger(shopId) {
   const shop = db.prepare('SELECT * FROM shops WHERE id = ?').get(shopId);
   if (!shop) return null;
 
+  let openingBalance = Number(shop.opening_balance) || 0;
+  if (!openingBalance) {
+    const delivSum = db.prepare('SELECT COALESCE(SUM(total_amount - received_amount), 0) as net_unpaid FROM shop_deliveries WHERE shop_id = ?').get(shopId);
+    const paysSum = db.prepare('SELECT COALESCE(SUM(amount), 0) as total_paid FROM shop_payments WHERE shop_id = ?').get(shopId);
+    const netTx = (delivSum?.net_unpaid || 0) - (paysSum?.total_paid || 0);
+    const calculated = Math.max(0, Math.round(((shop.amount || 0) - netTx) * 100) / 100);
+    if (calculated > 0) {
+      openingBalance = calculated;
+      try {
+        db.prepare('UPDATE shops SET opening_balance = ? WHERE id = ?').run(calculated, shopId);
+        shop.opening_balance = calculated;
+      } catch(e) {}
+    }
+  }
+
   // Deliveries (debit to shop account)
   const deliveries = db.prepare(`
     SELECT sd.id, sd.invoice_no, sd.date, sd.created_at, sd.total_amount, sd.received_amount, sd.remaining_balance,
@@ -4641,9 +4686,29 @@ function getShopLedger(shopId) {
     return a.id - b.id;
   });
 
+  // If shop has an opening balance, add it as the starting entry
+  if (openingBalance > 0) {
+    entries.unshift({
+      id: 0,
+      invoice_no: 'START',
+      date: shop.created_at || '2026-01-01',
+      created_at: shop.created_at || '2026-01-01',
+      total_amount: openingBalance,
+      received_amount: 0,
+      remaining_balance: openingBalance,
+      car_number: '-',
+      driver_name: '',
+      payment_method: 'Starting Balance',
+      notes: 'Initial Opening Khata Balance',
+      record_type: 'opening_balance',
+      cartons_count: 0
+    });
+  }
+
   return {
     shop,
     current_balance: shop.amount || 0,
+    opening_balance: openingBalance,
     entries
   };
 }

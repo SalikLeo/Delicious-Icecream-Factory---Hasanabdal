@@ -1698,11 +1698,13 @@ window.ShopSales = {
 
   async handleQuickShopSubmit(e) {
     e.preventDefault();
+    const balanceVal = Number(document.getElementById('qs-balance').value) || 0;
     const data = {
       name: document.getElementById('qs-name').value,
       owner_name: document.getElementById('qs-owner').value,
       phone: document.getElementById('qs-phone').value,
-      amount: Number(document.getElementById('qs-balance').value) || 0,
+      amount: balanceVal,
+      opening_balance: balanceVal,
       address: document.getElementById('qs-address').value
     };
 

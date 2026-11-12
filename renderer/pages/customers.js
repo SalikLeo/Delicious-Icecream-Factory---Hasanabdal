@@ -481,28 +481,38 @@ window.Customers = {
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
             ${entries.length > 0 ? entries.map((e, idx) => {
               const isDelivery = e.record_type === 'delivery';
+              const isOpening = e.record_type === 'opening_balance';
               return `
-                <tr class="hover:bg-slate-50/70 transition-colors">
+                <tr class="hover:bg-slate-50/70 transition-colors ${isOpening ? 'bg-amber-50/40' : ''}">
                   <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
                   <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${e.invoice_no}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isDelivery ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}">
-                      ${isDelivery ? '📦 Delivery Order' : '💵 Cash Received'}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${
+                      isOpening ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                      isDelivery ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'
+                    }">
+                      ${isOpening ? '🏛️ Starting Balance' : isDelivery ? '📦 Delivery Order' : '💵 Cash Received'}
                     </span>
                     <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">${e.notes || e.car_number || ''}</div>
                   </td>
                   <td class="py-1.5 px-2 text-center font-bold text-blue-700 border-r border-slate-200 text-xs">
                     ${isDelivery ? (e.cartons_count || 0) : '-'}
                   </td>
-                  <td class="py-1.5 px-3 text-right font-black ${isDelivery ? 'text-slate-900' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
-                    ${isDelivery ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}
+                  <td class="py-1.5 px-3 text-right font-black ${isDelivery || isOpening ? 'text-slate-900' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
+                    ${(isDelivery || isOpening) ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}
                   </td>
-                  <td class="py-1.5 px-3 text-right font-black ${!isDelivery || e.received_amount > 0 ? 'text-emerald-700' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
-                    Rs. ${Math.round(e.received_amount).toLocaleString()}
+                  <td class="py-1.5 px-3 text-right font-black ${!isDelivery && !isOpening || e.received_amount > 0 ? 'text-emerald-700' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
+                    ${isOpening ? '-' : `Rs. ${Math.round(e.received_amount).toLocaleString()}`}
                   </td>
                   <td class="py-1.5 px-3 text-center">
-                    ${isDelivery ? `
+                    ${isOpening ? `
+                      <button type="button" onclick="Customers.openShopModal(${shop.id})"
+                              class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
+                              title="Edit Opening Balance (Shop Settings)">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                      </button>
+                    ` : isDelivery ? `
                       <div class="flex items-center justify-center gap-1">
                         <button type="button" onclick="ShopSales.printDeliveryInvoice(${e.id})"
                                 class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
@@ -586,7 +596,7 @@ window.Customers = {
       if (fOwner) fOwner.value = s.owner_name || '';
       if (fPhone) fPhone.value = s.phone || '';
       if (fCity) fCity.value = s.city || '';
-      if (fAmount) fAmount.value = s.amount || 0;
+      if (fAmount) fAmount.value = s.opening_balance !== undefined && s.opening_balance !== null ? s.opening_balance : (s.amount || 0);
       if (fAddress) fAddress.value = s.address || '';
       if (fNotes) fNotes.value = s.notes || '';
     } else {
@@ -621,12 +631,14 @@ window.Customers = {
     try {
       app.showLoading();
       const id = document.getElementById('sf-id')?.value;
+      const openingBal = Number(document.getElementById('sf-amount')?.value) || 0;
       const data = {
         name: document.getElementById('sf-name')?.value?.trim(),
         owner_name: document.getElementById('sf-owner')?.value?.trim(),
         phone: document.getElementById('sf-phone')?.value?.trim(),
         city: document.getElementById('sf-city')?.value?.trim() || 'Hasan Abdal',
-        amount: Number(document.getElementById('sf-amount')?.value) || 0,
+        opening_balance: openingBal,
+        amount: openingBal,
         address: document.getElementById('sf-address')?.value?.trim(),
         notes: document.getElementById('sf-notes')?.value?.trim()
       };
@@ -847,7 +859,7 @@ window.Customers = {
     let totalBilled = 0;
     let totalPaid = 0;
     entries.forEach(e => {
-      if (e.record_type === 'delivery') totalBilled += (e.total_amount || 0);
+      if (e.record_type === 'delivery' || e.record_type === 'opening_balance') totalBilled += (e.total_amount || 0);
       totalPaid += (e.received_amount || 0);
     });
 
@@ -889,16 +901,23 @@ window.Customers = {
             </tr>
           </thead>
           <tbody>
-            ${entries.map(e => `
+            ${entries.map(e => {
+              const isDelivery = e.record_type === 'delivery';
+              const isOpening = e.record_type === 'opening_balance';
+              let desc = 'Cash Payment Received';
+              if (isDelivery) desc = `Delivery (${e.car_number || 'Van'})`;
+              else if (isOpening) desc = 'Starting Balance (Opening Khata)';
+              return `
               <tr>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000; white-space: nowrap;">${app.formatDateTime(e.date, e.created_at)}</td>
                 <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 700; font-family: -apple-system, monospace; color: #000;">${e.invoice_no}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? `Delivery (${e.car_number || 'Van'})` : 'Cash Payment Received'}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? (e.cartons_count || 0) : '-'}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">${e.record_type === 'delivery' ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(e.received_amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${desc}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${isDelivery ? (e.cartons_count || 0) : '-'}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">${(isDelivery || isOpening) ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">${!isOpening ? `Rs. ${Math.round(e.received_amount).toLocaleString()}` : '-'}</td>
               </tr>
-            `).join('')}
+              `;
+            }).join('')}
           </tbody>
         </table>
 

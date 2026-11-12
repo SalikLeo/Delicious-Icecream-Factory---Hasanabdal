@@ -255,6 +255,13 @@ window.Customers = {
   async loadData() {
     try {
       this.shops = await window.api.getShops() || [];
+      // Sort with balance high to low, then alphabetical A-Z
+      this.shops.sort((a, b) => {
+        const balA = Number(a.amount) || 0;
+        const balB = Number(b.amount) || 0;
+        if (balB !== balA) return balB - balA;
+        return (a.name || '').localeCompare(b.name || '');
+      });
       if (!this.selectedShopId && this.shops.length > 0) {
         this.selectedShopId = this.shops[0].id;
       }
@@ -284,13 +291,13 @@ window.Customers = {
   },
 
   applyFilters() {
-    let list = this.shops;
+    let list = [...this.shops];
 
     // Filter by type
     if (this.filterType === 'due') {
-      list = list.filter(s => (s.amount || 0) > 0);
+      list = list.filter(s => (Number(s.amount) || 0) > 0);
     } else if (this.filterType === 'zero') {
-      list = list.filter(s => (s.amount || 0) <= 0);
+      list = list.filter(s => (Number(s.amount) || 0) <= 0);
     }
 
     // Search
@@ -303,6 +310,14 @@ window.Customers = {
         return name.includes(this.searchQuery) || owner.includes(this.searchQuery) || city.includes(this.searchQuery) || phone.includes(this.searchQuery);
       });
     }
+
+    // Sort with balance high to low, then alphabetical A-Z
+    list.sort((a, b) => {
+      const balA = Number(a.amount) || 0;
+      const balB = Number(b.amount) || 0;
+      if (balB !== balA) return balB - balA;
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
     this.filteredShops = list;
     this.updateKPIs();

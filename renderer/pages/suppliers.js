@@ -270,6 +270,13 @@ window.Suppliers = {
   async loadData() {
     try {
       this.suppliers = await window.api.getSuppliers() || [];
+      // Sort with balance high to low, then alphabetical A-Z
+      this.suppliers.sort((a, b) => {
+        const balA = Number(a.amount) || 0;
+        const balB = Number(b.amount) || 0;
+        if (balB !== balA) return balB - balA;
+        return (a.name || '').localeCompare(b.name || '');
+      });
       if (!this.selectedSupplierId && this.suppliers.length > 0) {
         this.selectedSupplierId = this.suppliers[0].id;
       }
@@ -299,7 +306,7 @@ window.Suppliers = {
   },
 
   applyFilters() {
-    let list = this.suppliers;
+    let list = [...this.suppliers];
 
     // Filter by balance
     if (this.filterType === 'due') {
@@ -318,6 +325,14 @@ window.Suppliers = {
         return name.includes(this.searchQuery) || contact.includes(this.searchQuery) || city.includes(this.searchQuery) || phone.includes(this.searchQuery);
       });
     }
+
+    // Sort with balance high to low, then alphabetical A-Z
+    list.sort((a, b) => {
+      const balA = Number(a.amount) || 0;
+      const balB = Number(b.amount) || 0;
+      if (balB !== balA) return balB - balA;
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
     this.filteredSuppliers = list;
     this.updateKPIs();

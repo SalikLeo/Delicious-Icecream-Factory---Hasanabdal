@@ -407,6 +407,11 @@ function createTables() {
         db.prepare('UPDATE shops SET opening_balance = ? WHERE id = ?').run(calculatedOpening, s.id);
       }
     }
+
+    // Clean up placeholder dummy notes from demo seed data
+    try {
+      db.exec("UPDATE shop_deliveries SET notes = '' WHERE notes IN ('Morning routine delivery', 'Driver delivered 3 ctns', 'Delivered 3 ctns', 'Delivered 4 ctns')");
+    } catch(e) {}
   } catch(e) {}
 
   // Favorites

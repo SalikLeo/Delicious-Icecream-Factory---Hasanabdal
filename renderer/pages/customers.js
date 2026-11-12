@@ -555,7 +555,9 @@ window.Customers = {
                     }">
                       ${isOpening ? '🏛️ Starting Balance' : isDelivery ? '📦 Delivery Order' : '💵 Cash Received'}
                     </span>
-                    <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">${e.notes || e.car_number || ''}</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5 leading-tight font-medium">
+                      ${isOpening ? 'Opening balance recorded' : isDelivery ? (e.car_number ? `${e.car_number}${e.driver_name ? ` (${e.driver_name})` : ''}` : 'Direct Warehouse') : (e.notes ? e.notes : (e.payment_method ? `Paid via ${e.payment_method}` : 'Cash Payment'))}
+                    </div>
                   </td>
                   <td class="py-1.5 px-2 text-center font-bold text-blue-700 border-r border-slate-200 text-xs">
                     ${isDelivery ? (e.cartons_count || 0) : '-'}

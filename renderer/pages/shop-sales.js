@@ -286,9 +286,15 @@ window.ShopSales = {
               </label>
               <div class="flex items-center gap-2">
                 <span class="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                  ${activeCar ? `${activeCar.total_loaded_cartons || 0} ctns in car` : ''}
+                  ${activeCar ? (
+                    (activeCar.total_loaded_ctns > 0 && activeCar.total_loaded_shopers > 0)
+                      ? `${activeCar.total_loaded_ctns + activeCar.total_loaded_shopers} units in car (${activeCar.total_loaded_ctns} ctns, ${activeCar.total_loaded_shopers} shopers)`
+                      : (activeCar.total_loaded_shopers > 0
+                          ? `${activeCar.total_loaded_shopers} shopers in car`
+                          : `${activeCar.total_loaded_ctns || activeCar.total_loaded_cartons || 0} ctns in car`)
+                  ) : ''}
                 </span>
-                <button type="button" onclick="ShopSales.openQuickLoadCarModal()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs" title="Load cartons into this car right now">
+                <button type="button" onclick="ShopSales.openQuickLoadCarModal()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs" title="Load stock into this car right now">
                   <i data-lucide="package-plus" class="w-3.5 h-3.5"></i> + Load Stock
                 </button>
               </div>
@@ -296,11 +302,18 @@ window.ShopSales = {
 
             <select id="ss-car-id" onchange="ShopSales.onCarChange(this.value)"
                     class="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-blue-400 rounded-xl text-xs font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-100">
-              ${this.cars.map(c => `
-                <option value="${c.id}" ${activeCar && c.id === activeCar.id ? 'selected' : ''}>
-                  ${c.car_number} (${c.driver_name} - ${c.total_loaded_cartons || 0} cartons inside)
-                </option>
-              `).join('')}
+              ${this.cars.map(c => {
+                const stockSummary = (c.total_loaded_ctns > 0 && c.total_loaded_shopers > 0)
+                  ? `${c.total_loaded_ctns + c.total_loaded_shopers} units inside (${c.total_loaded_ctns} ctns, ${c.total_loaded_shopers} shopers)`
+                  : (c.total_loaded_shopers > 0
+                      ? `${c.total_loaded_shopers} shopers inside`
+                      : `${c.total_loaded_ctns || c.total_loaded_cartons || 0} cartons inside`);
+                return `
+                  <option value="${c.id}" ${activeCar && c.id === activeCar.id ? 'selected' : ''}>
+                    ${c.car_number} (${c.driver_name} - ${stockSummary})
+                  </option>
+                `;
+              }).join('')}
             </select>
 
             <!-- Quick In-Car Stock Pill List with Interactive Checkboxes -->
@@ -703,6 +716,10 @@ window.ShopSales = {
     }
 
     return loadedCarItems.map(it => {
+      const isShoper = it.package_type === 'shoper';
+      const unitAbbr = isShoper ? 'shoper' : 'ctn';
+      const unitsAbbr = isShoper ? 'shopers' : 'ctns';
+
       const stockInfo = this.getTotalCartonStock(it.carton_id);
       const maxAllowed = stockInfo.total;
       const cartItem = this.items.find(x => x.carton_id === it.carton_id);
@@ -718,7 +735,7 @@ window.ShopSales = {
           remainClass = remainInCar > 0 ? 'text-amber-800 bg-amber-50 border border-amber-200' : 'text-blue-800 bg-blue-50 border border-blue-200';
         } else {
           const fromWh = inSaleQty - it.cartons_loaded;
-          remainText = `0 in car (+${fromWh} wh)`;
+          remainText = `0 in car (+${fromWh} factory)`;
           remainClass = 'text-purple-800 bg-purple-50 border border-purple-200';
         }
       }
@@ -730,7 +747,7 @@ window.ShopSales = {
           <!-- Carton Name & Loaded Badge -->
           <div class="flex items-center gap-1.5">
             <span class="font-black text-slate-900 text-xs truncate max-w-[155px]" title="${it.carton_name}">${it.carton_name}</span>
-            <span class="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-md tabular-nums" title="Currently in car: ${it.cartons_loaded} | Warehouse: ${stockInfo.whStock} | Total: ${maxAllowed}">
+            <span class="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-md tabular-nums" title="Currently in car: ${it.cartons_loaded} ${unitsAbbr} | Factory Stock: ${stockInfo.whStock} | Total: ${maxAllowed}">
               ${it.cartons_loaded} in car
             </span>
           </div>
@@ -756,16 +773,16 @@ window.ShopSales = {
                      onchange="ShopSales.setCarPillQty(${it.carton_id}, this.value)"
                      oninput="ShopSales.setCarPillQty(${it.carton_id}, this.value, true)"
                      class="w-10 h-6 text-center font-black text-xs text-slate-900 bg-white outline-none focus:bg-amber-50 focus:ring-1 focus:ring-blue-400 tabular-nums"
-                     title="Max available: ${maxAllowed} ctns (${it.cartons_loaded} in car + ${stockInfo.whStock} in factory stock)">
+                     title="Max available: ${maxAllowed} ${unitsAbbr} (${it.cartons_loaded} in car + ${stockInfo.whStock} in factory stock)">
 
               <button type="button" 
                       id="pill-inc-${it.carton_id}"
                       onclick="ShopSales.changeCarPillQty(${it.carton_id}, 1)" 
                       class="w-6 h-6 flex items-center justify-center font-black text-slate-700 hover:bg-slate-200 active:scale-90 transition-all text-xs cursor-pointer select-none border-l border-slate-200 disabled:opacity-25 disabled:cursor-not-allowed"
                       ${inSaleQty >= maxAllowed ? 'disabled' : ''}
-                      title="Add 1 more (Max ${maxAllowed} ctns)">+</button>
+                      title="Add 1 more (Max ${maxAllowed} ${unitsAbbr})">+</button>
             </div>
-            <span class="text-[10px] text-slate-500 font-bold">ctns</span>
+            <span class="text-[10px] text-slate-500 font-bold">${unitsAbbr}</span>
           </div>
 
           <!-- Quick All Car Button -->
@@ -773,7 +790,7 @@ window.ShopSales = {
                   id="pill-all-${it.carton_id}"
                   onclick="ShopSales.setCarPillQty(${it.carton_id}, ${it.cartons_loaded})" 
                   class="px-1.5 py-0.5 text-[10px] font-black rounded border transition-all cursor-pointer ${isAllCarSold ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-slate-100 hover:bg-blue-50 text-blue-700 border-slate-200'}"
-                  title="Add all ${it.cartons_loaded} loaded car cartons to current sale">
+                  title="Add all ${it.cartons_loaded} loaded car ${unitsAbbr} to current sale">
             All Car
           </button>
 

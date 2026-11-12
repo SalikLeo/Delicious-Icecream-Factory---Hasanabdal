@@ -3802,6 +3802,8 @@ function getCars() {
   return db.prepare(`
     SELECT c.*,
            COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci WHERE ci.car_id = c.id), 0) as total_loaded_cartons,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND COALESCE(pc.package_type, 'carton') != 'shoper'), 0) as total_loaded_ctns,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND pc.package_type = 'shoper'), 0) as total_loaded_shopers,
            (SELECT COUNT(*) FROM shop_deliveries sd WHERE sd.car_id = c.id) as total_deliveries_count
     FROM cars c
     ORDER BY c.id ASC
@@ -3809,7 +3811,15 @@ function getCars() {
 }
 
 function getCar(id) {
-  return db.prepare('SELECT * FROM cars WHERE id = ?').get(id);
+  return db.prepare(`
+    SELECT c.*,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci WHERE ci.car_id = c.id), 0) as total_loaded_cartons,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND COALESCE(pc.package_type, 'carton') != 'shoper'), 0) as total_loaded_ctns,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND pc.package_type = 'shoper'), 0) as total_loaded_shopers,
+           (SELECT COUNT(*) FROM shop_deliveries sd WHERE sd.car_id = c.id) as total_deliveries_count
+    FROM cars c
+    WHERE c.id = ?
+  `).get(id);
 }
 
 function saveCar(data) {

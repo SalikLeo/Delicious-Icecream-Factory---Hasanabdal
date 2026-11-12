@@ -435,8 +435,15 @@ window.CarLoading = {
     const totalDeliveriesAll = filteredCars.reduce((sum, c) => sum + (c.total_deliveries_count || 0), 0);
     const totalCartonsLoaded = filteredCars.reduce((sum, c) => sum + (c.total_loaded_cartons || 0), 0);
     let grandTotalValue = 0;
+    let totalAllCtns = 0;
+    let totalAllShopers = 0;
     filteredCars.forEach(c => {
       const inv = this.carInventories[c.id] || [];
+      inv.forEach(it => {
+        const q = it.cartons_loaded || 0;
+        if (it.package_type === 'shoper') totalAllShopers += q;
+        else totalAllCtns += q;
+      });
       grandTotalValue += inv.reduce((sum, it) => sum + (it.loaded_value || 0), 0);
     });
 
@@ -491,6 +498,9 @@ window.CarLoading = {
                 const inv = this.carInventories[c.id] || [];
                 const loadedCartonsList = inv.filter(it => (it.cartons_loaded || 0) > 0);
                 const loaded = c.total_loaded_cartons || 0;
+                const carCtns = c.total_loaded_ctns !== undefined ? c.total_loaded_ctns : loadedCartonsList.filter(it => it.package_type !== 'shoper').reduce((sum, it) => sum + (it.cartons_loaded || 0), 0);
+                const carShopers = c.total_loaded_shopers !== undefined ? c.total_loaded_shopers : loadedCartonsList.filter(it => it.package_type === 'shoper').reduce((sum, it) => sum + (it.cartons_loaded || 0), 0);
+                const totalUnits = carCtns + carShopers;
                 const loadedValue = loadedCartonsList.reduce((sum, it) => sum + (it.loaded_value || 0), 0);
                 const isExpanded = this.expandedCarIds && this.expandedCarIds.has(c.id);
 
@@ -521,10 +531,21 @@ window.CarLoading = {
                       </span>
                     </td>
                     <td class="py-2 px-3 text-right border-r border-slate-200">
-                      <span class="text-sm font-black ${loaded > 0 ? 'text-blue-700' : 'text-slate-400'} tabular-nums">
-                        ${loaded.toLocaleString()}
-                      </span>
-                      <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
+                      ${carCtns > 0 && carShopers > 0 ? `
+                        <div class="flex flex-col items-end leading-tight">
+                          <span class="text-sm font-black text-blue-700 tabular-nums">${totalUnits} units</span>
+                          <span class="text-[10px] font-bold text-slate-500 tabular-nums">${carCtns} ctns, ${carShopers} shopers</span>
+                        </div>
+                      ` : (carShopers > 0 ? `
+                        <span class="text-sm font-black text-blue-700 tabular-nums">${carShopers}</span>
+                        <span class="text-xs font-black text-slate-700 ml-1 inline-block">shopers</span>
+                      ` : (carCtns > 0 ? `
+                        <span class="text-sm font-black text-blue-700 tabular-nums">${carCtns}</span>
+                        <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
+                      ` : `
+                        <span class="text-sm font-black text-slate-400 tabular-nums">0</span>
+                        <span class="text-xs font-bold text-slate-400 ml-1 inline-block">units</span>
+                      `))}
                     </td>
                     <td class="py-2 px-3 text-right border-r border-slate-200 font-mono font-black ${loadedValue > 0 ? 'text-emerald-700' : 'text-slate-400'} tabular-nums">
                       Rs. ${Math.round(loadedValue).toLocaleString()}
@@ -552,8 +573,8 @@ window.CarLoading = {
                           <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
                             <div class="flex items-center gap-2">
                               <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center"><i data-lucide="package" class="w-3.5 h-3.5"></i></span>
-                              <h4 class="font-black text-xs text-slate-900 uppercase tracking-wider">Loaded Cartons in ${c.car_number}</h4>
-                              <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">${loadedCartonsList.length} carton types</span>
+                              <h4 class="font-black text-xs text-slate-900 uppercase tracking-wider">Loaded Items in ${c.car_number}</h4>
+                              <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">${loadedCartonsList.length} items (${carCtns > 0 && carShopers > 0 ? `${carCtns} ctns, ${carShopers} shopers` : (carShopers > 0 ? `${carShopers} shopers` : `${carCtns} ctns`)})</span>
                             </div>
                             <div class="flex items-center gap-2">
                               <button onclick="CarLoading.startLoadingForCar(${c.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer">
@@ -567,8 +588,8 @@ window.CarLoading = {
 
                           ${loadedCartonsList.length === 0 ? `
                             <div class="py-6 text-center text-slate-400">
-                              <p class="text-xs font-bold text-slate-500">This vehicle is currently empty (0 cartons loaded).</p>
-                              <button onclick="CarLoading.startLoadingForCar(${c.id})" class="text-xs text-blue-600 font-bold mt-1 underline cursor-pointer">+ Click here to load cartons into this vehicle</button>
+                              <p class="text-xs font-bold text-slate-500">This vehicle is currently empty (0 items loaded).</p>
+                              <button onclick="CarLoading.startLoadingForCar(${c.id})" class="text-xs text-blue-600 font-bold mt-1 underline cursor-pointer">+ Click here to load stock into this vehicle</button>
                             </div>
                           ` : `
                             <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
@@ -623,7 +644,9 @@ window.CarLoading = {
                                 <tr>
                                   <td class="py-2 px-3 border-r border-slate-200 text-slate-800 uppercase">Subtotal Inside Car</td>
                                   <td class="py-2 px-3 text-center border-r border-slate-200 text-slate-400 font-bold">-</td>
-                                  <td class="py-2 px-3 text-right border-r border-slate-200 text-blue-700 tabular-nums">${loaded} ctns</td>
+                                  <td class="py-2 px-3 text-right border-r border-slate-200 text-blue-700 font-black tabular-nums">
+                                    ${carCtns > 0 && carShopers > 0 ? `${totalUnits} units <span class="text-[10px] font-bold text-slate-500">(${carCtns} ctns, ${carShopers} shopers)</span>` : (carShopers > 0 ? `${carShopers} shopers` : `${carCtns} ctns`)}
+                                  </td>
                                   <td class="py-2 px-3 text-right border-r border-slate-200 text-slate-400 font-bold">-</td>
                                   <td class="py-2 px-3 text-right border-r border-slate-200 text-emerald-700 tabular-nums">Rs. ${Math.round(loadedValue).toLocaleString()}</td>
                                   <td class="py-2 px-2 text-center text-slate-400 font-bold">-</td>
@@ -653,7 +676,7 @@ window.CarLoading = {
                 ${totalDeliveriesAll.toLocaleString()} deliveries
               </td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-blue-700 text-sm tabular-nums">
-                ${totalCartonsLoaded.toLocaleString()} ctns
+                ${totalAllCtns > 0 && totalAllShopers > 0 ? `${(totalAllCtns + totalAllShopers).toLocaleString()} units <span class="text-[10px] font-bold text-slate-500">(${totalAllCtns} ctns, ${totalAllShopers} shopers)</span>` : (totalAllShopers > 0 ? `${totalAllShopers} shopers` : `${totalAllCtns} ctns`)}
               </td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums">
                 Rs. ${Math.round(grandTotalValue).toLocaleString()}

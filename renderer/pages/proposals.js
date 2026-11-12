@@ -184,6 +184,7 @@ window.Proposals = {
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
               <thead id="prop-table-head" class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
+                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
                   <th onclick="Proposals.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-between gap-1">
                       <span>Date</span>
@@ -336,6 +337,7 @@ window.Proposals = {
     if (!thead) return;
     thead.innerHTML = `
       <tr>
+        <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
         <th onclick="Proposals.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
           <div class="flex items-center justify-between gap-1">
             <span>Date</span>
@@ -616,7 +618,7 @@ window.Proposals = {
     if (this.filteredDeliveries.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="10" class="p-12 text-center text-slate-400 font-bold">
+          <td colspan="11" class="p-12 text-center text-slate-400 font-bold">
             <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400">
               <i data-lucide="package-search" class="w-6 h-6"></i>
             </div>
@@ -628,7 +630,7 @@ window.Proposals = {
       return;
     }
 
-    tbody.innerHTML = this.filteredDeliveries.map(d => {
+    tbody.innerHTML = this.filteredDeliveries.map((d, idx) => {
       let badgeClass = 'bg-slate-100 text-slate-700';
       if (d.payment_method === 'Cash') badgeClass = 'bg-emerald-100 text-emerald-800';
       else if (d.payment_method === 'Online') badgeClass = 'bg-blue-100 text-blue-800';
@@ -638,6 +640,8 @@ window.Proposals = {
 
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
+          <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+          <td class="py-2 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(d.date, d.created_at)}</td>
           <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
           <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
           <td class="py-1.5 px-3 border-r border-slate-200">

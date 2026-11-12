@@ -534,6 +534,7 @@ window.Production = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="Production.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Item / Flavor</span>
@@ -580,7 +581,7 @@ window.Production = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${items.map(it => {
+            ${items.map((it, idx) => {
               const pieces = it.current_single_stock || 0;
               const cost = it.unit_cost || 0;
               const retail = it.retail_piece_price || 0;
@@ -588,6 +589,7 @@ window.Production = {
 
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="font-black text-slate-900 text-xs">${it.name}</div>
                     ${it.flavor && it.flavor.trim() && it.flavor.trim().toLowerCase() !== 'standard flavor' ? `<div class="text-[10px] text-slate-400 font-medium leading-tight">${it.flavor.trim()}</div>` : ''}
@@ -642,6 +644,7 @@ window.Production = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-cyan-700 font-black">TOTAL:</span>
@@ -692,6 +695,7 @@ window.Production = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="Production.toggleSort('batch_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Batch #</span>
@@ -733,8 +737,9 @@ window.Production = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${batches.map(b => `
+            ${batches.map((b, idx) => `
               <tr class="hover:bg-slate-50/60 transition-colors">
+                <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                 <td class="py-1.5 px-3 font-mono font-bold text-cyan-800 text-xs border-r border-slate-200">${b.batch_number}</td>
                 <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] whitespace-nowrap border-r border-slate-200">${app.formatDateTime(b.date, b.created_at)}</td>
                 <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${b.item_name}</td>
@@ -762,7 +767,7 @@ window.Production = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="3">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="4">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-cyan-700 font-black">TOTAL:</span>
                   <span>${totalBatches} ${totalBatches === 1 ? 'Production Batch' : 'Production Batches'}</span>

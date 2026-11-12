@@ -599,6 +599,7 @@ window.RawMaterials = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="RawMaterials.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Material Name</span>
@@ -639,11 +640,12 @@ window.RawMaterials = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${items.map(m => {
+            ${items.map((m, idx) => {
               const isLow = m.current_stock <= (m.min_stock_alert || 0);
               const val = Math.round(m.current_stock * m.cost_price);
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="font-black text-slate-900 text-xs">${m.name}</div>
                     ${m.notes ? `<div class="text-[10px] text-slate-400 font-normal leading-tight">${m.notes}</div>` : ''}
@@ -681,6 +683,7 @@ window.RawMaterials = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-emerald-700 font-black">TOTAL:</span>
@@ -727,6 +730,7 @@ window.RawMaterials = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="RawMaterials.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px] cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Date</span>
@@ -768,7 +772,7 @@ window.RawMaterials = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${logs.map(log => {
+            ${logs.map((log, idx) => {
               const isAdd = (log.qty_change || 0) > 0;
               const isProd = log.action === 'PRODUCTION_USED' || log.action === 'PRODUCTION';
               const mat = (this.materials || []).find(m => m.id === log.material_id);
@@ -782,6 +786,7 @@ window.RawMaterials = {
 
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(log.date, log.created_at)}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     ${actionBadge}
@@ -815,7 +820,7 @@ window.RawMaterials = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="3">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="4">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-emerald-700 font-black">TOTAL:</span>
                   <span>${totalLogs} ${totalLogs === 1 ? 'Movement' : 'Movements'}</span>

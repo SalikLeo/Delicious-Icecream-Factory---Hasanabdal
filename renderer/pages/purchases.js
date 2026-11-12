@@ -157,6 +157,7 @@ window.Purchases = {
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
               <thead id="pur-table-head" class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
+                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
                   <th onclick="Purchases.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-between gap-1">
                       <span>Date</span>
@@ -399,7 +400,7 @@ window.Purchases = {
     if (this.filteredPurchases.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="9" class="p-12 text-center text-slate-400">
+          <td colspan="10" class="p-12 text-center text-slate-400">
             <div class="flex flex-col items-center justify-center">
               <i data-lucide="shopping-bag" class="w-12 h-12 mb-3 text-slate-300"></i>
               <h4 class="text-sm font-black text-slate-600">No Raw Material Purchases Found</h4>
@@ -420,7 +421,7 @@ window.Purchases = {
     let sumPaid = 0;
     let sumPending = 0;
 
-    tbody.innerHTML = this.filteredPurchases.map(p => {
+    tbody.innerHTML = this.filteredPurchases.map((p, idx) => {
       const totalCost = Number(p.total_cost) || 0;
       const paidAmount = p.paid_amount != null ? Number(p.paid_amount) : totalCost;
       const remaining = Number(p.remaining_balance) || 0;
@@ -458,6 +459,7 @@ window.Purchases = {
 
       return `
         <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
           <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(p.date, p.created_at)}</td>
           <td class="py-2.5 px-3 font-mono font-black text-slate-900 whitespace-nowrap border-r border-slate-200">${p.invoice_no || `PUR-${p.id}`}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 min-w-[200px]">
@@ -503,7 +505,7 @@ window.Purchases = {
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="bg-slate-100/90 text-slate-900 border-t-2 border-slate-300">
-          <td colspan="4" class="py-2.5 px-3 uppercase tracking-wider font-black text-[11px] border-r border-slate-200">
+          <td colspan="5" class="py-2.5 px-3 uppercase tracking-wider font-black text-[11px] border-r border-slate-200">
             TOTAL: ${this.filteredPurchases.length} PURCHASES
           </td>
           <td class="py-2.5 px-3 text-right font-mono font-black text-slate-900 text-xs border-r border-slate-200">

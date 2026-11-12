@@ -452,6 +452,7 @@ window.CarLoading = {
         <table class="w-full text-left text-xs border-collapse">
           <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10 shadow-2xs">
             <tr>
+              <th class="py-2.5 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="CarLoading.toggleCarSort('car_number')" class="py-2.5 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Vehicle / Van Number</span>
@@ -489,12 +490,12 @@ window.CarLoading = {
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
             ${filteredCars.length === 0 ? `
               <tr>
-                <td colspan="7" class="p-8 text-center text-slate-400">
+                <td colspan="8" class="p-8 text-center text-slate-400">
                   <p class="text-xs font-bold text-slate-500">No vehicles match "${this.searchQuery}"</p>
                   <button onclick="CarLoading.clearSearch()" class="text-xs text-blue-600 font-bold mt-1.5 underline cursor-pointer">Clear Search</button>
                 </td>
               </tr>
-            ` : filteredCars.map(c => {
+            ` : filteredCars.map((c, idx) => {
                 const inv = this.carInventories[c.id] || [];
                 const loadedCartonsList = inv.filter(it => (it.cartons_loaded || 0) > 0);
                 const loaded = c.total_loaded_cartons || 0;
@@ -506,6 +507,7 @@ window.CarLoading = {
 
                 return `
                   <tr class="${isExpanded ? 'bg-blue-50/40' : 'hover:bg-slate-50/60'} transition-colors">
+                    <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                     <td class="py-2 px-3 border-r border-slate-200">
                       <div class="flex items-center gap-2">
                         <div class="w-7 h-7 rounded-lg ${loaded > 0 ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-500 border border-slate-200'} flex items-center justify-center font-black shrink-0">
@@ -595,6 +597,7 @@ window.CarLoading = {
                             <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
                               <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
                                 <tr>
+                                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
                                   <th class="py-2 px-3 border-r border-slate-200">Carton Item / Flavor</th>
                                   <th class="py-2 px-3 text-center border-r border-slate-200">Packing Spec</th>
                                   <th class="py-2 px-3 text-right border-r border-slate-200">Loaded Qty</th>
@@ -604,12 +607,13 @@ window.CarLoading = {
                                 </tr>
                               </thead>
                               <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-                                ${loadedCartonsList.map(it => {
+                                ${loadedCartonsList.map((it, itIdx) => {
                                   const isShoper = it.package_type === 'shoper';
                                   const unitAbbr = isShoper ? 'shoper' : 'ctn';
                                   const unitsAbbr = isShoper ? 'shopers' : 'ctns';
                                   return `
                                   <tr class="hover:bg-slate-50">
+                                    <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${itIdx + 1}</td>
                                     <td class="py-1.5 px-3 border-r border-slate-200 font-bold text-slate-900">
                                       <div class="flex items-center gap-1.5">
                                         <span>${it.carton_name}</span>
@@ -642,6 +646,7 @@ window.CarLoading = {
                               </tbody>
                               <tfoot class="bg-slate-100 font-black text-xs text-slate-900 border-t border-slate-200">
                                 <tr>
+                                  <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200">-</td>
                                   <td class="py-2 px-3 border-r border-slate-200 text-slate-800 uppercase">Subtotal Inside Car</td>
                                   <td class="py-2 px-3 text-center border-r border-slate-200 text-slate-400 font-bold">-</td>
                                   <td class="py-2 px-3 text-right border-r border-slate-200 text-blue-700 font-black tabular-nums">
@@ -664,6 +669,7 @@ window.CarLoading = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="w-2 h-2 rounded-full bg-blue-600"></span>
@@ -1358,6 +1364,7 @@ window.CarLoading = {
         <table class="w-full text-left text-xs">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="CarLoading.toggleSort('dispatch_no')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Loading Slip #</span>
@@ -1393,8 +1400,9 @@ window.CarLoading = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${list.map(d => `
+            ${list.map((d, idx) => `
               <tr class="hover:bg-slate-50/60 transition-colors">
+                <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                 <td class="py-1.5 px-3 font-mono font-bold text-blue-800 text-xs border-r border-slate-200 whitespace-nowrap">${d.dispatch_no}</td>
                 <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
                 <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${d.car_number}</td>
@@ -1425,7 +1433,7 @@ window.CarLoading = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="4">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="5">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-blue-700 font-black">TOTAL:</span>
                   <span>${totalDispatchesCount} ${totalDispatchesCount === 1 ? 'Loading Record' : 'Loading Records'}</span>
@@ -1643,6 +1651,7 @@ window.CarLoading = {
                 <table class="w-full text-left text-xs border-collapse">
                   <thead class="bg-slate-100 text-[10px] font-black uppercase text-slate-600 border-b border-slate-200 sticky top-0">
                     <tr>
+                      <th class="py-2.5 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
                       <th class="py-2.5 px-3 border-r border-slate-200">Vehicle / Van Number</th>
                       <th class="py-2.5 px-3 border-r border-slate-200">Driver / Salesman</th>
                       <th class="py-2.5 px-3 border-r border-slate-200">Phone</th>
@@ -1651,8 +1660,9 @@ window.CarLoading = {
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 font-semibold text-slate-700 bg-white">
-                    ${filtered.map(c => `
+                    ${filtered.map((c, idx) => `
                       <tr class="hover:bg-blue-50/30 transition-colors">
+                        <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                         <td class="py-2.5 px-3 border-r border-slate-200">
                           <div class="flex items-center gap-2">
                             <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center font-black shrink-0">

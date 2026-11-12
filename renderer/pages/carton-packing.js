@@ -594,6 +594,7 @@ window.CartonPacking = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="CartonPacking.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Carton / Shoper Item</span>
@@ -646,7 +647,7 @@ window.CartonPacking = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${cartons.map(c => {
+            ${cartons.map((c, idx) => {
               const isShoper = (c.package_type || 'carton') === 'shoper';
               const unitAbbr = isShoper ? 'shoper' : 'ctn';
               const unitsAbbr = isShoper ? 'shopers' : 'ctns';
@@ -657,6 +658,7 @@ window.CartonPacking = {
 
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="flex items-center gap-1.5 flex-wrap">
                       <span class="font-black text-slate-900 text-xs">${c.carton_name}</span>
@@ -722,6 +724,7 @@ window.CartonPacking = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
+              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-purple-700 font-black">TOTAL:</span>
@@ -778,6 +781,7 @@ window.CartonPacking = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="CartonPacking.toggleSort('packing_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Packing #</span>
@@ -836,13 +840,14 @@ window.CartonPacking = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${batches.map(b => {
+            ${batches.map((b, idx) => {
               const isShoper = (b.package_type || 'carton') === 'shoper';
               const unitAbbr = isShoper ? 'shoper' : 'ctn';
               const unitsAbbr = isShoper ? 'shopers' : 'ctns';
 
               return `
               <tr class="hover:bg-slate-50/60 transition-colors">
+                <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                 <td class="py-1.5 px-3 font-mono font-bold text-purple-800 border-r border-slate-200">${b.packing_number}</td>
                 <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] whitespace-nowrap border-r border-slate-200">${app.formatDateTime(b.date, b.created_at)}</td>
                 <td class="py-1.5 px-3 font-black text-slate-900 border-r border-slate-200">
@@ -880,7 +885,7 @@ window.CartonPacking = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="3">
+              <td class="py-2.5 px-3 border-r border-slate-300 text-left" colspan="4">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-purple-700 font-black">TOTAL:</span>
                   <span>${totalBatchesCount} ${totalBatchesCount === 1 ? 'Packing Batch' : 'Packing Batches'}</span>

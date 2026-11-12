@@ -468,6 +468,7 @@ window.Customers = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
             <tr>
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
               <th class="py-2 px-3 border-r border-slate-200">Ref / Invoice</th>
               <th class="py-2 px-3 border-r border-slate-200">Type &amp; Remarks</th>
@@ -478,10 +479,11 @@ window.Customers = {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
-            ${entries.length > 0 ? entries.map(e => {
+            ${entries.length > 0 ? entries.map((e, idx) => {
               const isDelivery = e.record_type === 'delivery';
               return `
                 <tr class="hover:bg-slate-50/70 transition-colors">
+                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
                   <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${e.invoice_no}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
@@ -542,7 +544,7 @@ window.Customers = {
               `;
             }).join('') : `
               <tr>
-                <td colspan="7" class="p-8 text-center text-slate-400 font-bold">
+                <td colspan="8" class="p-8 text-center text-slate-400 font-bold">
                   No delivery orders or payments recorded yet for this shop.
                 </td>
               </tr>

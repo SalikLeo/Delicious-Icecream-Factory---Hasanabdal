@@ -16,7 +16,7 @@ window.ShopSales = {
   paymentMethod: 'Cash',
   currentReturnDelivery: null,
   returnDestination: 'car', // 'car' | 'stock'
-  returnAdjustmentType: 'khata', // 'khata' | 'cash'
+  returnAdjustmentType: 'cash', // 'cash'
   returnItemQuantities: {}, // deliveryItemId -> qty
 
   async render(container, args = {}) {
@@ -2299,7 +2299,7 @@ window.ShopSales = {
 
       this.currentReturnDelivery = delivery;
       this.returnDestination = delivery.car_id ? 'car' : 'stock';
-      this.returnAdjustmentType = delivery.shop_id ? 'khata' : 'cash';
+      this.returnAdjustmentType = 'cash';
       this.returnItemQuantities = {};
       this.returnReason = '';
 
@@ -2488,30 +2488,21 @@ window.ShopSales = {
               </div>
             </div>
 
-            <!-- Step 3: Adjustment Mode & Reason -->
+            <!-- Step 3: Refund Method & Reason -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Adjustment Mode -->
+              <!-- Refund Method -->
               <div>
                 <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  3. Financial Adjustment
+                  3. Refund Method
                 </label>
-                <div class="space-y-1.5">
-                  ${delivery.shop_id ? `
-                    <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
-                      <input type="radio" name="modal_ret_adj" value="khata" ${isKhataSelected ? 'checked' : ''} onchange="ShopSales.setModalAdjustmentType('khata')" class="text-amber-500">
-                      <div>
-                        <span class="text-xs font-black text-slate-900 block">Credit Shop Khata Balance</span>
-                        <span class="text-[10px] text-slate-500 font-medium">Reduces shop outstanding debt by refund amount</span>
-                      </div>
-                    </label>
-                  ` : ''}
-                  <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
-                    <input type="radio" name="modal_ret_adj" value="cash" ${!isKhataSelected || !delivery.shop_id ? 'checked' : ''} onchange="ShopSales.setModalAdjustmentType('cash')" class="text-emerald-500">
-                    <div>
-                      <span class="text-xs font-black text-slate-900 block">Cash Refund Given</span>
-                      <span class="text-[10px] text-slate-500 font-medium">Cash was returned / refunded directly to customer</span>
-                    </div>
-                  </label>
+                <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/70 flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                    <i data-lucide="banknote" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <span class="text-xs font-black text-emerald-950 block">Cash Refund</span>
+                    <span class="text-[10px] text-emerald-800 font-medium">Cash is returned directly to shopkeeper</span>
+                  </div>
                 </div>
               </div>
 
@@ -2520,7 +2511,7 @@ window.ShopSales = {
                 <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
                   Return Remarks / Reason (Optional)
                 </label>
-                <textarea id="modal-ret-reason" rows="3" placeholder="e.g. Broken packaging, melted during transit, shopkeeper reduced order..."
+                <textarea id="modal-ret-reason" rows="2" placeholder="e.g. Broken packaging, melted during transit..."
                           oninput="ShopSales.returnReason = this.value"
                           class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-400">${this.returnReason || ''}</textarea>
               </div>

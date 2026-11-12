@@ -1067,12 +1067,39 @@ window.CartonPacking = {
     const q = (query || '').toLowerCase().trim();
     const currentId = Number(document.getElementById('pk-carton-id')?.value) || null;
 
-    let matches = this.cartons || [];
-    if (q) {
-      matches = matches.filter(c => 
-        (c.carton_name || '').toLowerCase().includes(q) ||
-        (c.barcode || '').toLowerCase().includes(q)
-      );
+    const allCartons = [...(this.cartons || [])].sort((a, b) => (a.carton_name || '').localeCompare(b.carton_name || ''));
+
+    let matches = [];
+    if (!q) {
+      matches = allCartons;
+    } else {
+      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
+      const scored = [];
+
+      for (const c of allCartons) {
+        const name = (c.carton_name || '').toLowerCase();
+        const barcode = (c.barcode || '').toLowerCase();
+        const words = getWords(name);
+
+        let tier = 999;
+        if (barcode === q) tier = 0;
+        else if (name.startsWith(q)) tier = 1;
+        else if (words.some(w => w.startsWith(q))) tier = 2;
+        else if (barcode.startsWith(q)) tier = 3;
+        else if (q.length >= 2 && name.includes(q)) tier = 4;
+        else if (q.length >= 2 && barcode.includes(q)) tier = 5;
+
+        if (tier < 999) {
+          scored.push({ c, tier });
+        }
+      }
+
+      scored.sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return (a.c.carton_name || '').localeCompare(b.c.carton_name || '');
+      });
+
+      matches = scored.map(item => item.c);
     }
 
     if (matches.length === 0) {
@@ -1499,11 +1526,35 @@ window.CartonPacking = {
     const q = (query || '').toLowerCase().trim();
     const currentId = Number(document.getElementById('cfg-item-id')?.value) || null;
 
-    let matches = this.singleItems || [];
-    if (q) {
-      matches = matches.filter(it => 
-        (it.name || '').toLowerCase().includes(q)
-      );
+    const allItems = [...(this.singleItems || [])].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    let matches = [];
+    if (!q) {
+      matches = allItems;
+    } else {
+      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
+      const scored = [];
+
+      for (const it of allItems) {
+        const name = (it.name || '').toLowerCase();
+        const words = getWords(name);
+
+        let tier = 999;
+        if (name.startsWith(q)) tier = 1;
+        else if (words.some(w => w.startsWith(q))) tier = 2;
+        else if (q.length >= 2 && name.includes(q)) tier = 3;
+
+        if (tier < 999) {
+          scored.push({ it, tier });
+        }
+      }
+
+      scored.sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return (a.it.name || '').localeCompare(b.it.name || '');
+      });
+
+      matches = scored.map(item => item.it);
     }
 
     if (matches.length === 0) {

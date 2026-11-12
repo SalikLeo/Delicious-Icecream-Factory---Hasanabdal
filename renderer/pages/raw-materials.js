@@ -1076,13 +1076,39 @@ window.RawMaterials = {
     const q = (query || '').toLowerCase().trim();
     const currentId = Number(document.getElementById('po-material-id')?.value) || null;
 
-    let matches = this.materials || [];
-    if (q) {
-      matches = matches.filter(m => 
-        (m.name || '').toLowerCase().includes(q) ||
-        (m.category || '').toLowerCase().includes(q) ||
-        (m.unit || '').toLowerCase().includes(q)
-      );
+    const allMaterials = [...(this.materials || [])].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    let matches = [];
+    if (!q) {
+      matches = allMaterials;
+    } else {
+      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
+      const scored = [];
+
+      for (const m of allMaterials) {
+        const name = (m.name || '').toLowerCase();
+        const cat = (m.category || '').toLowerCase();
+        const unit = (m.unit || '').toLowerCase();
+        const words = getWords(name);
+
+        let tier = 999;
+        if (name.startsWith(q)) tier = 1;
+        else if (words.some(w => w.startsWith(q))) tier = 2;
+        else if (cat.startsWith(q)) tier = 3;
+        else if (q.length >= 2 && name.includes(q)) tier = 4;
+        else if (q.length >= 2 && cat.includes(q)) tier = 5;
+
+        if (tier < 999) {
+          scored.push({ m, tier });
+        }
+      }
+
+      scored.sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return (a.m.name || '').localeCompare(b.m.name || '');
+      });
+
+      matches = scored.map(item => item.m);
     }
 
     if (matches.length === 0) {

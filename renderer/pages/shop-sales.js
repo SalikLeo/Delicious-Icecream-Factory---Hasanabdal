@@ -629,14 +629,68 @@ window.ShopSales = {
     const q = (query || '').toLowerCase().trim();
     const currentId = this.selectedShopId;
 
-    let matches = this.shops || [];
-    if (q) {
-      matches = matches.filter(s => 
-        (s.name || '').toLowerCase().includes(q) ||
-        (s.owner_name || '').toLowerCase().includes(q) ||
-        (s.city || '').toLowerCase().includes(q) ||
-        (s.phone || '').includes(q)
-      );
+    const allShops = [...(this.shops || [])].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    let matches = [];
+    if (!q) {
+      matches = allShops;
+    } else {
+      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
+      const scored = [];
+
+      for (const s of allShops) {
+        const name = (s.name || '').toLowerCase();
+        const owner = (s.owner_name || '').toLowerCase();
+        const city = (s.city || '').toLowerCase();
+        const phone = (s.phone || '');
+        const nameWords = getWords(name);
+        const ownerWords = getWords(owner);
+
+        let tier = 999;
+        // Tier 1: Shop name starts with query
+        if (name.startsWith(q)) {
+          tier = 1;
+        }
+        // Tier 2: Any word in shop name starts with query
+        else if (nameWords.some(w => w.startsWith(q))) {
+          tier = 2;
+        }
+        // Tier 3: Owner name starts with query
+        else if (owner.startsWith(q)) {
+          tier = 3;
+        }
+        // Tier 4: Any word in owner name starts with query
+        else if (ownerWords.some(w => w.startsWith(q))) {
+          tier = 4;
+        }
+        // Tier 5: Numeric phone match
+        else if (/^\d+$/.test(q) && phone.includes(q)) {
+          tier = 5;
+        }
+        // Tier 6: Substring in shop name (only for 2+ chars)
+        else if (q.length >= 2 && name.includes(q)) {
+          tier = 6;
+        }
+        // Tier 7: Substring in owner name (only for 3+ chars)
+        else if (q.length >= 3 && owner.includes(q)) {
+          tier = 7;
+        }
+        // Tier 8: City starts with query (only for 3+ chars)
+        else if (q.length >= 3 && (city.startsWith(q) || getWords(city).some(w => w.startsWith(q)))) {
+          tier = 8;
+        }
+
+        if (tier < 999) {
+          scored.push({ s, tier });
+        }
+      }
+
+      scored.sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return (a.s.name || '').localeCompare(b.s.name || '');
+      });
+
+      matches = scored.map(item => item.s);
     }
 
     if (matches.length === 0) {
@@ -1279,11 +1333,40 @@ window.ShopSales = {
     }
 
     const q = this.searchQuery.toLowerCase();
-    this.searchResults = (this.cartons || []).filter(c => 
-      (c.carton_name || '').toLowerCase().includes(q) ||
-      (c.barcode || '').toLowerCase().includes(q)
-    );
+    const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
+    const scored = [];
 
+    for (const c of (this.cartons || [])) {
+      const name = (c.carton_name || '').toLowerCase();
+      const barcode = (c.barcode || '').toLowerCase();
+      const words = getWords(name);
+
+      let tier = 999;
+      if (barcode === q) {
+        tier = 0; // exact barcode match
+      } else if (name.startsWith(q)) {
+        tier = 1; // carton name starts with query
+      } else if (words.some(w => w.startsWith(q))) {
+        tier = 2; // word in carton name starts with query
+      } else if (barcode.startsWith(q)) {
+        tier = 3;
+      } else if (q.length >= 2 && name.includes(q)) {
+        tier = 4;
+      } else if (q.length >= 2 && barcode.includes(q)) {
+        tier = 5;
+      }
+
+      if (tier < 999) {
+        scored.push({ c, tier });
+      }
+    }
+
+    scored.sort((a, b) => {
+      if (a.tier !== b.tier) return a.tier - b.tier;
+      return (a.c.carton_name || '').localeCompare(b.c.carton_name || '');
+    });
+
+    this.searchResults = scored.map(item => item.c);
     this.highlightedSearchIndex = 0;
     this.renderSearchDropdown();
   },
@@ -1292,7 +1375,9 @@ window.ShopSales = {
     if (this.searchQuery) {
       this.handleSearchInput(this.searchQuery);
     } else {
-      this.searchResults = [...(this.cartons || [])];
+      this.searchResults = [...(this.cartons || [])].sort((a, b) => 
+        (a.carton_name || '').localeCompare(b.carton_name || '')
+      );
       this.highlightedSearchIndex = 0;
       this.renderSearchDropdown();
     }

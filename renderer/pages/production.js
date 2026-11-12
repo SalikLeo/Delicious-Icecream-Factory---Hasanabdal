@@ -938,11 +938,35 @@ window.Production = {
     const q = (query || '').toLowerCase().trim();
     const currentId = Number(document.getElementById('pr-item-id')?.value) || null;
 
-    let matches = this.items || [];
-    if (q) {
-      matches = matches.filter(it => 
-        (it.name || '').toLowerCase().includes(q)
-      );
+    const allItems = [...(this.items || [])].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    let matches = [];
+    if (!q) {
+      matches = allItems;
+    } else {
+      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
+      const scored = [];
+
+      for (const it of allItems) {
+        const name = (it.name || '').toLowerCase();
+        const words = getWords(name);
+
+        let tier = 999;
+        if (name.startsWith(q)) tier = 1;
+        else if (words.some(w => w.startsWith(q))) tier = 2;
+        else if (q.length >= 2 && name.includes(q)) tier = 3;
+
+        if (tier < 999) {
+          scored.push({ it, tier });
+        }
+      }
+
+      scored.sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return (a.it.name || '').localeCompare(b.it.name || '');
+      });
+
+      matches = scored.map(item => item.it);
     }
 
     if (matches.length === 0) {

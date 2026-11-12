@@ -2765,31 +2765,85 @@ window.ShopSales = {
       }))
     };
 
-    const res = await window.api.processShopReturn(payload);
-    if (res && res.success) {
-      app.playBeep('success');
-      app.showToast(`Return ${res.returnNo} processed! Sale reduced by Rs. ${Math.round(res.totalRefund).toLocaleString()} (${res.totalCartonsReturned} cartons returned to ${res.returnDest === 'car' ? 'Car' : 'Factory Stock'}).`, 'success');
-      this.closeReturnModal();
+    let totalCartons = 0;
+    let totalRefund = 0;
+    const itemListHtml = items.map(it => {
+      const qty = Number(this.returnItemQuantities[it.id]) || 0;
+      const lineRefund = qty * (Number(it.carton_price) || 0);
+      totalCartons += qty;
+      totalRefund += lineRefund;
+      return `<div class="flex justify-between py-1 border-b border-slate-100 last:border-0 text-xs">
+        <span class="font-bold text-slate-800">${it.carton_name} (${qty} ctns @ Rs. ${it.carton_price})</span>
+        <span class="font-black text-rose-600">Rs. ${Math.round(lineRefund).toLocaleString()}</span>
+      </div>`;
+    }).join('');
 
-      // Refresh all related views immediately
-      if (window.Proposals && typeof window.Proposals.loadData === 'function') {
-        window.Proposals.loadData();
-      }
-      if (window.Reports && typeof window.Reports.loadData === 'function') {
-        window.Reports.loadData();
-      }
-      if (window.Customers && typeof window.Customers.loadData === 'function') {
-        window.Customers.loadData();
-      }
-      if (window.ShopSales && typeof window.ShopSales.loadData === 'function' && app.currentPage === 'shop-sales') {
-        this.loadData();
-      }
+    const destText = this.returnDestination === 'car'
+      ? `Stay in Vehicle (${delivery.car_number || 'Car'})`
+      : 'Return to Factory Stock';
 
-      // Automatically preview A5 Return Note
-      await this.printReturnNote(res.returnId);
-    } else {
-      app.showAlert({ title: 'Return Failed', message: res?.error || 'Could not record return.' });
-    }
+    const confirmHtml = `
+      <div class="space-y-3 text-left">
+        <p class="text-xs text-slate-600 font-medium leading-relaxed">
+          Are you sure you want to finalize this return for <strong class="text-slate-900">${delivery.shop_name}</strong>?
+        </p>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="text-[10px] font-black uppercase text-slate-400 mb-1">Return Summary</div>
+          ${itemListHtml}
+          <div class="pt-2 mt-2 border-t border-slate-200 flex justify-between text-xs font-black">
+            <span class="text-slate-700">Total Refund (${totalCartons} ctns):</span>
+            <span class="text-rose-700">Rs. ${Math.round(totalRefund).toLocaleString()}</span>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-500 font-medium space-y-0.5">
+          <div>📦 <b>Destination:</b> ${destText}</div>
+          <div>💵 <b>Refund Method:</b> Cash Refund</div>
+          ${reason ? `<div>📝 <b>Reason:</b> ${reason}</div>` : ''}
+        </div>
+      </div>
+    `;
+
+    app.showConfirm({
+      title: 'Confirm Sale Return?',
+      message: confirmHtml,
+      confirmText: 'Confirm & Finalize Return',
+      confirmColor: 'orange',
+      onConfirm: async () => {
+        try {
+          app.showLoading?.();
+          const res = await window.api.processShopReturn(payload);
+          if (res && res.success) {
+            app.playBeep('success');
+            app.showToast(`Return ${res.returnNo} processed! Sale reduced by Rs. ${Math.round(res.totalRefund).toLocaleString()} (${res.totalCartonsReturned} cartons returned to ${res.returnDest === 'car' ? 'Car' : 'Factory Stock'}).`, 'success');
+            this.closeReturnModal();
+
+            // Refresh all related views immediately
+            if (window.Proposals && typeof window.Proposals.loadData === 'function') {
+              window.Proposals.loadData();
+            }
+            if (window.Reports && typeof window.Reports.loadData === 'function') {
+              window.Reports.loadData();
+            }
+            if (window.Customers && typeof window.Customers.loadData === 'function') {
+              window.Customers.loadData();
+            }
+            if (window.ShopSales && typeof window.ShopSales.loadData === 'function' && app.currentPage === 'shop-sales') {
+              this.loadData();
+            }
+
+            // Automatically preview A5 Return Note
+            await this.printReturnNote(res.returnId);
+          } else {
+            app.showAlert({ title: 'Return Failed', message: res?.error || 'Could not record return.' });
+          }
+        } catch (err) {
+          console.error('submitReturnModal error', err);
+          app.showAlert({ title: 'Return Error', message: err.message || 'An unexpected error occurred.' });
+        } finally {
+          app.hideLoading?.();
+        }
+      }
+    });
   },
 
   async printReturnNote(returnId) {

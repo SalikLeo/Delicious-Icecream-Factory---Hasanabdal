@@ -456,11 +456,17 @@ window.ShopSales = {
                 </div>
 
                 <!-- Payment Method (Cash / Online) -->
-                <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 shadow-2xs">
-                  <span class="text-xs font-bold text-slate-600">Method:</span>
+                <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 py-0.5 shadow-2xs">
+                  <span class="text-xs font-bold text-slate-500">Method:</span>
                   <div class="flex bg-slate-100 p-0.5 rounded-md border border-slate-200">
-                    <button type="button" id="btn-method-cash" onclick="ShopSales.setPaymentMethod('Cash')" class="px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer ${this.paymentMethod === 'Cash' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">CASH</button>
-                    <button type="button" id="btn-method-online" onclick="ShopSales.setPaymentMethod('Online')" class="px-2.5 py-0.5 text-[10px] font-black rounded transition-colors cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-indigo-600'}">ONLINE</button>
+                    <button type="button" id="btn-method-cash" onclick="ShopSales.setPaymentMethod('Cash')"
+                            class="px-2.5 py-0.5 text-[11px] font-black rounded transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                      CASH
+                    </button>
+                    <button type="button" id="btn-method-online" onclick="ShopSales.setPaymentMethod('Online')"
+                            class="px-2.5 py-0.5 text-[11px] font-black rounded transition-all cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-indigo-600'}">
+                      ONLINE
+                    </button>
                   </div>
                 </div>
               </div>
@@ -500,24 +506,6 @@ window.ShopSales = {
         <!-- Bottom: Streamlined Horizontal Settlement Bar (Sticky Footer, Light Mode) -->
         <div class="sticky bottom-0 z-20 bg-white/95 backdrop-blur-md text-slate-800 p-3.5 px-5 rounded-2xl shadow-[0_-4px_24px_-2px_rgba(0,0,0,0.08),0_2px_6px_-1px_rgba(0,0,0,0.04)] border border-slate-200/90 flex flex-wrap items-center justify-between gap-3 sm:gap-4 mt-auto mb-1">
           
-          <!-- Method Toggle -->
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Method:</span>
-            <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-2xs">
-              <button type="button" id="ss-pm-cash" onclick="ShopSales.setPaymentMethod('Cash')"
-                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod !== 'Online' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80' : 'text-slate-500 hover:text-slate-800'}">
-                💵 Cash
-              </button>
-              <button type="button" id="ss-pm-online" onclick="ShopSales.setPaymentMethod('Online')"
-                      class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this.paymentMethod === 'Online' ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80' : 'text-slate-500 hover:text-slate-800'}">
-                💳 Online
-              </button>
-            </div>
-          </div>
-
-          <!-- Divider -->
-          <div class="h-8 w-px bg-slate-200/80 hidden xl:block shrink-0"></div>
-
           <!-- Horizontal Figures Strip (Evenly spaced & symmetrically aligned) -->
           <div class="flex-1 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
             
@@ -1479,16 +1467,16 @@ window.ShopSales = {
   },
 
   setPaymentMethod(pm) {
-    this.paymentMethod = pm;
-    const btnCash = document.getElementById('ss-pm-cash');
-    const btnOnline = document.getElementById('ss-pm-online');
+    this.paymentMethod = pm === 'Online' ? 'Online' : 'Cash';
+    const btnCash = document.getElementById('btn-method-cash');
+    const btnOnline = document.getElementById('btn-method-online');
     if (btnCash && btnOnline) {
-      if (pm === 'Cash') {
-        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-900 shadow-xs border border-slate-200/80';
-        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-800';
+      if (this.paymentMethod === 'Cash') {
+        btnCash.className = 'px-2.5 py-0.5 text-[11px] font-black rounded transition-all cursor-pointer bg-slate-900 text-white shadow-xs';
+        btnOnline.className = 'px-2.5 py-0.5 text-[11px] font-black rounded transition-all cursor-pointer text-slate-600 hover:text-slate-900';
       } else {
-        btnCash.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer text-slate-500 hover:text-slate-800';
-        btnOnline.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-white text-slate-900 shadow-xs border border-slate-200/80';
+        btnCash.className = 'px-2.5 py-0.5 text-[11px] font-black rounded transition-all cursor-pointer text-slate-600 hover:text-slate-900';
+        btnOnline.className = 'px-2.5 py-0.5 text-[11px] font-black rounded transition-all cursor-pointer bg-indigo-600 text-white shadow-xs';
       }
     }
   },

@@ -400,7 +400,15 @@ const app = {
             case 'carton-packing': await (window.CartonPacking || CartonPacking).render(panel); break;
             case 'car-loading': await (window.CarLoading || CarLoading).render(panel); break;
             case 'shop-sales': await (window.ShopSales || ShopSales).render(panel, args); break;
-            case 'proposals': await (window.Proposals || Proposals).render(panel); break;
+            case 'proposals': 
+              if (window.Proposals && typeof window.Proposals.render === 'function') {
+                await window.Proposals.render(panel);
+              } else if (typeof Proposals !== 'undefined' && typeof Proposals.render === 'function') {
+                await Proposals.render(panel);
+              } else {
+                throw new Error('Sales History module is loading. Please retry.');
+              }
+              break;
             case 'customers': await (window.Customers || Customers).render(panel); break;
             case 'item-sales': await (window.ItemSales || ItemSales).render(panel, args); break;
             case 'proposal-form': 

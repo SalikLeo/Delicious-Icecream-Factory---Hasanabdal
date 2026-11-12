@@ -92,7 +92,7 @@ window.Customers = {
             </div>
 
             <!-- Scrollable Shops List -->
-            <div id="shops-list-container" class="flex-1 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
+            <div id="shops-list-container" class="flex-1 overflow-y-auto custom-scrollbar">
               <!-- Injected by renderShopsList() -->
             </div>
 
@@ -378,7 +378,8 @@ window.Customers = {
       totalAmount += bal;
       return `
         <div onclick="Customers.selectShop(${s.id})"
-             class="py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}">
+             class="relative py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 ${isSelected ? 'bg-amber-500/10 font-bold' : 'hover:bg-slate-50'}">
+          ${isSelected ? '<span class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500 rounded-r shadow-xs"></span>' : ''}
           <div class="flex items-center gap-2.5 min-w-0">
             <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-100 text-slate-500 font-bold'} font-mono text-[11px] flex items-center justify-center shrink-0 border ${isSelected ? 'border-amber-400' : 'border-slate-200'}">
               ${idx + 1}

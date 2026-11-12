@@ -1,5 +1,5 @@
 // Delivery History: Primary dispatch, sales invoices & delivery log for Ice Cream Factory
-window.Proposals = {
+var Proposals = window.Proposals = {
   deliveries: [],
   filteredDeliveries: [],
   cars: [],

@@ -93,7 +93,7 @@ window.Suppliers = {
             </div>
 
             <!-- Scrollable Suppliers List -->
-            <div id="suppliers-list-container" class="flex-1 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
+            <div id="suppliers-list-container" class="flex-1 overflow-y-auto custom-scrollbar">
               <!-- Injected by renderSuppliersList() -->
             </div>
 
@@ -386,7 +386,8 @@ window.Suppliers = {
       totalAmount += bal;
       return `
         <div onclick="Suppliers.selectSupplier(${s.id})"
-             class="py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected ? 'bg-blue-500/10 border-l-4 border-l-blue-600' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}">
+             class="relative py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 ${isSelected ? 'bg-blue-50/80 font-bold' : 'hover:bg-slate-50'}">
+          ${isSelected ? '<span class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r shadow-xs"></span>' : ''}
           <div class="flex items-center gap-2.5 min-w-0">
             <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-blue-600 text-white font-black' : 'bg-slate-100 text-slate-500 font-bold'} font-mono text-[11px] flex items-center justify-center shrink-0 border ${isSelected ? 'border-blue-500' : 'border-slate-200'}">
               ${idx + 1}

@@ -2304,17 +2304,10 @@ window.ShopSales = {
       this.returnReason = '';
 
       const items = delivery.items || [];
-      // If 1 item or single delivery, auto-populate available quantity so user can return immediately
-      if (items.length === 1) {
-        const it = items[0];
-        const maxAvailable = Math.max(0, (Number(it.delivered_cartons) || 0) - (Number(it.returned_cartons) || 0));
-        this.returnItemQuantities[it.id] = maxAvailable;
-      } else {
-        items.forEach(it => {
-          const maxAvailable = Math.max(0, (Number(it.delivered_cartons) || 0) - (Number(it.returned_cartons) || 0));
-          this.returnItemQuantities[it.id] = maxAvailable > 0 ? maxAvailable : 0;
-        });
-      }
+      // By default, start with 0 with placeholder 0 so user chooses what to return
+      items.forEach(it => {
+        this.returnItemQuantities[it.id] = 0;
+      });
 
       this.renderReturnModal();
     } catch (err) {
@@ -2464,7 +2457,7 @@ window.ShopSales = {
                                         class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all">
                                   <i data-lucide="minus" class="w-3 h-3"></i>
                                 </button>
-                                <input type="number" id="modal-ret-input-${it.id}" min="0" max="${maxAvailable}" value="${curVal}"
+                                <input type="number" id="modal-ret-input-${it.id}" min="0" max="${maxAvailable}" value="${curVal > 0 ? curVal : ''}" placeholder="0"
                                        oninput="ShopSales.onModalItemReturnQtyChange(${it.id}, ${maxAvailable}, this.value)"
                                        class="w-12 px-1 py-1 text-center font-black text-xs text-rose-700 bg-white border border-rose-300 rounded-lg outline-none tabular-nums focus:border-rose-500 shadow-2xs">
                                 <button type="button" onclick="ShopSales.stepModalItemReturnQty(${it.id}, ${maxAvailable}, 1)"
@@ -2585,7 +2578,7 @@ window.ShopSales = {
     (delivery.items || []).forEach(it => {
       this.returnItemQuantities[it.id] = 0;
       const inp = document.getElementById(`modal-ret-input-${it.id}`);
-      if (inp) inp.value = 0;
+      if (inp) inp.value = '';
     });
     this.updateReturnTotalsUI();
   },
@@ -2601,7 +2594,7 @@ window.ShopSales = {
     const next = Math.max(0, Math.min(maxAvailable, cur + delta));
     this.returnItemQuantities[itemId] = next;
     const inp = document.getElementById(`modal-ret-input-${itemId}`);
-    if (inp) inp.value = next;
+    if (inp) inp.value = next > 0 ? next : '';
     this.updateReturnTotalsUI();
   },
 

@@ -1756,11 +1756,11 @@ window.CartonPacking = {
       <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
           <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
-          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Warehouse Finished Stock &amp; Cars Loaded Stock</p>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Factory Stock &amp; Car Loaded Stock</p>
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          STAGE 3: FINISHED GOODS (CARTONS &amp; SHOPERS) INVENTORY REPORT
+          STAGE 3: PACKED STOCK (CARTONS &amp; SHOPERS) REPORT
         </div>
 
         <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
@@ -1769,7 +1769,7 @@ window.CartonPacking = {
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item / Packaging</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Packing</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Warehouse</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Factory Stock</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">In Cars</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Stock</th>
               <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Sale Rate</th>
@@ -1801,13 +1801,13 @@ window.CartonPacking = {
         </table>
 
         <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 0; font-size: 9.5px; font-weight: 900; color: #000;">
-          <span>WH: ${totalWarehouseUnits} units (${whCtns} ctns, ${whShopers} shopers) | CARS: ${totalLoaded} (${carCtns} ctns, ${carShopers} shopers)</span>
-          <span style="font-family: -apple-system, monospace;">WH SALE VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
+          <span>Factory Stock: ${totalWarehouseUnits} units (${whCtns} ctns, ${whShopers} shopers) | In Cars: ${totalLoaded} (${carCtns} ctns, ${carShopers} shopers)</span>
+          <span style="font-family: -apple-system, monospace;">TOTAL STOCK VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
-            Finished Goods Warehouse Incharge
+            Factory Store Keeper
           </div>
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
             Managing Director Signature
@@ -1816,7 +1816,7 @@ window.CartonPacking = {
       </div>
     `;
 
-    app.showA5Preview(html, 'Finished Goods (Cartons & Shopers) Report (A5)');
+    app.showA5Preview(html, 'Packed Stock (Cartons & Shopers) Report (A5)');
   },
 
   async printPackingSlip(batchId) {

@@ -1106,7 +1106,7 @@ window.Reports = {
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Sale Value</p>
+          <p class="text-[10px] font-black uppercase text-slate-400">Total Stock Value</p>
           <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalSaleValuation).toLocaleString()}</h3>
           <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Expected Revenue</p>
         </div>
@@ -1129,7 +1129,7 @@ window.Reports = {
                 <th class="py-2 px-3 text-right border-r border-slate-200">Unit Cost (Rs.)</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Sale Price (Rs.)</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Margin / Unit</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Warehouse Stock</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Factory Stock</th>
                 <th class="py-2 px-3 text-right">Total Sale Worth</th>
               </tr>
             </thead>
@@ -1760,12 +1760,12 @@ window.Reports = {
         </div>
 
         <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          FINISHED GOODS WAREHOUSE INVENTORY SHEET
+          PACKED CARTONS &amp; READY STOCK SHEET
         </div>
 
         <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
           <div>
-            <div><strong>Inventory Location:</strong> Main Cold Storage Warehouse</div>
+            <div><strong>Stock Location:</strong> Factory Cold Storage Stock</div>
             <div><strong>Carton:</strong> ${this.selectedCartonId && cartons[0] ? cartons[0].carton_name : `All Cartons (${cartons.length} Products)`}</div>
           </div>
           <div style="text-align: right;">
@@ -1781,7 +1781,7 @@ window.Reports = {
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Pcs/Ctn</th>
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cost (Rs.)</th>
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Sale (Rs.)</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Warehouse Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Factory Stock</th>
               <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Value</th>
             </tr>
           </thead>
@@ -1796,7 +1796,7 @@ window.Reports = {
                 <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${Math.round((c.factory_carton_stock || 0) * (c.carton_sale_price || 0)).toLocaleString()}</td>
               </tr>
             `).join('')}
-            ${cartons.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No packed cartons in warehouse.</td></tr>' : ''}
+            ${cartons.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No packed cartons in stock.</td></tr>' : ''}
           </tbody>
         </table>
 
@@ -1806,19 +1806,19 @@ window.Reports = {
             <span style="font-weight: 800; font-family: -apple-system, monospace;">${totalStock} Cartons</span>
           </div>
           <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 900; font-size: 10.5px;">
-            <span>Total Warehouse Realizable Value:</span>
+            <span>Total Factory Stock Value:</span>
             <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(totalWorth).toLocaleString()}</span>
           </div>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Cold Storage Incharge</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Store Keeper Signature</div>
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Manager</div>
         </div>
       </div>
     `;
 
-    app.showA5Preview(html, 'Finished Goods Warehouse Stock Sheet');
+    app.showA5Preview(html, 'Packed Stock Sheet (A5)');
   },
 
   async printFinanceReport() {

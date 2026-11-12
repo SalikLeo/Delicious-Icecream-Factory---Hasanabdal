@@ -169,7 +169,7 @@ window.Suppliers = {
             </div>
 
             <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Address / Warehouse</label>
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Address / Location</label>
               <input type="text" id="sf-address" placeholder="e.g. Industrial Area, Plot # 12"
                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-blue-400">
             </div>

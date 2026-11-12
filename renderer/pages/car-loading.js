@@ -135,7 +135,7 @@ window.CarLoading = {
         return true;
       } else {
         app.playBeep('warning');
-        app.showToast(`Cannot load more ${carton.carton_name}. Warehouse stock limit (${warehouse} ctns) reached.`, 'warning');
+        app.showToast(`Cannot load more ${carton.carton_name}. Stock limit (${warehouse} ctns) reached.`, 'warning');
         return false;
       }
     } else {
@@ -882,7 +882,7 @@ window.CarLoading = {
           <div class="p-5 bg-gradient-to-r from-blue-50 to-slate-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <span class="text-[10px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md">CAR LOADING</span>
-              <h3 class="text-lg font-black text-slate-900 mt-1">Load Cartons from Warehouse into Car</h3>
+              <h3 class="text-lg font-black text-slate-900 mt-1">Load Cartons into Car</h3>
               <p class="text-xs text-slate-500 font-medium">Cartons will be deducted from factory freezer and transferred to car inventory.</p>
             </div>
             <div>
@@ -927,7 +927,7 @@ window.CarLoading = {
                   <th class="py-2 px-3 border-r border-slate-200">Carton Item</th>
                   <th class="py-2 px-3 text-center border-r border-slate-200">Spec</th>
                   <th class="py-2 px-3 text-right border-r border-slate-200">Already In Car</th>
-                  <th class="py-2 px-3 text-right border-r border-slate-200">Factory Warehouse Stock</th>
+                  <th class="py-2 px-3 text-right border-r border-slate-200">Factory Stock</th>
                   <th class="py-2 px-3 text-right w-44 border-r border-slate-200">Cartons to Load</th>
                   <th class="py-2 px-3 text-right">Total in Car After</th>
                 </tr>
@@ -1007,7 +1007,7 @@ window.CarLoading = {
     inv.forEach(i => invMap[i.carton_id] = i.cartons_loaded || 0);
 
     if (this.cartons.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No carton products registered in warehouse.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No carton products registered in factory stock.</td></tr>`;
       return;
     }
 

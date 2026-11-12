@@ -756,7 +756,7 @@ window.ShopSales = {
                      onchange="ShopSales.setCarPillQty(${it.carton_id}, this.value)"
                      oninput="ShopSales.setCarPillQty(${it.carton_id}, this.value, true)"
                      class="w-10 h-6 text-center font-black text-xs text-slate-900 bg-white outline-none focus:bg-amber-50 focus:ring-1 focus:ring-blue-400 tabular-nums"
-                     title="Max available: ${maxAllowed} ctns (${it.cartons_loaded} in car + ${stockInfo.whStock} in warehouse)">
+                     title="Max available: ${maxAllowed} ctns (${it.cartons_loaded} in car + ${stockInfo.whStock} in factory stock)">
 
               <button type="button" 
                       id="pill-inc-${it.carton_id}"
@@ -845,7 +845,7 @@ window.ShopSales = {
       const inputEl = document.getElementById(`pill-qty-${cId}`);
       if (inputEl) inputEl.value = maxAllowed;
       app.playBeep('warning');
-      app.showToast(`Total available stock for ${carton.carton_name} is ${maxAllowed} ctns (${stockInfo.carStock} in car + ${stockInfo.whStock} in warehouse)`, 'warning');
+      app.showToast(`Total available stock for ${carton.carton_name} is ${maxAllowed} ctns (${stockInfo.carStock} in car + ${stockInfo.whStock} in factory stock)`, 'warning');
     }
 
     const existingIdx = this.items.findIndex(i => i.carton_id === cId);
@@ -896,7 +896,7 @@ window.ShopSales = {
     const next = Math.min(stockInfo.total, Math.max(0, current + delta));
     if (delta > 0 && current >= stockInfo.total) {
       app.playBeep('warning');
-      app.showToast(`Reached maximum available stock (${stockInfo.total} ctns: ${stockInfo.carStock} in car + ${stockInfo.whStock} in warehouse)`, 'warning');
+      app.showToast(`Reached maximum available stock (${stockInfo.total} ctns: ${stockInfo.carStock} in car + ${stockInfo.whStock} in factory stock)`, 'warning');
       return;
     }
     this.setCarPillQty(cId, next);
@@ -956,7 +956,7 @@ window.ShopSales = {
                   const qtyNum = Number(item.quantity) || 0;
                   const remain = Math.max(0, stock - qtyNum);
                   const badgeText = qtyNum > stock
-                    ? `${stock} in car (0 remain, +${qtyNum - stock} wh)`
+                    ? `${stock} in car (0 remain, +${qtyNum - stock} factory)`
                     : `${stock} in car (${remain} remain)`;
                   return `<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded tabular-nums ml-auto sm:ml-0">${badgeText}</span>`;
                 }
@@ -1767,7 +1767,7 @@ window.ShopSales = {
                 Load Items into Vehicle for Sale
               </h3>
               <p class="text-xs text-slate-400 mt-0.5">
-                Vehicle: <b class="text-blue-300 font-mono">${activeCar.car_number}</b> (${activeCar.driver_name}) • Transferred from Factory Warehouse
+                Vehicle: <b class="text-blue-300 font-mono">${activeCar.car_number}</b> (${activeCar.driver_name}) • Transferred from Factory Stock
               </p>
             </div>
             <button onclick="ShopSales.closeQuickLoadModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -1790,7 +1790,7 @@ window.ShopSales = {
                 <tr>
                   <th class="py-2.5 px-3">Carton Product</th>
                   <th class="py-2.5 px-3 text-center">In Car</th>
-                  <th class="py-2.5 px-3 text-center">Factory Wh</th>
+                  <th class="py-2.5 px-3 text-center">Factory Stock</th>
                   <th class="py-2.5 px-3 text-right">Sale Price</th>
                   <th class="py-2.5 px-3 text-center w-40">Cartons to Load</th>
                 </tr>
@@ -1825,7 +1825,7 @@ window.ShopSales = {
                       </td>
                       <td class="py-2 px-3 text-center">
                         ${isOutOfWarehouse ? `
-                          <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">Wh Empty</span>
+                          <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">Out of Stock</span>
                         ` : `
                           <div class="inline-flex items-center gap-1">
                             <button type="button" onclick="ShopSales.stepQuickLoadQty(${c.id}, ${whStock}, -1)" class="w-6 h-6 rounded-md bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all">-</button>
@@ -2384,8 +2384,8 @@ window.ShopSales = {
                       <span class="font-black text-xs text-slate-900">Return to Factory Stock</span>
                       <input type="radio" name="modal_ret_dest" value="stock" ${!isCarSelected ? 'checked' : ''} class="w-4 h-4 text-purple-600">
                     </div>
-                    <p class="text-[11px] font-bold text-purple-900 mt-0.5">Main Warehouse Stock</p>
-                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Adds cartons back to factory warehouse packed carton stock.</p>
+                    <p class="text-[11px] font-bold text-purple-900 mt-0.5">Factory Stock</p>
+                    <p class="text-[10px] text-slate-500 font-medium mt-0.5">Adds cartons back to factory stock.</p>
                   </div>
                 </div>
               </div>
@@ -2706,7 +2706,7 @@ window.ShopSales = {
     const tagline = settings.tagline || 'Delicious Superstar Foods & Ice Cream Products';
 
     const items = ret.items || [];
-    const destLabel = ret.return_destination === 'car' ? `Stayed in Vehicle (${ret.car_number || 'Car'})` : 'Returned to Factory Warehouse Stock';
+    const destLabel = ret.return_destination === 'car' ? `Stayed in Vehicle (${ret.car_number || 'Car'})` : 'Returned to Factory Stock';
     const adjLabel = ret.adjustment_type === 'khata' ? 'Khata Balance Credited' : 'Cash Refund Paid';
 
     const html = `

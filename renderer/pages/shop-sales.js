@@ -269,9 +269,9 @@ window.ShopSales = {
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-black">STAGE 5</span>
-              <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">Shop Delivery &amp; Sales Invoicing</h2>
+              <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">New Sale</h2>
             </div>
-            <p class="text-xs text-slate-300 font-medium">Fast carton sales, barcode scanning, Khata debt tracking, and A5 thermal/laser bill printing.</p>
+            <p class="text-xs text-slate-300 font-medium">Fast sales, barcode scanning, shop khata, and instant bill printing.</p>
           </div>
         </div>
 

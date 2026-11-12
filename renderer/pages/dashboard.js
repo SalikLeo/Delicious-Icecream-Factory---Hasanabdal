@@ -47,11 +47,11 @@ window.Dashboard = {
               <span class="text-xs text-slate-300 font-mono font-bold">${app.formatDateTime(new Date())}</span>
             </div>
             <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">${company}</h2>
-            <p class="text-xs text-slate-300 font-medium mt-1">Complete 5-stage production, packing, vehicle dispatch, and shop deliveries control center.</p>
+            <p class="text-xs text-slate-300 font-medium mt-1">Complete 5-stage production, packing, vehicle dispatch, and new shop sales control center.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button onclick="app.navigate('shop-sales')" class="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-              <i data-lucide="shopping-cart" class="w-4 h-4"></i> New Shop Delivery
+              <i data-lucide="shopping-cart" class="w-4 h-4"></i> New Sale
             </button>
             <button onclick="Dashboard.loadStats()" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-all cursor-pointer" title="Refresh Dashboard">
               <i data-lucide="refresh-cw" class="w-4 h-4"></i>
@@ -154,16 +154,16 @@ window.Dashboard = {
               <span class="mt-3 text-[10px] font-black text-blue-600 flex items-center gap-1">Load Cars ➔</span>
             </div>
 
-            <!-- Stage 5 Card: Shop Deliveries -->
+            <!-- Stage 5 Card: New Sale -->
             <div onclick="app.navigate('shop-sales')" class="bg-white p-4 rounded-xl border-2 border-amber-300/80 hover:border-amber-500 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black text-[9px]">STAGE 5</span>
                   <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
-                    <i data-lucide="store" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
                   </div>
                 </div>
-                <h4 class="font-black text-sm text-slate-900 group-hover:text-amber-700 transition-colors">Shop Deliveries</h4>
+                <h4 class="font-black text-sm text-slate-900 group-hover:text-amber-700 transition-colors">New Sale</h4>
                 <p class="text-[11px] text-slate-400 font-medium mt-0.5">Sales, returns &amp; A5 billing</p>
                 
                 <div class="mt-3 pt-2.5 border-t border-slate-100">

@@ -4,7 +4,7 @@ const LOCKABLE_TABS = [
   { key: 'production', name: '2. Production (Pcs)' },
   { key: 'carton-packing', name: '3. Carton Packing' },
   { key: 'car-loading', name: '4. Cars & Loading' },
-  { key: 'shop-sales', name: '5. Shop Deliveries' },
+  { key: 'shop-sales', name: '5. New Sale' },
   { key: 'proposals', name: 'Sales History' },
   { key: 'purchases', name: 'Purchases' },
   { key: 'customers', name: 'Shops / Khata' },

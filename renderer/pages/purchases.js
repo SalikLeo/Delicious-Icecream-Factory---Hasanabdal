@@ -675,7 +675,7 @@ window.Purchases = {
   // ==========================================
 
   async openPurchaseModal(purchaseId = null, prefill = {}) {
-    if (purchaseId) {
+    if (purchaseId && window.app && typeof app.checkActionPassword === 'function') {
       const allowed = await app.checkActionPassword('Edit Purchase');
       if (!allowed) return;
     }
@@ -684,7 +684,7 @@ window.Purchases = {
     let p = null;
     if (isEdit) {
       try {
-        p = await window.api.getRawMaterialPurchase(purchaseId);
+        p = await window.api.getRawMaterialPurchase(Number(purchaseId));
       } catch (e) {
         p = (this.purchases || []).find(x => x.id === Number(purchaseId));
       }
@@ -733,7 +733,7 @@ window.Purchases = {
     }
 
     const selectedSupplierId = prefill.supplier_id || (p ? p.supplier_id : '');
-    const invoiceNo = isEdit ? (p.invoice_no || `PUR-${p.id}`) : (await window.api.getNextPurchaseInvoiceNo().catch(() => 'PUR-Auto'));
+    const invoiceNo = isEdit ? (p ? (p.invoice_no || `PUR-${p.id}`) : `PUR-${purchaseId}`) : (await window.api.getNextPurchaseInvoiceNo().catch(() => 'PUR-Auto'));
 
     let modalEl = document.getElementById('purchase-modal-container');
     if (!modalEl) {
@@ -1258,10 +1258,17 @@ window.Purchases = {
   },
 
   async deletePurchase(id) {
-    const allowed = await app.checkActionPassword('Delete Purchase');
-    if (!allowed) return;
+    if (window.app && typeof app.checkActionPassword === 'function') {
+      const allowed = await app.checkActionPassword('Delete Purchase');
+      if (!allowed) return;
+    }
 
-    const p = (this.purchases || []).find(x => x.id === Number(id));
+    let p = (this.purchases || []).find(x => x.id === Number(id));
+    if (!p) {
+      try {
+        p = await window.api.getRawMaterialPurchase(Number(id));
+      } catch (e) {}
+    }
     const title = p ? `Delete Purchase #${p.invoice_no || p.id}?` : 'Delete Purchase?';
     const message = `Are you sure you want to delete this purchase record?<br><br>
       <b>Invoice:</b> #${p ? (p.invoice_no || p.id) : ''}<br>

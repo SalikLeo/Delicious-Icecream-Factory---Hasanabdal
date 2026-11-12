@@ -76,7 +76,11 @@ const app = {
   },
 
   bindEvents() {
-    document.getElementById('confirm-cancel-btn').addEventListener('click', () => this.hideConfirm());
+    document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+      const cancelCb = this.confirmCancelCallback;
+      this.hideConfirm();
+      if (cancelCb) cancelCb();
+    });
     document.getElementById('confirm-alt-btn')?.addEventListener('click', () => {
       const cb = this.confirmAltCallback;
       this.hideConfirm();
@@ -85,6 +89,7 @@ const app = {
     document.getElementById('confirm-ok-btn').addEventListener('click', () => {
       const input = document.getElementById('prompt-input').value;
       const cb = this.confirmCallback;
+      this.confirmCancelCallback = null;
       this.hideConfirm();
       if (cb) cb(input);
     });
@@ -706,6 +711,7 @@ const app = {
       card.classList.add('max-w-sm');
     }
     this.confirmCallback = null;
+    this.confirmCancelCallback = null;
   },
 
   showAlert(config) {
@@ -838,8 +844,9 @@ const app = {
     }
   },
 
-  showPrompt({ title = 'Input Required', message = '', value = '', type = 'text', confirmText = 'Submit', onConfirm }) {
+  showPrompt({ title = 'Input Required', message = '', value = '', type = 'text', confirmText = 'Submit', onConfirm, onCancel }) {
     this.confirmCallback = onConfirm;
+    this.confirmCancelCallback = onCancel;
     
     document.getElementById('confirm-title').textContent = title;
     document.getElementById('confirm-message').textContent = message;
@@ -925,6 +932,9 @@ const app = {
       message: promptMsg,
       type: 'password',
       confirmText: 'Verify',
+      onCancel: () => {
+        if (onCancel) onCancel();
+      },
       onConfirm: (input) => {
         const trimmed = (input || '').trim();
         if (trimmed === password || this.verifySuperadminPassword(trimmed)) {
@@ -951,6 +961,70 @@ const app = {
       });
     } else {
       callback();
+    }
+  },
+
+  checkActionPassword(actionDescription = 'this action') {
+    return new Promise(resolve => {
+      const actionPassword = window.storage ? window.storage.get('action_password') : null;
+      if (actionPassword && String(actionPassword).trim()) {
+        this.verifyPassword({
+          title: 'Action Authorization (2nd Password)',
+          message: 'Please enter 2nd password to authorize ' + actionDescription + ':',
+          onVerified: () => resolve(true),
+          onCancel: () => resolve(false)
+        });
+      } else {
+        resolve(true);
+      }
+    });
+  },
+
+  showModal({ title = 'Modal', content = '', maxWidth = 'max-w-md' }) {
+    let container = document.getElementById('app-generic-modal-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'app-generic-modal-container';
+      document.body.appendChild(container);
+    }
+
+    container.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1250] p-4 cursor-pointer animate-in fade-in duration-150" onclick="if(event.target === this) app.closeModal()">
+        <div class="bg-white rounded-2xl shadow-2xl ${maxWidth} w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 cursor-default" onclick="event.stopPropagation()">
+          <div class="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
+            <h3 class="font-black text-sm text-white flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i> ${title}
+            </h3>
+            <button type="button" onclick="app.closeModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
+            ${content}
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) lucide.createIcons({ root: container });
+
+    if (this._genericModalEsc) {
+      document.removeEventListener('keydown', this._genericModalEsc);
+    }
+    this._genericModalEsc = (e) => {
+      if (e.key === 'Escape') {
+        app.closeModal();
+      }
+    };
+    document.addEventListener('keydown', this._genericModalEsc);
+  },
+
+  closeModal() {
+    const container = document.getElementById('app-generic-modal-container');
+    if (container) container.innerHTML = '';
+    if (this._genericModalEsc) {
+      document.removeEventListener('keydown', this._genericModalEsc);
+      this._genericModalEsc = null;
     }
   },
 

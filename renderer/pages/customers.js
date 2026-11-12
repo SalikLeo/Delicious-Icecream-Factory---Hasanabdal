@@ -1197,8 +1197,10 @@ window.Customers = {
   },
 
   async deletePayment(paymentId) {
-    const allowed = await app.checkActionPassword('Delete Shop Payment');
-    if (!allowed) return;
+    if (window.app && typeof app.checkActionPassword === 'function') {
+      const allowed = await app.checkActionPassword('Delete Shop Payment');
+      if (!allowed) return;
+    }
 
     const ok = await new Promise(resolve => {
       app.showConfirm({

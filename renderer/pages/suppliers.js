@@ -655,11 +655,19 @@ window.Suppliers = {
     if (window.lucide) lucide.createIcons({ root: panel });
   },
 
-  openSupplierModal(supplierId = null) {
+  async openSupplierModal(supplierId = null) {
+    if (supplierId && window.app && typeof app.checkActionPassword === 'function') {
+      const allowed = await app.checkActionPassword('Edit Supplier');
+      if (!allowed) return;
+    }
+
     const isEdit = Boolean(supplierId);
     let s = null;
     if (isEdit) {
       s = (this.suppliers || []).find(x => x.id === Number(supplierId));
+      if (!s && this.activeLedger && this.activeLedger.supplier && this.activeLedger.supplier.id === Number(supplierId)) {
+        s = this.activeLedger.supplier;
+      }
     }
 
     const modal = document.getElementById('supplier-edit-modal');
@@ -732,8 +740,10 @@ window.Suppliers = {
   },
 
   async deleteSupplier(id, name) {
-    const allowed = await app.checkActionPassword('Delete Supplier');
-    if (!allowed) return;
+    if (window.app && typeof app.checkActionPassword === 'function') {
+      const allowed = await app.checkActionPassword('Delete Supplier');
+      if (!allowed) return;
+    }
 
     const ok = await new Promise(resolve => {
       app.showConfirm({
@@ -843,8 +853,10 @@ window.Suppliers = {
   },
 
   async deletePayment(paymentId) {
-    const allowed = await app.checkActionPassword('Delete Supplier Payment');
-    if (!allowed) return;
+    if (window.app && typeof app.checkActionPassword === 'function') {
+      const allowed = await app.checkActionPassword('Delete Supplier Payment');
+      if (!allowed) return;
+    }
 
     const ok = await new Promise(resolve => {
       app.showConfirm({

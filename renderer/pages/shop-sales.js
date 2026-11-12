@@ -717,7 +717,7 @@ window.ShopSales = {
           </div>
           <div class="text-right">
             <span class="text-[10px] font-black uppercase text-amber-800 block">Balance</span>
-            <span class="text-xs font-mono font-black ${Number(s.current_balance) > 0 ? 'text-rose-600' : 'text-slate-700'}">Rs. ${Math.round(Number(s.current_balance) || 0).toLocaleString()}</span>
+            <span class="text-xs font-mono font-black ${Number(s.amount ?? s.current_balance ?? 0) > 0 ? 'text-rose-600' : 'text-slate-700'}">Rs. ${Math.round(Number(s.amount ?? s.current_balance ?? 0)).toLocaleString()}</span>
           </div>
         </div>
       `;

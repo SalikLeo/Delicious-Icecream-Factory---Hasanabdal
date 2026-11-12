@@ -855,22 +855,23 @@ window.Reports = {
             </tbody>
             <tfoot class="bg-slate-100/90 font-black text-xs text-slate-900 border-t-2 border-slate-300">
               <tr>
-                <td colspan="2" class="py-2.5 px-3 uppercase tracking-wider text-[11px] border-r border-slate-200">
+                <td colspan="3" class="py-2.5 px-3 uppercase tracking-wider text-[11px] border-r border-slate-200 text-left">
                   TOTALS (${rawList.length} MATERIALS)
                 </td>
-                <td class="py-2.5 px-3 text-right font-mono text-blue-700 border-r border-slate-200">
+                <td class="py-2.5 px-3 text-right font-mono font-black text-blue-700 border-r border-slate-200">
                   Rs. ${Math.round(totalPurchasedCostInPeriod).toLocaleString()}
                 </td>
-                <td class="py-2.5 px-3 text-right font-mono text-rose-700 border-r border-slate-200">
+                <td class="py-2.5 px-3 text-right font-mono font-black text-rose-700 border-r border-slate-200">
                   Rs. ${Math.round(totalConsumedCostInPeriod).toLocaleString()}
                 </td>
-                <td colspan="2" class="py-2.5 px-3 text-right text-slate-500 border-r border-slate-200">
-                  Total Available Stock Value:
+                <td class="py-2.5 px-3 text-right text-slate-400 font-bold border-r border-slate-200">—</td>
+                <td class="py-2.5 px-3 text-right text-slate-500 font-bold text-[11px] border-r border-slate-200">
+                  Total Value:
                 </td>
-                <td class="py-2.5 px-3 text-right font-mono text-emerald-800 border-r border-slate-200">
+                <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-800 text-sm border-r border-slate-200 bg-emerald-50/60">
                   Rs. ${Math.round(totalValuation).toLocaleString()}
                 </td>
-                <td></td>
+                <td class="py-2.5 px-3 text-center text-slate-400 font-bold text-xs">—</td>
               </tr>
             </tfoot>
           </table>
@@ -1174,6 +1175,25 @@ window.Reports = {
                 `;
               }).join('')}
             </tbody>
+            <tfoot class="bg-slate-100/90 font-black text-xs text-slate-900 border-t-2 border-slate-300">
+              <tr>
+                <td colspan="3" class="py-2.5 px-3 uppercase tracking-wider text-[11px] border-r border-slate-200 text-left">
+                  TOTALS (${cartons.length} PRODUCTS)
+                </td>
+                <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-700 border-r border-slate-200">
+                  ${totalPackedInPeriod} units
+                </td>
+                <td class="py-2.5 px-3 text-right text-slate-400 font-bold border-r border-slate-200">—</td>
+                <td class="py-2.5 px-3 text-right text-slate-400 font-bold border-r border-slate-200">—</td>
+                <td class="py-2.5 px-3 text-right text-slate-500 font-bold text-[11px] border-r border-slate-200">Total Value:</td>
+                <td class="py-2.5 px-3 text-right font-black text-purple-900 border-r border-slate-200">
+                  ${totalWarehouseCartons} units
+                </td>
+                <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-800 bg-emerald-50/60">
+                  Rs. ${Math.round(totalSaleValuation).toLocaleString()}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>

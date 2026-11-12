@@ -53,6 +53,10 @@ window.Purchases = {
                     title="Print Purchases Report (A5)">
               <i data-lucide="printer" class="w-4 h-4"></i> Print
             </button>
+            <button type="button" onclick="Purchases.openPurchaseModal()"
+                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+              <i data-lucide="plus" class="w-4 h-4"></i> + Record Purchase
+            </button>
           </div>
         </div>
 

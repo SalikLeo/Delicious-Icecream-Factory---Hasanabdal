@@ -27,20 +27,6 @@ window.Suppliers = {
           </div>
 
           <div class="flex items-center gap-2 flex-wrap">
-            <button type="button" onclick="app.navigate('purchases')"
-                    class="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-2xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                    title="View Purchases Table">
-              <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Purchases
-            </button>
-            <button type="button" onclick="app.navigate('item-purchases')"
-                    class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                    title="View Item-wise Purchases">
-              <i data-lucide="package" class="w-4 h-4 text-emerald-400"></i> Item Purchases
-            </button>
-            <button type="button" onclick="Purchases.openPurchaseModal()"
-                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-4 h-4"></i> + Record Purchase
-            </button>
             <button type="button" onclick="Suppliers.openSupplierModal()"
                     class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
               <i data-lucide="user-plus" class="w-4 h-4"></i> Add New Supplier
@@ -467,12 +453,6 @@ window.Suppliers = {
               <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i> Balance Clear
             </button>
           `}
-
-          <button type="button" onclick="Purchases.openPurchaseModal(null, { supplier_id: ${supplier.id}, supplier_name: '${supplier.name}' })"
-                  class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-                  title="Record new raw material purchase from this supplier">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> + Record Purchase
-          </button>
 
           <button type="button" onclick="Suppliers.printSupplierStatement(${supplier.id})"
                   class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">

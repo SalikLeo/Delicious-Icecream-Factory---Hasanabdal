@@ -462,6 +462,24 @@ window.Suppliers = {
     const currentBal = Number(supplier.amount) || 0;
     const entries = ledger ? ledger.entries : [];
 
+    let totalDebit = 0;
+    let totalPaid = 0;
+    let totalRemaining = 0;
+    entries.forEach(e => {
+      const isPurchase = e.record_type === 'purchase';
+      const isOpening = e.record_type === 'opening_balance';
+      if (isPurchase) {
+        totalDebit += Number(e.total_cost) || 0;
+        totalPaid += Number(e.paid_amount) || 0;
+        totalRemaining += Number(e.remaining_balance) || 0;
+      } else if (isOpening) {
+        totalDebit += Number(e.total_cost || e.amount || 0);
+        totalRemaining += Number(e.remaining_balance || e.amount || 0);
+      } else {
+        totalPaid += Number(e.paid_amount) || 0;
+      }
+    });
+
     panel.innerHTML = `
       <!-- Top Supplier Profile & Quick Action Bar -->
       <div class="p-4 bg-slate-50/90 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
@@ -608,6 +626,28 @@ window.Suppliers = {
               </tr>
             `}
           </tbody>
+          ${entries.length > 0 ? `
+            <tfoot class="sticky bottom-0 bg-slate-100/95 font-black text-slate-900 border-t-2 border-slate-300 shadow-sm z-10">
+              <tr class="bg-slate-100/95 text-slate-900 border-t-2 border-slate-300">
+                <td colspan="4" class="py-2.5 px-3 uppercase tracking-wider font-black text-[11px] border-r border-slate-200 text-left">
+                  <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs">
+                    <span class="text-blue-700 font-black">TOTAL:</span>
+                    <span>${entries.length} ${entries.length === 1 ? 'RECORD' : 'RECORDS'}</span>
+                  </div>
+                </td>
+                <td class="py-2.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
+                  Rs. ${Math.round(totalDebit).toLocaleString()}
+                </td>
+                <td class="py-2.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums border-r border-slate-200">
+                  Rs. ${Math.round(totalPaid).toLocaleString()}
+                </td>
+                <td class="py-2.5 px-3 text-right font-black text-xs tabular-nums border-r border-slate-200 ${totalRemaining > 0 ? 'text-rose-600' : 'text-slate-400'}">
+                  Rs. ${Math.round(totalRemaining).toLocaleString()}
+                </td>
+                <td class="py-2.5 px-3 text-center text-slate-400 font-bold text-xs">—</td>
+              </tr>
+            </tfoot>
+          ` : ''}
         </table>
       </div>
     `;

@@ -454,6 +454,23 @@ window.Customers = {
     const currentBal = Number(shop.amount) || 0;
     const entries = ledger ? ledger.entries : [];
 
+    let totalCartons = 0;
+    let totalDebit = 0;
+    let totalCredit = 0;
+    entries.forEach(e => {
+      const isDelivery = e.record_type === 'delivery';
+      const isOpening = e.record_type === 'opening_balance';
+      if (isDelivery) {
+        totalCartons += Number(e.cartons_count) || 0;
+        totalDebit += Number(e.total_amount) || 0;
+        totalCredit += Number(e.received_amount) || 0;
+      } else if (isOpening) {
+        totalDebit += Number(e.total_amount) || 0;
+      } else {
+        totalCredit += Number(e.received_amount) || 0;
+      }
+    });
+
     panel.innerHTML = `
       <!-- Top Shop Profile & Quick Action Bar -->
       <div class="p-4 bg-slate-50/90 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
@@ -604,6 +621,28 @@ window.Customers = {
               </tr>
             `}
           </tbody>
+          ${entries.length > 0 ? `
+            <tfoot class="sticky bottom-0 bg-slate-100/95 font-black text-slate-900 border-t-2 border-slate-300 shadow-sm z-10">
+              <tr class="bg-slate-100/95 text-slate-900 border-t-2 border-slate-300">
+                <td colspan="4" class="py-2.5 px-3 uppercase tracking-wider font-black text-[11px] border-r border-slate-200 text-left">
+                  <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs">
+                    <span class="text-amber-700 font-black">TOTAL:</span>
+                    <span>${entries.length} ${entries.length === 1 ? 'RECORD' : 'RECORDS'}</span>
+                  </div>
+                </td>
+                <td class="py-2.5 px-2 text-center font-black text-xs text-blue-800 bg-blue-100/40 border-r border-slate-200 tabular-nums">
+                  ${totalCartons}
+                </td>
+                <td class="py-2.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
+                  Rs. ${Math.round(totalDebit).toLocaleString()}
+                </td>
+                <td class="py-2.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums border-r border-slate-200">
+                  Rs. ${Math.round(totalCredit).toLocaleString()}
+                </td>
+                <td class="py-2.5 px-3 text-center text-slate-400 font-bold text-xs">—</td>
+              </tr>
+            </tfoot>
+          ` : ''}
         </table>
       </div>
     `;

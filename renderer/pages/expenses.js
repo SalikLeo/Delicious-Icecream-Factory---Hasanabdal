@@ -171,6 +171,8 @@ const Expenses = {
             </thead>
             <tbody id="expenses-list" class="divide-y divide-slate-200 bg-white">
             </tbody>
+            <tfoot id="expenses-tfoot" class="sticky bottom-0 bg-slate-100/95 font-black text-slate-900 border-t-2 border-slate-300 shadow-sm z-10">
+            </tfoot>
           </table>
         </div>
         <div id="expenses-pagination-footer" class="shrink-0"></div>
@@ -842,11 +844,13 @@ const Expenses = {
   renderList(list) {
     this.currentFilteredExpenses = list || [];
     const tbody = document.getElementById('expenses-list');
+    const tfoot = document.getElementById('expenses-tfoot');
     const footer = document.getElementById('expenses-pagination-footer');
     if (!tbody) return;
 
     if (!list || list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium italic">No expenses found for this period.</td></tr>`;
+      if (tfoot) tfoot.innerHTML = '';
       if (footer) footer.innerHTML = '';
       if (window.lucide) lucide.createIcons();
       return;
@@ -882,6 +886,24 @@ const Expenses = {
         </td>
       </tr>
     `).join('');
+
+    const totalAmount = list.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    if (tfoot) {
+      tfoot.innerHTML = `
+        <tr class="bg-slate-100/95 text-slate-900 border-t-2 border-slate-300">
+          <td colspan="4" class="px-4 py-2 uppercase tracking-wider font-black text-[11px] border-r border-slate-200 text-left">
+            <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs">
+              <span class="text-rose-600 font-black">TOTAL:</span>
+              <span>${list.length} ${list.length === 1 ? 'EXPENSE' : 'EXPENSES'}</span>
+            </div>
+          </td>
+          <td class="px-4 py-2 text-right font-black text-rose-700 text-xs tabular-nums border-r border-slate-200">
+            ${app.formatCurrency(totalAmount)}
+          </td>
+          <td class="px-4 py-2 text-right text-slate-400 font-bold text-xs no-print">—</td>
+        </tr>
+      `;
+    }
 
     if (footer) {
       if (total <= this.pageSize) {

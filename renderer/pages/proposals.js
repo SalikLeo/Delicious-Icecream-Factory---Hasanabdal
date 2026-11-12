@@ -245,6 +245,9 @@ window.Proposals = {
               <tbody id="prop-table-body" class="divide-y divide-slate-100 font-semibold text-slate-700">
                 <!-- Injected via renderTable() -->
               </tbody>
+              <tfoot id="prop-table-foot" class="sticky bottom-0 bg-slate-100/95 font-black text-slate-900 border-t-2 border-slate-300 shadow-sm z-10">
+                <!-- Injected via renderTable() -->
+              </tfoot>
             </table>
           </div>
         </div>
@@ -613,6 +616,7 @@ window.Proposals = {
 
   renderTable() {
     const tbody = document.getElementById('prop-table-body');
+    const tfoot = document.getElementById('prop-table-foot');
     if (!tbody) return;
 
     if (this.filteredDeliveries.length === 0) {
@@ -626,9 +630,15 @@ window.Proposals = {
           </td>
         </tr>
       `;
+      if (tfoot) tfoot.innerHTML = '';
       if (window.lucide) lucide.createIcons();
       return;
     }
+
+    let totalCartons = 0;
+    let totalSales = 0;
+    let totalCash = 0;
+    let totalDue = 0;
 
     tbody.innerHTML = this.filteredDeliveries.map((d, idx) => {
       let badgeClass = 'bg-slate-100 text-slate-700';
@@ -637,6 +647,10 @@ window.Proposals = {
       else if (d.payment_method === 'Credit') badgeClass = 'bg-amber-100 text-amber-800';
 
       const remainingCtns = Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
+      totalCartons += remainingCtns;
+      totalSales += (Number(d.total_amount) || 0);
+      totalCash += (Number(d.received_amount) || 0);
+      totalDue += (Number(d.remaining_balance) || 0);
 
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
@@ -701,6 +715,33 @@ window.Proposals = {
         </tr>
       `;
     }).join('');
+
+    if (tfoot) {
+      tfoot.innerHTML = `
+        <tr class="bg-slate-100/95 text-slate-900 border-t-2 border-slate-300">
+          <td colspan="5" class="py-2.5 px-3 uppercase tracking-wider font-black text-[11px] border-r border-slate-200 text-left">
+            <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs">
+              <span class="text-amber-700 font-black">TOTAL:</span>
+              <span>${this.filteredDeliveries.length} ${this.filteredDeliveries.length === 1 ? 'DELIVERY' : 'DELIVERIES'}</span>
+            </div>
+          </td>
+          <td class="py-2.5 px-2 text-center font-black text-xs text-blue-800 bg-blue-100/40 border-r border-slate-200 tabular-nums">
+            ${totalCartons}
+          </td>
+          <td class="py-2.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
+            Rs. ${Math.round(totalSales).toLocaleString()}
+          </td>
+          <td class="py-2.5 px-3 text-right font-black text-emerald-700 text-xs tabular-nums border-r border-slate-200">
+            Rs. ${Math.round(totalCash).toLocaleString()}
+          </td>
+          <td class="py-2.5 px-3 text-right font-black text-xs tabular-nums border-r border-slate-200 ${totalDue > 0 ? 'text-rose-600' : 'text-slate-400'}">
+            Rs. ${Math.round(totalDue).toLocaleString()}
+          </td>
+          <td class="py-2.5 px-2 text-center border-r border-slate-200 text-slate-400 font-bold text-xs">—</td>
+          <td class="py-2.5 px-3 text-center text-slate-400 font-bold text-xs">—</td>
+        </tr>
+      `;
+    }
 
     if (window.lucide) lucide.createIcons();
   },

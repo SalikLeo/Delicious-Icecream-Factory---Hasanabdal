@@ -1340,6 +1340,7 @@ window.ShopSales = {
             <div class="flex items-center gap-2 min-w-0 flex-1">
               <span class="w-5.5 h-5.5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black shrink-0 font-mono">✓</span>
               <span class="text-xs font-bold text-slate-500 truncate line-through">${item.carton_name}</span>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider shrink-0 ${isShoper ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-purple-100 text-purple-800 border border-purple-200'}">${isShoper ? 'SHOPER' : 'CARTON'}</span>
               ${item.pieces_per_carton ? `<span class="text-[10px] text-slate-400 shrink-0">(${item.pieces_per_carton} pcs/${unitAbbr})</span>` : ''}
             </div>
             <div class="flex items-center gap-2.5 shrink-0 text-right">
@@ -1356,6 +1357,7 @@ window.ShopSales = {
           <div class="flex items-center gap-2 min-w-0 flex-1">
             <span class="w-5.5 h-5.5 rounded ${isHighlighted ? 'bg-white/25 text-white border border-white/30' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-black shrink-0 font-mono">${idx + 1}</span>
             <span class="text-xs font-black truncate ${isHighlighted ? 'text-white' : 'text-slate-900'}">${item.carton_name}</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider shrink-0 ${isHighlighted ? 'bg-white font-black shadow-xs ' + (isShoper ? 'text-sky-900' : 'text-purple-900') : (isShoper ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-purple-100 text-purple-800 border border-purple-300')}">${isShoper ? 'SHOPER' : 'CARTON'}</span>
             ${item.barcode ? `<span class="text-[9px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60 border-amber-400/40' : 'text-slate-600 bg-slate-100 border-slate-300'} px-1 py-0.2 rounded border">#${item.barcode}</span>` : ''}
             ${item.pieces_per_carton ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0">(${item.pieces_per_carton} pcs/${unitAbbr})</span>` : ''}
           </div>
@@ -1822,19 +1824,22 @@ window.ShopSales = {
                   return `
                     <tr class="hover:bg-slate-50/80 transition-colors ${loadQty > 0 ? 'bg-blue-50/60' : ''}">
                       <td class="py-2 px-3">
-                        <div class="font-bold text-slate-900">${c.carton_name}</div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="font-bold text-slate-900">${c.carton_name}</span>
+                          <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider shrink-0 ${c.package_type === 'shoper' ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-purple-100 text-purple-800 border border-purple-300'}">${c.package_type === 'shoper' ? 'SHOPER' : 'CARTON'}</span>
+                        </div>
                         <div class="text-[10px] text-slate-500 font-mono mt-0.5">
-                          ${c.barcode ? `#${c.barcode} • ` : ''}${c.pieces_per_carton} pcs/carton
+                          ${c.barcode ? `#${c.barcode} • ` : ''}${c.pieces_per_carton} pcs/${c.package_type === 'shoper' ? 'shoper' : 'carton'}
                         </div>
                       </td>
                       <td class="py-2 px-3 text-center font-bold tabular-nums">
                         <span class="px-2 py-0.5 rounded-full text-[11px] ${inCar > 0 ? 'bg-blue-100 text-blue-800 font-black' : 'text-slate-400'}">
-                          ${inCar} ctns
+                          ${inCar} ${c.package_type === 'shoper' ? 'shopers' : 'ctns'}
                         </span>
                       </td>
                       <td class="py-2 px-3 text-center font-bold tabular-nums">
                         <span class="px-2 py-0.5 rounded-full text-[11px] ${whStock > 0 ? 'bg-purple-100 text-purple-800 font-black' : 'bg-rose-50 text-rose-500 font-bold'}">
-                          ${whStock} ctns
+                          ${whStock} ${c.package_type === 'shoper' ? 'shopers' : 'ctns'}
                         </span>
                       </td>
                       <td class="py-2 px-3 text-right font-black tabular-nums text-slate-800">

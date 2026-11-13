@@ -183,7 +183,7 @@ const Expenses = {
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all scale-95" id="expense-card">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-xl font-bold text-slate-800" id="exp-modal-title">Add Expense</h3>
-            <button onclick="Expenses.closeForm()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button onclick="Expenses.closeForm()" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg p-1 transition-all cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
           <form id="exp-form" onsubmit="Expenses.saveForm(event)" class="space-y-4">
             <input type="hidden" id="exp-id">
@@ -217,7 +217,7 @@ const Expenses = {
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all scale-95" id="cat-card">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-xl font-bold text-slate-800">Manage Categories</h3>
-            <button onclick="Expenses.closeCategoryModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button onclick="Expenses.closeCategoryModal()" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg p-1 transition-all cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
           <div class="mb-4">
             <form id="cat-add-form" onsubmit="Expenses.addCategory(event)" class="flex gap-2">

@@ -284,6 +284,45 @@
       padding-top: 4px;
       text-transform: uppercase;
     }
+
+    /* Show all cross (X) close/dismiss/clear icons in red across the entire app */
+    [data-lucide="x"],
+    .lucide-x {
+      color: #ef4444 !important;
+      stroke: #ef4444 !important;
+      transition: color 0.15s ease, stroke 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover [data-lucide="x"],
+    button:hover .lucide-x,
+    .cursor-pointer:hover [data-lucide="x"],
+    .cursor-pointer:hover .lucide-x,
+    [data-lucide="x"]:hover,
+    .lucide-x:hover {
+      color: #dc2626 !important;
+      stroke: #dc2626 !important;
+    }
+
+    /* On dark modal headers and dark backgrounds (slate-800, slate-900, slate-950) make them bright vibrant red */
+    .bg-slate-900 [data-lucide="x"],
+    .bg-slate-900 .lucide-x,
+    .bg-slate-950 [data-lucide="x"],
+    .bg-slate-950 .lucide-x,
+    .bg-slate-800 [data-lucide="x"],
+    .bg-slate-800 .lucide-x {
+      color: #f87171 !important;
+      stroke: #f87171 !important;
+    }
+
+    .bg-slate-900 button:hover [data-lucide="x"],
+    .bg-slate-900 button:hover .lucide-x,
+    .bg-slate-950 button:hover [data-lucide="x"],
+    .bg-slate-950 button:hover .lucide-x,
+    .bg-slate-800 button:hover [data-lucide="x"],
+    .bg-slate-800 button:hover .lucide-x {
+      color: #ef4444 !important;
+      stroke: #ef4444 !important;
+    }
   </style>
   <link rel="stylesheet" href="styles/print.css" media="print">
   <script src="libs/lucide.min.js"></script>

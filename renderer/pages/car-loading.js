@@ -515,7 +515,6 @@ window.CarLoading = {
                         </div>
                         <div>
                           <div class="font-black text-slate-900 text-xs">${c.car_number}</div>
-                          ${c.notes ? `<div class="text-[10px] text-slate-400 font-medium">${c.notes}</div>` : ''}
                         </div>
                       </div>
                     </td>
@@ -1670,7 +1669,6 @@ window.CarLoading = {
                             </div>
                             <div>
                               <div class="font-black text-slate-900 text-xs">${c.car_number}</div>
-                              ${c.notes ? `<div class="text-[10px] text-slate-400 font-medium">${c.notes}</div>` : ''}
                             </div>
                           </div>
                         </td>
@@ -1781,11 +1779,6 @@ window.CarLoading = {
               <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Phone Number</label>
               <input type="text" id="car-phone" value="${car.phone || ''}" placeholder="0300-1234567"
                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500 font-mono">
-            </div>
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Notes / Route</label>
-              <input type="text" id="car-notes" value="${car.notes || ''}" placeholder="Optional route or vehicle notes..."
-                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-500">
             </div>
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button type="button" onclick="${returnToCarsList ? 'CarLoading.openCarsListModal()' : 'CarLoading.closeModal()'}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">

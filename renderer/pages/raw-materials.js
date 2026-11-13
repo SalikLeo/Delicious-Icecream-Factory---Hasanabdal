@@ -1,6 +1,7 @@
 // Stage 1: Raw Materials Stock & Management
 window.RawMaterials = {
   materials: [],
+  categories: [],
   logs: [],
   activeTab: 'inventory', // 'inventory' | 'purchase' | 'logs'
   searchQuery: '',
@@ -25,6 +26,7 @@ window.RawMaterials = {
   async loadData() {
     try {
       this.materials = await window.api.getRawMaterials() || [];
+      this.categories = await window.api.getRawMaterialCategories() || [];
       this.logs = await window.api.getRawMaterialLogs() || [];
       this.renderUI();
     } catch (e) {
@@ -61,6 +63,9 @@ window.RawMaterials = {
             <p class="text-xs text-slate-300 font-medium">Manage factory raw stock (Milk, Sugar, Sticks, Wrappers, Cocoa). Track what is purchased and what is left behind.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="RawMaterials.openCategoriesModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95" title="Manage Raw Material Categories">
+              <i data-lucide="tags" class="w-4 h-4 text-emerald-400"></i> Manage Categories
+            </button>
             <button onclick="RawMaterials.openAddModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
               <i data-lucide="plus-circle" class="w-4 h-4 text-white"></i> Add New Material
             </button>
@@ -350,10 +355,13 @@ window.RawMaterials = {
   },
 
   getCategories() {
-    const defaultCats = ['Dairy', 'Sweeteners', 'Flavors & Coating', 'Packaging & Sticks', 'General'];
+    const dbCatNames = (this.categories || []).map(c => c.name);
     const dynamicCats = (this.materials || []).map(m => m.category).filter(Boolean);
-    const set = new Set([...defaultCats, ...dynamicCats]);
-    return Array.from(set).sort();
+    const set = new Set([...dbCatNames, ...dynamicCats]);
+    if (set.size === 0) {
+      ['Dairy', 'Sweeteners', 'Flavors & Coating', 'Packaging & Sticks', 'General'].forEach(c => set.add(c));
+    }
+    return Array.from(set).filter(Boolean).sort((a, b) => a.localeCompare(b));
   },
 
   onCategorySelect(val) {
@@ -893,11 +901,9 @@ window.RawMaterials = {
               <div>
                 <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Category</label>
                 <select id="rm-category" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
-                  <option value="Dairy" ${m.category === 'Dairy' ? 'selected' : ''}>Dairy (Milk/Cream)</option>
-                  <option value="Sweeteners" ${m.category === 'Sweeteners' ? 'selected' : ''}>Sweeteners (Sugar)</option>
-                  <option value="Flavors & Coating" ${m.category === 'Flavors & Coating' ? 'selected' : ''}>Flavors & Coating</option>
-                  <option value="Packaging & Sticks" ${m.category === 'Packaging & Sticks' ? 'selected' : ''}>Packaging & Sticks</option>
-                  <option value="General" ${m.category === 'General' ? 'selected' : ''}>General Raw Material</option>
+                  ${this.getCategories().map(cat => `
+                    <option value="${cat}" ${(m.category || 'General').toLowerCase() === cat.toLowerCase() ? 'selected' : ''}>${cat}</option>
+                  `).join('')}
                 </select>
               </div>
               <div>
@@ -1310,6 +1316,130 @@ window.RawMaterials = {
     } else {
       app.showAlert({ title: 'Error', message: res.error || 'Failed to add supplier.' });
     }
+  },
+
+  openCategoriesModal() {
+    const modalEl = document.getElementById('rm-modal-container');
+    if (!modalEl) return;
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 animate-in fade-in duration-150" onclick="if(event.target===this) RawMaterials.closeCategoriesModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200" onclick="event.stopPropagation()">
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="tags" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Manage Raw Material Categories</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 1 • Material classification groups</p>
+              </div>
+            </div>
+            <button type="button" onclick="RawMaterials.closeCategoriesModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <!-- Add New Category Form -->
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1.5">Add New Category</label>
+              <form onsubmit="RawMaterials.handleAddCategory(event)" class="flex gap-2">
+                <input type="text" id="rm-new-cat-name" placeholder="e.g. Fruits, Nuts, Packaging..." required
+                       class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
+                <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add
+                </button>
+              </form>
+            </div>
+
+            <!-- Categories List -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider">Existing Categories (${this.categories.length})</label>
+                <span class="text-[10px] font-bold text-slate-400">Filtering &amp; Stock Reports</span>
+              </div>
+              <div class="max-h-64 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-slate-50/50 custom-scrollbar">
+                ${this.categories.length === 0 ? `
+                  <div class="p-6 text-center text-slate-400 text-xs font-bold">No custom categories yet.</div>
+                ` : this.categories.map(cat => {
+                  const count = (this.materials || []).filter(m => (m.category || '').toLowerCase() === cat.name.toLowerCase()).length;
+                  return `
+                    <div class="px-3.5 py-2 flex items-center justify-between hover:bg-white transition-colors">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span class="text-xs font-bold text-slate-800 truncate">${cat.name}</span>
+                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-mono text-[10px] font-bold shrink-0">${count} ${count === 1 ? 'material' : 'materials'}</span>
+                      </div>
+                      <button type="button" onclick="RawMaterials.deleteCategory(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', ${count})"
+                              class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                              title="Delete Category">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+              <button type="button" onclick="RawMaterials.closeCategoriesModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs cursor-pointer">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+  },
+
+  closeCategoriesModal() {
+    this.closeModal();
+  },
+
+  async handleAddCategory(e) {
+    e.preventDefault();
+    const input = document.getElementById('rm-new-cat-name');
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) return;
+
+    const res = await window.api.addRawMaterialCategory(name);
+    if (res && res.error) {
+      app.showAlert({ title: 'Error', message: res.error });
+      return;
+    }
+
+    input.value = '';
+    this.categories = await window.api.getRawMaterialCategories() || [];
+    this.openCategoriesModal();
+    this.renderUI();
+    app.showToast(`Category "${name}" added successfully!`, 'success');
+  },
+
+  async deleteCategory(id, name, count) {
+    const warningMsg = count > 0 
+      ? `Are you sure you want to delete category "<b>${name}</b>"?<br><br><span class="text-amber-600 font-semibold">⚠️ ${count} existing raw material(s) currently use this category.</span> Their category will remain until edited.`
+      : `Are you sure you want to delete category "<b>${name}</b>"?`;
+
+    app.showConfirm({
+      title: 'Delete Category',
+      message: warningMsg,
+      confirmText: 'Delete Category',
+      confirmColor: 'red',
+      onConfirm: async () => {
+        const res = await window.api.deleteRawMaterialCategory(id);
+        if (res && res.error) {
+          app.showAlert({ title: 'Error', message: res.error });
+          return;
+        }
+        this.categories = await window.api.getRawMaterialCategories() || [];
+        this.openCategoriesModal();
+        this.renderUI();
+        app.showToast(`Category "${name}" deleted.`, 'success');
+      }
+    });
   },
 
   closeModal() {

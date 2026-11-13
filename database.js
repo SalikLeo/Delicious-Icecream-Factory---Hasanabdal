@@ -2359,7 +2359,27 @@ function createIcecreamFactoryTables() {
       total_cost REAL NOT NULL,
       notes TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS raw_material_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL
+    );
   `);
+
+  try {
+    const rawCatCount = db.prepare('SELECT COUNT(*) as c FROM raw_material_categories').get().c;
+    if (rawCatCount === 0) {
+      const insCat = db.prepare('INSERT OR IGNORE INTO raw_material_categories (name) VALUES (?)');
+      const seedCats = ['Dairy', 'Sweeteners', 'Flavors & Coating', 'Packaging & Sticks', 'Fruits', 'Chocolate', 'Cones', 'Additives', 'General'];
+      seedCats.forEach(c => insCat.run(c));
+      try {
+        const existingCats = db.prepare("SELECT DISTINCT category FROM raw_materials WHERE category IS NOT NULL AND TRIM(category) != ''").all();
+        existingCats.forEach(r => insCat.run(r.category.trim()));
+      } catch (err) {}
+    }
+  } catch (e) {
+    console.error('Error initializing raw material categories:', e);
+  }
 
   try {
     const rmpCols = db.prepare("PRAGMA table_info(raw_material_purchases)").all().map(c => c.name);
@@ -2577,6 +2597,34 @@ function seedIcecreamFactoryData() {
 // Ice Cream Factory Methods
 
 // --- STAGE 1: RAW MATERIALS ---
+function getRawMaterialCategories() {
+  try {
+    return db.prepare('SELECT * FROM raw_material_categories ORDER BY name ASC').all();
+  } catch (e) {
+    return [];
+  }
+}
+
+function addRawMaterialCategory(name) {
+  try {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return { error: 'Category name cannot be empty' };
+    const info = db.prepare('INSERT INTO raw_material_categories (name) VALUES (?)').run(trimmed);
+    return { success: true, id: info.lastInsertRowid, name: trimmed };
+  } catch (e) {
+    return { error: 'Category already exists or error occurred' };
+  }
+}
+
+function deleteRawMaterialCategory(id) {
+  try {
+    db.prepare('DELETE FROM raw_material_categories WHERE id = ?').run(id);
+    return { success: true };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 function getRawMaterials() {
   return db.prepare(`
     SELECT rm.*, 
@@ -4876,7 +4924,7 @@ module.exports = {
   getRawMaterials, getRawMaterial, saveRawMaterial, deleteRawMaterial, addRawMaterialPurchase, getRawMaterialLogs,
   deleteRawMaterialLog, updateRawMaterialLog,
   getRawMaterialPurchases, getRawMaterialPurchase, updateRawMaterialPurchase, deleteRawMaterialPurchase, getRawMaterialSuppliers,
-  getNextPurchaseInvoiceNo,
+  getNextPurchaseInvoiceNo, getRawMaterialCategories, addRawMaterialCategory, deleteRawMaterialCategory,
   // Suppliers & Vendor Khata
   getSuppliers, getSupplier, saveSupplier, deleteSupplier, paySupplier, deleteSupplierPayment, updateSupplierPayment, getSupplierLedger,
   // Stage 2: Single Items Production

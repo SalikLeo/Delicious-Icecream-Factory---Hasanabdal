@@ -109,6 +109,9 @@ contextBridge.exposeInMainWorld('api', {
   deleteRawMaterialPurchase: (id) => ipcRenderer.invoke('delete-raw-material-purchase', id),
   getRawMaterialSuppliers: () => ipcRenderer.invoke('get-raw-material-suppliers'),
   getNextPurchaseInvoiceNo: () => ipcRenderer.invoke('get-next-purchase-invoice-no'),
+  getRawMaterialCategories: () => ipcRenderer.invoke('get-raw-material-categories'),
+  addRawMaterialCategory: (name) => ipcRenderer.invoke('add-raw-material-category', name),
+  deleteRawMaterialCategory: (id) => ipcRenderer.invoke('delete-raw-material-category', id),
 
   // Suppliers & Vendor Khata
   getSuppliers: () => ipcRenderer.invoke('get-suppliers'),

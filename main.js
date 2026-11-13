@@ -237,6 +237,9 @@ ipcMain.handle('update-raw-material-purchase', (event, id, data) => db.updateRaw
 ipcMain.handle('delete-raw-material-purchase', (event, id) => db.deleteRawMaterialPurchase(id));
 ipcMain.handle('get-raw-material-suppliers', () => db.getRawMaterialSuppliers());
 ipcMain.handle('get-next-purchase-invoice-no', () => db.getNextPurchaseInvoiceNo());
+ipcMain.handle('get-raw-material-categories', () => db.getRawMaterialCategories());
+ipcMain.handle('add-raw-material-category', (event, name) => db.addRawMaterialCategory(name));
+ipcMain.handle('delete-raw-material-category', (event, id) => db.deleteRawMaterialCategory(id));
 
 // Suppliers & Vendor Khata IPC
 ipcMain.handle('get-suppliers', () => db.getSuppliers());

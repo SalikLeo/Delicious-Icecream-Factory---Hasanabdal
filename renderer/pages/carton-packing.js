@@ -934,15 +934,19 @@ window.CartonPacking = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
-          <div class="bg-purple-950 py-4 px-6 text-white flex justify-between items-center border-b border-purple-800">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded-full bg-purple-400 text-slate-950 font-mono text-[10px] font-black">STAGE 3</span>
-                <h3 class="text-base font-black tracking-tight">Pack Single Pieces into <span id="pk-header-unit">${unitPlural}</span></h3>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 border border-purple-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="box" class="w-4.5 h-4.5"></i>
               </div>
-              <p class="text-[11px] text-purple-300 mt-0.5">Deducts loose pieces from stock and adds ready inventory to factory stock</p>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Pack Single Pieces into <span id="pk-header-unit">${unitPlural}</span></h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 3 • Move loose items into warehouse inventory</p>
+              </div>
             </div>
-            <button onclick="CartonPacking.closeModal()" class="text-purple-300 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="CartonPacking.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
 
           <form onsubmit="CartonPacking.handlePackingSubmit(event)" class="p-6 space-y-4">
@@ -1372,9 +1376,19 @@ window.CartonPacking = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
-            <h3 id="cfg-modal-title" class="text-base font-black tracking-tight">${c.id ? (isShoper ? 'Edit Shoper Product' : 'Edit Carton Product') : 'New Product Configuration'}</h3>
-            <button onclick="CartonPacking.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 border border-purple-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="package" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 id="cfg-modal-title" class="text-base font-black text-slate-900 tracking-tight leading-snug">${c.id ? (isShoper ? 'Edit Shoper Product' : 'Edit Carton Product') : 'New Product Configuration'}</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 3 • Ready-to-Sell Variant</p>
+              </div>
+            </div>
+            <button type="button" onclick="CartonPacking.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
           <form onsubmit="CartonPacking.handleCartonConfigSubmit(event)" class="p-6 space-y-4">
             <input type="hidden" id="cfg-id" value="${c.id || ''}">

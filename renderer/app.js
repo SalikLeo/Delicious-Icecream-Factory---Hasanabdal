@@ -999,12 +999,15 @@ const app = {
     container.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1250] p-4 cursor-pointer animate-in fade-in duration-150" onclick="if(event.target === this) app.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl ${maxWidth} w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 cursor-default" onclick="event.stopPropagation()">
-          <div class="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
-            <h3 class="font-black text-sm text-white flex items-center gap-2">
-              <i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i> ${title}
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <h3 class="font-black text-base text-slate-900 flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </span>
+              ${title}
             </h3>
-            <button type="button" onclick="app.closeModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer">
-              <i data-lucide="x" class="w-4 h-4"></i>
+            <button type="button" onclick="app.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
           </div>
           <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">

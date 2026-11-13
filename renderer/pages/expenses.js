@@ -179,13 +179,23 @@ const Expenses = {
       </div>
 
       <!-- Expense Modal -->
-      <div id="expense-modal" onclick="if(event.target === this) Expenses.closeForm()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print">
-        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all scale-95" id="expense-card">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-slate-800" id="exp-modal-title">Add Expense</h3>
-            <button onclick="Expenses.closeForm()" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg p-1 transition-all cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div id="expense-modal" onclick="if(event.target === this) Expenses.closeForm()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 transform transition-all scale-95" id="expense-card">
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="receipt" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug" id="exp-modal-title">Add Expense</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Factory operational &amp; utility expense</p>
+              </div>
+            </div>
+            <button type="button" onclick="Expenses.closeForm()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
-          <form id="exp-form" onsubmit="Expenses.saveForm(event)" class="space-y-4">
+          <form id="exp-form" onsubmit="Expenses.saveForm(event)" class="p-6 space-y-4">
             <input type="hidden" id="exp-id">
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">Date *</label>
@@ -213,26 +223,38 @@ const Expenses = {
       </div>
 
       <!-- Category Management Modal -->
-      <div id="cat-modal" onclick="if(event.target === this) Expenses.closeCategoryModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print">
-        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all scale-95" id="cat-card">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-slate-800">Manage Categories</h3>
-            <button onclick="Expenses.closeCategoryModal()" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg p-1 transition-all cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div id="cat-modal" onclick="if(event.target === this) Expenses.closeCategoryModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 transform transition-all scale-95" id="cat-card">
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="tags" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Manage Categories</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Classification &amp; expense groups</p>
+              </div>
+            </div>
+            <button type="button" onclick="Expenses.closeCategoryModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
-          <div class="mb-4">
-            <form id="cat-add-form" onsubmit="Expenses.addCategory(event)" class="flex gap-2">
-              <input type="text" id="new-cat-name" placeholder="New Category Name" required class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent">
-              <button type="submit" class="bg-accent hover:bg-amber-500 text-slate-900 font-bold px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer">Add</button>
-            </form>
-          </div>
-          <div class="max-h-60 overflow-y-auto border border-slate-100 rounded-lg">
-            <table class="w-full text-sm text-left">
-              <tbody id="cats-list" class="divide-y divide-slate-100">
-              </tbody>
-            </table>
-          </div>
-          <div class="pt-4 flex justify-end">
-            <button onclick="Expenses.closeCategoryModal()" class="px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition-colors cursor-pointer">Close</button>
+          <div class="p-6">
+            <div class="mb-4">
+              <form id="cat-add-form" onsubmit="Expenses.addCategory(event)" class="flex gap-2">
+                <input type="text" id="new-cat-name" placeholder="New Category Name" required class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent">
+                <button type="submit" class="bg-accent hover:bg-amber-500 text-slate-900 font-bold px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer">Add</button>
+              </form>
+            </div>
+            <div class="max-h-60 overflow-y-auto border border-slate-100 rounded-lg">
+              <table class="w-full text-sm text-left">
+                <tbody id="cats-list" class="divide-y divide-slate-100">
+                </tbody>
+              </table>
+            </div>
+            <div class="pt-4 flex justify-end">
+              <button onclick="Expenses.closeCategoryModal()" class="px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition-colors cursor-pointer">Close</button>
+            </div>
           </div>
         </div>
       </div>

@@ -1593,22 +1593,22 @@ window.CarLoading = {
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[85vh] animate-in fade-in duration-150">
           
           <!-- Modal Header -->
-          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center shrink-0">
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-blue-600/30 border border-blue-500/40 text-blue-400 flex items-center justify-center font-black">
-                <i data-lucide="truck" class="w-4 h-4"></i>
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="truck" class="w-4.5 h-4.5"></i>
               </div>
               <div>
-                <h3 class="text-base font-black tracking-tight">Delivery Cars List</h3>
-                <p class="text-[11px] text-slate-400 font-medium">View, search, edit and manage registered delivery vehicles &amp; drivers</p>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Delivery Cars List</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">View, search, edit and manage registered delivery vehicles &amp; drivers</p>
               </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2.5">
               <button onclick="CarLoading.openCarModal(null, true)" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95">
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Vehicle
               </button>
-              <button onclick="CarLoading.closeModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors">
-                <i data-lucide="x" class="w-5 h-5"></i>
+              <button type="button" onclick="CarLoading.closeModal()" class="modal-close-btn" title="Close (Esc)">
+                <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
               </button>
             </div>
           </div>
@@ -1756,12 +1756,19 @@ window.CarLoading = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) ${returnToCarsList ? 'CarLoading.openCarsListModal()' : 'CarLoading.closeModal()'}">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in duration-150">
-          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
-            <div class="flex items-center gap-2">
-              <i data-lucide="${car.id ? 'edit-2' : 'plus-circle'}" class="w-4 h-4 text-blue-400"></i>
-              <h3 class="text-base font-black tracking-tight">${car.id ? 'Edit Delivery Vehicle' : 'Add New Delivery Vehicle'}</h3>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="${car.id ? 'edit-2' : 'truck'}" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">${car.id ? 'Edit Delivery Vehicle' : 'Add New Delivery Vehicle'}</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 4 • Fleet specifications &amp; salesman assignment</p>
+              </div>
             </div>
-            <button onclick="${returnToCarsList ? 'CarLoading.openCarsListModal()' : 'CarLoading.closeModal()'}" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="${returnToCarsList ? 'CarLoading.openCarsListModal()' : 'CarLoading.closeModal()'}" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
           <form onsubmit="CarLoading.handleCarSubmit(event)" class="p-6 space-y-4">
             <input type="hidden" id="car-id" value="${car.id || ''}">

@@ -868,9 +868,19 @@ window.RawMaterials = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) RawMaterials.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
-            <h3 class="text-base font-black tracking-tight">${isEdit ? 'Edit Raw Material' : 'Add New Raw Material'}</h3>
-            <button onclick="RawMaterials.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="boxes" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">${isEdit ? 'Edit Raw Material' : 'Add New Raw Material'}</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 1 • Raw Materials Inventory</p>
+              </div>
+            </div>
+            <button type="button" onclick="RawMaterials.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
           <form onsubmit="RawMaterials.handleMaterialSubmit(event)" class="p-6 space-y-4">
             <input type="hidden" id="rm-id" value="${m.id || ''}">
@@ -954,12 +964,19 @@ window.RawMaterials = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) RawMaterials.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-          <div class="bg-emerald-950 py-3.5 px-6 text-white flex justify-between items-center border-b border-emerald-800">
-            <div>
-              <h3 class="text-base font-black tracking-tight">Stock-In / Purchase Raw Material</h3>
-              <p class="text-[11px] text-emerald-300">Add purchased quantity to factory stock</p>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="plus-circle" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Stock-In / Purchase Raw Material</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Add purchased inward quantity to factory stock</p>
+              </div>
             </div>
-            <button onclick="RawMaterials.closeModal()" class="text-emerald-300 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="RawMaterials.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
           <form onsubmit="RawMaterials.handlePurchaseSubmit(event)" class="p-6 space-y-4">
             <!-- Searchable Dropdown for Material Selection -->

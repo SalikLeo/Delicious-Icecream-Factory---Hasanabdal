@@ -801,15 +801,19 @@ window.Production = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) Production.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col">
-          <div class="bg-cyan-950 py-4 px-6 text-white flex justify-between items-center border-b border-cyan-800 shrink-0">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded-full bg-cyan-400 text-slate-950 font-mono text-[10px] font-black">STAGE 2</span>
-                <h3 class="text-base font-black tracking-tight">Run Production (Make Single Pieces)</h3>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="play-circle" class="w-4.5 h-4.5"></i>
               </div>
-              <p class="text-[11px] text-cyan-300 mt-0.5">Produce unpacked pieces (e.g. 100 pcs Chocbar) and deduct raw materials</p>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Run Production (Make Single Pieces)</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Produce unpacked pieces and deduct raw materials</p>
+              </div>
             </div>
-            <button onclick="Production.closeModal()" class="text-cyan-300 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="Production.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
 
           <form onsubmit="Production.handleProductionSubmit(event)" class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
@@ -1230,9 +1234,19 @@ window.Production = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) Production.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
-            <h3 class="text-base font-black tracking-tight">${it.id ? 'Edit Ice Cream Item' : 'New Ice Cream Item'}</h3>
-            <button onclick="Production.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="layers" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">${it.id ? 'Edit Ice Cream Item' : 'New Ice Cream Item'}</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 2 • Single Loose Pieces</p>
+              </div>
+            </div>
+            <button type="button" onclick="Production.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
           <form onsubmit="Production.handleItemSubmit(event)" class="p-6 space-y-4">
             <input type="hidden" id="ii-id" value="${it.id || ''}">

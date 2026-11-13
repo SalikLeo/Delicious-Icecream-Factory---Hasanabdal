@@ -1679,9 +1679,19 @@ window.ShopSales = {
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) ShopSales.closeShopModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center">
-            <h3 class="text-base font-black tracking-tight">Quick Add New Shop</h3>
-            <button onclick="ShopSales.closeShopModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="store" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Quick Add New Shop</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 5 • Customer Profile &amp; Area</p>
+              </div>
+            </div>
+            <button type="button" onclick="ShopSales.closeShopModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
           <form onsubmit="ShopSales.handleQuickShopSubmit(event)" class="p-6 space-y-3.5">
             <div>
@@ -1885,17 +1895,21 @@ window.ShopSales = {
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
           
           <!-- Header -->
-          <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center shrink-0">
-            <div>
-              <h3 class="text-base font-black tracking-tight flex items-center gap-2">
-                <i data-lucide="package-plus" class="w-5 h-5 text-blue-400"></i>
-                Load Items into Vehicle for Sale
-              </h3>
-              <p class="text-xs text-slate-400 mt-0.5">
-                Vehicle: <b class="text-blue-300 font-mono">${activeCar.car_number}</b> (${activeCar.driver_name}) • Transferred from Factory Stock
-              </p>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="package-plus" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Load Items into Vehicle for Sale</h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Vehicle: <b class="text-blue-700 font-mono">${activeCar.car_number}</b> (${activeCar.driver_name}) • Transferred from Factory Stock
+                </p>
+              </div>
             </div>
-            <button onclick="ShopSales.closeQuickLoadModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="ShopSales.closeQuickLoadModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
 
           <!-- Search & Filter Bar -->

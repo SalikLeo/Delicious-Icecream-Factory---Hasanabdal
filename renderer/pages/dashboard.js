@@ -2,6 +2,7 @@
 window.Dashboard = {
   summary: null,
   recentDeliveries: [],
+  recentExpenses: [],
   cars: [],
 
   async render(container) {
@@ -14,6 +15,8 @@ window.Dashboard = {
       this.summary = await window.api.getIcecreamFactorySummary() || {};
       this.cars = await window.api.getCars() || [];
       this.recentDeliveries = await window.api.getShopDeliveries({ fromDate: new Date().toISOString().split('T')[0] }) || [];
+      const allExpenses = await window.api.getExpenses() || [];
+      this.recentExpenses = allExpenses.slice(0, 6);
       this.renderUI();
     } catch (e) {
       console.error('Failed to load factory dashboard:', e);
@@ -267,6 +270,70 @@ window.Dashboard = {
             `}
           </div>
 
+        </div>
+
+        <!-- Bottom Row: Recent Factory Expenses -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <i data-lucide="receipt" class="w-4 h-4 text-rose-500"></i>
+              <h3 class="font-black text-sm text-slate-900">Recent Factory Expenses</h3>
+            </div>
+            <button onclick="app.navigate('expenses')" class="text-[11px] font-black text-rose-600 hover:text-rose-700 cursor-pointer flex items-center gap-1">
+              View All Expenses ➔
+            </button>
+          </div>
+
+          ${this.recentExpenses.length === 0 ? `
+            <div class="p-8 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+              <p class="font-bold text-xs text-slate-500">No factory expenses recorded yet.</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Click "View All Expenses" to record factory utility, fuel, or operational expenses.</p>
+            </div>
+          ` : `
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse border border-slate-200">
+                <thead>
+                  <tr class="text-[10px] font-black uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
+                    <th class="py-2 px-3 border-r border-slate-200 w-12 text-center">#</th>
+                    <th class="py-2 px-3 border-r border-slate-200">Date</th>
+                    <th class="py-2 px-3 border-r border-slate-200">Category</th>
+                    <th class="py-2 px-3 border-r border-slate-200">Description</th>
+                    <th class="py-2 px-3 text-right border-r border-slate-200">Amount</th>
+                    <th class="py-2 px-3 text-center w-16">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+                  ${this.recentExpenses.map((exp, idx) => `
+                    <tr class="hover:bg-slate-50">
+                      <td class="py-1.5 px-3 border-r border-slate-200 text-center font-bold text-slate-400 tabular-nums text-xs">${idx + 1}</td>
+                      <td class="py-1.5 px-3 border-r border-slate-200 font-bold text-slate-800 text-xs whitespace-nowrap">
+                        ${app.formatDateTime(exp.date, exp.created_at)}
+                      </td>
+                      <td class="py-1.5 px-3 border-r border-slate-200 whitespace-nowrap">
+                        <span class="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-100 rounded-md text-[10px] font-black uppercase tracking-wider">
+                          ${exp.category || 'General'}
+                        </span>
+                      </td>
+                      <td class="py-1.5 px-3 border-r border-slate-200">
+                        <div class="font-bold text-slate-900 text-xs truncate max-w-xs md:max-w-md">${exp.description || '—'}</div>
+                        ${exp.paid_by ? `<span class="text-[10px] text-slate-400 font-bold">Paid by: ${exp.paid_by}</span>` : ''}
+                      </td>
+                      <td class="py-1.5 px-3 text-right font-black text-rose-600 text-xs tabular-nums border-r border-slate-200">
+                        Rs. ${Math.round(exp.amount || 0).toLocaleString()}
+                      </td>
+                      <td class="py-1.5 px-3 text-center">
+                        <button type="button" onclick="Expenses.printExpenseVoucher(${exp.id})"
+                                class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs mx-auto"
+                                title="Print Expense Voucher (A5)">
+                          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `}
         </div>
 
       </div>

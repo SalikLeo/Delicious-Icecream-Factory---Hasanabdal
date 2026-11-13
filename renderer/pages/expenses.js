@@ -766,7 +766,15 @@ const Expenses = {
   },
 
   async printExpenseVoucher(id) {
-    const exp = (this.expenses || []).find(e => e.id == id);
+    let exp = (this.expenses || []).find(e => e.id == id);
+    if (!exp) {
+      try {
+        const all = await window.api.getExpenses();
+        exp = (all || []).find(e => e.id == id);
+      } catch (e) {
+        console.error('Error fetching expenses for print voucher:', e);
+      }
+    }
     if (!exp) return app.showAlert({ title: 'Error', message: 'Expense record not found.' });
 
     if (!this.settings || !this.settings.company_name) {
@@ -1154,3 +1162,5 @@ const Expenses = {
     });
   }
 };
+
+window.Expenses = Expenses;

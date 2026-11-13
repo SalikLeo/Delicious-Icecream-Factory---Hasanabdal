@@ -1300,7 +1300,7 @@ function getExpenses(filters) {
     params.push(`${filters.year}-${monthStr}-%`);
   }
   
-  sql += ' ORDER BY date DESC';
+  sql += ' ORDER BY date DESC, id DESC';
   return db.prepare(sql).all(...params);
 }
 

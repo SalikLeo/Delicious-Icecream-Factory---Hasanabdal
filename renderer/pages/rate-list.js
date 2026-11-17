@@ -612,22 +612,22 @@ const RateList = {
       <tr style="border-bottom: ${i === arr.length - 1 ? 'none' : '1px solid #000'}; font-size: 9.5px;">
         <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${i + 1}</td>
         <td style="padding: 2.5px 4px; text-align: left; font-weight: 600; border-right: 1px solid #000;">${(h.created_at || '').substring(0, 10)}</td>
-        <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; border-right: 1px solid #000;">+${h.added_qty || 0}</td>
+        <td style="padding: 2.5px 2px; text-align: center; font-weight: 500; border-right: 1px solid #000;">+${h.added_qty || 0}</td>
         <td style="padding: 2.5px 3px; text-align: right; font-weight: 600; border-right: 1px solid #000;">${Number(h.purchase_price || 0).toLocaleString()}</td>
-        <td style="padding: 2.5px 4px; text-align: right; font-weight: 800;">${Number(h.new_cost_price || 0).toLocaleString()}</td>
+        <td style="padding: 2.5px 4px; text-align: right; font-weight: 500;">${Number(h.new_cost_price || 0).toLocaleString()}</td>
       </tr>
     `).join('');
 
     const html = `
-      <div class="receipt-80mm" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; color: #000; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
+      <div class="receipt-80mm" style="font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; color: #000; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
         <div style="text-align: center; margin-bottom: 4px;">
-          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
+          <h1 style="font-size: 16px; font-weight: 700; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
           <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${s.address || 'Hasan Abdal'}</div>
           <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
             <div>Phone: ${s.phone || '0315-6795995'}</div>
           </div>
           <div style="margin-top: 5px;">
-            <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">ITEM RATE & COST LOG</span>
+            <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">ITEM RATE & COST LOG</span>
           </div>
         </div>
 
@@ -653,7 +653,7 @@ const RateList = {
         <!-- Items Table -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 9.5px; border: 1.5px solid #000;">
           <thead>
-            <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 900; text-transform: uppercase;">
+            <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 700; text-transform: uppercase;">
               <th style="padding: 3px 2px; text-align: center; width: 8%; border-right: 1px solid #000;">#</th>
               <th style="padding: 3px 4px; text-align: left; width: 32%; border-right: 1px solid #000;">DATE</th>
               <th style="padding: 3px 2px; text-align: center; width: 16%; border-right: 1px solid #000;">+QTY</th>
@@ -686,26 +686,26 @@ const RateList = {
     ` : items.map((i, idx, arr) => `
       <tr style="border-bottom: ${idx === arr.length - 1 ? 'none' : '1px solid #000'}; font-size: 9.5px;">
         <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${idx + 1}</td>
-        <td style="padding: 2.5px 4px; text-align: left; font-weight: 800; word-break: break-word; line-height: 1.2; border-right: 1px solid #000;">
+        <td style="padding: 2.5px 4px; text-align: left; font-weight: 500; word-break: break-word; line-height: 1.2; border-right: 1px solid #000;">
           <div>${i.item_name}</div>
           <div style="font-size: 7.5px; font-weight: normal; color: #333;">${i.category_label || ''}</div>
         </td>
-        <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; border-right: 1px solid #000;">${app.formatQty(i.current_stock || 0)}</td>
+        <td style="padding: 2.5px 2px; text-align: center; font-weight: 500; border-right: 1px solid #000;">${app.formatQty(i.current_stock || 0)}</td>
         <td style="padding: 2.5px 3px; text-align: right; font-weight: 600; border-right: 1px solid #000;">${Number(i.cost_price || 0).toLocaleString()}</td>
-        <td style="padding: 2.5px 4px; text-align: right; font-weight: 800;">${Number(i.retail_price || 0).toLocaleString()}</td>
+        <td style="padding: 2.5px 4px; text-align: right; font-weight: 500;">${Number(i.retail_price || 0).toLocaleString()}</td>
       </tr>
     `).join('');
 
     const html = `
-      <div class="receipt-80mm" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; color: #000; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
+      <div class="receipt-80mm" style="font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; color: #000; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
         <div style="text-align: center; margin-bottom: 4px;">
-          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
+          <h1 style="font-size: 16px; font-weight: 700; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
           <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${s.address || 'Hasan Abdal'}</div>
           <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
             <div>Phone: ${s.phone || '0315-6795995'}</div>
           </div>
           <div style="margin-top: 5px;">
-            <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">MASTER RATE LIST</span>
+            <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">MASTER RATE LIST</span>
           </div>
           <div style="font-size: 9px; color: #444; margin-top: 2px;">Generated: ${app.formatDateTime ? app.formatDateTime(new Date().toISOString()) : new Date().toLocaleString()} (${items.length} items)</div>
         </div>
@@ -713,7 +713,7 @@ const RateList = {
         <!-- Items Table -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 9.5px; border: 1.5px solid #000;">
           <thead>
-            <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 900; text-transform: uppercase;">
+            <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 700; text-transform: uppercase;">
               <th style="padding: 3px 2px; text-align: center; width: 7%; border-right: 1px solid #000;">#</th>
               <th style="padding: 3px 4px; text-align: left; width: 45%; border-right: 1px solid #000;">ITEM</th>
               <th style="padding: 3px 2px; text-align: center; width: 14%; border-right: 1px solid #000;">STK</th>

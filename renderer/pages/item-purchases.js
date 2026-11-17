@@ -112,116 +112,123 @@ window.ItemPurchases = {
         </div>
 
         <!-- Filter Controls Bar -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div class="flex items-center gap-2 flex-1 min-w-[240px] max-w-md">
-            <div class="relative w-full">
-              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-              <input type="text" id="item-pur-search" oninput="ItemPurchases.applyFilters()"
-                     placeholder="Search material, category, supplier, invoice #..."
-                     class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-500 outline-none transition-all">
-              <button id="item-pur-search-clear-btn" onclick="ItemPurchases.clearSearch()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 hidden cursor-pointer">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
+        <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-2.5 overflow-x-auto no-scrollbar shrink-0 select-none">
+          <!-- Search input -->
+          <div class="relative w-48 xl:w-56 shrink-0">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="item-pur-search" oninput="ItemPurchases.applyFilters()"
+                   placeholder="Search material, supplier..."
+                   class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-7 py-1.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-500 outline-none transition-all">
+            <button id="item-pur-search-clear-btn" onclick="ItemPurchases.clearSearch()" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 hidden cursor-pointer">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
           </div>
 
+          <div class="h-6 w-px bg-slate-200 shrink-0"></div>
+
           <!-- Sort dropdown -->
-          <div class="flex items-center gap-1.5">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sort</label>
-            <select id="item-pur-sort-select" onchange="ItemPurchases.setSort(this.value)" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer">
-              <option value="spend-desc">Total Spend (High to Low)</option>
-              <option value="spend-asc">Total Spend (Low to High)</option>
-              <option value="qty-desc">Quantity Purchased (High to Low)</option>
-              <option value="qty-asc">Quantity Purchased (Low to High)</option>
-              <option value="name-asc">Material Name (A to Z)</option>
-              <option value="name-desc">Material Name (Z to A)</option>
-              <option value="orders-desc">Orders Count (High to Low)</option>
-              <option value="avgcost-desc">Avg Unit Cost (High to Low)</option>
+          <div class="flex items-center gap-1 shrink-0">
+            <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Sort</label>
+            <select id="item-pur-sort-select" onchange="ItemPurchases.setSort(this.value)" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer">
+              <option value="spend-desc">Spend (High-Low)</option>
+              <option value="spend-asc">Spend (Low-High)</option>
+              <option value="qty-desc">Qty (High-Low)</option>
+              <option value="qty-asc">Qty (Low-High)</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="orders-desc">Orders (High-Low)</option>
+              <option value="avgcost-desc">Avg Cost (High-Low)</option>
             </select>
           </div>
 
           <!-- Category dropdown -->
-          <div class="flex items-center gap-1.5">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
-            <select id="item-pur-cat-select" onchange="ItemPurchases.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer min-w-[120px]">
+          <div class="flex items-center gap-1 shrink-0">
+            <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
+            <select id="item-pur-cat-select" onchange="ItemPurchases.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer min-w-[105px]">
               <option value="All">All Categories</option>
             </select>
           </div>
 
           <!-- Supplier dropdown -->
-          <div class="flex items-center gap-1.5">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Supplier</label>
-            <select id="item-pur-supplier-select" onchange="ItemPurchases.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer min-w-[120px]">
+          <div class="flex items-center gap-1 shrink-0">
+            <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Supplier</label>
+            <select id="item-pur-supplier-select" onchange="ItemPurchases.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer min-w-[105px]">
               <option value="All">All Suppliers</option>
             </select>
           </div>
 
+          <div class="h-6 w-px bg-slate-200 shrink-0"></div>
+
           <!-- Period controls -->
-          <div class="flex items-center gap-2 flex-wrap">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Period</label>
-            <div class="flex bg-slate-100 p-1 rounded-xl">
-              <button id="item-pur-period-day-tab" onclick="ItemPurchases.setPeriodType('day')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all bg-white shadow-2xs text-slate-800 cursor-pointer">Daily</button>
-              <button id="item-pur-period-month-tab" onclick="ItemPurchases.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Monthly</button>
-              <button id="item-pur-period-year-tab" onclick="ItemPurchases.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Annual</button>
-              <button id="item-pur-period-custom-tab" onclick="ItemPurchases.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Custom Range</button>
-              <button id="item-pur-period-all-tab" onclick="ItemPurchases.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-700 cursor-pointer">All</button>
+          <div class="flex items-center gap-2 shrink-0">
+            <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Period</label>
+            <div class="flex bg-slate-100 p-0.5 rounded-xl gap-0.5">
+              <button id="item-pur-period-day-tab" onclick="ItemPurchases.setPeriodType('day')" class="px-2.5 py-1 text-xs font-black rounded-lg transition-all bg-white shadow-2xs text-slate-900 cursor-pointer">Daily</button>
+              <button id="item-pur-period-month-tab" onclick="ItemPurchases.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Monthly</button>
+              <button id="item-pur-period-year-tab" onclick="ItemPurchases.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Annual</button>
+              <button id="item-pur-period-custom-tab" onclick="ItemPurchases.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Custom Range</button>
+              <button id="item-pur-period-all-tab" onclick="ItemPurchases.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">All</button>
             </div>
 
             <!-- Daily navigation controls -->
-            <div id="item-pur-daily-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-0.5">
-              <button onclick="ItemPurchases.changeDateStep(-1)" class="p-1.5 hover:bg-white rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Day">
+            <div id="item-pur-daily-controls" class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 select-none">
+              <button type="button" onclick="ItemPurchases.changeDateStep(-1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Previous Day">
                 <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
               </button>
-              <input type="date" id="item-pur-stats-date-picker" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-transparent border-0 px-1 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
-              <button onclick="ItemPurchases.changeDateStep(1)" class="p-1.5 hover:bg-white rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Day">
+              <input type="date" id="item-pur-stats-date-picker" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2 py-0.5 text-xs font-black text-slate-900 outline-none cursor-pointer">
+              <button type="button" onclick="ItemPurchases.changeDateStep(1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Next Day">
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
               </button>
-              <button onclick="ItemPurchases.setToday()" class="px-2 py-1 text-[10px] font-black uppercase bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded-lg transition-all cursor-pointer ml-0.5">Today</button>
+              <button type="button" onclick="ItemPurchases.setToday()" class="px-2 py-0.5 text-[10px] font-black uppercase bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/80 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95 ml-0.5">Today</button>
             </div>
 
             <!-- Monthly navigation controls -->
-            <div id="item-pur-monthly-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-0.5 hidden">
-              <button onclick="ItemPurchases.changeMonthStep(-1)" class="p-1.5 hover:bg-white rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Month">
+            <div id="item-pur-monthly-controls" class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 hidden select-none">
+              <button type="button" onclick="ItemPurchases.changeMonthStep(-1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Previous Month">
                 <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
               </button>
-              <select id="item-pur-stats-month-select" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-              </select>
-              <select id="item-pur-stats-month-year-select" onchange="ItemPurchases.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
-              </select>
-              <button onclick="ItemPurchases.changeMonthStep(1)" class="p-1.5 hover:bg-white rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Month">
+              <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                <select id="item-pur-stats-month-select" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-transparent text-xs font-black text-slate-900 outline-none cursor-pointer py-0.5 pr-1 border-0">
+                  <option value="1">January</option>
+                  <option value="2">February</option>
+                  <option value="3">March</option>
+                  <option value="4">April</option>
+                  <option value="5">May</option>
+                  <option value="6">June</option>
+                  <option value="7">July</option>
+                  <option value="8">August</option>
+                  <option value="9">September</option>
+                  <option value="10">October</option>
+                  <option value="11">November</option>
+                  <option value="12">December</option>
+                </select>
+                <span class="text-slate-300 font-bold">•</span>
+                <select id="item-pur-stats-month-year-select" onchange="ItemPurchases.applyFilters()" class="bg-transparent text-xs font-black text-slate-900 outline-none cursor-pointer py-0.5 pl-1 border-0">
+                </select>
+              </div>
+              <button type="button" onclick="ItemPurchases.changeMonthStep(1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Next Month">
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
               </button>
-              <button onclick="ItemPurchases.setThisMonth()" class="px-2 py-1 text-[10px] font-black uppercase bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded-lg transition-all cursor-pointer ml-0.5">This Month</button>
+              <button type="button" onclick="ItemPurchases.setThisMonth()" class="px-2 py-0.5 text-[10px] font-black uppercase bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/80 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95 ml-0.5">This Month</button>
             </div>
 
             <!-- Annual controls -->
-            <div id="item-pur-annual-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-0.5 hidden">
-              <select id="item-pur-stats-year-picker" onchange="ItemPurchases.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+            <div id="item-pur-annual-controls" class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 hidden select-none">
+              <select id="item-pur-stats-year-picker" onchange="ItemPurchases.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2.5 py-0.5 text-xs font-black text-slate-900 outline-none cursor-pointer">
               </select>
+              <button type="button" onclick="ItemPurchases.setPeriodType('year')" class="px-2 py-0.5 text-[10px] font-black uppercase bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/80 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95 ml-0.5">This Year</button>
             </div>
 
             <!-- Custom Range controls -->
-            <div id="item-pur-custom-controls" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl hidden">
+            <div id="item-pur-custom-controls" class="flex items-center gap-1.5 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-xl hidden select-none">
               <span class="text-[10px] font-black uppercase text-slate-400">From</span>
-              <input type="date" id="item-pur-start-date" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              <input type="date" id="item-pur-start-date" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2 py-0.5 text-xs font-black text-slate-900 outline-none cursor-pointer">
               <span class="text-[10px] font-black uppercase text-slate-400">To</span>
-              <input type="date" id="item-pur-end-date" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              <input type="date" id="item-pur-end-date" onchange="ItemPurchases.applyFilters()" oninput="ItemPurchases.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2 py-0.5 text-xs font-black text-slate-900 outline-none cursor-pointer">
             </div>
 
-            <button id="item-pur-clear-period-btn" onclick="ItemPurchases.resetPeriodToDefault()" class="w-8 h-8 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all hidden cursor-pointer active:scale-95" title="Reset to Daily (Today)">
-              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            <button id="item-pur-clear-period-btn" onclick="ItemPurchases.resetPeriodToDefault()" class="w-7 h-7 rounded-lg flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all hidden cursor-pointer active:scale-95" title="Reset to Daily (Today)">
+              <i data-lucide="x" class="w-3.5 h-3.5 stroke-[2.5]"></i>
             </button>
           </div>
         </div>
@@ -302,6 +309,11 @@ window.ItemPurchases = {
   async loadData() {
     try {
       this.items = await window.api.getRawMaterialPurchases({}) || [];
+      try {
+        this.rawMaterials = await window.api.getRawMaterials() || [];
+      } catch (e) {
+        this.rawMaterials = [];
+      }
 
       // Populate Categories Dropdown
       const catSelect = document.getElementById('item-pur-cat-select');
@@ -402,9 +414,39 @@ window.ItemPurchases = {
 
   setPeriodType(type) {
     this.currentPeriodType = type;
-    if (type === 'custom') {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const now = new Date();
+    const curYear = String(now.getFullYear());
+    const curMonth = String(now.getMonth() + 1);
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    if (type === 'day') {
+      const datePicker = document.getElementById('item-pur-stats-date-picker');
+      if (datePicker) datePicker.value = todayStr;
+    } else if (type === 'month') {
+      const monthSelect = document.getElementById('item-pur-stats-month-select');
+      const monthYearSelect = document.getElementById('item-pur-stats-month-year-select');
+      if (monthSelect) monthSelect.value = curMonth;
+      if (monthYearSelect) {
+        if (!Array.from(monthYearSelect.options).some(o => o.value === curYear)) {
+          const opt = document.createElement('option');
+          opt.value = curYear;
+          opt.textContent = curYear;
+          monthYearSelect.prepend(opt);
+        }
+        monthYearSelect.value = curYear;
+      }
+    } else if (type === 'year') {
+      const yearPicker = document.getElementById('item-pur-stats-year-picker');
+      if (yearPicker) {
+        if (!Array.from(yearPicker.options).some(o => o.value === curYear)) {
+          const opt = document.createElement('option');
+          opt.value = curYear;
+          opt.textContent = curYear;
+          yearPicker.prepend(opt);
+        }
+        yearPicker.value = curYear;
+      }
+    } else if (type === 'custom') {
       const sDate = document.getElementById('item-pur-start-date');
       const eDate = document.getElementById('item-pur-end-date');
       if (sDate && !sDate.value) sDate.value = document.getElementById('item-pur-stats-date-picker')?.value || todayStr;
@@ -415,9 +457,9 @@ window.ItemPurchases = {
       const tab = document.getElementById(`item-pur-period-${t}-tab`);
       if (tab) {
         if (t === type) {
-          tab.className = 'px-2.5 py-1 text-xs font-bold rounded-lg transition-all bg-white shadow-2xs text-slate-800 cursor-pointer';
+          tab.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all bg-white shadow-2xs text-slate-900 cursor-pointer';
         } else {
-          tab.className = 'px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-700 cursor-pointer';
+          tab.className = 'px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
         }
       }
     });
@@ -446,10 +488,19 @@ window.ItemPurchases = {
 
   setThisMonth() {
     const now = new Date();
+    const curYear = String(now.getFullYear());
     const monthSelect = document.getElementById('item-pur-stats-month-select');
     const monthYearSelect = document.getElementById('item-pur-stats-month-year-select');
-    if (monthSelect) monthSelect.value = now.getMonth() + 1;
-    if (monthYearSelect) monthYearSelect.value = now.getFullYear();
+    if (monthSelect) monthSelect.value = String(now.getMonth() + 1);
+    if (monthYearSelect) {
+      if (!Array.from(monthYearSelect.options).some(o => o.value === curYear)) {
+        const opt = document.createElement('option');
+        opt.value = curYear;
+        opt.textContent = curYear;
+        monthYearSelect.prepend(opt);
+      }
+      monthYearSelect.value = curYear;
+    }
     this.applyFilters();
   },
 
@@ -812,17 +863,22 @@ window.ItemPurchases = {
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
-                    ${item.purchases.map(p => `
+                    ${item.purchases.map(p => {
+                      const mat = (this.rawMaterials || []).find(m => m.id === item.material_id);
+                      const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+                      const subHint = (spec && spec.isBulk) ? ` <span class="text-[10px] text-slate-400">(= ${(p.qty * spec.packSize).toLocaleString()} ${spec.subUnit})</span>` : '';
+                      return `
                       <tr class="hover:bg-slate-50">
                         <td class="px-3 py-2 font-mono font-bold text-slate-700">${app.formatDateOnly ? app.formatDateOnly(p.date) : p.date}</td>
                         <td class="px-3 py-2 font-mono font-bold text-emerald-700">${p.invoice_no || `#${p.id}`}</td>
                         <td class="px-3 py-2 font-bold text-slate-800">${p.supplier_name || 'Standard Supplier'}</td>
-                        <td class="px-3 py-2 text-right font-mono font-bold text-slate-900">${Number(p.qty).toLocaleString()} ${item.unit}</td>
+                        <td class="px-3 py-2 text-right font-mono font-bold text-slate-900">${Number(p.qty).toLocaleString()} ${item.unit}${subHint}</td>
                         <td class="px-3 py-2 text-right font-mono font-bold text-slate-700">Rs. ${Number(p.unit_cost).toLocaleString()}</td>
                         <td class="px-3 py-2 text-right font-mono font-black text-emerald-700">Rs. ${Number(p.total_cost).toLocaleString()}</td>
                         <td class="px-3 py-2 text-slate-500 text-[11px] italic max-w-xs truncate">${p.notes || '-'}</td>
                       </tr>
-                    `).join('')}
+                    `;
+                    }).join('')}
                   </tbody>
                 </table>
               </div>
@@ -856,7 +912,12 @@ window.ItemPurchases = {
           </td>
           <td class="px-3 py-3 text-center border-r border-slate-100 font-bold text-slate-600 text-xs uppercase">${item.unit}</td>
           <td class="px-4 py-3 text-right border-r border-slate-100 font-mono font-black text-slate-900 text-xs">
-            ${item.totalQty.toLocaleString()} <span class="text-[10px] font-bold text-slate-400 lowercase">${item.unit}</span>
+            ${(() => {
+              const mat = (this.rawMaterials || []).find(m => m.id === item.material_id);
+              const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+              const subHint = (spec && spec.isBulk) ? ` <span class="text-[10px] text-slate-400 font-normal">(= ${(item.totalQty * spec.packSize).toLocaleString()} ${spec.subUnit})</span>` : '';
+              return `${item.totalQty.toLocaleString()} <span class="text-[10px] font-bold text-slate-400 lowercase">${item.unit}</span>${subHint}`;
+            })()}
           </td>
           <td class="px-4 py-3 text-right border-r border-slate-100 font-mono font-bold text-slate-700 text-xs">
             Rs. ${item.avgCost.toFixed(2)}
@@ -888,7 +949,7 @@ window.ItemPurchases = {
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="bg-slate-100 border-t-2 border-slate-300">
-          <td class="px-3 py-3 text-center text-slate-500 font-black">â€¢</td>
+          <td class="px-3 py-3 text-center text-slate-500 font-black">&bull;</td>
           <td class="px-4 py-3 text-slate-900 uppercase tracking-wider font-black">
             TOTAL (${list.length} RAW MATERIALS)
           </td>
@@ -968,34 +1029,34 @@ window.ItemPurchases = {
 
       const rowsHtml = list.map((item, idx) => `
         <tr>
-          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 700; color: #000; font-family: monospace;">${idx + 1}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 800; font-size: 9.5px; color: #000;">${item.material_name}</td>
+          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 700; color: #000;">${idx + 1}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 500; font-size: 9.5px; color: #000;">${item.material_name}</td>
           <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; color: #000;">${item.category}</td>
           <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; text-transform: uppercase; color: #000;">${item.unit}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; font-family: -apple-system, monospace; color: #000;">${item.totalQty.toLocaleString()}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; font-family: -apple-system, monospace; color: #000;">Rs. ${item.avgCost.toFixed(2)}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; font-family: -apple-system, monospace; color: #000;">Rs. ${item.lastCost.toLocaleString()}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000; font-family: -apple-system, monospace;">Rs. ${item.totalSpend.toLocaleString()}</td>
-          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 800; color: #000;">${item.ordersCount}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 500; font-size: 9.5px; color: #000;">${item.totalQty.toLocaleString()}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${item.avgCost.toFixed(2)}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${item.lastCost.toLocaleString()}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 500; font-size: 9.5px; color: #000;">Rs. ${item.totalSpend.toLocaleString()}</td>
+          <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 500; color: #000;">${item.ordersCount}</td>
           <td style="border: 1px solid #000; padding: 4px 6px; font-size: 8.5px; color: #000;">${item.suppliers.join(', ') || '-'}</td>
         </tr>
       `).join('');
 
       const html = `
-        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
           <!-- Factory Header -->
           <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-            <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${companyName}</h1>
+            <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${companyName}</h1>
             <div style="font-size: 9.5px; color: #000; margin-top: 1px; font-weight: 600;">${address} • Tel: ${phone}</div>
           </div>
 
           <!-- Document Title -->
-          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
             ITEM WISE RAW MATERIAL PURCHASES REPORT
           </div>
 
           <!-- Filter & Summary Bar -->
-          <div class="a5-meta-box" style="display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+          <div class="a5-meta-box" style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; margin-bottom: 8px; padding: 7px 11px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.55;">
             <div style="line-height: 1.45;">
               <div><strong>Period:</strong> ${periodLabel}</div>
               <div><strong>Raw Materials:</strong> ${list.length} Items</div>
@@ -1009,42 +1070,42 @@ window.ItemPurchases = {
           <!-- KPI Summary Cards -->
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 9.5px;">
             <div style="background: #fff; padding: 4px; border: 1px solid #000;">
-              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 800; display: block;">Total Spend</span>
-              <span style="font-size: 11px; font-weight: 900; color: #000; font-family: -apple-system, monospace;">Rs. ${totalSpend.toLocaleString()}</span>
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 600; display: block;">Total Spend</span>
+              <span style="font-size: 11px; font-weight: 700; color: #000; ">Rs. ${totalSpend.toLocaleString()}</span>
             </div>
             <div style="background: #fff; padding: 4px; border: 1px solid #000;">
-              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 800; display: block;">Total Quantity Purchased</span>
-              <span style="font-size: 11px; font-weight: 900; color: #000; font-family: -apple-system, monospace;">${totalQty.toLocaleString()} Units</span>
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 600; display: block;">Total Quantity Purchased</span>
+              <span style="font-size: 11px; font-weight: 700; color: #000; ">${totalQty.toLocaleString()} Units</span>
             </div>
           </div>
 
           <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
             <thead>
               <tr style="background: #fff; border-bottom: 1.5px solid #000;">
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 22px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Material Name</th>
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Qty</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Avg Cost</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Last Cost</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Spend</th>
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Orders</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Suppliers</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 22px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Material Name</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Qty</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Avg Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Last Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Spend</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Orders</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Suppliers</th>
               </tr>
             </thead>
             <tbody>
               ${rowsHtml}
             </tbody>
             <tfoot>
-              <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
-                <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000;">•</td>
-                <td colspan="3" style="border: 1px solid #000; padding: 4px 6px; text-transform: uppercase; color: #000;">GRAND TOTAL (${list.length} RAW MATERIALS):</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; color: #000;">${totalQty.toLocaleString()}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${(totalQty > 0 ? (totalSpend / totalQty) : 0).toFixed(2)}</td>
+              <tr style="background: #fff; font-weight: 700; border-top: 1.5px solid #000; color: #000;">
+                <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000; font-size: 8.5px;">•</td>
+                <td colspan="3" style="border: 1px solid #000; padding: 4px 6px; text-transform: uppercase; color: #000; font-size: 8.5px;">GRAND TOTAL (${list.length} RAW MATERIALS):</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 9px;">${totalQty.toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 8.5px;">Rs. ${(totalQty > 0 ? (totalSpend / totalQty) : 0).toFixed(2)}</td>
                 <td style="border: 1px solid #000; padding: 4px;"></td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${totalSpend.toLocaleString()}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-family: -apple-system, monospace; color: #000;">${totalOrders}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 9px;">Rs. ${totalSpend.toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; color: #000; font-size: 8.5px;">${totalOrders}</td>
                 <td style="border: 1px solid #000; padding: 4px;"></td>
               </tr>
             </tfoot>
@@ -1052,10 +1113,10 @@ window.ItemPurchases = {
 
           <!-- Signatures -->
           <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
               Purchase Officer Signature
             </div>
-            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
               Factory Auditor Signature
             </div>
           </div>

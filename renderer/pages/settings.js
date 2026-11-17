@@ -7,9 +7,11 @@ const LOCKABLE_TABS = [
   { key: 'shop-sales', name: '5. New Sale' },
   { key: 'proposals', name: 'Sales History' },
   { key: 'purchases', name: 'Purchases' },
-  { key: 'customers', name: 'Shops / Khata' },
+  { key: 'suppliers', name: 'Suppliers / Khata' },
+  { key: 'customers', name: 'Salesmen / Khata' },
   { key: 'reports', name: 'Factory Reports' },
   { key: 'expenses', name: 'Expenses' },
+  { key: 'employees', name: 'Employees' },
   { key: 'settings', name: 'Settings' }
 ];
 
@@ -17,6 +19,12 @@ const Settings = {
   originalLogo: '',
 
   async render(container) {
+    const curZoom = (window.app && typeof app.currentZoom === 'number') ? app.currentZoom : 1.0;
+    const curPct = Math.round(curZoom * 100);
+    const getBtnClass = (presetPct) => (curPct === presetPct)
+      ? 'zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer bg-blue-600 text-white border-blue-600 shadow-sm'
+      : 'zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:bg-slate-50';
+
     container.innerHTML = `
       <div class="flex justify-between items-center mb-6 flex-wrap gap-4 no-print">
         <div class="flex items-center gap-3">
@@ -109,7 +117,7 @@ const Settings = {
                 </div>
               </div>
               <span id="settings-zoom-display" class="px-2.5 py-1 bg-blue-50 text-blue-700 font-mono font-black text-xs rounded-lg border border-blue-200">
-                82%
+                ${curPct}%
               </span>
             </div>
             <div class="p-4 space-y-4">
@@ -121,19 +129,19 @@ const Settings = {
               <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Display Scale Presets</label>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <button type="button" onclick="app.setZoom(0.80)" data-zoom="0.80" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                  <button type="button" onclick="app.setZoom(0.80)" data-zoom="0.80" class="${getBtnClass(80)}">
                     80% <span class="block text-[9.5px] font-normal opacity-80">(Compact Laptop)</span>
                   </button>
-                  <button type="button" onclick="app.setZoom(0.82)" data-zoom="0.82" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                  <button type="button" onclick="app.setZoom(0.82)" data-zoom="0.82" class="${getBtnClass(82)}">
                     82% <span class="block text-[9.5px] font-normal opacity-80">(Laptop Ideal)</span>
                   </button>
-                  <button type="button" onclick="app.setZoom(0.85)" data-zoom="0.85" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                  <button type="button" onclick="app.setZoom(0.85)" data-zoom="0.85" class="${getBtnClass(85)}">
                     85% <span class="block text-[9.5px] font-normal opacity-80">(15% Smaller)</span>
                   </button>
-                  <button type="button" onclick="app.setZoom(0.90)" data-zoom="0.90" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer">
+                  <button type="button" onclick="app.setZoom(0.90)" data-zoom="0.90" class="${getBtnClass(90)}">
                     90% <span class="block text-[9.5px] font-normal opacity-80">(Medium)</span>
                   </button>
-                  <button type="button" onclick="app.setZoom(1.00)" data-zoom="1.00" class="zoom-preset-btn px-2.5 py-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer sm:col-span-2">
+                  <button type="button" onclick="app.setZoom(1.00)" data-zoom="1.00" class="${getBtnClass(100)} sm:col-span-2">
                     100% <span class="block text-[9.5px] font-normal opacity-80">(Full Size Desktop Monitor)</span>
                   </button>
                 </div>
@@ -305,7 +313,7 @@ const Settings = {
                  </div>
                  <div>
                     <h4 class="font-bold text-slate-800 text-sm">Backup Factory Data Locally</h4>
-                    <p class="text-xs text-slate-500 mb-3">Create a complete backup file of all raw materials, production batches, packed carton stocks, delivery vehicles, shop sales, customer khata, and expenses.</p>
+                    <p class="text-xs text-slate-500 mb-3">Create a complete, secure backup file of all raw materials, chocolate production, single item production, packed cartons, delivery vehicles, shop sales & returns, employee attendance & payroll, customer & supplier khata, and expenses.</p>
                     <button onclick="Settings.backupData()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
                       <i data-lucide="download" class="w-3.5 h-3.5"></i> Backup App Data
                     </button>
@@ -318,7 +326,7 @@ const Settings = {
                  </div>
                  <div>
                     <h4 class="font-bold text-slate-800 text-sm">Restore from Backup</h4>
-                    <p class="text-xs text-slate-500 mb-3">Restore your entire factory database from a previous backup file. <span class="text-rose-600 font-bold">This replaces all current data and restarts the application automatically.</span></p>
+                    <p class="text-xs text-slate-500 mb-3">Restore your entire factory database from a previous backup file. <span class="text-rose-600 font-bold">This replaces all current factory data, chocolate stocks, employees, and records, then restarts the application automatically.</span></p>
                     <button onclick="Settings.restoreData()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
                       <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-amber-600"></i> Restore Data
                     </button>
@@ -331,7 +339,7 @@ const Settings = {
                  </div>
                  <div>
                     <h4 class="font-bold text-slate-800 text-sm">Clear All App Data</h4>
-                    <p class="text-xs text-slate-500 mb-3">Permanently wipe all data across all 5 stages (raw materials, production runs, carton stocks, cars, shop sales, customer khata) and reset the app to a completely clean slate. <span class="text-rose-600 font-bold underline">This action cannot be undone.</span></p>
+                    <p class="text-xs text-slate-500 mb-3">Permanently wipe all operational data across all factory modules (raw materials, chocolate batches, production runs, carton stocks, cars, shop sales & returns, employees, attendance, salary payments, customer & supplier khata) and reset the app to a completely clean slate. <span class="text-rose-600 font-bold underline">This action cannot be undone.</span></p>
                     <button onclick="Settings.clearAppData()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
                       <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear All Data
                     </button>
@@ -343,6 +351,11 @@ const Settings = {
         </div>
       </div>
     `;
+
+    // Immediately synchronize zoom UI so buttons and badge match active zoom without waiting
+    if (window.app && typeof app.updateZoomUI === 'function') {
+      try { app.updateZoomUI(app.currentZoom || 1.0); } catch (e) {}
+    }
 
     try {
       await this.reloadSettings();
@@ -430,6 +443,10 @@ const Settings = {
   },
 
   async reloadSettings() {
+    if (window.app && app.updateZoomUI) {
+      try { app.updateZoomUI(app.currentZoom || 1.0); } catch (e) {}
+    }
+
     const s = await window.api.getSettings();
     if (document.getElementById('set-name')) document.getElementById('set-name').value = s.company_name || 'Delicious Superstar Foods';
     if (document.getElementById('set-web')) document.getElementById('set-web').value = s.website || '';
@@ -439,8 +456,14 @@ const Settings = {
     this.updateLogoPreview(this.originalLogo);
 
     // Populate Barcode Sticker Printer settings
-    await this.refreshPrinters();
-    if (window.app && app.updateZoomUI) app.updateZoomUI(app.currentZoom || 0.82);
+    try {
+      await this.refreshPrinters();
+    } catch (e) {
+      console.warn('Printer refresh error in reloadSettings:', e);
+    }
+    if (window.app && app.updateZoomUI) {
+      try { app.updateZoomUI(app.currentZoom || 1.0); } catch (e) {}
+    }
     const savedSize = window.storage ? window.storage.get('label_sticker_size') || '38x28' : '38x28';
     const savedMode = window.storage ? window.storage.get('label_print_mode') || 'silent' : 'silent';
     const savedStore = window.storage ? window.storage.get('label_store_name') : null;
@@ -764,17 +787,18 @@ const Settings = {
     app.authorizeAction(() => {
       app.showConfirm({
         title: 'Restore Factory Database',
-        message: 'Restoring a database will replace all current factory data, stocks, delivery records, and accounts with the selected backup file.<br><br><b>The application will automatically restart once the restore completes.</b><br><br>Are you sure you want to proceed?',
+        message: 'Restoring a database will replace all current factory data, stocks, delivery records, chocolate production, employees & payroll, and accounts with the selected backup file.<br><br><b>The application will automatically restart once the restore completes.</b><br><br>Are you sure you want to proceed?',
         confirmText: 'Select Backup File',
         confirmColor: 'orange',
         onConfirm: async () => {
           app.showLoading();
           try {
-            // Clear local and session storage so restored DB rehydrates cleanly
-            localStorage.clear();
-            sessionStorage.clear();
             const res = await window.api.restoreData();
-            if (res && !res.success && res.error !== 'Cancelled') {
+            if (res && res.success) {
+              // Clear local and session storage so restored DB rehydrates cleanly
+              localStorage.clear();
+              sessionStorage.clear();
+            } else if (res && !res.success && res.error !== 'Cancelled') {
               app.showAlert('Restore failed: ' + res.error);
             }
           } catch (err) {
@@ -792,20 +816,20 @@ const Settings = {
     app.authorizeAction(() => {
       app.showConfirm({
         title: 'Clear All Factory & App Data',
-        message: 'Are you sure you want to delete EVERYTHING?<br><br>This will permanently wipe all:<br>• <b>Stage 1:</b> Raw materials stock & purchases<br>• <b>Stage 2:</b> Single pieces production & batches<br>• <b>Stage 3:</b> Packed cartons warehouse stock<br>• <b>Stage 4:</b> Delivery vehicles & loaded stock<br>• <b>Stage 5:</b> Shop sales, delivery invoices & returns<br>• <b>Ledgers:</b> Customer & supplier khata balances, expenses & logs<br><br><span class="text-rose-600 font-black">The application will be reset to a completely clean slate. This action CANNOT be undone!</span>',
+        message: 'Are you sure you want to delete EVERYTHING?<br><br>This will permanently wipe all:<br>• <b>Stage 1:</b> Raw materials stock & purchases<br>• <b>Chocolate:</b> Prepared chocolate batches, liters stock & logs<br>• <b>Stage 2:</b> Single pieces production & recipes<br>• <b>Stage 3:</b> Packed cartons warehouse stock & batches<br>• <b>Stage 4:</b> Delivery vehicles & loaded car stock<br>• <b>Stage 5:</b> Shop sales, delivery invoices, returns & payments<br>• <b>Staff:</b> Employees list, attendance logs & salary payments<br>• <b>Ledgers:</b> Customer & supplier khata balances, expenses & logs<br><br><span class="text-rose-600 font-black">The application will be reset to a completely clean slate. This action CANNOT be undone!</span>',
         confirmText: 'Yes, Delete Everything',
         confirmColor: 'red',
         onConfirm: async () => {
           app.showLoading();
           try {
-            localStorage.clear();
-            sessionStorage.clear();
             const res = await window.api.clearAppData();
             if (res && res.success) {
+              localStorage.clear();
+              sessionStorage.clear();
               app.hideLoading();
               app.showAlert({
                 title: 'All Factory Data Cleared',
-                message: 'All factory raw materials, production batches, carton stock, vehicles, shop deliveries, and khata ledger records have been completely cleared.<br><br>The application will now restart fresh to a clean slate.',
+                message: 'All factory raw materials, chocolate batches, production records, carton inventory, vehicles, shop deliveries & returns, employee records & payroll, and khata ledger records have been completely cleared.<br><br>The application will now restart fresh to a clean slate.',
                 buttonText: 'Restart Application',
                 onConfirm: async () => {
                   if (window.api && typeof window.api.relaunchApp === 'function') {

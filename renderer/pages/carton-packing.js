@@ -1,8 +1,9 @@
-// Stage 3: Carton Packing (Single Items -> Packed Cartons / Actual Sellable Stock)
+// Stage 2: Carton Packing (Direct from Raw Materials -> Packed Cartons / Sellable Stock)
 window.CartonPacking = {
   cartons: [],
   singleItems: [],
   batches: [],
+  rawMaterials: [],
   activeTab: 'inventory', // 'inventory' | 'batches'
   searchQuery: '',
   packageFilter: 'all', // 'all' | 'carton' | 'shoper'
@@ -23,6 +24,8 @@ window.CartonPacking = {
       this.cartons = await window.api.getPackedCartons() || [];
       this.singleItems = await window.api.getIcecreamItems() || [];
       this.batches = await window.api.getPackingBatches() || [];
+      this.rawMaterials = await window.api.getRawMaterials() || [];
+      this.chocolateStock = (await window.api.getChocolateStock?.()) || { stock: 0, unit: 'Liters' };
       this.renderUI();
     } catch (e) {
       console.error('Failed to load packing data:', e);
@@ -65,10 +68,10 @@ window.CartonPacking = {
         <div class="bg-gradient-to-r from-purple-950 via-slate-900 to-slate-900 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border border-purple-800/40">
           <div>
             <div class="flex items-center gap-2 mb-1">
-              <span class="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono text-[11px] font-black border border-purple-500/30">STAGE 3</span>
-              <h2 class="text-2xl font-black tracking-tight text-white">Carton &amp; Shoper Packing (Sellable Inventory)</h2>
+              <span class="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono text-[11px] font-black border border-purple-500/30">STAGE 2</span>
+              <h2 class="text-2xl font-black tracking-tight text-white">Carton &amp; Shoper Packing (Finished Inventory)</h2>
             </div>
-            <p class="text-xs text-slate-300 font-medium">Pack loose pieces into sellable cartons or shopers (e.g. 20 pcs/carton or 25 pcs/shoper).</p>
+            <p class="text-xs text-slate-300 font-medium">Produce and pack sellable cartons or shopers directly from raw materials.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
             <button onclick="app.openBarcodeStickerModal(null, 'carton')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer" title="Print Barcode Stickers (Speed-X SP-650UL / 4Barcode)">
@@ -87,10 +90,10 @@ window.CartonPacking = {
         </div>
 
         <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Warehouse Stock</p>
+              <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Warehouse Stock</p>
               <h3 class="text-2xl font-black text-purple-700 mt-1 tabular-nums">${totalWarehouseUnits.toLocaleString()} <span class="text-xs font-bold text-slate-400">units</span></h3>
               <p class="text-[10.5px] font-bold text-purple-600/90 mt-0.5">${whCtns.toLocaleString()} ctns • ${whShopers.toLocaleString()} shopers</p>
             </div>
@@ -101,7 +104,7 @@ window.CartonPacking = {
 
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Loaded in Cars</p>
+              <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Loaded in Cars</p>
               <h3 class="text-2xl font-black text-blue-600 mt-1 tabular-nums">${totalInCars.toLocaleString()} <span class="text-xs font-bold text-slate-400">units</span></h3>
               <p class="text-[10.5px] font-bold text-blue-600/90 mt-0.5">${carCtns.toLocaleString()} ctns • ${carShopers.toLocaleString()} shopers</p>
             </div>
@@ -112,18 +115,7 @@ window.CartonPacking = {
 
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Finished Stock</p>
-              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalFinishedStock.toLocaleString()} <span class="text-xs font-bold text-slate-400">total</span></h3>
-              <p class="text-[10.5px] font-bold text-slate-500 mt-0.5">${(whCtns + carCtns).toLocaleString()} ctns • ${(whShopers + carShopers).toLocaleString()} shopers</p>
-            </div>
-            <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-black">
-              <i data-lucide="package-check" class="w-5 h-5"></i>
-            </div>
-          </div>
-
-          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-            <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Warehouse Sale Value</p>
+              <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Warehouse Sale Value</p>
               <h3 class="text-2xl font-black text-emerald-700 mt-1 tabular-nums">Rs. ${Math.round(totalWarehouseValue).toLocaleString()}</h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">
@@ -597,50 +589,44 @@ window.CartonPacking = {
               <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="CartonPacking.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
-                  <span>Carton / Shoper Item</span>
+                  <span>Item</span>
                   ${this.getSortIcon('name')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('spec')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-center gap-1">
-                  <span>Packing Spec</span>
+                  <span>Pack Size</span>
                   ${this.getSortIcon('spec')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('stock')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Factory Warehouse Stock</span>
+                  <span>Warehouse Stock</span>
                   ${this.getSortIcon('stock')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('loaded')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Loaded in Cars</span>
+                  <span>In Cars</span>
                   ${this.getSortIcon('loaded')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Unit Cost</span>
+                  <span>Cost</span>
                   ${this.getSortIcon('cost')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('price')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Sale Price</span>
+                  <span>Price</span>
                   ${this.getSortIcon('price')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('value')" class="py-2 px-3 text-right font-black text-slate-800 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Warehouse Value</span>
+                  <span>Stock Value</span>
                   ${this.getSortIcon('value')}
-                </div>
-              </th>
-              <th onclick="CartonPacking.toggleSort('pool_pcs')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
-                <div class="flex items-center justify-center gap-1">
-                  <span>Loose Pcs in Stock</span>
-                  ${this.getSortIcon('pool_pcs')}
                 </div>
               </th>
               <th class="py-2 px-3 text-right">Actions</th>
@@ -653,7 +639,6 @@ window.CartonPacking = {
               const unitsAbbr = isShoper ? 'shopers' : 'ctns';
               const stock = c.factory_carton_stock || 0;
               const loaded = c.total_loaded_in_cars || 0;
-              const pcsAvailable = c.available_single_pieces || 0;
               const val = Math.round(stock * (c.carton_sale_price || 0));
 
               return `
@@ -667,7 +652,6 @@ window.CartonPacking = {
                       </span>
                     </div>
                     <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <span class="text-[10px] text-slate-400 leading-tight">Base: ${c.base_item_name}</span>
                       ${c.barcode ? `<span class="px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300 font-mono text-[9px] font-black" title="Barcode: ${c.barcode}">#${c.barcode}</span>` : '<span class="text-[9px] text-slate-400 italic">No barcode</span>'}
                     </div>
                   </td>
@@ -697,17 +681,12 @@ window.CartonPacking = {
                   <td class="py-1.5 px-3 text-right font-black text-emerald-700 tabular-nums border-r border-slate-200">
                     Rs. ${val.toLocaleString()}
                   </td>
-                  <td class="py-1.5 px-3 text-center border-r border-slate-200">
-                    <span class="px-2 py-0.5 rounded-full ${pcsAvailable >= c.pieces_per_carton ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-rose-50 text-rose-700 border border-rose-200'} text-[10px] font-black whitespace-nowrap">
-                      ${pcsAvailable} pcs available
-                    </span>
-                  </td>
                   <td class="py-1.5 px-3 text-right">
                     <div class="flex items-center justify-end gap-1.5">
                       <button onclick="app.openBarcodeStickerModal(${c.id}, 'carton')" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Print Barcode Stickers">
                         <i data-lucide="barcode" class="w-3.5 h-3.5"></i>
                       </button>
-                      <button onclick="CartonPacking.openPackModal(${c.id})" class="w-7 h-7 rounded-lg ${isShoper ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200/80' : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200/80'} border flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="${isShoper ? 'Pack Loose Pieces into Shopers' : 'Pack Loose Pieces into Cartons'}">
+                      <button onclick="CartonPacking.openPackModal(${c.id})" class="w-7 h-7 rounded-lg ${isShoper ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200/80' : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200/80'} border flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="${isShoper ? 'Pack Shopers' : 'Pack Cartons'}">
                         <i data-lucide="${isShoper ? 'shopping-bag' : 'package'}" class="w-3.5 h-3.5"></i>
                       </button>
                       <button onclick="CartonPacking.openCartonConfigModal(${c.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Pricing / Spec">
@@ -745,9 +724,6 @@ window.CartonPacking = {
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums bg-purple-50/70">
                 Rs. ${Math.round(totalWarehouseValue).toLocaleString()}
               </td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-center font-bold text-slate-700 text-xs">
-                ${totalPoolPcs.toLocaleString()} pcs
-              </td>
               <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
             </tr>
           </tfoot>
@@ -784,7 +760,7 @@ window.CartonPacking = {
               <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="CartonPacking.toggleSort('packing_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
-                  <span>Packing #</span>
+                  <span>Batch #</span>
                   ${this.getSortIcon('packing_number')}
                 </div>
               </th>
@@ -796,31 +772,26 @@ window.CartonPacking = {
               </th>
               <th onclick="CartonPacking.toggleSort('item_name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
-                  <span>Item Packed</span>
+                  <span>Item</span>
                   ${this.getSortIcon('item_name')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('cartons_packed')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Units Packed</span>
+                  <span>Packed</span>
                   ${this.getSortIcon('cartons_packed')}
                 </div>
               </th>
               <th onclick="CartonPacking.toggleSort('pieces_per_carton')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-center gap-1">
-                  <span>Spec</span>
+                  <span>Pack Size</span>
                   ${this.getSortIcon('pieces_per_carton')}
                 </div>
               </th>
-              <th onclick="CartonPacking.toggleSort('total_pieces_consumed')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
-                <div class="flex items-center justify-end gap-1">
-                  <span>Single Pcs Consumed</span>
-                  ${this.getSortIcon('total_pieces_consumed')}
-                </div>
-              </th>
+              <th class="py-2 px-3 text-left border-r border-slate-200">Materials Used</th>
               <th onclick="CartonPacking.toggleSort('carton_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Unit Cost</span>
+                  <span>Cost</span>
                   ${this.getSortIcon('carton_cost')}
                 </div>
               </th>
@@ -832,7 +803,7 @@ window.CartonPacking = {
               </th>
               <th onclick="CartonPacking.toggleSort('carton_sale_price')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Sale Price</span>
+                  <span>Price</span>
                   ${this.getSortIcon('carton_sale_price')}
                 </div>
               </th>
@@ -862,7 +833,7 @@ window.CartonPacking = {
                   +${b.cartons_packed} ${unitsAbbr}
                 </td>
                 <td class="py-1.5 px-3 text-center font-mono text-[11px] text-slate-500 border-r border-slate-200">${b.pieces_per_carton} pcs/${unitAbbr}</td>
-                <td class="py-1.5 px-3 text-right font-mono font-bold text-rose-600 tabular-nums border-r border-slate-200">-${b.total_pieces_consumed} pcs</td>
+                <td class="py-1.5 px-3 text-slate-600 text-[11px] max-w-xs truncate border-r border-slate-200" title="${b.raw_materials_summary || 'Standard ingredients'}">${b.raw_materials_summary || (b.total_pieces_consumed ? b.total_pieces_consumed + ' pcs' : 'Direct packed')}</td>
                 <td class="py-1.5 px-3 text-right font-mono text-slate-700 tabular-nums border-r border-slate-200">Rs. ${b.carton_cost}</td>
                 <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(b.total_cost).toLocaleString()}</td>
                 <td class="py-1.5 px-3 text-right font-black text-emerald-700 tabular-nums border-r border-slate-200">Rs. ${b.carton_sale_price}</td>
@@ -922,9 +893,15 @@ window.CartonPacking = {
     this.updateContentArea();
   },
 
-  openPackModal(defaultCartonId = null) {
+  async openPackModal(defaultCartonId = null) {
     const modalEl = document.getElementById('pck-modal-container');
     if (!modalEl) return;
+
+    // Refresh fresh stock data
+    try {
+      this.rawMaterials = await window.api.getRawMaterials() || this.rawMaterials || [];
+      this.chocolateStock = (await window.api.getChocolateStock?.()) || this.chocolateStock || { stock: 0, unit: 'Liters' };
+    } catch (e) {}
 
     const defaultCarton = defaultCartonId ? this.cartons.find(x => x.id === Number(defaultCartonId)) : null;
     const isShoper = defaultCarton?.package_type === 'shoper';
@@ -933,15 +910,15 @@ window.CartonPacking = {
 
     modalEl.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full overflow-hidden border border-slate-200">
           <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 border border-purple-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
                 <i data-lucide="box" class="w-4.5 h-4.5"></i>
               </div>
               <div>
-                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Pack Single Pieces into <span id="pk-header-unit">${unitPlural}</span></h3>
-                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 3 • Move loose items into warehouse inventory</p>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Pack &amp; Produce <span id="pk-header-unit">${unitPlural}</span></h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 2 • Direct production from raw materials into warehouse inventory</p>
               </div>
             </div>
             <button type="button" onclick="CartonPacking.closeModal()" class="modal-close-btn" title="Close (Esc)">
@@ -950,87 +927,104 @@ window.CartonPacking = {
           </div>
 
           <form onsubmit="CartonPacking.handlePackingSubmit(event)" class="p-6 space-y-4">
-            <!-- 1. Select Carton / Shoper Product (Searchable) -->
-            <div class="relative dropdown-wrap" id="pk-carton-wrap">
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Select Product *</label>
-              <input type="hidden" id="pk-carton-id" value="${defaultCarton ? defaultCarton.id : ''}">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
               
-              <div class="relative">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-                <input type="text" id="pk-carton-search" autocomplete="off"
-                       placeholder="Type to search product (e.g. Chocbar, Lolly)..."
-                       value="${defaultCarton ? defaultCarton.carton_name : ''}"
-                       onfocus="CartonPacking.openCartonDropdown()"
-                       onclick="CartonPacking.openCartonDropdown()"
-                       oninput="CartonPacking.filterCartonDropdown(this.value)"
-                       onkeydown="CartonPacking.onCartonKeydown(event)"
-                       class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 transition-all cursor-pointer">
-                <button type="button" onclick="CartonPacking.toggleCartonDropdown()"
-                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
-                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
-                </button>
+              <!-- LEFT COLUMN: Product, Quantity, Pricing & Summary -->
+              <div class="lg:col-span-4 space-y-3.5">
+                <!-- 1. Select Carton / Shoper Product (Searchable) -->
+                <div class="relative dropdown-wrap" id="pk-carton-wrap">
+                  <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Select Product *</label>
+                  <input type="hidden" id="pk-carton-id" value="${defaultCarton ? defaultCarton.id : ''}">
+                  
+                  <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                    <input type="text" id="pk-carton-search" autocomplete="off"
+                           placeholder="Type to search product (e.g. Chocbar, Lolly)..."
+                           value="${defaultCarton ? defaultCarton.carton_name : ''}"
+                           onfocus="CartonPacking.openCartonDropdown()"
+                           onclick="CartonPacking.openCartonDropdown()"
+                           oninput="CartonPacking.filterCartonDropdown(this.value)"
+                           onkeydown="CartonPacking.onCartonKeydown(event)"
+                           class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 transition-all cursor-pointer">
+                    <button type="button" onclick="CartonPacking.toggleCartonDropdown()"
+                            class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+                      <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+
+                  <!-- Floating Searchable Dropdown -->
+                  <div id="pk-carton-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
+                  </div>
+                </div>
+
+                <!-- 2. Quantity & Pcs per carton/shoper -->
+                <div class="grid grid-cols-2 gap-3 items-end">
+                  <div>
+                    <label id="pk-label-pcs" class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 h-5 flex items-center truncate" title="Pieces Per ${unitSingular}">Pieces / ${unitSingular}</label>
+                    <input type="number" step="1" min="1" id="pk-pcs-per-carton" value="${isShoper ? 25 : 20}" required oninput="CartonPacking.calcPackingTotal()"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-black text-slate-900 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
+                  </div>
+                  <div>
+                    <label id="pk-label-qty" class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 h-5 flex items-center truncate" title="${unitPlural} to Pack">${unitPlural} to Pack *</label>
+                    <input type="number" step="1" min="1" id="pk-cartons-qty" required placeholder="e.g. 5" oninput="CartonPacking.calcPackingTotal()"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-black text-purple-700 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
+                  </div>
+                </div>
+
+                <!-- 3. Prices & Date -->
+                <div class="grid grid-cols-2 gap-3 items-end">
+                  <div>
+                    <label id="pk-label-price" class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 h-5 flex items-center truncate" title="${unitSingular} Sale Price (Rs.)">${unitSingular} Sale Price (Rs.) *</label>
+                    <input type="number" step="any" min="0" id="pk-sale-price" required placeholder="e.g. 250"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-black text-emerald-700 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1 h-5 flex items-center truncate">Packing Date</label>
+                    <input type="date" id="pk-date" value="${new Date().toISOString().split('T')[0]}"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 font-mono">
+                  </div>
+                </div>
+
+                <!-- 4. Calculation Box -->
+                <div class="p-3.5 bg-purple-50/80 border border-purple-200/80 rounded-2xl space-y-1.5 shadow-2xs">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-purple-900">Total Pieces Produced:</span>
+                    <span id="pk-pcs-needed-display" class="font-black text-purple-900 tabular-nums">0 pieces</span>
+                  </div>
+                  <div class="flex justify-between items-center text-xs">
+                    <span id="pk-label-cost" class="font-bold text-purple-900">Cost Per ${unitSingular}:</span>
+                    <span id="pk-carton-cost-display" class="font-black text-purple-900 tabular-nums">Rs. 0</span>
+                  </div>
+                  <div class="flex justify-between items-center pt-1.5 border-t border-purple-200 text-sm font-black">
+                    <span class="text-purple-950">Total Packing Cost:</span>
+                    <span id="pk-total-cost-display" class="text-purple-700 tabular-nums">Rs. 0</span>
+                  </div>
+                </div>
               </div>
 
-              <!-- Floating Searchable Dropdown -->
-              <div id="pk-carton-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
+              <!-- RIGHT COLUMN: Deduct Raw Materials Consumed -->
+              <div class="lg:col-span-8 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200 flex flex-col h-full min-h-[350px]">
+                <div class="flex items-center justify-between mb-2 shrink-0 pb-2 border-b border-slate-200">
+                  <div>
+                    <label class="text-[11px] font-black uppercase text-slate-800 tracking-wider block">Deduct Raw Materials Consumed</label>
+                    <span class="text-[10px] text-slate-500 font-medium">Auto-deducted from factory inventory</span>
+                  </div>
+                  <button type="button" id="pk-add-mat-btn" onclick="CartonPacking.addMaterialDeductionRow()" 
+                          class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Material
+                  </button>
+                </div>
+
+                <div id="pk-materials-list" class="space-y-2 overflow-y-auto max-h-[360px] pr-1 custom-scrollbar flex-1">
+                  <!-- Injected dynamically -->
+                </div>
               </div>
+
             </div>
 
-            <!-- Single Pcs Available Banner -->
-            <div id="pk-pool-indicator" class="p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-600">Available Single Pieces in Stock:</span>
-              <span id="pk-available-display" class="font-black text-slate-900 tabular-nums">0 pcs</span>
-            </div>
-
-            <!-- 2. Quantity & Pcs per carton/shoper -->
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label id="pk-label-pcs" class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Pieces Per ${unitSingular}</label>
-                <input type="number" step="1" min="1" id="pk-pcs-per-carton" value="${isShoper ? 25 : 20}" required oninput="CartonPacking.calcPackingTotal()"
-                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-black text-slate-900 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
-              </div>
-              <div>
-                <label id="pk-label-qty" class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Number of ${unitPlural} to Pack *</label>
-                <input type="number" step="1" min="1" id="pk-cartons-qty" required placeholder="e.g. 5" oninput="CartonPacking.calcPackingTotal()"
-                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-black text-purple-700 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
-              </div>
-            </div>
-
-            <!-- Calculation Box matching user example -->
-            <div class="p-4 bg-purple-50/80 border border-purple-200 rounded-2xl space-y-1.5">
-              <div class="flex justify-between items-center text-xs">
-                <span class="font-bold text-purple-900">Single Pieces Needed:</span>
-                <span id="pk-pcs-needed-display" class="font-black text-purple-900 tabular-nums">0 pieces</span>
-              </div>
-              <div class="flex justify-between items-center text-xs">
-                <span id="pk-label-cost" class="font-bold text-purple-900">Cost Per ${unitSingular}:</span>
-                <span id="pk-carton-cost-display" class="font-black text-purple-900 tabular-nums">Rs. 0</span>
-              </div>
-              <div class="flex justify-between items-center pt-1 border-t border-purple-200/80 text-sm font-black">
-                <span class="text-purple-950">Total Packing Cost:</span>
-                <span id="pk-total-cost-display" class="text-purple-700 tabular-nums">Rs. 0</span>
-              </div>
-              <div id="pk-insufficient-warning" class="text-xs font-black text-rose-600 hidden pt-1">
-                ⚠️ Warning: Not enough single pieces in stock!
-              </div>
-            </div>
-
-            <!-- 3. Prices -->
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label id="pk-label-price" class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Set ${unitSingular} Sale Price (Rs.) *</label>
-                <input type="number" step="any" min="0" id="pk-sale-price" required placeholder="e.g. 250"
-                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-black text-emerald-700 outline-none focus:bg-white focus:border-purple-500 tabular-nums">
-              </div>
-              <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Packing Date</label>
-                <input type="date" id="pk-date" value="${new Date().toISOString().split('T')[0]}"
-                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 font-mono">
-              </div>
-            </div>
-
+            <!-- FOOTER BUTTONS -->
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-              <button type="button" onclick="CartonPacking.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="button" onclick="CartonPacking.closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
               <button type="submit" id="pk-submit-btn" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
                 <i data-lucide="check" class="w-4 h-4"></i> Complete ${unitSingular} Packing
               </button>
@@ -1044,6 +1038,8 @@ window.CartonPacking = {
     if (defaultCartonId) {
       this.onCartonSelectChange(defaultCartonId);
     }
+    // Add one default raw material deduction row for convenience if raw materials exist
+    this.addMaterialDeductionRow();
   },
 
   openCartonDropdown() {
@@ -1195,13 +1191,22 @@ window.CartonPacking = {
       if (unitHeader) unitHeader.textContent = unitPlural;
 
       const pcsLabel = document.getElementById('pk-label-pcs');
-      if (pcsLabel) pcsLabel.textContent = `Pieces Per ${unitSingular}`;
+      if (pcsLabel) {
+        pcsLabel.textContent = `Pieces / ${unitSingular}`;
+        pcsLabel.title = `Pieces Per ${unitSingular}`;
+      }
 
       const qtyLabel = document.getElementById('pk-label-qty');
-      if (qtyLabel) qtyLabel.textContent = `Number of ${unitPlural} to Pack *`;
+      if (qtyLabel) {
+        qtyLabel.textContent = `${unitPlural} to Pack *`;
+        qtyLabel.title = `${unitPlural} to Pack`;
+      }
 
       const priceLabel = document.getElementById('pk-label-price');
-      if (priceLabel) priceLabel.textContent = `Set ${unitSingular} Sale Price (Rs.) *`;
+      if (priceLabel) {
+        priceLabel.textContent = `${unitSingular} Sale Price (Rs.) *`;
+        priceLabel.title = `${unitSingular} Sale Price (Rs.)`;
+      }
 
       const costLabel = document.getElementById('pk-label-cost');
       if (costLabel) costLabel.textContent = `Cost Per ${unitSingular}:`;
@@ -1214,7 +1219,6 @@ window.CartonPacking = {
 
       document.getElementById('pk-pcs-per-carton').value = c.pieces_per_carton || (isShoper ? 25 : 20);
       document.getElementById('pk-sale-price').value = c.carton_sale_price || 250;
-      document.getElementById('pk-available-display').textContent = `${c.available_single_pieces || 0} pieces`;
       this.calcPackingTotal();
     }
   },
@@ -1239,51 +1243,617 @@ window.CartonPacking = {
     const pcsDisplay = document.getElementById('pk-pcs-needed-display');
     const costDisplay = document.getElementById('pk-carton-cost-display');
     const totalCostDisplay = document.getElementById('pk-total-cost-display');
-    const warning = document.getElementById('pk-insufficient-warning');
-    const submitBtn = document.getElementById('pk-submit-btn');
 
     if (pcsDisplay) pcsDisplay.textContent = `${totalPcsNeeded.toLocaleString()} pieces (${cartonsQty} ${unitsAbbr} × ${pcsPerCarton} pcs)`;
     if (costDisplay) costDisplay.textContent = `Rs. ${Math.round(cartonCost)}`;
     if (totalCostDisplay) totalCostDisplay.textContent = `Rs. ${Math.round(totalCost).toLocaleString()}`;
 
-    const availablePcs = c.available_single_pieces || 0;
-    const isExceeding = totalPcsNeeded > availablePcs;
     const isZeroOrNegative = cartonsQty <= 0;
     const qtyInput = document.getElementById('pk-cartons-qty');
 
-    if (isExceeding) {
-      if (warning) {
-        warning.classList.remove('hidden');
-        warning.textContent = `⚠️ Insufficient pieces in stock! Need ${totalPcsNeeded.toLocaleString()} pcs, but only ${availablePcs.toLocaleString()} available.`;
-      }
-      if (qtyInput) {
-        qtyInput.classList.add('border-rose-500', 'bg-rose-50/50', 'text-rose-700');
+    if (qtyInput) {
+      if (isZeroOrNegative) {
         qtyInput.classList.remove('border-slate-300', 'text-purple-700');
+        qtyInput.classList.add('border-amber-400', 'text-slate-900');
+      } else {
+        qtyInput.classList.remove('border-amber-400', 'border-rose-500', 'bg-rose-50/50', 'text-rose-700');
+        qtyInput.classList.add('border-slate-300', 'text-purple-700');
       }
-      if (submitBtn) {
+    }
+
+    this.validateMaterialsStock();
+  },
+
+  addMaterialDeductionRow() {
+    const list = document.getElementById('pk-materials-list');
+    if (!list) return;
+
+    const currentSelects = Array.from(list.querySelectorAll('.pk-mat-select'));
+    const currentSelected = new Set(currentSelects.map(s => String(s.value)).filter(v => v && v !== ''));
+
+    const chocolateSelected = currentSelected.has('chocolate');
+    const unselectedMaterials = (this.rawMaterials || []).filter(m => !currentSelected.has(String(m.id)));
+    const canAddMore = !chocolateSelected || unselectedMaterials.length > 0;
+
+    if (!canAddMore) {
+      app.showToast('All raw materials and chocolate have already been added.', 'info');
+      return;
+    }
+
+    let defaultVal = '';
+
+    const rowId = 'pk-mat-row-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    const div = document.createElement('div');
+    div.id = rowId;
+    div.className = 'p-2 bg-white border border-slate-200/90 rounded-xl space-y-1 shadow-2xs hover:border-purple-300 transition-all';
+    div.innerHTML = `
+      <div class="flex items-center gap-1.5">
+        <input type="hidden" class="pk-mat-select" id="${rowId}-val" value="${defaultVal}">
+        <div id="${rowId}-selector-wrap" class="flex-1 min-w-0 relative dropdown-wrap"></div>
+        <div id="${rowId}-inputs-wrap" class="flex items-center gap-1 shrink-0"></div>
+        <button type="button" onclick="CartonPacking.removeMaterialRow('${rowId}')" 
+                class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0" 
+                title="Remove row">
+          <i data-lucide="x" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+        </button>
+      </div>
+      <div id="${rowId}-hint" class="text-[10px] font-bold text-purple-700 bg-purple-50/70 border border-purple-200/60 rounded px-2 py-0.5 hidden"></div>
+    `;
+    list.appendChild(div);
+    if (window.lucide) lucide.createIcons({ root: div });
+
+    this.renderRowSelector(rowId);
+    this.renderRowInputs(rowId);
+    this.updateMaterialDropdowns();
+
+    setTimeout(() => {
+      document.getElementById(`${rowId}-search`)?.focus();
+    }, 50);
+  },
+
+  renderRowSelector(rowId) {
+    const valInput = document.getElementById(`${rowId}-val`);
+    const selectorWrap = document.getElementById(`${rowId}-selector-wrap`);
+    if (!valInput || !selectorWrap) return;
+
+    const val = String(valInput.value || '').trim();
+
+    if (val === 'chocolate') {
+      const curChoc = (this.chocolateStock && this.chocolateStock.stock) || 0;
+      selectorWrap.innerHTML = `
+        <div class="flex items-center justify-between px-2.5 py-1.5 bg-amber-50/90 border border-amber-300 rounded-lg text-xs font-black text-amber-950 select-none shadow-2xs min-w-0">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-xs shrink-0">🍫</span>
+            <span class="font-black text-amber-950 shrink-0">Prepared Chocolate</span>
+            <span class="text-[10.5px] font-bold text-amber-800 ml-1 truncate shrink min-w-0">(Stock: ${curChoc} L)</span>
+          </div>
+          <button type="button" onclick="CartonPacking.unselectRowMaterial('${rowId}')"
+                  class="ml-1.5 w-5 h-5 rounded-md hover:bg-amber-200/80 text-amber-900 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                  title="Unselect chocolate to choose another item">
+            <i data-lucide="x" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+          </button>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons({ root: selectorWrap });
+      return;
+    }
+
+    if (val) {
+      const matId = Number(val);
+      const mat = (this.rawMaterials || []).find(m => m.id === matId);
+      let stockTxt = '';
+      let fullStockTxt = '';
+      if (window.RawMaterials && mat) {
+        fullStockTxt = RawMaterials.formatStockDisplay(mat);
+        const spec = RawMaterials.getMaterialUnitSpecs(mat);
+        if (spec.isBulk) {
+          const current = Number(mat.current_stock) || 0;
+          const packs = Math.floor(current / spec.packSize);
+          const loose = Math.round((current % spec.packSize) * 10) / 10;
+          const pUnit = packs === 1 ? spec.mainUnit : spec.mainPlural;
+          if (packs > 0 && loose > 0) {
+            stockTxt = `${packs} ${pUnit} ${loose} ${spec.subUnit}`;
+          } else if (packs > 0) {
+            stockTxt = `${packs} ${pUnit}`;
+          } else {
+            stockTxt = `${loose} ${spec.subUnit}`;
+          }
+        } else {
+          stockTxt = `${Number(mat.current_stock || 0).toFixed(1).replace(/\.0$/, '')} ${spec.mainUnit}`;
+        }
+      } else {
+        stockTxt = `${mat?.current_stock} ${mat?.unit}`;
+        fullStockTxt = stockTxt;
+      }
+      selectorWrap.innerHTML = `
+        <div class="flex items-center justify-between px-2.5 py-1.5 bg-purple-50/70 border border-purple-200 rounded-lg text-xs font-black text-slate-900 select-none shadow-2xs min-w-0">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <i data-lucide="box" class="w-3.5 h-3.5 text-purple-600 shrink-0"></i>
+            <span class="font-black text-slate-900 shrink-0 max-w-[220px] truncate" title="${mat ? mat.name : 'Raw Material'}">${mat ? mat.name : 'Raw Material'}</span>
+            <span class="text-[10.5px] font-bold text-purple-700 ml-1 truncate shrink min-w-0" title="Available Stock: ${fullStockTxt}">(Stock: ${stockTxt})</span>
+          </div>
+          <button type="button" onclick="CartonPacking.unselectRowMaterial('${rowId}')"
+                  class="ml-1.5 w-5 h-5 rounded-md hover:bg-purple-200/80 text-slate-500 hover:text-purple-900 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                  title="Unselect material to choose another item">
+            <i data-lucide="x" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+          </button>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons({ root: selectorWrap });
+      return;
+    }
+
+    // Unselected state: Search input with dropdown
+    selectorWrap.innerHTML = `
+      <div class="relative w-full">
+        <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+        <input type="text" id="${rowId}-search" autocomplete="off"
+               placeholder="Search material or chocolate..."
+               onfocus="CartonPacking.openMaterialDropdown('${rowId}')"
+               onclick="CartonPacking.openMaterialDropdown('${rowId}')"
+               oninput="CartonPacking.filterMaterialDropdown('${rowId}', this.value)"
+               onkeydown="CartonPacking.onMaterialSearchKeydown('${rowId}', event)"
+               class="pk-mat-search w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-purple-500 transition-all cursor-pointer">
+        <button type="button" onclick="CartonPacking.toggleMaterialDropdown('${rowId}')"
+                class="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+        </button>
+        <div id="${rowId}-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-52 overflow-y-auto z-[1300] divide-y divide-slate-100">
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: selectorWrap });
+  },
+
+  selectRowMaterial(rowId, itemId) {
+    const valInput = document.getElementById(`${rowId}-val`);
+    if (!valInput) return;
+
+    if (itemId) {
+      const otherVals = Array.from(document.querySelectorAll('#pk-materials-list input[id$="-val"]'))
+        .filter(inp => inp.id !== `${rowId}-val`)
+        .map(inp => inp.value);
+      if (otherVals.includes(String(itemId))) {
+        app.showAlert({ title: 'Duplicate Item', message: 'This material or chocolate is already added to the carton packing recipe.' });
+        return;
+      }
+    }
+
+    valInput.value = itemId;
+
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (dropdown) dropdown.classList.add('hidden');
+
+    this.renderRowSelector(rowId);
+    this.renderRowInputs(rowId);
+    this.updateMaterialDropdowns();
+  },
+
+  unselectRowMaterial(rowId) {
+    const valInput = document.getElementById(`${rowId}-val`);
+    if (!valInput) return;
+    valInput.value = '';
+
+    this.renderRowSelector(rowId);
+    this.renderRowInputs(rowId);
+    this.updateMaterialDropdowns();
+
+    setTimeout(() => {
+      this.openMaterialDropdown(rowId);
+      document.getElementById(`${rowId}-search`)?.focus();
+    }, 40);
+  },
+
+  toggleMaterialDropdown(rowId) {
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (!dropdown) return;
+    if (dropdown.classList.contains('hidden')) {
+      this.openMaterialDropdown(rowId);
+      document.getElementById(`${rowId}-search`)?.focus();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  openMaterialDropdown(rowId) {
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (!dropdown) return;
+    document.querySelectorAll('.search-dropdown').forEach(d => {
+      if (d !== dropdown) d.classList.add('hidden');
+    });
+    const searchVal = document.getElementById(`${rowId}-search`)?.value || '';
+    this.filterMaterialDropdown(rowId, searchVal);
+  },
+
+  onMaterialSearchKeydown(rowId, e) {
+    if (e.key === 'Escape') {
+      const dd = document.getElementById(`${rowId}-dropdown`);
+      if (dd) dd.classList.add('hidden');
+      e.preventDefault();
+    }
+  },
+
+  filterMaterialDropdown(rowId, query = '') {
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+
+    const allSelects = Array.from(document.querySelectorAll('.pk-mat-select'));
+    const selectedInOtherRows = new Set(
+      allSelects
+        .filter(s => s.id !== `${rowId}-val`)
+        .map(s => String(s.value))
+        .filter(Boolean)
+    );
+
+    const curChoc = (this.chocolateStock && this.chocolateStock.stock) || 0;
+    const items = [];
+
+    items.push({
+      id: 'chocolate',
+      name: 'Prepared Chocolate',
+      category: 'Processed Raw Material',
+      stockTxt: `${curChoc} Liters`,
+      isChocolate: true
+    });
+
+    (this.rawMaterials || []).forEach(m => {
+      const stockTxt = window.RawMaterials ? RawMaterials.formatStockDisplay(m) : `${m.current_stock} ${m.unit}`;
+      items.push({
+        id: String(m.id),
+        name: m.name,
+        category: m.category || 'Raw Material',
+        stockTxt: stockTxt,
+        isChocolate: false
+      });
+    });
+
+    let matches = items;
+    if (q) {
+      matches = items.filter(it => 
+        it.name.toLowerCase().includes(q) || 
+        it.category.toLowerCase().includes(q)
+      );
+    }
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-3 text-center text-xs font-bold text-slate-400">
+          No materials match "${query}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    dropdown.innerHTML = matches.map(it => {
+      const isAlreadyAdded = selectedInOtherRows.has(it.id);
+      if (isAlreadyAdded) {
+        return `
+          <div class="px-3 py-2 bg-slate-50 opacity-50 flex items-center justify-between text-xs font-bold text-slate-400 cursor-not-allowed select-none">
+            <div class="flex items-center gap-1.5 min-w-0 truncate">
+              <span>${it.isChocolate ? '🍫' : '📦'}</span>
+              <span class="truncate">${it.name}</span>
+            </div>
+            <span class="text-[10px] font-semibold text-slate-400 shrink-0">Already added</span>
+          </div>
+        `;
+      }
+
+      if (it.isChocolate) {
+        return `
+          <div onclick="CartonPacking.selectRowMaterial('${rowId}', 'chocolate')"
+               class="px-3 py-2 hover:bg-amber-50 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-100 last:border-b-0">
+            <div class="min-w-0 truncate">
+              <div class="text-xs font-black text-amber-950 flex items-center gap-1.5">
+                <span>🍫</span>
+                <span>Prepared Chocolate</span>
+              </div>
+              <div class="text-[10px] text-amber-800 font-bold mt-0.5">Stock Available: <span class="font-black text-amber-950">${it.stockTxt}</span></div>
+            </div>
+            <span class="text-[10px] font-black text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded shrink-0">Select</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div onclick="CartonPacking.selectRowMaterial('${rowId}', '${it.id}')"
+             class="px-3 py-2 hover:bg-purple-50 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-100 last:border-b-0">
+          <div class="min-w-0 truncate">
+            <div class="text-xs font-black text-slate-900">${it.name}</div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">${it.category} • Stock: <span class="font-black text-slate-700">${it.stockTxt}</span></div>
+          </div>
+          <span class="text-[10px] font-black text-purple-700 bg-purple-100/80 px-2 py-0.5 rounded shrink-0">Select</span>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons({ root: dropdown });
+  },
+
+  renderRowInputs(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const select = row.querySelector('.pk-mat-select');
+    const wrap = document.getElementById(`${rowId}-inputs-wrap`);
+    const hint = document.getElementById(`${rowId}-hint`);
+    if (!wrap) return;
+
+    const selVal = select?.value;
+    const isChocolate = selVal === 'chocolate';
+
+    if (isChocolate) {
+      wrap.innerHTML = `
+        <div class="relative w-28">
+          <input type="number" step="any" min="0" placeholder="0"
+                 oninput="CartonPacking.syncRowStock('${rowId}')"
+                 class="pk-mat-qty w-full pr-14 pl-2 py-1.5 bg-amber-50/60 border border-amber-300 rounded-lg text-xs font-black text-amber-950 outline-none tabular-nums focus:bg-white focus:border-amber-600 text-right"
+                 title="Quantity of Chocolate consumed in Liters">
+          <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-800 pointer-events-none">Liter</span>
+        </div>
+      `;
+      this.syncRowStock(rowId);
+      return;
+    }
+
+    const matId = Number(select?.value);
+    const mat = (this.rawMaterials || []).find(m => m.id === matId);
+
+    if (!mat) {
+      wrap.innerHTML = `<span class="text-[10px] text-slate-400 italic">Select item</span>`;
+      if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
+      return;
+    }
+
+    const spec = (window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+    const isBulk = spec ? spec.isBulk : Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+    const packUnit = spec ? spec.packageUnit : (mat.pack_unit || 'Pack').trim();
+    const baseUnit = spec ? spec.contentUnit : (mat.unit || 'Units').trim();
+    const packSize = Number(mat.pack_size) || 1;
+
+    if (isBulk) {
+      wrap.innerHTML = `
+        <div class="relative w-28">
+          <input type="number" step="any" min="0" placeholder="0"
+                 oninput="CartonPacking.syncRowStock('${rowId}')"
+                 class="pk-mat-packs w-full pr-14 pl-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 outline-none tabular-nums focus:bg-white focus:border-purple-500 text-right"
+                 title="Packs consumed">
+          <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 uppercase pointer-events-none">${packUnit}</span>
+        </div>
+
+        <span class="text-xs font-bold text-slate-400 shrink-0">+</span>
+
+        <div class="relative w-24">
+          <input type="number" step="any" min="0" placeholder="0"
+                 oninput="CartonPacking.syncRowStock('${rowId}')"
+                 class="pk-mat-loose w-full pr-10 pl-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 outline-none tabular-nums focus:bg-white focus:border-purple-500 text-right"
+                 title="Loose ${baseUnit} consumed">
+          <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 uppercase pointer-events-none">${baseUnit}</span>
+        </div>
+
+        <input type="hidden" class="pk-mat-qty" value="0">
+      `;
+    } else {
+      wrap.innerHTML = `
+        <div class="relative w-28">
+          <input type="number" step="any" min="0" placeholder="0"
+                 oninput="CartonPacking.syncRowStock('${rowId}')"
+                 class="pk-mat-qty w-full pr-14 pl-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 outline-none tabular-nums focus:bg-white focus:border-purple-500 text-right"
+                 title="Quantity consumed (${baseUnit})">
+          <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 uppercase pointer-events-none">${baseUnit}</span>
+        </div>
+      `;
+    }
+
+    this.syncRowStock(rowId);
+  },
+
+  syncRowStock(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const select = row.querySelector('.pk-mat-select');
+    const hint = document.getElementById(`${rowId}-hint`);
+    const qtyInput = row.querySelector('.pk-mat-qty');
+
+    if (select?.value === 'chocolate') {
+      const curChoc = (this.chocolateStock && this.chocolateStock.stock) || 0;
+      const chocQty = Number(qtyInput?.value) || 0;
+      if (hint) {
+        if (chocQty > 0) {
+          if (chocQty > curChoc) {
+            hint.className = 'text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-0.5 block';
+            hint.innerHTML = `⚠️ Insufficient Chocolate! Only ${curChoc} Liters available (need ${chocQty} Liters)`;
+          } else {
+            hint.className = 'text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 block';
+            hint.innerHTML = `<span class="text-slate-500 font-semibold">Deducting:</span> <b class="text-amber-900">${chocQty} Liters Chocolate</b> (Stock left: ${Math.round((curChoc - chocQty) * 100) / 100} L)`;
+          }
+          hint.classList.remove('hidden');
+        } else {
+          hint.className = 'text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 block';
+          hint.innerHTML = `Available Chocolate: <b>${curChoc} Liters</b>`;
+          hint.classList.remove('hidden');
+        }
+      }
+      this.validateMaterialsStock();
+      return;
+    }
+
+    const matId = Number(select?.value);
+    const mat = (this.rawMaterials || []).find(m => m.id === matId);
+
+    if (!mat) {
+      if (qtyInput) qtyInput.value = 0;
+      if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
+      this.validateMaterialsStock();
+      return;
+    }
+
+    const spec = (window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+    const isBulk = spec ? spec.isBulk : Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+    const packUnit = spec ? spec.packageUnit : (mat.pack_unit || 'Pack').trim();
+    const baseUnit = spec ? spec.contentUnit : (mat.unit || 'Units').trim();
+    const packSize = Number(mat.pack_size) || 1;
+
+    let totalQty = 0;
+    if (isBulk) {
+      const packsInput = row.querySelector('.pk-mat-packs');
+      const looseInput = row.querySelector('.pk-mat-loose');
+      const packs = Number(packsInput?.value) || 0;
+      const loose = Number(looseInput?.value) || 0;
+      totalQty = (packs * packSize) + loose;
+
+      if (qtyInput) qtyInput.value = totalQty;
+
+      if (hint) {
+        if (totalQty > 0) {
+          let desc = '';
+          if (packs > 0 && loose > 0) {
+            desc = `${packs} ${packs === 1 ? packUnit : packUnit + 's'} + ${loose} ${baseUnit} (= ${totalQty.toLocaleString()} ${baseUnit} total)`;
+          } else if (packs > 0) {
+            desc = `${packs} ${packs === 1 ? packUnit : packUnit + 's'} (= ${totalQty.toLocaleString()} ${baseUnit} total)`;
+          } else {
+            desc = `${loose} ${baseUnit}`;
+          }
+          hint.innerHTML = `<span class="text-slate-500 font-semibold">Deducting:</span> <b class="text-purple-800">${desc}</b>`;
+          hint.classList.remove('hidden');
+        } else {
+          hint.classList.add('hidden');
+          hint.textContent = '';
+        }
+      }
+    } else {
+      totalQty = Number(qtyInput?.value) || 0;
+      if (hint) {
+        hint.classList.add('hidden');
+        hint.textContent = '';
+      }
+    }
+
+    this.validateMaterialsStock();
+  },
+
+  removeMaterialRow(rowId) {
+    const el = document.getElementById(rowId);
+    if (el) el.remove();
+    this.updateMaterialDropdowns();
+  },
+
+  updateMaterialDropdowns() {
+    const list = document.getElementById('pk-materials-list');
+    if (!list) return;
+
+    const selects = Array.from(list.querySelectorAll('.pk-mat-select'));
+    const selectedIds = new Set(selects.map(s => String(s.value)).filter(v => v && v !== ''));
+
+    const addBtn = document.getElementById('pk-add-mat-btn');
+    if (addBtn) {
+      const chocolateSelected = selectedIds.has('chocolate');
+      const unselectedMaterials = (this.rawMaterials || []).filter(m => !selectedIds.has(String(m.id)));
+      const allSelected = chocolateSelected && unselectedMaterials.length === 0;
+
+      addBtn.disabled = allSelected;
+      if (allSelected) {
+        addBtn.classList.add('opacity-40', 'cursor-not-allowed');
+        addBtn.title = 'All available raw materials and chocolate are already added';
+      } else {
+        addBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+        addBtn.title = 'Add another material or chocolate';
+      }
+    }
+
+    this.validateMaterialsStock();
+  },
+
+  validateMaterialsStock() {
+    const list = document.getElementById('pk-materials-list');
+    const submitBtn = document.getElementById('pk-submit-btn');
+    const cartonsQty = Number(document.getElementById('pk-cartons-qty')?.value) || 0;
+    const isZeroOrNegative = cartonsQty <= 0;
+
+    let hasExceeding = false;
+    if (list) {
+      const matRows = list.querySelectorAll('div[id^="pk-mat-row-"]');
+      matRows.forEach(row => {
+        const select = row.querySelector('.pk-mat-select');
+        const qtyInput = row.querySelector('.pk-mat-qty');
+        const packsInput = row.querySelector('.pk-mat-packs');
+        const looseInput = row.querySelector('.pk-mat-loose');
+        const val = select?.value;
+        const qty = Number(qtyInput?.value) || 0;
+
+        if (val === 'chocolate') {
+          const curChoc = (this.chocolateStock && this.chocolateStock.stock) || 0;
+          if (qty > curChoc) {
+            hasExceeding = true;
+            if (qtyInput) {
+              qtyInput.classList.add('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+              qtyInput.title = `Exceeds available chocolate stock (${curChoc} Liters)`;
+            }
+          } else {
+            if (qtyInput) {
+              qtyInput.classList.remove('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+              qtyInput.title = '';
+            }
+          }
+          return;
+        }
+
+        const matId = Number(val);
+        const mat = this.rawMaterials.find(m => m.id === matId);
+
+        if (mat && qty > (mat.current_stock || 0)) {
+          hasExceeding = true;
+          const stockTxt = window.RawMaterials ? RawMaterials.formatStockDisplay(mat) : `${mat.current_stock} ${mat.unit}`;
+          const errTitle = `Exceeds available stock (${stockTxt})`;
+
+          if (qtyInput) {
+            qtyInput.classList.add('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+            qtyInput.classList.remove('border-slate-300', 'text-slate-900');
+            qtyInput.title = errTitle;
+          }
+          if (packsInput) {
+            packsInput.classList.add('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+            packsInput.classList.remove('border-slate-300', 'text-slate-900');
+            packsInput.title = errTitle;
+          }
+          if (looseInput) {
+            looseInput.classList.add('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+            looseInput.classList.remove('border-slate-300', 'text-slate-900');
+            looseInput.title = errTitle;
+          }
+        } else {
+          if (qtyInput) {
+            qtyInput.classList.remove('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+            qtyInput.classList.add('border-slate-300', 'text-slate-900');
+            qtyInput.title = '';
+          }
+          if (packsInput) {
+            packsInput.classList.remove('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+            packsInput.classList.add('border-slate-300', 'text-slate-900');
+            packsInput.title = '';
+          }
+          if (looseInput) {
+            looseInput.classList.remove('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
+            looseInput.classList.add('border-slate-300', 'text-slate-900');
+            looseInput.title = '';
+          }
+        }
+      });
+    }
+
+    if (submitBtn) {
+      if (isZeroOrNegative || hasExceeding) {
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
         submitBtn.classList.remove('cursor-pointer', 'hover:bg-purple-500', 'active:scale-95');
-        submitBtn.title = `Cannot pack: ${totalPcsNeeded} pcs needed exceeds available ${availablePcs} pcs`;
-      }
-    } else {
-      if (warning) warning.classList.add('hidden');
-      if (qtyInput) {
-        qtyInput.classList.remove('border-rose-500', 'bg-rose-50/50', 'text-rose-700');
-        qtyInput.classList.add('border-slate-300', 'text-purple-700');
-      }
-      if (submitBtn) {
-        if (isZeroOrNegative) {
-          submitBtn.disabled = true;
-          submitBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
-          submitBtn.classList.remove('cursor-pointer', 'hover:bg-purple-500', 'active:scale-95');
-          submitBtn.title = `Enter number of ${isShoper ? 'shopers' : 'cartons'} to pack`;
-        } else {
-          submitBtn.disabled = false;
-          submitBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
-          submitBtn.classList.add('cursor-pointer', 'hover:bg-purple-500', 'active:scale-95');
-          submitBtn.title = `Complete ${isShoper ? 'Shoper' : 'Carton'} Packing`;
-        }
+        submitBtn.title = isZeroOrNegative ? 'Enter number of cartons/shopers to pack' : 'Cannot complete: raw material quantity exceeds available stock';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        submitBtn.classList.add('cursor-pointer', 'hover:bg-purple-500', 'active:scale-95');
+        submitBtn.title = 'Complete Packing';
       }
     }
   },
@@ -1353,7 +1923,7 @@ window.CartonPacking = {
   _renderCartonConfigModal(id = null) {
     const c = id ? this.cartons.find(x => x.id === id) : {
       id: null,
-      item_id: this.singleItems[0]?.id || null,
+      item_id: null,
       package_type: 'carton',
       carton_name: '',
       pieces_per_carton: 20,
@@ -1368,7 +1938,6 @@ window.CartonPacking = {
     const isShoper = c.package_type === 'shoper';
     const hasBarcode = Boolean(c && c.barcode && c.barcode.trim());
     const initStockVal = isNew ? 0 : ((Number(c.factory_carton_stock) || 0) * (Number(c.carton_cost_price) || 0));
-    const activeItem = this.singleItems.find(it => it.id === c.item_id) || this.singleItems[0];
 
     const modalEl = document.getElementById('pck-modal-container');
     if (!modalEl) return;
@@ -1392,6 +1961,7 @@ window.CartonPacking = {
           </div>
           <form onsubmit="CartonPacking.handleCartonConfigSubmit(event)" class="p-6 space-y-4">
             <input type="hidden" id="cfg-id" value="${c.id || ''}">
+            <input type="hidden" id="cfg-item-id" value="${c.item_id || 0}">
             
             <!-- Packaging Format Toggle: Carton vs Shoper -->
             <div>
@@ -1409,35 +1979,10 @@ window.CartonPacking = {
               </div>
             </div>
 
-            <div class="relative dropdown-wrap" id="cfg-item-wrap">
-              <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">Base Ice Cream Item *</label>
-              <input type="hidden" id="cfg-item-id" value="${activeItem ? activeItem.id : ''}">
-              
-              <div class="relative">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-                <input type="text" id="cfg-item-search" autocomplete="off"
-                       placeholder="Type to search base ice cream..."
-                       value="${activeItem ? activeItem.name : ''}"
-                       onfocus="CartonPacking.openBaseItemDropdown()"
-                       onclick="CartonPacking.openBaseItemDropdown()"
-                       oninput="CartonPacking.filterBaseItemDropdown(this.value)"
-                       onkeydown="CartonPacking.onBaseItemKeydown(event)"
-                       class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 transition-all cursor-pointer">
-                <button type="button" onclick="CartonPacking.toggleBaseItemDropdown()"
-                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
-                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
-                </button>
-              </div>
-
-              <!-- Floating Searchable Dropdown -->
-              <div id="cfg-item-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-56 overflow-y-auto z-[1300] divide-y divide-slate-100">
-              </div>
-            </div>
-
             <div>
               <label id="cfg-label-name" class="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-1">${isShoper ? 'Shoper Full Title *' : 'Carton Full Title *'}</label>
-              <input type="text" id="cfg-name" required value="${c.carton_name || ''}" placeholder="${isShoper ? 'e.g. Ice Lolly Shoper (25 Pcs)...' : 'e.g. Chocbar Carton (20 Pcs)...'}"
-                     class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500">
+              <input type="text" id="cfg-name" required value="${c.carton_name || ''}" placeholder="${isShoper ? 'e.g. Ice Lolly Shoper...' : 'e.g. Chocbar Carton...'}"
+                     class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-purple-500 transition-all">
             </div>
 
             <div id="cfg-barcode-wrap">
@@ -1515,132 +2060,6 @@ window.CartonPacking = {
     if (window.lucide) lucide.createIcons({ root: modalEl });
   },
 
-  openBaseItemDropdown() {
-    const dropdown = document.getElementById('cfg-item-dropdown');
-    if (!dropdown) return;
-    const searchVal = document.getElementById('cfg-item-search')?.value || '';
-    this.filterBaseItemDropdown(searchVal);
-    if (window.lucide) lucide.createIcons({ root: dropdown });
-  },
-
-  toggleBaseItemDropdown() {
-    const dropdown = document.getElementById('cfg-item-dropdown');
-    if (!dropdown) return;
-    if (dropdown.classList.contains('hidden')) {
-      this.openBaseItemDropdown();
-      document.getElementById('cfg-item-search')?.focus();
-    } else {
-      dropdown.classList.add('hidden');
-    }
-  },
-
-  filterBaseItemDropdown(query = '') {
-    const dropdown = document.getElementById('cfg-item-dropdown');
-    if (!dropdown) return;
-    const q = (query || '').toLowerCase().trim();
-    const currentId = Number(document.getElementById('cfg-item-id')?.value) || null;
-
-    const allItems = [...(this.singleItems || [])].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-    let matches = [];
-    if (!q) {
-      matches = allItems;
-    } else {
-      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
-      const scored = [];
-
-      for (const it of allItems) {
-        const name = (it.name || '').toLowerCase();
-        const words = getWords(name);
-
-        let tier = 999;
-        if (name.startsWith(q)) tier = 1;
-        else if (words.some(w => w.startsWith(q))) tier = 2;
-        else if (q.length >= 2 && name.includes(q)) tier = 3;
-
-        if (tier < 999) {
-          scored.push({ it, tier });
-        }
-      }
-
-      scored.sort((a, b) => {
-        if (a.tier !== b.tier) return a.tier - b.tier;
-        return (a.it.name || '').localeCompare(b.it.name || '');
-      });
-
-      matches = scored.map(item => item.it);
-    }
-
-    if (matches.length === 0) {
-      dropdown.innerHTML = `
-        <div class="p-4 text-center text-xs font-bold text-slate-400">
-          No items match "${query}"
-        </div>
-      `;
-      dropdown.classList.remove('hidden');
-      return;
-    }
-
-    this.baseItemMatches = matches;
-    this.baseItemActiveIdx = 0;
-
-    dropdown.innerHTML = matches.map((it, idx) => {
-      const isSelected = it.id === currentId;
-      return `
-        <div class="px-3.5 py-2 hover:bg-purple-50/80 cursor-pointer flex items-center justify-between transition-colors ${isSelected ? 'bg-purple-50 font-black text-purple-950' : 'text-slate-800'}"
-             onclick="CartonPacking.selectBaseItem(${it.id})">
-          <div class="text-xs font-black text-slate-900">${it.name}</div>
-          <span class="text-[10px] text-slate-400 font-mono">ID: #${it.id}</span>
-        </div>
-      `;
-    }).join('');
-
-    dropdown.classList.remove('hidden');
-  },
-
-  selectBaseItem(id) {
-    const it = (this.singleItems || []).find(x => x.id === Number(id));
-    if (!it) return;
-    const hiddenInp = document.getElementById('cfg-item-id');
-    const searchInp = document.getElementById('cfg-item-search');
-    const dropdown = document.getElementById('cfg-item-dropdown');
-
-    if (hiddenInp) hiddenInp.value = it.id;
-    if (searchInp) searchInp.value = it.name;
-    if (dropdown) dropdown.classList.add('hidden');
-
-    const nameInp = document.getElementById('cfg-name');
-    const isShoper = (document.getElementById('cfg-package-type')?.value || 'carton') === 'shoper';
-    if (nameInp && (!nameInp.value || nameInp.value.endsWith('Carton') || nameInp.value.endsWith('Shoper'))) {
-      nameInp.value = `${it.name} ${isShoper ? 'Shoper' : 'Carton'}`;
-    }
-  },
-
-  onBaseItemKeydown(e) {
-    const dropdown = document.getElementById('cfg-item-dropdown');
-    if (!dropdown || dropdown.classList.contains('hidden')) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter') {
-        this.openBaseItemDropdown();
-        e.preventDefault();
-      }
-      return;
-    }
-
-    if (e.key === 'Escape') {
-      dropdown.classList.add('hidden');
-      e.preventDefault();
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (this.baseItemMatches && this.baseItemMatches.length > 0) {
-        const item = this.baseItemMatches[this.baseItemActiveIdx || 0] || this.baseItemMatches[0];
-        if (item) this.selectBaseItem(item.id);
-      }
-    }
-  },
-
   closeModal() {
     const modalEl = document.getElementById('pck-modal-container');
     if (modalEl) modalEl.innerHTML = '';
@@ -1655,12 +2074,59 @@ window.CartonPacking = {
 
     const c = this.cartons.find(x => x.id === cartonId);
     const totalPcsNeeded = pcsPerCarton * cartonsPacked;
-    const availablePcs = c?.available_single_pieces || 0;
 
-    // Silently block if exceeding or invalid (button is already disabled)
-    if (!cartonId || cartonsPacked <= 0 || totalPcsNeeded > availablePcs) {
+    if (!cartonId || cartonsPacked <= 0) {
       this.calcPackingTotal();
       return;
+    }
+
+    // Collect raw materials to deduct
+    const materials = [];
+    const matRows = document.querySelectorAll('#pk-materials-list > div');
+    const usedMatIds = new Set();
+    let hasDup = false;
+
+    matRows.forEach(row => {
+      const select = row.querySelector('.pk-mat-select');
+      const qtyInput = row.querySelector('.pk-mat-qty');
+      const val = select?.value;
+      const qty = Number(qtyInput?.value) || 0;
+
+      if (val && qty > 0) {
+        if (usedMatIds.has(val)) {
+          hasDup = true;
+        }
+        usedMatIds.add(val);
+        if (val === 'chocolate') {
+          materials.push({ material_id: 'chocolate', is_chocolate: true, qty_used: qty });
+        } else {
+          materials.push({ material_id: Number(val), qty_used: qty });
+        }
+      }
+    });
+
+    if (hasDup) {
+      app.showAlert({ title: 'Duplicate Material', message: 'The same material cannot be deducted multiple times in one batch.' });
+      return;
+    }
+
+    // Validate raw material and chocolate stock
+    for (const m of materials) {
+      if (m.is_chocolate) {
+        const curChoc = (this.chocolateStock && this.chocolateStock.stock) || 0;
+        if (m.qty_used > curChoc) {
+          app.showAlert({ title: 'Insufficient Chocolate Stock', message: `Cannot pack: Requires ${m.qty_used} Liters Chocolate, but only ${curChoc} Liters available in stock.` });
+          return;
+        }
+        continue;
+      }
+      const mat = this.rawMaterials.find(x => x.id === m.material_id);
+      if (mat && m.qty_used > (mat.current_stock || 0)) {
+        const stockTxt = window.RawMaterials ? RawMaterials.formatStockDisplay(mat) : `${mat.current_stock} ${mat.unit}`;
+        const reqTxt = window.RawMaterials ? RawMaterials.formatUsageQuantity(m.qty_used, mat) : `${m.qty_used} ${mat.unit}`;
+        app.showAlert({ title: 'Insufficient Material Stock', message: `Cannot pack: ${mat.name} requires ${reqTxt}, but only ${stockTxt} available in stock.` });
+        return;
+      }
     }
 
     const singleCost = (c && c.carton_cost_price && c.pieces_per_carton) ? (c.carton_cost_price / c.pieces_per_carton) : 10;
@@ -1672,18 +2138,49 @@ window.CartonPacking = {
       pieces_per_carton: pcsPerCarton,
       carton_cost: cartonCost,
       carton_sale_price: salePrice,
-      date: document.getElementById('pk-date').value
+      date: document.getElementById('pk-date').value,
+      materials: materials
     };
 
     const isShoper = c?.package_type === 'shoper';
     const unitLabel = isShoper ? 'Shoper' : 'Carton';
     const unitPlural = isShoper ? 'shopers' : 'cartons';
 
+    const materialsListHtml = materials.map(m => {
+      if (m.is_chocolate) {
+        return `
+          <div class="flex justify-between py-1 border-b border-purple-200/50 text-[11px]">
+            <span class="font-bold text-amber-900">🍫 Prepared Chocolate:</span>
+            <span class="font-mono font-black text-rose-600">-${m.qty_used} Liters</span>
+          </div>
+        `;
+      }
+      const mat = (this.rawMaterials || []).find(x => x.id === m.material_id);
+      const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+      const isBulk = spec ? spec.isBulk : Boolean(mat && (mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+      const cUnit = spec ? spec.contentUnit : (mat ? mat.unit : '');
+      let desc = `-${m.qty_used} ${cUnit}`;
+      if (isBulk) {
+        const packSize = spec ? spec.packSize : Number(mat.pack_size);
+        const p = Math.floor(m.qty_used / packSize);
+        const l = Math.round((m.qty_used % packSize) * 10) / 10;
+        const pUnit = spec ? (p === 1 ? spec.packageUnit : spec.packagePlural) : (mat.pack_unit || 'Pack');
+        if (p > 0 && l > 0) desc = `-${p} ${pUnit} + ${l} ${cUnit} (${m.qty_used} ${cUnit})`;
+        else if (p > 0) desc = `-${p} ${pUnit} (${m.qty_used} ${cUnit})`;
+      }
+      return `
+        <div class="flex justify-between py-1 border-b border-purple-200/50 text-[11px]">
+          <span class="font-bold text-slate-700">${mat ? mat.name : 'Material'}</span>
+          <span class="font-mono font-black text-rose-600">${desc}</span>
+        </div>
+      `;
+    }).join('');
+
     app.showConfirm({
-      title: 'Confirm Carton Packing Session',
+      title: 'Confirm Carton Packing & Production',
       message: `
         <div class="space-y-3 text-left mt-2 text-xs">
-          <p class="text-slate-600 font-medium">Please confirm packing loose pieces into finished ${unitPlural}:</p>
+          <p class="text-slate-600 font-medium">Please confirm producing and packing finished ${unitPlural}:</p>
           <div class="p-3 bg-purple-50/70 rounded-xl border border-purple-200 space-y-1.5">
             <div class="flex justify-between">
               <span class="text-purple-900 font-bold">Product:</span>
@@ -1694,10 +2191,16 @@ window.CartonPacking = {
               <span class="font-mono font-black text-purple-800 text-sm">+${cartonsPacked} ${unitPlural}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-slate-600 font-bold">Loose Pcs Consumed:</span>
-              <span class="font-mono font-black text-rose-700">-${totalPcsNeeded} pcs (${pcsPerCarton} pcs / ${unitLabel.toLowerCase()})</span>
+              <span class="text-slate-600 font-bold">Pack Spec:</span>
+              <span class="font-mono font-bold text-slate-800">${pcsPerCarton} pcs / ${unitLabel.toLowerCase()} (${totalPcsNeeded} pcs total)</span>
             </div>
-            <div class="flex justify-between">
+            ${materials.length > 0 ? `
+              <div class="pt-1.5 border-t border-purple-200/80">
+                <div class="text-[10px] font-black uppercase text-purple-900 mb-1 tracking-wider">Raw Materials To Deduct (${materials.length}):</div>
+                ${materialsListHtml}
+              </div>
+            ` : '<div class="text-[10px] text-slate-500 italic">No raw materials specified for this batch</div>'}
+            <div class="flex justify-between pt-1 border-t border-purple-200/80">
               <span class="text-slate-600 font-bold">Carton Sale Rate:</span>
               <span class="font-mono font-bold text-slate-800">Rs. ${salePrice.toLocaleString()}</span>
             </div>
@@ -1716,21 +2219,13 @@ window.CartonPacking = {
           const res = await window.api.runCartonPacking(data);
           if (res && res.success) {
             this.closeModal();
-            app.showToast(`Packed +${cartonsPacked} ${unitPlural} successfully! (${res.totalPiecesNeeded} pcs consumed)`, 'success');
+            app.showToast(`Packed +${cartonsPacked} ${unitPlural} successfully!`, 'success');
             await this.loadData();
+            if (window.RawMaterials && RawMaterials.container) {
+              RawMaterials.loadData();
+            }
           } else {
-            // Show error inline in modal instead of popup alert
-            const warning = document.getElementById('pk-insufficient-warning');
-            const submitBtn = document.getElementById('pk-submit-btn');
-            if (warning) {
-              warning.textContent = `⚠️ Cannot Pack: ${res?.error || 'Failed to complete packing'}`;
-              warning.classList.remove('hidden');
-            }
-            if (submitBtn) {
-              submitBtn.disabled = true;
-              submitBtn.classList.remove('bg-purple-600', 'hover:bg-purple-500', 'cursor-pointer');
-              submitBtn.classList.add('bg-slate-300', 'cursor-not-allowed', 'opacity-60');
-            }
+            app.showAlert({ title: 'Packing Error', message: res?.error || 'Failed to complete packing' });
           }
         } finally {
           app.hideLoading?.();
@@ -1774,26 +2269,42 @@ window.CartonPacking = {
 
   async handleCartonConfigSubmit(e) {
     e.preventDefault();
-    const id = document.getElementById('cfg-id').value;
-    const data = {
-      id: id ? Number(id) : null,
-      item_id: Number(document.getElementById('cfg-item-id').value),
-      carton_name: document.getElementById('cfg-name').value,
-      package_type: document.getElementById('cfg-package-type')?.value || 'carton',
-      pieces_per_carton: Number(document.getElementById('cfg-pcs').value) || 20,
-      factory_carton_stock: Number(document.getElementById('cfg-stock').value) || 0,
-      carton_cost_price: Number(document.getElementById('cfg-cost').value) || 0,
-      carton_sale_price: Number(document.getElementById('cfg-sale').value) || 0,
-      barcode: (document.getElementById('cfg-barcode')?.value || '').trim()
-    };
+    try {
+      const id = document.getElementById('cfg-id')?.value;
+      const existing = id ? (this.cartons || []).find(x => x.id === Number(id)) : null;
+      const nameVal = (document.getElementById('cfg-name')?.value || '').trim();
+      if (!nameVal) {
+        app.showAlert({ title: 'Product Name Required', message: 'Please enter a product title.' });
+        return;
+      }
 
-    const res = await window.api.savePackedCarton(data);
-    if (res && res.success) {
-      this.closeModal();
-      app.showToast('Product configuration saved!', 'success');
-      await this.loadData();
-    } else {
-      app.showAlert({ title: 'Error', message: res.error || 'Failed to save product config.' });
+      const dup = (this.cartons || []).find(c => (!id || c.id !== Number(id)) && c.carton_name.trim().toLowerCase() === nameVal.toLowerCase());
+      if (dup) {
+        return app.showAlert({ title: 'Duplicate Carton Name', message: `A carton product with the name "<b>${nameVal}</b>" already exists.<br><br>Duplicate carton names are not allowed.` });
+      }
+      const data = {
+        id: id ? Number(id) : null,
+        item_id: existing?.item_id || Number(document.getElementById('cfg-item-id')?.value) || 0,
+        carton_name: nameVal,
+        package_type: document.getElementById('cfg-package-type')?.value || 'carton',
+        pieces_per_carton: Number(document.getElementById('cfg-pcs').value) || 20,
+        factory_carton_stock: Number(document.getElementById('cfg-stock').value) || 0,
+        carton_cost_price: Number(document.getElementById('cfg-cost').value) || 0,
+        carton_sale_price: Number(document.getElementById('cfg-sale').value) || 0,
+        barcode: (document.getElementById('cfg-barcode')?.value || '').trim()
+      };
+
+      const res = await window.api.savePackedCarton(data);
+      if (res && res.success) {
+        this.closeModal();
+        app.showToast('Product configuration saved!', 'success');
+        await this.loadData();
+      } else {
+        app.showAlert({ title: 'Error', message: res?.error || 'Failed to save product config.' });
+      }
+    } catch (err) {
+      console.error('Failed to save carton config:', err);
+      app.showAlert({ title: 'Error', message: err?.message || 'Failed to save product config.' });
     }
   },
 
@@ -1813,12 +2324,17 @@ window.CartonPacking = {
       });
 
       if (ok) {
-        const res = await window.api.deletePackedCarton(id);
-        if (res && res.success) {
-          app.showToast('Carton product deleted successfully.', 'success');
-          await this.loadData();
-        } else {
-          app.showAlert({ title: 'Cannot Delete', message: res.error || 'Failed to delete carton product.' });
+        try {
+          const res = await window.api.deletePackedCarton(id);
+          if (res && res.success) {
+            app.showToast('Carton product deleted successfully.', 'success');
+            await this.loadData();
+          } else {
+            app.showAlert({ title: 'Cannot Delete', message: (res && res.error) || 'Failed to delete carton product.' });
+          }
+        } catch (err) {
+          console.error('Error deleting carton product:', err);
+          app.showAlert({ title: 'Cannot Delete', message: err.message || 'Failed to delete carton product.' });
         }
       }
     }, 'deleting carton product');
@@ -1829,7 +2345,7 @@ window.CartonPacking = {
       const ok = await new Promise(resolve => {
         app.showConfirm({
           title: 'Delete Packing Batch?',
-          message: 'Are you sure? This will reverse the stock (cartons deducted, single pieces restored).',
+          message: 'Are you sure? This will reverse the stock (cartons deducted from warehouse, raw materials restored).',
           confirmText: 'Delete Batch',
           confirmColor: 'red',
           onConfirm: () => resolve(true),
@@ -1838,12 +2354,20 @@ window.CartonPacking = {
       });
 
       if (ok) {
-        const res = await window.api.deletePackingBatch(id);
-        if (res && res.success) {
-          app.showToast('Packing batch reversed', 'success');
-          await this.loadData();
-        } else {
-          app.showAlert({ title: 'Error', message: res.error || 'Failed to reverse batch.' });
+        try {
+          const res = await window.api.deletePackingBatch(id);
+          if (res && res.success) {
+            app.showToast('Packing batch reversed', 'success');
+            await this.loadData();
+            if (window.RawMaterials && RawMaterials.container) {
+              RawMaterials.loadData();
+            }
+          } else {
+            app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to reverse batch.' });
+          }
+        } catch (err) {
+          console.error('Error deleting packing batch:', err);
+          app.showAlert({ title: 'Error', message: err.message || 'Failed to reverse batch.' });
         }
       }
     }, 'deleting packing batch');
@@ -1865,27 +2389,27 @@ window.CartonPacking = {
     const totalVal = this.cartons.reduce((sum, c) => sum + ((c.factory_carton_stock || 0) * (c.carton_sale_price || 0)), 0);
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
+          <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
           <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Factory Stock &amp; Car Loaded Stock</p>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
           STAGE 3: PACKED STOCK (CARTONS &amp; SHOPERS) REPORT
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item / Packaging</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Packing</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Factory Stock</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">In Cars</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Stock</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Sale Rate</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Stock Value</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Item / Packaging</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 65px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Packing</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Factory Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">In Cars</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Sale Rate</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Stock Value</th>
             </tr>
           </thead>
           <tbody>
@@ -1895,33 +2419,33 @@ window.CartonPacking = {
               const unitsAbbr = isShoper ? 'shopers' : 'ctns';
               return `
               <tr>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">
+                <td style="border: 1px solid #000; padding: 3px 6px; font-size: 8.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; font-size: 8.5px; font-weight: 500; color: #000;">
                   ${c.carton_name}
-                  <span style="font-size: 8px; font-weight: 700; text-transform: uppercase; border: 1px solid #000; padding: 0.5px 3px; border-radius: 3px; margin-left: 3px;">${isShoper ? 'Shoper' : 'Carton'}</span>
+                  <span style="font-size: 7.5px; font-weight: 700; text-transform: uppercase; border: 1px solid #000; padding: 0.5px 3px; border-radius: 3px; margin-left: 3px;">${isShoper ? 'Shoper' : 'Carton'}</span>
                 </td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${c.pieces_per_carton} pcs/${unitAbbr}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${c.factory_carton_stock} ${unitsAbbr}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 9.5px; color: #000;">${c.total_loaded_in_cars || 0} ${unitsAbbr}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${(c.factory_carton_stock || 0) + (c.total_loaded_in_cars || 0)} ${unitsAbbr}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${c.carton_sale_price}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round((c.factory_carton_stock || 0) * c.carton_sale_price).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: center; font-size: 8.5px; color: #000;">${c.pieces_per_carton} pcs/${unitAbbr}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500; font-size: 8.5px; color: #000;">${c.factory_carton_stock} ${unitsAbbr}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-size: 8.5px; color: #000;">${c.total_loaded_in_cars || 0} ${unitsAbbr}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500; font-size: 8.5px; color: #000;">${(c.factory_carton_stock || 0) + (c.total_loaded_in_cars || 0)} ${unitsAbbr}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${c.carton_sale_price}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500; font-size: 8.5px; color: #000;">Rs. ${Math.round((c.factory_carton_stock || 0) * c.carton_sale_price).toLocaleString()}</td>
               </tr>
             `;
             }).join('')}
           </tbody>
         </table>
 
-        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 0; font-size: 9.5px; font-weight: 900; color: #000;">
+        <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 8px; font-size: 9px; font-weight: 700; color: #000;">
           <span>Factory Stock: ${totalWarehouseUnits} units (${whCtns} ctns, ${whShopers} shopers) | In Cars: ${totalLoaded} (${carCtns} ctns, ${carShopers} shopers)</span>
-          <span style="font-family: -apple-system, monospace;">TOTAL STOCK VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
+          <span>TOTAL STOCK VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
+        <div class="a5-signatures" style="margin-top: 18px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 40%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">
             Factory Store Keeper
           </div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 40%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">
             Managing Director Signature
           </div>
         </div>
@@ -1949,19 +2473,62 @@ window.CartonPacking = {
       const unitLabel = isShoper ? 'Shoper' : 'Carton';
       const unitsLabel = isShoper ? 'Shopers' : 'Cartons';
 
+      // Build structured list of raw materials
+      let materialsList = [];
+      if (batch.materials && batch.materials.length > 0) {
+        materialsList = batch.materials.map((m, idx) => {
+          let usageStr = '';
+          if (m.isChocolate) {
+            usageStr = `${m.qty_used} Liters`;
+          } else if (m.has_bulk && m.pack_size > 1) {
+            const p = Math.floor(m.qty_used / m.pack_size);
+            const l = Math.round((m.qty_used % m.pack_size) * 10) / 10;
+            const pUnit = m.unit || 'Pack';
+            const subUnit = m.pack_unit || 'Unit';
+            if (p > 0 && l > 0) usageStr = `${p} ${p === 1 ? pUnit : pUnit + 's'} + ${l} ${subUnit} (${m.qty_used} ${subUnit})`;
+            else if (p > 0) usageStr = `${p} ${p === 1 ? pUnit : pUnit + 's'} (${m.qty_used} ${subUnit})`;
+            else usageStr = `${l} ${subUnit}`;
+          } else {
+            usageStr = `${m.qty_used} ${m.unit || ''}`;
+          }
+          return {
+            index: idx + 1,
+            name: m.name,
+            qty: usageStr
+          };
+        });
+      } else if (batch.raw_materials_summary && batch.raw_materials_summary.trim()) {
+        const parts = batch.raw_materials_summary.split(/,\s*(?=[^:]+:)/).map(s => s.trim()).filter(Boolean);
+        materialsList = parts.map((part, idx) => {
+          const colonIdx = part.indexOf(':');
+          if (colonIdx !== -1) {
+            return {
+              index: idx + 1,
+              name: part.substring(0, colonIdx).trim(),
+              qty: part.substring(colonIdx + 1).trim()
+            };
+          }
+          return {
+            index: idx + 1,
+            name: part,
+            qty: '-'
+          };
+        });
+      }
+
       const html = `
-        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
           <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-            <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+            <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
             <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>
             <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">Tel: ${phone}</p>
           </div>
 
-          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
             PACKAGING VOUCHER &amp; WAREHOUSE INWARD SLIP
           </div>
 
-          <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+          <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 7px; padding: 7px 11px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.55;">
             <div>
               <div><strong>Packing Batch #:</strong> ${batch.packing_number}</div>
               <div><strong>Packaged Product:</strong> <strong>${batch.item_name} (${unitLabel})</strong></div>
@@ -1969,37 +2536,75 @@ window.CartonPacking = {
             </div>
             <div style="text-align: right;">
               <div><strong>Packing Date:</strong> ${app.formatDateTime(batch.date, batch.created_at)}</div>
-              <div><strong>Pieces Consumed:</strong> -${batch.total_pieces_consumed} pcs</div>
+              <div><strong>Cost Per ${unitLabel}:</strong> Rs. ${batch.carton_cost}</div>
               <div><strong>Total Pack Cost:</strong> <strong>Rs. ${Math.round(batch.total_cost).toLocaleString()}</strong></div>
             </div>
           </div>
 
-          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin: 6px 0; background: #fff;">
+          <!-- FINISHED PRODUCT INWARD DETAILS -->
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin: 5px 0; background: #fff;">
             <thead>
               <tr style="background: #fff; border-bottom: 1.5px solid #000;">
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; color: #000;">Item Name</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: 900; color: #000;">Type &amp; Pack Size</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Qty Packed</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Cost / Pack</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Wholesale Sale Price</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8.5px; color: #000;">Item Name</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: 600; font-size: 8.5px; color: #000;">Type &amp; Pack Size</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 600; font-size: 8.5px; color: #000;">Qty Packed</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 600; font-size: 8.5px; color: #000;">Cost / Pack</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 600; font-size: 8.5px; color: #000;">Wholesale Sale Price</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style="border: 1px solid #000; padding: 6px; font-weight: 800; color: #000;">${batch.item_name}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: center; color: #000;">${unitLabel} (${batch.pieces_per_carton} pcs/${unitLabel.toLowerCase()})</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: 900; color: #000;">${batch.cartons_packed} ${unitsLabel}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: right; font-family: monospace; color: #000;">Rs. ${batch.carton_cost}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: right; font-family: monospace; font-weight: 900; color: #000;">Rs. ${batch.carton_sale_price}</td>
+                <td style="border: 1px solid #000; padding: 5px 6px; font-weight: 500; font-size: 8.5px; color: #000;">${batch.item_name}</td>
+                <td style="border: 1px solid #000; padding: 5px 6px; text-align: center; font-size: 8.5px; color: #000;">${unitLabel} (${batch.pieces_per_carton} pcs/${unitLabel.toLowerCase()})</td>
+                <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: 500; font-size: 8.5px; color: #000;">${batch.cartons_packed} ${unitsLabel}</td>
+                <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${batch.carton_cost}</td>
+                <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: 500; font-size: 8.5px; color: #000;">Rs. ${batch.carton_sale_price}</td>
               </tr>
             </tbody>
             <tfoot>
-              <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
-                <td colspan="3" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase;">Total Stock Manufacturing Value:</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace;">Rs. ${Math.round(batch.total_cost).toLocaleString()}</td>
+              <tr style="background: #fff; font-weight: 700; border-top: 1.5px solid #000; color: #000;">
+                <td colspan="3" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase; font-size: 8.5px;">Total Stock Manufacturing Value:</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px;">Rs. ${Math.round(batch.total_cost).toLocaleString()}</td>
               </tr>
             </tfoot>
           </table>
+
+          <!-- SEPARATE BOXED SECTION: RAW MATERIALS CONSUMED -->
+          <div style="border: 1.5px solid #000; margin: 7px 0; background: #fff; color: #000;">
+            <div style="background: #f8fafc; border-bottom: 1.5px solid #000; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #000;">
+                Raw Materials Consumed (Factory Stock Deducted)
+              </span>
+              <span style="font-size: 8.5px; font-weight: 600; color: #334155;">
+                ${materialsList.length > 0 ? `${materialsList.length} Items Used` : 'Standard Ingredients'}
+              </span>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 8.5px;">
+              <thead>
+                <tr style="border-bottom: 1px solid #000; background: #fff;">
+                  <th style="border-right: 1px solid #000; padding: 3px 6px; width: 28px; text-align: center; font-weight: 700; color: #000;">#</th>
+                  <th style="border-right: 1px solid #000; padding: 3px 8px; text-align: left; font-weight: 700; color: #000;">Raw Material / Ingredient</th>
+                  <th style="padding: 3px 8px; text-align: right; width: 150px; font-weight: 700; color: #000;">Quantity Consumed</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${materialsList.length > 0 ? materialsList.map(it => `
+                  <tr style="border-bottom: 1px solid #000;">
+                    <td style="border-right: 1px solid #000; padding: 3.5px 6px; text-align: center; font-weight: 600; color: #475569;">${it.index}</td>
+                    <td style="border-right: 1px solid #000; padding: 3.5px 8px; font-weight: 600; color: #000;">${it.name}</td>
+                    <td style="padding: 3.5px 8px; text-align: right; font-weight: 700; color: #000;">${it.qty}</td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td colspan="3" style="padding: 6px 8px; text-align: center; color: #64748b; font-style: italic;">
+                      ${batch.raw_materials_summary || 'Standard ingredients consumed.'}
+                    </td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
 
           ${batch.notes ? `
             <div style="border: 1px solid #000; padding: 4px 8px; font-size: 9px; margin-top: 4px; background: #fff; color: #000;">
@@ -2008,10 +2613,10 @@ window.CartonPacking = {
           ` : ''}
 
           <div class="a5-signatures" style="margin-top: 35px; display: flex; justify-content: space-between; font-size: 9px;">
-            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
               Packaging Floor Incharge
             </div>
-            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
               Warehouse Stock Receiver
             </div>
           </div>
@@ -2034,12 +2639,19 @@ window.CartonPacking = {
     container.innerHTML = `
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4 animate-in fade-in duration-150" onclick="if(event.target===this) CartonPacking.closeModal()">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden">
-          <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
-            <div class="flex items-center gap-2">
-              <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i>
-              <h3 class="font-black text-sm text-white">Edit Packing Batch (${batch.packing_number})</h3>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="edit-3" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Edit Packing Batch (${batch.packing_number})</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 3 • Update packing details</p>
+              </div>
             </div>
-            <button onclick="CartonPacking.closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="CartonPacking.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
           </div>
           <form onsubmit="CartonPacking.saveEditedBatch(event, ${batch.id})" class="p-5 space-y-4">
             <div>

@@ -11,9 +11,16 @@ window.ShopSales = {
   searchResults: [],
   highlightedSearchIndex: 0,
   discount: 0,
+  discountType: 'amount', // 'amount' (Rs.) | 'percent' (%)
+  discountValue: '',
+  deductionType: 'commission', // 'commission' | 'expense'
+  deductionRateType: 'percent', // 'percent' | 'amount'
+  deductionValue: 0,
+  deductionAmount: 0,
   receivedAmount: 0,
   isReceivedManuallyEdited: false,
   paymentMethod: 'Cash',
+  isCarLoadedVisible: true, // true: View loaded items, false: Hide to save screen space
   currentReturnDelivery: null,
   returnDestination: 'car', // 'car' | 'stock'
   returnAdjustmentType: 'cash', // 'cash'
@@ -119,8 +126,11 @@ window.ShopSales = {
     const barcode = String(rawBarcode).trim().toLowerCase();
     if (!barcode) return false;
 
-    // Look up carton by barcode or partial name
-    let carton = this.cartons.find(c => String(c.barcode || '').trim().toLowerCase() === barcode);
+    // Look up carton by barcode, QR code or partial name
+    let carton = this.cartons.find(c => 
+      String(c.barcode || '').trim().toLowerCase() === barcode ||
+      String(c.qr_code || '').trim().toLowerCase() === barcode
+    );
     if (!carton) {
       carton = this.cartons.find(c => (c.carton_name || '').toLowerCase().includes(barcode));
     }
@@ -241,12 +251,33 @@ window.ShopSales = {
       it.quantity = qty;
       it.delivered_cartons = qty;
       it.ordered_cartons = qty;
-      it.line_total = qty * price;
+      const sub = qty * price;
+      let discAmt = 0;
+      const discNum = parseFloat(it.discount) || 0;
+      if (it.discountType === 'percent') {
+        discAmt = (sub * discNum) / 100;
+      } else {
+        discAmt = discNum * qty;
+      }
+      it.line_total = Math.max(0, sub - discAmt);
       subtotal += it.line_total;
       totalCartons += qty;
     });
 
-    const totalAmount = Math.max(0, subtotal - (Number(this.discount) || 0));
+    let discountAmount = 0;
+    const discVal = Number(this.discountValue !== undefined && this.discountValue !== '' ? this.discountValue : this.discount) || 0;
+    if (this.discountType === 'percent') {
+      discountAmount = (subtotal * discVal) / 100;
+    } else {
+      discountAmount = discVal;
+    }
+    discountAmount = Math.min(subtotal, Math.max(0, discountAmount));
+    this.discount = discountAmount;
+
+    const baseForDeduction = Math.max(0, subtotal - discountAmount);
+    const deductionAmount = this.calculateDeduction(baseForDeduction);
+    this.deductionAmount = deductionAmount;
+    const totalAmount = Math.max(0, baseForDeduction - deductionAmount);
     if (!this.isReceivedManuallyEdited && this.items.length > 0) {
       this.receivedAmount = totalAmount;
     } else if (this.items.length === 0) {
@@ -271,11 +302,11 @@ window.ShopSales = {
               <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-black">STAGE 5</span>
               <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">New Sale</h2>
             </div>
-            <p class="text-xs text-slate-300 font-medium">Fast sales, barcode scanning, shop khata, and instant bill printing.</p>
+            <p class="text-xs text-slate-300 font-medium">Fast sales, barcode scanning, salesman khata, and instant bill printing.</p>
           </div>
         </div>
 
-        <!-- Top Controls: Vehicle & Shop Selection -->
+        <!-- Top Controls: Vehicle & Salesman Selection -->
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
           
           <!-- Car Selection (5 cols) -->
@@ -318,28 +349,52 @@ window.ShopSales = {
 
             <!-- Quick In-Car Stock Pill List with Interactive Checkboxes -->
             <div class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 text-xs">
-              <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10px] font-black uppercase text-blue-900 tracking-wider">Loaded In This Car:</span>
+              <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                 <div class="flex items-center gap-2">
-                  <span class="text-[10px] text-blue-600 font-bold">Select quantity to add in sale (rest remain in car)</span>
+                  <span class="text-[10px] font-black uppercase text-blue-900 tracking-wider">Loaded In This Car:</span>
+                  <div class="inline-flex items-center bg-blue-100/80 p-0.5 rounded-lg border border-blue-200/90 shadow-2xs select-none" role="group">
+                    <button type="button" onclick="ShopSales.setCarLoadedView('view')" id="ss-car-toggle-view"
+                            class="flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] transition-all cursor-pointer ${this.isCarLoadedVisible !== false ? 'bg-blue-600 text-white font-black shadow-2xs' : 'text-blue-700 hover:text-blue-900 font-bold'}">
+                      <i data-lucide="eye" class="w-3 h-3"></i>
+                      <span>View</span>
+                    </button>
+                    <button type="button" onclick="ShopSales.setCarLoadedView('hide')" id="ss-car-toggle-hide"
+                            class="flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] transition-all cursor-pointer ${this.isCarLoadedVisible === false ? 'bg-slate-700 text-white font-black shadow-2xs' : 'text-blue-700 hover:text-blue-900 font-bold'}">
+                      <i data-lucide="eye-off" class="w-3 h-3"></i>
+                      <span>Hide</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
                   <button type="button" onclick="ShopSales.openQuickLoadCarModal()" class="text-[10px] text-blue-700 hover:text-blue-900 font-black underline cursor-pointer">+ Load More</button>
                 </div>
               </div>
-              <div id="ss-car-loaded-pills" class="flex flex-wrap gap-2">
-                ${this.renderLoadedCarPillsHtml()}
+              <div id="ss-car-loaded-body" class="${this.isCarLoadedVisible !== false ? '' : 'hidden'} space-y-1.5">
+                <div class="text-[10px] text-blue-600 font-bold">Select quantity to add in sale (rest remain in car)</div>
+                <div id="ss-car-loaded-pills" class="flex flex-wrap gap-2">
+                  ${this.renderLoadedCarPillsHtml()}
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Shop Selection (6 cols) -->
+          <!-- Salesman Selection (6 cols) -->
           <div class="md:col-span-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
               <label class="text-xs font-black uppercase text-slate-700 flex items-center gap-1.5">
-                <i data-lucide="store" class="w-4 h-4 text-amber-600"></i> Shop / Customer *
+                <i data-lucide="user-check" class="w-4 h-4 text-amber-600"></i> Salesman *
               </label>
-              <button type="button" onclick="ShopSales.openQuickAddShopModal()" class="text-[11px] font-black text-amber-600 hover:text-amber-700 cursor-pointer flex items-center gap-1">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Shop
-              </button>
+              <div class="flex items-center gap-2">
+                ${activeShop ? `
+                  <button type="button" onclick="ShopSales.openQuickEditShopModal(${activeShop.id})" 
+                          class="text-[11px] font-black text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-2.5 py-1 rounded-lg cursor-pointer flex items-center gap-1 transition-all shadow-2xs" title="Edit this salesman's profile and name">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-600"></i> Edit Salesman
+                  </button>
+                ` : ''}
+                <button type="button" onclick="ShopSales.openQuickAddShopModal()" class="text-[11px] font-black text-amber-600 hover:text-amber-700 cursor-pointer flex items-center gap-1">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Salesman
+                </button>
+              </div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -348,9 +403,9 @@ window.ShopSales = {
                 <div class="relative">
                   <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                   <input type="text" id="ss-shop-search" autocomplete="off"
-                         placeholder="Search or choose registered shop..."
+                         placeholder="Search or choose registered salesman..."
                          value="${activeShop ? `${activeShop.name}${activeShop.owner_name ? ` (${activeShop.owner_name})` : ''}` : ''}"
-                         onfocus="ShopSales.openShopDropdown()"
+                         onfocus="this.select(); ShopSales.openShopDropdown()"
                          onclick="ShopSales.openShopDropdown()"
                          oninput="ShopSales.filterShopDropdown(this.value)"
                          onkeydown="ShopSales.onShopKeydown(event)"
@@ -365,26 +420,41 @@ window.ShopSales = {
                 </div>
               </div>
               ${activeShop ? `
-                <button type="button" onclick="ShopSales.clearShopSelection()" title="Clear Shop Selection"
-                        class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95" aria-label="Clear Shop">
+                <button type="button" onclick="ShopSales.clearShopSelection()" title="Clear Salesman Selection"
+                        class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95" aria-label="Clear Salesman">
                   <i data-lucide="x" class="w-4 h-4 text-rose-600"></i>
                 </button>
               ` : ''}
             </div>
 
-            <!-- Shop Info & Previous Khata -->
-            <div class="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100 flex items-center justify-between text-xs">
-              <div>
-                <span class="text-[10px] font-black uppercase text-amber-900 block">Shop Contact &amp; Area:</span>
-                <span class="font-bold text-slate-700">${activeShop ? `${activeShop.phone ? (window.app && app.formatPhone ? app.formatPhone(activeShop.phone) : activeShop.phone) : 'No Phone'} • ${activeShop.address || activeShop.city || ''}` : 'Counter Walk-in Customer'}</span>
+            <!-- Salesman Info & Previous Khata -->
+            ${activeShop ? `
+              <div class="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100 flex items-center justify-between text-xs">
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] font-black uppercase text-amber-900 block">Salesman Contact &amp; Area:</span>
+                    <button type="button" onclick="ShopSales.openQuickEditShopModal(${activeShop.id})" class="text-[10px] font-bold text-amber-700 hover:underline flex items-center gap-0.5 cursor-pointer" title="Edit salesman name and details">
+                      <i data-lucide="edit-2" class="w-2.5 h-2.5"></i> Edit
+                    </button>
+                  </div>
+                  <span class="font-bold text-slate-700">${activeShop.phone ? (window.app && app.formatPhone ? app.formatPhone(activeShop.phone) : activeShop.phone) : 'No Phone'} • ${activeShop.address || activeShop.city || 'Local Area'}</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] font-black uppercase text-amber-900 block">Previous Balance</span>
+                  <span class="font-black text-sm ${previousBalance > 0 ? 'text-rose-600' : 'text-slate-800'} tabular-nums">
+                    Rs. ${Math.round(previousBalance).toLocaleString()}
+                  </span>
+                </div>
               </div>
-              <div class="text-right">
-                <span class="text-[10px] font-black uppercase text-amber-900 block">Previous Balance</span>
-                <span class="font-black text-sm ${previousBalance > 0 ? 'text-rose-600' : 'text-slate-800'} tabular-nums">
-                  Rs. ${Math.round(previousBalance).toLocaleString()}
-                </span>
+            ` : `
+              <div class="p-2.5 bg-amber-50/40 rounded-xl border-2 border-dashed border-amber-300 flex items-center justify-between text-xs cursor-pointer hover:bg-amber-50 transition-all select-none" onclick="ShopSales.openShopDropdown(); document.getElementById('ss-shop-search')?.focus();">
+                <div class="flex items-center gap-2 text-amber-900 font-bold">
+                  <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                  <span>Select a salesman above to proceed with bill</span>
+                </div>
+                <span class="text-[10px] font-black uppercase text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md">Required</span>
               </div>
-            </div>
+            `}
           </div>
 
         </div>
@@ -503,94 +573,123 @@ window.ShopSales = {
           </div>
         </div>
 
-        <!-- Bottom: Streamlined Horizontal Settlement Bar (Sticky Footer, Light Mode) -->
-        <div class="sticky bottom-0 z-20 bg-white/95 backdrop-blur-md text-slate-800 p-3 px-4 rounded-2xl shadow-[0_-4px_24px_-2px_rgba(0,0,0,0.08),0_2px_6px_-1px_rgba(0,0,0,0.04)] border border-slate-200/90 flex flex-wrap items-center justify-between gap-3 mt-auto mb-1">
+        <!-- Bottom: Streamlined Settlement Bar (Sticky Footer, Light Mode, Compact & Prominent) -->
+        <div class="sticky bottom-0 z-20 bg-white/95 backdrop-blur-md text-slate-800 p-2 px-3 rounded-2xl shadow-[0_-4px_24px_-2px_rgba(0,0,0,0.08),0_2px_6px_-1px_rgba(0,0,0,0.04)] border border-slate-200/90 flex flex-wrap items-center gap-1.5 mt-auto mb-1">
           
-          <!-- Left: Order Context Indicator -->
-          <div class="hidden xl:flex items-center gap-2.5 text-xs text-slate-500 font-bold shrink-0 min-w-[140px]">
-            <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-200/50">
-              <i data-lucide="receipt" class="w-4 h-4"></i>
+          <!-- Bill Summary -->
+          <div class="flex items-center gap-2 text-xs font-bold shrink-0 pr-1">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-200/60 font-black shadow-2xs shrink-0">
+              <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
             </div>
             <div class="leading-tight">
-              <div class="text-[9px] uppercase font-black tracking-wider text-slate-400">Bill Summary</div>
-              <div class="text-xs font-black text-slate-800" id="ss-footer-items-count">${this.items.length} item(s) • ${totalCartons} ctns</div>
+              <div class="text-[11px] uppercase font-black tracking-wider text-slate-500">Bill Summary</div>
+              <div class="text-[14px] font-black text-slate-900 font-mono" id="ss-footer-items-count">${this.items.length} item(s) • ${totalCartons} ctns</div>
             </div>
           </div>
 
-          <!-- Divider -->
-          <div class="h-8 w-px bg-slate-200/80 hidden xl:block shrink-0"></div>
-
-          <!-- Horizontal Figures Strip (Evenly spaced & symmetrically aligned) -->
-          <div class="flex-1 flex flex-wrap items-center justify-center lg:justify-end xl:justify-center gap-2.5 sm:gap-3">
-            
-            <!-- Subtotal -->
-            <div class="bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-1.5 h-[52px] min-w-[115px] flex flex-col justify-between shrink-0 shadow-2xs">
-              <div class="flex items-center justify-between gap-1.5">
-                <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Subtotal</span>
-                <span id="ss-subtotal-ctns" class="text-[10px] font-bold text-slate-500 bg-slate-200/60 px-1.5 py-0.2 rounded-md">(${totalCartons} ctns)</span>
-              </div>
-              <div id="ss-subtotal-val" class="text-sm font-black text-slate-800 font-mono tabular-nums leading-tight mt-0.5">Rs. ${Math.round(subtotal).toLocaleString()}</div>
+          <!-- Subtotal -->
+          <div class="bg-slate-50/90 border border-slate-200/90 rounded-xl px-2.5 py-1 h-[48px] w-[130px] flex flex-col justify-between shrink-0 shadow-2xs">
+            <div class="flex items-center justify-between gap-1 text-[11px] font-black uppercase text-slate-500 tracking-wider leading-none">
+              <span>Subtotal</span>
             </div>
-
-            <!-- Discount -->
-            <div class="bg-slate-50 border border-slate-200/90 hover:border-slate-300 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-100 rounded-xl px-3 py-1.5 h-[52px] min-w-[115px] flex flex-col justify-between shrink-0 transition-all shadow-2xs">
-              <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Discount</span>
-              <div class="flex items-center gap-1 mt-0.5">
-                <span class="text-xs font-black text-slate-400 font-mono">Rs.</span>
-                <input type="number" min="0" step="any" id="ss-discount-input" value="${this.discount}" oninput="ShopSales.onDiscountChange(this.value)"
-                       class="w-full bg-transparent text-right text-slate-900 font-black text-sm outline-none tabular-nums font-mono p-0">
-              </div>
-            </div>
-
-            <!-- Net Total (Hero Highlight) -->
-            <div class="bg-gradient-to-br from-amber-500 via-amber-500 to-amber-600 text-slate-950 border border-amber-500 rounded-xl px-3.5 py-1.5 h-[52px] min-w-[135px] flex flex-col justify-between shrink-0 shadow-xs">
-              <div class="flex items-center justify-between gap-1.5">
-                <span class="text-[10px] font-black uppercase tracking-wider text-amber-950">Net Total</span>
-                <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse"></span>
-              </div>
-              <div id="ss-net-total-val" class="text-base font-black text-slate-950 font-mono tabular-nums leading-tight mt-0.5">Rs. ${Math.round(totalAmount).toLocaleString()}</div>
-            </div>
-
-            <!-- Received Input -->
-            <div class="bg-emerald-50/70 border border-emerald-300 hover:border-emerald-400 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100 rounded-xl px-3 py-1.5 h-[52px] min-w-[125px] flex flex-col justify-between shrink-0 transition-all shadow-2xs">
-              <div class="flex items-center justify-between gap-1">
-                <span class="text-[10px] font-black uppercase text-emerald-700 tracking-wider">Received</span>
-                <button type="button" onclick="ShopSales.setFullPayment()" class="text-[9px] font-black uppercase tracking-wider text-emerald-700 hover:text-emerald-900 bg-emerald-100/90 hover:bg-emerald-200 px-1.5 py-0.2 rounded transition-colors cursor-pointer" title="Auto-fill Full Amount">Full</button>
-              </div>
-              <div class="flex items-center gap-1 mt-0.5">
-                <span class="text-xs font-black text-emerald-600 font-mono">Rs.</span>
-                <input type="number" min="0" max="${totalAmount}" step="any" id="ss-received-input" value="${this.receivedAmount}"
-                       oninput="ShopSales.onReceivedChange(this.value)"
-                       onchange="ShopSales.onReceivedChange(this.value)"
-                       onblur="if (!this.value) { this.value = ShopSales.receivedAmount; }"
-                       placeholder="0"
-                       class="w-full bg-transparent text-right text-emerald-900 font-black text-sm outline-none tabular-nums font-mono p-0">
-              </div>
-            </div>
-
-            <!-- Remaining Bill Balance -->
-            <div class="bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-1.5 h-[52px] min-w-[125px] flex flex-col justify-between shrink-0 shadow-2xs">
-              <div class="flex items-center justify-between gap-1">
-                <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Bill Balance</span>
-                <span id="ss-total-shop-balance-val" class="text-[10px] font-bold text-slate-500">${previousBalance > 0 ? `(Khata: Rs. ${Math.round(netShopBalance).toLocaleString()})` : ''}</span>
-              </div>
-              <div id="ss-rem-balance-val" class="text-sm font-black font-mono tabular-nums leading-tight mt-0.5 ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}">
-                Rs. ${Math.round(remainingBill).toLocaleString()}
-              </div>
-            </div>
-
+            <div id="ss-subtotal-val" class="text-[15.5px] font-black text-slate-900 font-mono tabular-nums leading-none whitespace-nowrap">Rs. ${Math.round(subtotal).toLocaleString()}</div>
           </div>
 
-          <!-- Divider -->
-          <div class="h-8 w-px bg-slate-200/80 hidden xl:block shrink-0"></div>
+          <!-- Discount (Rs. or %) -->
+          <div class="bg-slate-50/90 border border-slate-200/90 hover:border-slate-300 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-100 rounded-xl px-2 py-1 h-[48px] w-[130px] flex flex-col justify-between shrink-0 transition-all shadow-2xs">
+            <div class="flex items-center justify-between gap-1 leading-none">
+              <span class="text-[11px] font-black uppercase text-slate-500 tracking-wider leading-none">Discount</span>
+              <span id="ss-discount-badge" class="text-[10px] font-mono font-black text-amber-700 bg-amber-100/90 border border-amber-300/80 px-1 py-0.5 rounded shadow-2xs leading-none" style="display: ${this.discountType === 'percent' && discountAmount > 0 ? 'inline-block' : 'none'}">
+                -Rs. ${Math.round(discountAmount).toLocaleString()}
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 leading-none">
+              <div class="inline-flex p-0.5 bg-white/90 rounded border border-slate-200 shadow-2xs text-[10px] leading-none shrink-0">
+                <button type="button" onclick="ShopSales.setDiscountType('amount')" id="ss-disc-type-amt"
+                        class="px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10px] ${this.discountType !== 'percent' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-bold'}">Rs.</button>
+                <button type="button" onclick="ShopSales.setDiscountType('percent')" id="ss-disc-type-pct"
+                        class="px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10px] ${this.discountType === 'percent' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-bold'}">%</button>
+              </div>
+              <input type="number" min="0" ${this.discountType === 'percent' ? 'max="100"' : ''} step="any" id="ss-discount-input" 
+                     placeholder="0"
+                     value="${this.discountValue !== undefined && this.discountValue !== '' ? this.discountValue : (this.discount ? this.discount : '')}" 
+                     oninput="ShopSales.onDiscountValueChange(this.value)"
+                     class="w-full min-w-0 bg-transparent text-right text-slate-900 font-black text-[16px] outline-none tabular-nums font-mono p-0 placeholder:text-slate-400 leading-none">
+            </div>
+          </div>
+
+          <!-- Commission / Expense Deduction Card -->
+          <div id="ss-deduction-card" class="rounded-xl px-2.5 py-1 h-[48px] w-[180px] flex flex-col justify-between shrink-0 transition-all shadow-2xs ${this.deductionType === 'commission' ? 'bg-amber-50/70 border border-amber-300 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-200/60' : 'bg-rose-50/70 border border-rose-300 focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-200/60'}">
+            <div class="flex items-center justify-between gap-1 leading-none">
+              <div class="inline-flex p-0.5 bg-white/90 rounded border border-slate-200 shadow-2xs text-[10.5px] leading-none shrink-0">
+                <button type="button" onclick="ShopSales.setDeductionType('commission')" id="ss-ded-type-comm"
+                        class="px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] ${this.deductionType === 'commission' ? 'bg-amber-500 text-slate-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-bold'}">Comm.</button>
+                <button type="button" onclick="ShopSales.setDeductionType('expense')" id="ss-ded-type-exp"
+                        class="px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] ${this.deductionType === 'expense' ? 'bg-rose-500 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-bold'}">Exp.</button>
+              </div>
+              <span id="ss-deduction-badge" class="text-[10.5px] font-mono font-black text-rose-700 bg-rose-100/90 border border-rose-300/80 px-1.5 py-0.5 rounded shadow-2xs leading-none whitespace-nowrap">
+                -Rs. ${Math.round(deductionAmount).toLocaleString()}
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 leading-none">
+              <div class="inline-flex p-0.5 bg-white/90 rounded border border-slate-200 shadow-2xs text-[10.5px] leading-none shrink-0">
+                <button type="button" onclick="ShopSales.setDeductionRateType('percent')" id="ss-ded-rate-pct"
+                        class="px-1 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] ${this.deductionRateType === 'percent' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-bold'}">%</button>
+                <button type="button" onclick="ShopSales.setDeductionRateType('amount')" id="ss-ded-rate-amt"
+                        class="px-1 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] ${this.deductionRateType === 'amount' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-bold'}">Rs.</button>
+              </div>
+              <input type="number" min="0" step="any" id="ss-deduction-val-input" value="${this.deductionValue || ''}"
+                     oninput="ShopSales.onDeductionValueChange(this.value)"
+                     placeholder="0"
+                     class="w-full min-w-0 bg-transparent text-right text-slate-900 font-black text-[16px] outline-none tabular-nums font-mono p-0 leading-none h-4.5">
+            </div>
+          </div>
+
+          <!-- Net Total (Hero Highlight) -->
+          <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 border border-amber-500/80 rounded-xl px-2.5 py-1 h-[48px] w-[135px] flex flex-col justify-between shrink-0 shadow-sm">
+            <div class="flex items-center justify-between gap-1 leading-none">
+              <span class="text-[11px] font-black uppercase tracking-wider text-amber-950 whitespace-nowrap">Net Total</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse"></span>
+            </div>
+            <div id="ss-net-total-val" class="text-[15.5px] font-black text-slate-950 font-mono tabular-nums leading-none whitespace-nowrap">Rs. ${Math.round(totalAmount).toLocaleString()}</div>
+          </div>
+
+          <!-- Received Input -->
+          <div class="bg-emerald-50/80 border border-emerald-300 hover:border-emerald-400 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100 rounded-xl px-2.5 py-1 h-[48px] w-[130px] flex flex-col justify-between shrink-0 transition-all shadow-2xs">
+            <div class="flex items-center justify-between gap-1 leading-none">
+              <span class="text-[11px] font-black uppercase text-emerald-900 tracking-normal whitespace-nowrap">Received</span>
+              <button type="button" onclick="ShopSales.setFullPayment()" class="text-[9.5px] font-black uppercase tracking-tight text-emerald-800 hover:text-emerald-950 bg-emerald-100/90 hover:bg-emerald-200/90 border border-emerald-300/60 px-1.5 py-[1px] rounded transition-colors cursor-pointer shrink-0 leading-tight" title="Auto-fill Full Amount">Full</button>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-[12px] font-black text-emerald-700 font-mono">Rs.</span>
+              <input type="number" min="0" max="${totalAmount}" step="any" id="ss-received-input" value="${this.receivedAmount}"
+                     oninput="ShopSales.onReceivedChange(this.value)"
+                     onchange="ShopSales.onReceivedChange(this.value)"
+                     onblur="if (!this.value) { this.value = ShopSales.receivedAmount; }"
+                     placeholder="0"
+                     class="w-full min-w-0 bg-transparent text-right text-emerald-950 font-black text-[16px] outline-none tabular-nums font-mono p-0 leading-none">
+            </div>
+          </div>
+
+          <!-- Remaining Bill Balance -->
+          <div class="bg-slate-50/90 border border-slate-200/90 rounded-xl px-2.5 py-1 h-[48px] w-[115px] flex flex-col justify-between shrink-0 shadow-2xs">
+            <div class="flex items-center justify-between gap-1 text-[11px] font-black uppercase text-slate-500 tracking-wider leading-none">
+              <span>Balance</span>
+            </div>
+            <div id="ss-rem-balance-val" class="text-[15.5px] font-black font-mono tabular-nums leading-none whitespace-nowrap ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}">
+              Rs. ${Math.round(remainingBill).toLocaleString()}
+            </div>
+          </div>
 
           <!-- Complete Sale Button -->
           <button type="button" id="ss-submit-btn" onclick="ShopSales.submitSaleAndPrint()"
                   ${this.items.length === 0 ? 'disabled' : ''}
-                  class="h-[52px] px-5 ${this.items.length === 0 ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
+                  class="h-[48px] px-5 ${this.items.length === 0 ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95'} font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap">
             <i data-lucide="printer" class="w-4 h-4"></i>
-            <span>Complete Sale &amp; Print Bill</span>
+            <span>Complete &amp; Print</span>
           </button>
+
+        </div>
 
         </div>
 
@@ -611,6 +710,35 @@ window.ShopSales = {
     this.loadData();
   },
 
+  setCarLoadedView(val) {
+    this.isCarLoadedVisible = (val === 'view');
+    const body = document.getElementById('ss-car-loaded-body');
+    const btnView = document.getElementById('ss-car-toggle-view');
+    const btnHide = document.getElementById('ss-car-toggle-hide');
+
+    if (body) {
+      if (this.isCarLoadedVisible) {
+        body.classList.remove('hidden');
+      } else {
+        body.classList.add('hidden');
+      }
+    }
+
+    if (btnView && btnHide) {
+      if (this.isCarLoadedVisible) {
+        btnView.className = 'flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] transition-all cursor-pointer bg-blue-600 text-white font-black shadow-2xs';
+        btnHide.className = 'flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] transition-all cursor-pointer text-blue-700 hover:text-blue-900 font-bold';
+      } else {
+        btnView.className = 'flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] transition-all cursor-pointer text-blue-700 hover:text-blue-900 font-bold';
+        btnHide.className = 'flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] transition-all cursor-pointer bg-slate-700 text-white font-black shadow-2xs';
+      }
+    }
+  },
+
+  toggleCarLoadedView() {
+    this.setCarLoadedView(this.isCarLoadedVisible === false ? 'view' : 'hide');
+  },
+
   onShopChange(shopId) {
     this.selectedShopId = shopId ? Number(shopId) : null;
     this.renderUI();
@@ -624,8 +752,18 @@ window.ShopSales = {
   openShopDropdown() {
     const dropdown = document.getElementById('ss-shop-dropdown');
     if (!dropdown) return;
-    const searchVal = document.getElementById('ss-shop-search')?.value || '';
-    this.filterShopDropdown(searchVal);
+    const inp = document.getElementById('ss-shop-search');
+    const searchVal = (inp?.value || '').trim();
+    
+    // If input value matches the currently selected salesman's full label, show full list without filtering out
+    const activeShop = (this.shops || []).find(s => s.id === this.selectedShopId);
+    const activeLabel = activeShop ? `${activeShop.name}${activeShop.owner_name ? ` (${activeShop.owner_name})` : ''}`.trim() : '';
+
+    if (activeLabel && searchVal.toLowerCase() === activeLabel.toLowerCase()) {
+      this.filterShopDropdown('');
+    } else {
+      this.filterShopDropdown(searchVal);
+    }
     if (window.lucide) lucide.createIcons({ root: dropdown });
   },
 
@@ -652,49 +790,29 @@ window.ShopSales = {
     if (!q) {
       matches = allShops;
     } else {
-      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.]+/).filter(Boolean);
+      const getWords = (str) => (str || '').toLowerCase().split(/[\s\-_\/,\.\(\)]+/).filter(Boolean);
+      const queryWords = getWords(q);
       const scored = [];
 
       for (const s of allShops) {
         const name = (s.name || '').toLowerCase();
         const owner = (s.owner_name || '').toLowerCase();
         const city = (s.city || '').toLowerCase();
+        const address = (s.address || '').toLowerCase();
         const phone = (s.phone || '');
-        const nameWords = getWords(name);
-        const ownerWords = getWords(owner);
+        const fullCombo = `${name} ${owner} ${city} ${address} ${phone}`;
 
         let tier = 999;
-        // Tier 1: Shop name starts with query
-        if (name.startsWith(q)) {
+        if (name === q) {
+          tier = 0;
+        } else if (name.startsWith(q)) {
           tier = 1;
-        }
-        // Tier 2: Any word in shop name starts with query
-        else if (nameWords.some(w => w.startsWith(q))) {
+        } else if (fullCombo.includes(q)) {
           tier = 2;
-        }
-        // Tier 3: Owner name starts with query
-        else if (owner.startsWith(q)) {
+        } else if (queryWords.length > 0 && queryWords.every(w => fullCombo.includes(w))) {
           tier = 3;
-        }
-        // Tier 4: Any word in owner name starts with query
-        else if (ownerWords.some(w => w.startsWith(q))) {
+        } else if (queryWords.some(w => fullCombo.includes(w))) {
           tier = 4;
-        }
-        // Tier 5: Numeric phone match
-        else if (/^\d+$/.test(q) && phone.includes(q)) {
-          tier = 5;
-        }
-        // Tier 6: Substring in shop name (only for 2+ chars)
-        else if (q.length >= 2 && name.includes(q)) {
-          tier = 6;
-        }
-        // Tier 7: Substring in owner name (only for 3+ chars)
-        else if (q.length >= 3 && owner.includes(q)) {
-          tier = 7;
-        }
-        // Tier 8: City starts with query (only for 3+ chars)
-        else if (q.length >= 3 && (city.startsWith(q) || getWords(city).some(w => w.startsWith(q)))) {
-          tier = 8;
         }
 
         if (tier < 999) {
@@ -713,7 +831,7 @@ window.ShopSales = {
     if (matches.length === 0) {
       dropdown.innerHTML = `
         <div class="p-3 text-center text-xs font-bold text-slate-400">
-          No registered shops match "${query}"
+          No registered salesmen match "${query}"
         </div>
       `;
       dropdown.classList.remove('hidden');
@@ -1320,8 +1438,24 @@ window.ShopSales = {
       confirmColor: 'red',
       onConfirm: () => {
         this.items = [];
+        this.discount = 0;
+        this.discountValue = '';
+        this.discountType = 'amount';
+        this.deductionValue = 0;
+        this.deductionAmount = 0;
+        const dedInput = document.getElementById('ss-deduction-val-input');
+        if (dedInput) dedInput.value = '';
+        const discInput = document.getElementById('ss-discount-input');
+        if (discInput) discInput.value = '';
+        const btnAmt = document.getElementById('ss-disc-type-amt');
+        const btnPct = document.getElementById('ss-disc-type-pct');
+        if (btnAmt && btnPct) {
+          btnAmt.className = 'px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10px] bg-slate-900 text-white shadow-2xs';
+          btnPct.className = 'px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer leading-none text-[10px] text-slate-600 hover:text-slate-900';
+        }
         this.renderCartTable();
         this.renderLoadedCarPills();
+        this.updateFinancialSummary();
         this.focusSearchInput();
       }
     });
@@ -1534,9 +1668,114 @@ window.ShopSales = {
     if (clearBtn) clearBtn.classList.add('hidden');
   },
 
-  onDiscountChange(val) {
-    this.discount = Number(val) || 0;
+  calculateDeduction(baseAmount) {
+    const val = Number(this.deductionValue) || 0;
+    if (val <= 0 || baseAmount <= 0) return 0;
+    if (this.deductionRateType === 'percent') {
+      return Math.round(baseAmount * (val / 100));
+    }
+    return Math.min(baseAmount, val);
+  },
+
+  setDeductionType(type) {
+    this.deductionType = type === 'expense' ? 'expense' : 'commission';
+    this.updateDeductionUIState();
     this.updateFinancialSummary();
+  },
+
+  setDeductionRateType(rateType) {
+    this.deductionRateType = rateType === 'amount' ? 'amount' : 'percent';
+    this.updateDeductionUIState();
+    this.updateFinancialSummary();
+  },
+
+  updateDeductionUIState() {
+    const card = document.getElementById('ss-deduction-card');
+    const isComm = this.deductionType === 'commission';
+    if (card) {
+      card.className = `rounded-xl px-2.5 py-1 h-[48px] w-[180px] flex flex-col justify-between shrink-0 transition-all shadow-2xs ${isComm ? 'bg-amber-50/70 border border-amber-300 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-200/60' : 'bg-rose-50/70 border border-rose-300 focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-200/60'}`;
+    }
+
+    const btnComm = document.getElementById('ss-ded-type-comm');
+    const btnExp = document.getElementById('ss-ded-type-exp');
+    if (btnComm && btnExp) {
+      if (isComm) {
+        btnComm.className = 'px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] bg-amber-500 text-slate-950 shadow-2xs';
+        btnExp.className = 'px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer leading-none text-[10.5px] text-slate-600 hover:text-slate-900';
+      } else {
+        btnComm.className = 'px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer leading-none text-[10.5px] text-slate-600 hover:text-slate-900';
+        btnExp.className = 'px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] bg-rose-500 text-white shadow-2xs';
+      }
+    }
+
+    const btnPct = document.getElementById('ss-ded-rate-pct');
+    const btnAmt = document.getElementById('ss-ded-rate-amt');
+    if (btnPct && btnAmt) {
+      if (this.deductionRateType === 'percent') {
+        btnPct.className = 'px-1 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] bg-slate-900 text-white shadow-2xs';
+        btnAmt.className = 'px-1 py-0.5 rounded font-bold transition-all cursor-pointer leading-none text-[10.5px] text-slate-600 hover:text-slate-900';
+      } else {
+        btnPct.className = 'px-1 py-0.5 rounded font-bold transition-all cursor-pointer leading-none text-[10.5px] text-slate-600 hover:text-slate-900';
+        btnAmt.className = 'px-1 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10.5px] bg-slate-900 text-white shadow-2xs';
+      }
+    }
+  },
+
+  onDeductionValueChange(val) {
+    this.deductionValue = Math.max(0, parseFloat(val) || 0);
+    this.updateFinancialSummary();
+  },
+
+  getCalculatedDiscount(subtotal) {
+    let discountAmount = 0;
+    const discVal = Number(this.discountValue !== undefined && this.discountValue !== '' ? this.discountValue : this.discount) || 0;
+    if (this.discountType === 'percent') {
+      discountAmount = (subtotal * discVal) / 100;
+    } else {
+      discountAmount = discVal;
+    }
+    discountAmount = Math.min(subtotal, Math.max(0, discountAmount));
+    this.discount = discountAmount;
+    return discountAmount;
+  },
+
+  setDiscountType(type) {
+    this.discountType = type === 'percent' ? 'percent' : 'amount';
+    const btnAmt = document.getElementById('ss-disc-type-amt');
+    const btnPct = document.getElementById('ss-disc-type-pct');
+    if (btnAmt && btnPct) {
+      if (this.discountType === 'percent') {
+        btnPct.className = 'px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10px] bg-slate-900 text-white shadow-2xs';
+        btnAmt.className = 'px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer leading-none text-[10px] text-slate-600 hover:text-slate-900';
+      } else {
+        btnAmt.className = 'px-1.5 py-0.5 rounded font-black transition-all cursor-pointer leading-none text-[10px] bg-slate-900 text-white shadow-2xs';
+        btnPct.className = 'px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer leading-none text-[10px] text-slate-600 hover:text-slate-900';
+      }
+    }
+    const input = document.getElementById('ss-discount-input');
+    if (input) {
+      if (this.discountType === 'percent') {
+        input.max = '100';
+      } else {
+        input.removeAttribute('max');
+      }
+      this.onDiscountValueChange(input.value);
+    }
+  },
+
+  onDiscountValueChange(val) {
+    let num = val === '' ? '' : (parseFloat(val) || 0);
+    if (this.discountType === 'percent' && typeof num === 'number' && num > 100) {
+      num = 100;
+      const input = document.getElementById('ss-discount-input');
+      if (input) input.value = 100;
+    }
+    this.discountValue = num;
+    this.updateFinancialSummary();
+  },
+
+  onDiscountChange(val) {
+    this.onDiscountValueChange(val);
   },
 
   onReceivedChange(val) {
@@ -1545,7 +1784,10 @@ window.ShopSales = {
     this.items.forEach(it => {
       subtotal += (Number(it.line_total) || 0);
     });
-    const netTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+    const discount = this.getCalculatedDiscount(subtotal);
+    const baseForDeduction = Math.max(0, subtotal - discount);
+    const deductionAmount = this.calculateDeduction(baseForDeduction);
+    const netTotal = Math.max(0, baseForDeduction - deductionAmount);
 
     if (val === '' || val === null || val === undefined) {
       this.receivedAmount = 0;
@@ -1588,7 +1830,10 @@ window.ShopSales = {
     this.items.forEach(it => {
       subtotal += (Number(it.line_total) || 0);
     });
-    const netTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+    const discount = this.getCalculatedDiscount(subtotal);
+    const baseForDeduction = Math.max(0, subtotal - discount);
+    const deductionAmount = this.calculateDeduction(baseForDeduction);
+    const netTotal = Math.max(0, baseForDeduction - deductionAmount);
     this.onReceivedChange(netTotal);
     const recvInput = document.getElementById('ss-received-input');
     if (recvInput) recvInput.value = netTotal;
@@ -1603,7 +1848,12 @@ window.ShopSales = {
       totalCartons += q;
     });
 
-    const netTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+    const discount = this.getCalculatedDiscount(subtotal);
+    const baseForDeduction = Math.max(0, subtotal - discount);
+    const deductionAmount = this.calculateDeduction(baseForDeduction);
+    this.deductionAmount = deductionAmount;
+    const netTotal = Math.max(0, baseForDeduction - deductionAmount);
+
     if (this.items.length === 0) {
       this.isReceivedManuallyEdited = false;
       this.receivedAmount = 0;
@@ -1622,13 +1872,26 @@ window.ShopSales = {
     const ctnCountEl = document.getElementById('ss-subtotal-ctns');
     if (ctnCountEl) ctnCountEl.textContent = `(${totalCartons} ctns)`;
 
+    const discBadge = document.getElementById('ss-discount-badge');
+    if (discBadge) {
+      if (this.discountType === 'percent' && discount > 0) {
+        discBadge.textContent = `-Rs. ${Math.round(discount).toLocaleString()}`;
+        discBadge.style.display = 'inline-block';
+      } else {
+        discBadge.style.display = 'none';
+      }
+    }
+
+    const dedBadge = document.getElementById('ss-deduction-badge');
+    if (dedBadge) dedBadge.textContent = `-Rs. ${Math.round(deductionAmount).toLocaleString()}`;
+
     const netEl = document.getElementById('ss-net-total-val');
     if (netEl) netEl.textContent = `Rs. ${Math.round(netTotal).toLocaleString()}`;
 
     const remEl = document.getElementById('ss-rem-balance-val');
     if (remEl) {
       remEl.textContent = `Rs. ${Math.round(remainingBill).toLocaleString()}`;
-      remEl.className = `text-sm font-black font-mono tabular-nums leading-tight mt-0.5 ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+      remEl.className = `text-[15.5px] font-black font-mono tabular-nums leading-none whitespace-nowrap ${remainingBill > 0 ? 'text-rose-600' : 'text-emerald-600'}`;
     }
 
     const shopBalEl = document.getElementById('ss-total-shop-balance-val');
@@ -1654,10 +1917,10 @@ window.ShopSales = {
     if (submitBtn) {
       if (!hasItems) {
         submitBtn.disabled = true;
-        submitBtn.className = 'h-[52px] px-5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
+        submitBtn.className = 'h-[48px] px-5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
       } else {
         submitBtn.disabled = false;
-        submitBtn.className = 'h-[52px] px-5 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
+        submitBtn.className = 'h-[48px] px-5 bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-lg cursor-pointer active:scale-95 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 whitespace-nowrap';
       }
     }
   },
@@ -1665,6 +1928,12 @@ window.ShopSales = {
   resetForm() {
     this.items = [];
     this.discount = 0;
+    this.discountValue = '';
+    this.discountType = 'amount';
+    this.deductionType = 'commission';
+    this.deductionRateType = 'percent';
+    this.deductionValue = 0;
+    this.deductionAmount = 0;
     this.receivedAmount = 0;
     this.isReceivedManuallyEdited = false;
     this.paymentMethod = 'Cash';
@@ -1682,11 +1951,11 @@ window.ShopSales = {
           <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
-                <i data-lucide="store" class="w-4.5 h-4.5"></i>
+                <i data-lucide="user-check" class="w-4.5 h-4.5"></i>
               </div>
               <div>
-                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Quick Add New Shop</h3>
-                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 5 • Customer Profile &amp; Area</p>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Quick Add New Salesman</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 5 • Salesman Profile &amp; Area</p>
               </div>
             </div>
             <button type="button" onclick="ShopSales.closeShopModal()" class="modal-close-btn" title="Close (Esc)">
@@ -1695,14 +1964,9 @@ window.ShopSales = {
           </div>
           <form onsubmit="ShopSales.handleQuickShopSubmit(event)" class="p-6 space-y-3.5">
             <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Shop / Store Name *</label>
-              <input type="text" id="qs-name" required placeholder="e.g. Madina Cold Corner..."
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Salesman Name *</label>
+              <input type="text" id="qs-name" required placeholder="e.g. Tariq Mehmood, Ali Khan..."
                      class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
-            </div>
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Owner / Contact Person</label>
-              <input type="text" id="qs-owner" placeholder="e.g. Haji Aslam..."
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -1717,13 +1981,76 @@ window.ShopSales = {
               </div>
             </div>
             <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Address / Area</label>
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Address</label>
               <input type="text" id="qs-address" placeholder="e.g. Main GT Road, Hasan Abdal..."
                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
             </div>
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button type="button" onclick="ShopSales.closeShopModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
-              <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black shadow-md cursor-pointer">Save Shop</button>
+              <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black shadow-md cursor-pointer">Save Salesman</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+  },
+
+  openQuickEditShopModal(shopId = null) {
+    const id = shopId || this.selectedShopId;
+    const shop = (this.shops || []).find(s => s.id === Number(id));
+    if (!shop) {
+      app.showToast('Please select a salesman to edit', 'info');
+      return;
+    }
+
+    const modalEl = document.getElementById('shop-quick-modal-container');
+    if (!modalEl) return;
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) ShopSales.closeShopModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="user-check" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Edit Salesman Profile</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 5 • Update salesman name, contact &amp; area</p>
+              </div>
+            </div>
+            <button type="button" onclick="ShopSales.closeShopModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
+          </div>
+          <form onsubmit="ShopSales.handleQuickShopSubmit(event)" class="p-6 space-y-3.5">
+            <input type="hidden" id="qs-id" value="${shop.id}">
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Salesman Full Name *</label>
+              <input type="text" id="qs-name" required value="${shop.name || ''}" placeholder="e.g. Counter Walk-in Customer, Tariq Mehmood..."
+                     class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number *</label>
+                <input type="text" id="qs-phone" required value="${shop.phone || ''}" placeholder="0300-1234567"
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400 font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Sub-label / Owner</label>
+                <input type="text" id="qs-owner" value="${shop.owner_name || ''}" placeholder="e.g. Cash Walk-in"
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Address / Area</label>
+              <input type="text" id="qs-address" value="${shop.address || shop.city || ''}" placeholder="e.g. Main GT Road, Hasan Abdal..."
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
+            </div>
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button type="button" onclick="ShopSales.closeShopModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancel</button>
+              <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black shadow-md cursor-pointer">Update Salesman</button>
             </div>
           </form>
         </div>
@@ -1739,25 +2066,52 @@ window.ShopSales = {
 
   async handleQuickShopSubmit(e) {
     e.preventDefault();
-    const balanceVal = Number(document.getElementById('qs-balance').value) || 0;
+    const idInput = document.getElementById('qs-id');
+    const isEdit = Boolean(idInput && idInput.value);
+    const balanceInput = document.getElementById('qs-balance');
+    const balanceVal = balanceInput ? (Number(balanceInput.value) || 0) : undefined;
+    
+    const nameVal = document.getElementById('qs-name').value.trim();
+    if (!nameVal) {
+      return app.showAlert({ title: 'Salesman Name Required', message: 'Please enter a salesman name.' });
+    }
+
+    const editId = isEdit ? Number(idInput.value) : null;
+    const dup = (this.shops || []).find(s => (!editId || s.id !== editId) && s.name.trim().toLowerCase() === nameVal.toLowerCase());
+    if (dup) {
+      return app.showAlert({ title: 'Duplicate Salesman', message: `A salesman with the name "<b>${nameVal}</b>" already exists.<br><br>Duplicate salesman names are not allowed.` });
+    }
+
     const data = {
-      name: document.getElementById('qs-name').value,
-      owner_name: document.getElementById('qs-owner').value,
-      phone: document.getElementById('qs-phone').value,
-      amount: balanceVal,
-      opening_balance: balanceVal,
-      address: document.getElementById('qs-address').value
+      name: nameVal,
+      owner_name: (document.getElementById('qs-owner')?.value || '').trim(),
+      phone: document.getElementById('qs-phone').value.trim(),
+      address: document.getElementById('qs-address').value.trim()
     };
 
-    const res = await window.api.saveShop(data);
-    if (res && res.success) {
-      this.closeShopModal();
-      app.showToast('Shop added successfully!', 'success');
-      this.shops = await window.api.getShops() || [];
-      this.selectedShopId = res.id;
-      this.renderUI();
+    if (isEdit) {
+      data.id = Number(idInput.value);
     } else {
-      app.showAlert({ title: 'Error', message: res.error || 'Failed to save shop.' });
+      data.amount = balanceVal || 0;
+      data.opening_balance = balanceVal || 0;
+    }
+
+    try {
+      const res = await window.api.saveShop(data);
+      const savedId = (res && typeof res === 'object' && res.id) ? res.id : (typeof res === 'number' ? res : (data.id || (res && res.success ? res.id : null)));
+      
+      if (savedId) {
+        this.closeShopModal();
+        app.showToast(isEdit ? 'Salesman updated successfully!' : 'Salesman added successfully!', 'success');
+        this.shops = await window.api.getShops() || [];
+        this.selectedShopId = Number(savedId);
+        this.renderUI();
+      } else {
+        app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to save salesman.' });
+      }
+    } catch (err) {
+      console.error('Error saving salesman:', err);
+      app.showAlert({ title: 'Error', message: err.message || 'Failed to save salesman.' });
     }
   },
 
@@ -2086,14 +2440,42 @@ window.ShopSales = {
   },
 
   async submitSaleAndPrint() {
+    if (!this.selectedShopId) {
+      app.playBeep('warning');
+      app.showAlert({
+        title: 'Salesman Required',
+        message: 'A <b>Salesman</b> must be selected before completing and printing this sale.<br><br>Please select a salesman from the top-right search box.'
+      });
+      const shopInput = document.getElementById('ss-shop-search');
+      if (shopInput) {
+        shopInput.focus();
+        this.openShopDropdown();
+      }
+      return;
+    }
+
+    const activeShop = this.shops.find(s => s.id === this.selectedShopId);
+    if (!activeShop) {
+      app.playBeep('warning');
+      app.showAlert({
+        title: 'Salesman Required',
+        message: 'The selected salesman could not be found. Please choose a registered salesman from the list.'
+      });
+      const shopInput = document.getElementById('ss-shop-search');
+      if (shopInput) {
+        shopInput.focus();
+        this.openShopDropdown();
+      }
+      return;
+    }
+
     if (this.items.length === 0) {
       app.showAlert({ title: 'No Items', message: 'Please add at least one carton product to the delivery.' });
       return;
     }
 
     const activeCar = this.cars.find(c => c.id === this.selectedCarId);
-    const activeShop = this.shops.find(s => s.id === this.selectedShopId);
-    const shopName = activeShop ? activeShop.name : 'Counter Walk-in Customer';
+    const shopName = activeShop.name;
     const notes = '';
 
     // Validate quantities against total available stock
@@ -2115,6 +2497,16 @@ window.ShopSales = {
 
     const validItems = this.items.map(it => {
       const q = Math.max(1, Number(it.quantity || it.delivered_cartons) || 1);
+      const price = Number(it.carton_price) || 0;
+      const sub = q * price;
+      let discAmt = 0;
+      const discNum = parseFloat(it.discount) || 0;
+      if (it.discountType === 'percent') {
+        discAmt = (sub * discNum) / 100;
+      } else {
+        discAmt = discNum * q;
+      }
+      const lineTotal = it.line_total !== undefined ? Number(it.line_total) : Math.max(0, sub - discAmt);
       return {
         ...it,
         quantity: q,
@@ -2124,7 +2516,7 @@ window.ShopSales = {
         return_destination: 'car',
         discount: it.discount || '',
         discountType: it.discountType || 'flat',
-        line_total: it.line_total
+        line_total: lineTotal
       };
     });
 
@@ -2141,10 +2533,13 @@ window.ShopSales = {
         return;
       }
       seenCartonIds.add(it.carton_id);
-      subtotal += (Number(it.delivered_cartons) || 0) * (Number(it.carton_price) || 0);
+      subtotal += (Number(it.line_total) || 0);
     }
 
-    const netBillTotal = Math.max(0, subtotal - (Number(this.discount) || 0));
+    const discount = Number(this.discount) || 0;
+    const baseForDeduction = Math.max(0, subtotal - discount);
+    const deductionAmount = this.calculateDeduction(baseForDeduction);
+    const netBillTotal = Math.max(0, baseForDeduction - deductionAmount);
     if (this.receivedAmount > netBillTotal) {
       app.showAlert({
         title: 'Amount Exceeds Bill',
@@ -2181,6 +2576,12 @@ window.ShopSales = {
       shop_address: activeShop?.address || '',
       car_id: this.selectedCarId,
       discount: this.discount,
+      discount_type: this.discountType || 'amount',
+      discount_value: this.discountValue || 0,
+      deduction_type: this.deductionType || 'commission',
+      deduction_rate_type: this.deductionRateType || 'percent',
+      deduction_value: this.deductionValue || 0,
+      deduction_amount: deductionAmount,
       received_amount: this.receivedAmount,
       payment_method: this.paymentMethod,
       notes,
@@ -2200,6 +2601,12 @@ window.ShopSales = {
       notes,
       subtotal,
       discount: this.discount,
+      discount_type: this.discountType || 'amount',
+      discount_value: this.discountValue || 0,
+      deduction_type: this.deductionType || 'commission',
+      deduction_rate_type: this.deductionRateType || 'percent',
+      deduction_value: this.deductionValue || 0,
+      deduction_amount: deductionAmount,
       total_amount: netBillTotal,
       received_amount: this.receivedAmount,
       remaining_balance: Math.max(0, netBillTotal - (this.receivedAmount || 0)),
@@ -2249,73 +2656,92 @@ window.ShopSales = {
     const tagline = settings.tagline || 'Delicious Superstar Foods & Ice Cream Products';
 
     const items = delivery.items || [];
-    const totalDelivered = items.reduce((sum, it) => sum + (Number(it.delivered_cartons) || 0), 0);
+    const totalDelivered = items.reduce((sum, it) => {
+      const gross = Number(it.delivered_cartons || it.ordered_cartons) || 0;
+      const ret = Number(it.returned_cartons) || 0;
+      return sum + Math.max(0, gross - ret);
+    }, 0);
     const totalReturned = items.reduce((sum, it) => sum + (Number(it.returned_cartons) || 0), 0);
 
     return `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 2px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 10px;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
         
         <!-- Factory Header -->
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
+          <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
           <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${tagline}</p>
-          <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">${address} • Phone: ${phone}</p>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 500;">${address} • Phone: ${phone}</p>
         </div>
 
         <!-- Document Title -->
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          DELIVERY INVOICE &amp; BILL
+        <div style="text-align: center; margin: 4px 0 8px 0;">
+          <span style="display: inline-block; padding: 3px 14px; background: #fff; border: 1.5px solid #000; border-radius: 9999px; font-size: 10.5px; font-weight: 800; color: #000; letter-spacing: 0.8px; text-transform: uppercase;">
+            DELIVERY INVOICE &amp; BILL
+          </span>
         </div>
 
         <!-- Invoice Details Meta Grid -->
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
-          <div style="line-height: 1.45;">
-            <div><strong>Invoice #:</strong> <span style="font-family: -apple-system, monospace; font-weight: 700;">${delivery.invoice_no}</span></div>
-            <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(delivery.date, delivery.created_at)}</div>
-            <div><strong>Vehicle:</strong> ${delivery.car_number || 'Direct Warehouse'}</div>
-            <div><strong>Driver / Salesman:</strong> ${delivery.driver_name || 'N/A'}</div>
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; border: 1.5px solid #000; padding: 7px 11px; background: #fff; color: #000; line-height: 1.55;">
+          <div>
+            <div><strong style="color: #000;">Invoice #:</strong> <span style="font-weight: 800; color: #000;">${delivery.invoice_no}</span></div>
+            <div><strong style="color: #000;">Date &amp; Time:</strong> ${app.formatDateTime(delivery.date, delivery.created_at)}</div>
+            <div><strong style="color: #000;">Vehicle:</strong> ${delivery.car_number || 'Direct Warehouse'}</div>
+            <div><strong style="color: #000;">Driver / Salesman:</strong> ${delivery.driver_name || 'N/A'}</div>
           </div>
-          <div style="text-align: right; line-height: 1.45;">
-            <div><strong>Shop / Customer:</strong> <span style="font-weight: 800;">${delivery.shop_name}</span></div>
-            <div><strong>Contact:</strong> ${delivery.shop_phone || 'Walk-in'}</div>
-            <div><strong>Area / Address:</strong> ${delivery.shop_address || 'Hasan Abdal'}</div>
-            <div><strong>Payment Mode:</strong> ${delivery.payment_method || 'Cash'}</div>
+          <div style="text-align: right; line-height: 1.5;">
+            <div><strong style="color: #000;">Salesman:</strong> <span style="font-weight: 800; color: #000;">${delivery.shop_name}</span></div>
+            <div><strong style="color: #000;">Contact:</strong> ${delivery.shop_phone || 'Walk-in'}</div>
+            <div><strong style="color: #000;">Area / Address:</strong> ${delivery.shop_address || 'Hasan Abdal'}</div>
+            <div><strong style="color: #000;">Payment Mode:</strong> <span style="font-weight: 800; color: #000;">${delivery.payment_method || 'Cash'}</span></div>
           </div>
         </div>
 
         <!-- Itemized Table -->
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 8px; background: #fff;">
           <thead>
-            <tr>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 22px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item Description / Flavor</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pack</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 38px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Order</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 42px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Deliv.</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 38px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Ret.</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 55px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Rate</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 68px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: left; width: 20px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">#</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Item Description / Flavor</th>
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: center; width: 52px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Pack</th>
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: center; width: 36px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Order</th>
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: center; width: 32px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Ret.</th>
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: center; width: 36px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Deliv.</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: right; width: 54px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Rate</th>
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: center; width: 52px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Discount</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: right; width: 66px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Total</th>
             </tr>
           </thead>
           <tbody>
             ${items.map((it, idx) => {
-              const isShoper = it.package_type === 'shoper';
+              const isShoper = it.package_type === 'shoper' || (it.carton_name && it.carton_name.toLowerCase().includes('shoper'));
               const unitAbbr = isShoper ? 'shoper' : 'ctn';
               const unitsAbbr = isShoper ? 'shopers' : 'ctns';
+              const orderedQty = Number(it.ordered_cartons || it.delivered_cartons) || 1;
+              const retQty = Number(it.returned_cartons) || 0;
+              const grossDeliv = Number(it.delivered_cartons || orderedQty) || 1;
+              const netDeliv = Math.max(0, grossDeliv - retQty);
+
               return `
               <tr>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">
-                  <span style="font-weight: 800;">${it.carton_name}</span>
-                  <span style="font-size: 8px; font-weight: 700; text-transform: uppercase; border: 1px solid #000; padding: 0.5px 2.5px; border-radius: 2.5px; margin-left: 2px;">${isShoper ? 'Shoper' : 'Carton'}</span>
-                  ${it.returned_cartons > 0 ? `<span style="font-size: 8.5px; font-weight: 500; display: block;">(Ret: ${it.returned_cartons} ${unitsAbbr} ${it.return_destination === 'car' ? 'kept in car' : 'sent to stock'})</span>` : ''}
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-size: 8px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; font-size: 8.5px; color: #000;">
+                  <span style="font-weight: 800; color: #000;">${it.carton_name}</span>
+                  <span style="font-size: 7.5px; font-weight: 700; text-transform: uppercase; border: 1px solid #000; background: #fff; padding: 0.5px 3px; margin-left: 3px; color: #000;">${isShoper ? 'Shoper' : 'Carton'}</span>
+                  ${retQty > 0 ? `<span style="font-size: 7.5px; font-weight: 700; color: #000; display: block; margin-top: 1px;">(Ret: ${retQty} ${unitsAbbr} ${it.return_destination === 'car' ? 'kept in car' : 'sent to stock'})</span>` : ''}
                 </td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9px; color: #000;">${it.pieces_per_carton || 1} pcs/${unitAbbr}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.ordered_cartons || it.delivered_cartons || 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: 800; font-size: 9.5px; color: #000;">${it.delivered_cartons || 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: ${it.returned_cartons > 0 ? '800' : '400'}; font-size: 9.5px; color: #000;">${it.returned_cartons || 0}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.carton_price}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.line_total).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-size: 8px; color: #000;">${it.pieces_per_carton || 1} pcs/${unitAbbr}</td>
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-size: 8.5px; color: #000;">${orderedQty}</td>
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-weight: ${retQty > 0 ? '800' : '500'}; font-size: 8.5px; color: #000;">${retQty}</td>
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-weight: 700; font-size: 8.5px; color: #000;">${netDeliv}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${it.carton_price}</td>
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-size: 8px; color: #000; font-weight: ${it.discount ? '700' : '400'};">
+                  ${(() => {
+                    if (!it.discount || parseFloat(it.discount) === 0) return '—';
+                    if (it.discountType === 'percent') return `${it.discount}%`;
+                    return `Rs. ${it.discount}`;
+                  })()}
+                </td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 800; font-size: 8.5px; color: #000;">Rs. ${Math.round(it.line_total).toLocaleString()}</td>
               </tr>
             `;
             }).join('')}
@@ -2325,69 +2751,88 @@ window.ShopSales = {
         <!-- Summary & Settlement Box -->
         <div style="margin-top: 6px; display: flex; justify-content: space-between; gap: 8px;">
           <!-- Left: Return Note -->
-          <div style="flex: 1; border: 1px solid #000; padding: 5px 8px; font-size: 9.5px; color: #000; background: #fff; line-height: 1.4;">
+          <div style="flex: 1; border: 1.5px solid #000; padding: 6px 8px; font-size: 9.5px; color: #000; background: #fff; line-height: 1.45;">
             ${(() => {
-              const delCtns = items.filter(it => (it.package_type || 'carton') !== 'shoper').reduce((sum, it) => sum + (Number(it.delivered_cartons) || 0), 0);
-              const delShopers = items.filter(it => it.package_type === 'shoper').reduce((sum, it) => sum + (Number(it.delivered_cartons) || 0), 0);
+              const delCtns = items.filter(it => (it.package_type || 'carton') !== 'shoper').reduce((sum, it) => {
+                const gross = Number(it.delivered_cartons || it.ordered_cartons) || 0;
+                const ret = Number(it.returned_cartons) || 0;
+                return sum + Math.max(0, gross - ret);
+              }, 0);
+              const delShopers = items.filter(it => it.package_type === 'shoper').reduce((sum, it) => {
+                const gross = Number(it.delivered_cartons || it.ordered_cartons) || 0;
+                const ret = Number(it.returned_cartons) || 0;
+                return sum + Math.max(0, gross - ret);
+              }, 0);
+              const totalNetDelivered = delCtns + delShopers;
               const breakdown = (delCtns > 0 && delShopers > 0)
                 ? ` (${delCtns} Cartons, ${delShopers} Shopers)`
                 : (delShopers > 0 ? ` (${delShopers} Shopers)` : ` (${delCtns} Cartons)`);
-              return `<div><strong>Packaging Delivered:</strong> <strong>${totalDelivered} units${breakdown}</strong></div>`;
+              return `<div><strong style="color: #000;">Packaging Delivered:</strong> <strong style="color: #000;">${totalNetDelivered} units${breakdown}</strong></div>`;
             })()}
-            ${totalReturned > 0 ? `<div>Returned: <strong>${totalReturned} Units</strong></div>` : ''}
+            ${totalReturned > 0 ? `<div style="color: #000; font-weight: 700;">Returned: ${totalReturned} Units</div>` : ''}
             ${delivery.notes ? `<div style="margin-top: 2px;"><strong>Notes:</strong> ${delivery.notes}</div>` : ''}
-            <div style="margin-top: 4px; font-size: 8.5px; font-weight: 600;">* Please inspect all cartons upon delivery. Cold chain maintenance is required.</div>
+            <div style="margin-top: 4px; font-size: 8.5px; font-weight: 600; color: #000;">* Please inspect all cartons upon delivery. Cold chain maintenance is required.</div>
           </div>
 
           <!-- Right: Bill Financials -->
-          <div style="width: 210px; border: 1.5px solid #000; padding: 5px 8px; font-size: 9.5px; background: #fff; color: #000;">
+          <div style="width: 215px; border: 1.5px solid #000; padding: 6px 10px; font-size: 9.5px; background: #fff; color: #000;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
               <span>Subtotal:</span>
-              <span style="font-weight: 700; font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.subtotal || delivery.total_amount).toLocaleString()}</span>
+              <span style="font-weight: 700; color: #000;">Rs. ${Math.round(delivery.subtotal || delivery.total_amount).toLocaleString()}</span>
             </div>
             ${delivery.discount > 0 ? `
-              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                <span>Discount:</span>
-                <span style="font-family: -apple-system, monospace;">- Rs. ${Math.round(delivery.discount).toLocaleString()}</span>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px; color: #000;">
+                <span>Discount${delivery.discount_type === 'percent' ? ` (${delivery.discount_value}%)` : ''}:</span>
+                <span style="font-weight: 700;">- Rs. ${Math.round(delivery.discount).toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-weight: 700;">
+                <span>Net Total:</span>
+                <span style="color: #000;">Rs. ${Math.round((delivery.subtotal || 0) - delivery.discount).toLocaleString()}</span>
               </div>
             ` : ''}
-            <div style="display: flex; justify-content: space-between; font-weight: 800; border-top: 1px solid #000; padding-top: 2px; margin-bottom: 2px;">
+            ${(delivery.deduction_amount > 0) ? `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px; color: #000;">
+                <span>${delivery.deduction_type === 'expense' ? 'Expense' : 'Commission'}${delivery.deduction_rate_type === 'percent' ? ` (${delivery.deduction_value}%)` : ''}:</span>
+                <span style="font-weight: 700;">- Rs. ${Math.round(delivery.deduction_amount).toLocaleString()}</span>
+              </div>
+            ` : ''}
+            <div style="display: flex; justify-content: space-between; font-weight: 800; border-top: 1px solid #000; padding-top: 3px; margin-bottom: 2px; color: #000;">
               <span>Net Bill Total:</span>
-              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.total_amount).toLocaleString()}</span>
+              <span>Rs. ${Math.round(delivery.total_amount).toLocaleString()}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 2px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 2px; color: #000;">
               <span>Received (${delivery.payment_method || 'Cash'}):</span>
-              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.received_amount || 0).toLocaleString()}</span>
+              <span>Rs. ${Math.round(delivery.received_amount || 0).toLocaleString()}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 2px;">
-              <span>Current Bill Due:</span>
-              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.remaining_balance || 0).toLocaleString()}</span>
+            <div style="display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 2px; color: #000;">
+              <span>Balance:</span>
+              <span>Rs. ${Math.round(delivery.remaining_balance || 0).toLocaleString()}</span>
             </div>
             ${delivery.previous_balance > 0 ? `
-              <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px; color: #000;">
                 <span>Previous Balance:</span>
-                <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(delivery.previous_balance).toLocaleString()}</span>
+                <span>Rs. ${Math.round(delivery.previous_balance).toLocaleString()}</span>
               </div>
             ` : ''}
-            <div style="display: flex; justify-content: space-between; font-weight: 900; border-top: 1.5px solid #000; padding-top: 3px; font-size: 11px; margin-top: 2px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 800; border-top: 1.5px solid #000; padding-top: 4px; font-size: 11px; margin-top: 3px; color: #000;">
               <span>Net Total Due:</span>
-              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round((delivery.previous_balance || 0) + (delivery.remaining_balance || 0)).toLocaleString()}</span>
+              <span style="color: #000;">Rs. ${Math.round((delivery.previous_balance || 0) + (delivery.remaining_balance || 0)).toLocaleString()}</span>
             </div>
           </div>
         </div>
 
         <!-- Authorized Signatures -->
-        <div class="a5-signatures" style="margin-top: 28px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
-            Shopkeeper / Receiver Signature &amp; Stamp
+        <div class="a5-signatures" style="margin-top: 16px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Shopkeeper / Receiver
           </div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
-            Driver / Salesman Signature
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Driver / Salesman
           </div>
         </div>
 
         <!-- Footer -->
-        <div style="text-align: center; margin-top: 10px; font-size: 8.5px; color: #000; border-top: 1px dotted #000; padding-top: 3px; font-weight: 500;">
+        <div style="text-align: center; margin-top: 8px; font-size: 8.5px; color: #000; border-top: 1px dotted #000; padding-top: 3px; font-weight: 600;">
           Computer Generated A5 Invoice • Software by PrimeSoft (0309-5369472)
         </div>
       </div>
@@ -2462,23 +2907,25 @@ window.ShopSales = {
     const isKhataSelected = this.returnAdjustmentType === 'khata';
 
     modalEl.innerHTML = `
-      <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center z-[1300] p-4" onclick="if(event.target===this) ShopSales.closeReturnModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1300] p-4" onclick="if(event.target===this) ShopSales.closeReturnModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
           
           <!-- Header -->
-          <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-slate-900 text-white p-5 px-6 flex justify-between items-center border-b border-amber-900/40 shrink-0">
-            <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-mono text-[10px] font-black uppercase tracking-wider">Sale Return</span>
-                <span class="font-mono text-sm font-black text-amber-300">#${delivery.invoice_no}</span>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="rotate-ccw" class="w-4.5 h-4.5"></i>
               </div>
-              <h3 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
-                <i data-lucide="rotate-ccw" class="w-5 h-5 text-amber-400"></i> Return Cartons for ${delivery.shop_name}
-              </h3>
-              <p class="text-[11px] text-slate-300 font-medium">Delivered via ${delivery.car_number || 'Direct Warehouse'} (${delivery.driver_name || 'Direct'}) on ${delivery.date}</p>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Return Packages for ${delivery.shop_name}</h3>
+                  <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 font-mono text-[10px] font-bold border border-amber-200">#${delivery.invoice_no}</span>
+                </div>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 5 • ${delivery.car_number || 'Direct Warehouse'} (${delivery.driver_name || 'Direct'}) • ${delivery.date}</p>
+              </div>
             </div>
-            <button onclick="ShopSales.closeReturnModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors" title="Close">
-              <i data-lucide="x" class="w-4 h-4"></i>
+            <button type="button" onclick="ShopSales.closeReturnModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
           </div>
 
@@ -2859,7 +3306,8 @@ window.ShopSales = {
           const res = await window.api.processShopReturn(payload);
           if (res && res.success) {
             app.playBeep('success');
-            app.showToast(`Return ${res.returnNo} processed! Sale reduced by Rs. ${Math.round(res.totalRefund).toLocaleString()} (${res.totalCartonsReturned} cartons returned to ${res.returnDest === 'car' ? 'Car' : 'Factory Stock'}).`, 'success');
+            const reduction = res.netBillDelta !== undefined ? res.netBillDelta : res.totalRefund;
+            app.showToast(`Return ${res.returnNo} processed! Net bill reduced by Rs. ${Math.round(reduction).toLocaleString()} (${res.totalCartonsReturned} cartons returned to ${res.returnDest === 'car' ? 'Car' : 'Factory Stock'}).`, 'success');
             this.closeReturnModal();
 
             // Refresh all related views immediately
@@ -2906,30 +3354,30 @@ window.ShopSales = {
     const adjLabel = ret.adjustment_type === 'khata' ? 'Khata Balance Credited' : 'Cash Refund Paid';
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 2px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 10px;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 2px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 10px;">
         
         <!-- Factory Header -->
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
           <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${tagline}</p>
           <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">${address} • Phone: ${phone}</p>
         </div>
 
         <!-- Document Title -->
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
           CARTON RETURN NOTE / CREDIT VOUCHER
         </div>
 
         <!-- Meta Details Box -->
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; border: 1.5px solid #000; padding: 7px 11px; background: #fff; color: #000; line-height: 1.55;">
           <div style="line-height: 1.45;">
-            <div><strong>Return Voucher #:</strong> <span style="font-family: -apple-system, monospace; font-weight: 800;">${ret.return_no}</span></div>
-            <div><strong>Original Invoice #:</strong> <span style="font-family: -apple-system, monospace; font-weight: 700;">${ret.invoice_no}</span></div>
+            <div><strong>Return Voucher #:</strong> <span style=" font-weight: 600;">${ret.return_no}</span></div>
+            <div><strong>Original Invoice #:</strong> <span style=" font-weight: 700;">${ret.invoice_no}</span></div>
             <div><strong>Return Date:</strong> ${app.formatDateTime(ret.date, ret.created_at)}</div>
             <div><strong>Vehicle:</strong> ${ret.car_number || 'Direct'}</div>
           </div>
           <div style="text-align: right; line-height: 1.45;">
-            <div><strong>Shop / Customer:</strong> <span style="font-weight: 800;">${ret.shop_name}</span></div>
+            <div><strong>Salesman:</strong> <span style="font-weight: 600;">${ret.shop_name}</span></div>
             <div><strong>Destination:</strong> ${destLabel}</div>
             <div><strong>Settlement:</strong> ${adjLabel}</div>
             ${ret.reason ? `<div><strong>Reason:</strong> ${ret.reason}</div>` : ''}
@@ -2937,26 +3385,26 @@ window.ShopSales = {
         </div>
 
         <!-- Itemized Table -->
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 25px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item / Flavor Returned</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 50px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pack Spec</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 60px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Cartons Ret.</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Rate / Ctn</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Refund (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 25px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Item / Flavor Returned</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 50px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Pack Spec</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 60px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cartons Ret.</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Rate / Ctn</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Refund (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             ${items.map((it, idx) => `
               <tr>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000; font-weight: 800;">${it.carton_name}</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${it.pieces_per_carton} pcs</td>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-weight: 800; font-size: 9.5px; color: #000;">${it.returned_cartons}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.carton_price}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.refund_amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-size: 8.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; font-size: 8.5px; color: #000; font-weight: 500;">${it.carton_name}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-size: 8.5px; color: #000;">${it.pieces_per_carton} pcs</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-weight: 500; font-size: 8.5px; color: #000;">${it.returned_cartons}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right;  font-size: 8.5px; color: #000;">Rs. ${it.carton_price}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500;  font-size: 8.5px; color: #000;">Rs. ${Math.round(it.refund_amount).toLocaleString()}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -2976,19 +3424,19 @@ window.ShopSales = {
               <span>Total Ret. Cartons:</span>
               <span style="font-weight: 700;">${ret.total_cartons_returned} ctns</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-weight: 900; border-top: 1.5px solid #000; padding-top: 4px; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; border-top: 1.5px solid #000; padding-top: 4px; font-size: 11px;">
               <span>Total Refund Amount:</span>
-              <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(ret.total_refund_amount).toLocaleString()}</span>
+              <span style="">Rs. ${Math.round(ret.total_refund_amount).toLocaleString()}</span>
             </div>
           </div>
         </div>
 
         <!-- Signatures -->
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">
             Shopkeeper / Returnee Signature
           </div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">
             Driver / Factory Stock Receiver
           </div>
         </div>

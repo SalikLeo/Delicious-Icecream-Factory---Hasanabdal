@@ -31,8 +31,16 @@ window.ItemSales = {
             <h2 class="text-3xl font-bold text-slate-800">Item Wise Sales</h2>
           </div>
         </div>
-        <div class="flex items-center gap-3 flex-wrap">
-          <button onclick="ItemSales.toggleStats()" id="item-stats-toggle-btn" class="h-10 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-sm rounded-xl flex items-center gap-2 shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer">
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button onclick="app.navigate('return-sales')" class="h-10 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer" title="View Return Sales">
+            <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-500"></i>
+            <span>Return Sales</span>
+          </button>
+          <button onclick="ItemSales.printReport()" class="h-10 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer" title="Print Item Sales Report (A5)">
+            <i data-lucide="printer" class="w-4 h-4 text-slate-500"></i>
+            <span>Print</span>
+          </button>
+          <button onclick="ItemSales.toggleStats()" id="item-stats-toggle-btn" class="h-10 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer">
             <i data-lucide="${isStatsVisible ? 'eye-off' : 'eye'}" class="w-4 h-4 text-slate-400" id="item-stats-toggle-icon"></i>
             <span id="item-stats-toggle-text">${isStatsVisible ? 'Hide Stats' : 'Show Stats'}</span>
           </button>
@@ -103,117 +111,123 @@ window.ItemSales = {
       </div>
 
       <!-- Filter Controls Bar -->
-      <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 mb-6 flex gap-3 items-center flex-wrap">
+      <div class="bg-white p-2.5 rounded-xl shadow-sm border border-slate-200 mb-6 flex gap-2.5 items-center overflow-x-auto no-scrollbar shrink-0 select-none">
         <!-- Search -->
-        <div class="relative flex-1 min-w-[220px]">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input type="text" id="item-search" oninput="ItemSales.applyFilters()" placeholder="Search by item name, description, section, invoice..." class="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-all text-xs font-medium">
-          <button type="button" id="item-search-clear-btn" onclick="ItemSales.clearSearch()" title="Clear search" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer hidden"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+        <div class="relative w-48 xl:w-56 shrink-0">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="item-search" oninput="ItemSales.applyFilters()" placeholder="Search item, invoice..." class="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-all text-xs font-medium">
+          <button type="button" id="item-search-clear-btn" onclick="ItemSales.clearSearch()" title="Clear search" class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer hidden"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
         </div>
         
-        <div class="flex gap-3 items-center flex-wrap pl-2 border-l border-slate-200">
-          <!-- Sort Dropdown -->
-          <div class="flex gap-1.5 items-center">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Sort</label>
-            <select id="item-sort-select" onchange="ItemSales.setSort(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer">
-              <option value="qty-desc">Quantity Sold (High to Low)</option>
-              <option value="qty-asc">Quantity Sold (Low to High)</option>
-              <option value="revenue-desc">Total Revenue (High to Low)</option>
-              <option value="revenue-asc">Total Revenue (Low to High)</option>
-              <option value="profit-desc">Gross Profit (High to Low)</option>
-              <option value="profit-asc">Gross Profit (Low to High)</option>
-              <option value="name-asc">Item Name (A to Z)</option>
-              <option value="name-desc">Item Name (Z to A)</option>
-              <option value="orders-desc">Orders Count (High to Low)</option>
-            </select>
-          </div>
+        <div class="h-6 w-px bg-slate-200 shrink-0"></div>
 
-          <!-- Category dropdown -->
-          <div class="flex gap-1.5 items-center">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Category</label>
-            <select id="item-cat-select" onchange="ItemSales.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer min-w-[110px]">
-              <option value="All">All Categories</option>
-            </select>
-          </div>
+        <!-- Sort Dropdown -->
+        <div class="flex gap-1 items-center shrink-0">
+          <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Sort</label>
+          <select id="item-sort-select" onchange="ItemSales.setSort(this.value)" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer">
+            <option value="qty-desc">Qty (High-Low)</option>
+            <option value="qty-asc">Qty (Low-High)</option>
+            <option value="revenue-desc">Revenue (High-Low)</option>
+            <option value="revenue-asc">Revenue (Low-High)</option>
+            <option value="profit-desc">Profit (High-Low)</option>
+            <option value="profit-asc">Profit (Low-High)</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="orders-desc">Orders (High-Low)</option>
+          </select>
+        </div>
 
-          <!-- Payment Method dropdown -->
-          <div class="flex gap-1.5 items-center">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Method</label>
-            <select id="item-method-select" onchange="ItemSales.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer">
-              <option value="All">All Methods</option>
-              <option value="Cash">Cash</option>
-              <option value="Online">Online</option>
-            </select>
-          </div>
+        <!-- Category dropdown -->
+        <div class="flex gap-1 items-center shrink-0">
+          <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
+          <select id="item-cat-select" onchange="ItemSales.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer min-w-[105px]">
+            <option value="All">All Categories</option>
+          </select>
+        </div>
 
-          <!-- Period controls -->
-          <div class="flex gap-2 items-center flex-wrap">
+        <!-- Payment Method dropdown -->
+        <div class="flex gap-1 items-center shrink-0">
+          <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Method</label>
+          <select id="item-method-select" onchange="ItemSales.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold hover:bg-white text-slate-700 transition-all outline-none cursor-pointer">
+            <option value="All">All Methods</option>
+            <option value="Cash">Cash</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+
+        <div class="h-6 w-px bg-slate-200 shrink-0"></div>
+
+        <!-- Period controls -->
+        <div class="flex gap-2 items-center shrink-0">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Period</label>
-            <div class="flex bg-slate-100 p-1 rounded-lg">
-               <button id="item-period-day-tab" onclick="ItemSales.setPeriodType('day')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">Daily</button>
-               <button id="item-period-month-tab" onclick="ItemSales.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Monthly</button>
-               <button id="item-period-year-tab" onclick="ItemSales.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Annual</button>
-               <button id="item-period-custom-tab" onclick="ItemSales.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Custom Range</button>
-               <button id="item-period-all-tab" onclick="ItemSales.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">All</button>
+            <div class="flex bg-slate-100 p-1 rounded-xl gap-0.5">
+               <button id="item-period-day-tab" onclick="ItemSales.setPeriodType('day')" class="px-3 py-1.5 text-xs font-black rounded-lg transition-all bg-white shadow-2xs text-slate-900 cursor-pointer">Daily</button>
+               <button id="item-period-month-tab" onclick="ItemSales.setPeriodType('month')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Monthly</button>
+               <button id="item-period-year-tab" onclick="ItemSales.setPeriodType('year')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Annual</button>
+               <button id="item-period-custom-tab" onclick="ItemSales.setPeriodType('custom')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Custom Range</button>
+               <button id="item-period-all-tab" onclick="ItemSales.setPeriodType('all')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">All</button>
             </div>
 
             <!-- Daily navigation controls -->
-            <div id="item-daily-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
-               <button onclick="ItemSales.changeDateStep(-1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Day">
+            <div id="item-daily-controls" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 select-none">
+               <button type="button" onclick="ItemSales.changeDateStep(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Previous Day">
                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
                </button>
-               <input type="date" id="item-stats-date-picker" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent border-0 px-1 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
-               <button onclick="ItemSales.changeDateStep(1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Day">
+               <input type="date" id="item-stats-date-picker" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2.5 py-1 text-xs font-black text-slate-900 outline-none cursor-pointer">
+               <button type="button" onclick="ItemSales.changeDateStep(1)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Next Day">
                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                </button>
-               <button onclick="ItemSales.setToday()" class="px-2 py-1 text-[10px] font-black uppercase bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded transition-all cursor-pointer ml-0.5">Today</button>
+               <button type="button" onclick="ItemSales.setToday()" class="px-2.5 py-1 text-[11px] font-black uppercase bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/80 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95 ml-0.5">Today</button>
             </div>
 
             <!-- Monthly navigation controls -->
-            <div id="item-monthly-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
-               <button onclick="ItemSales.changeMonthStep(-1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Month">
+            <div id="item-monthly-controls" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 hidden select-none">
+               <button type="button" onclick="ItemSales.changeMonthStep(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Previous Month">
                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
                </button>
-               <select id="item-stats-month-select" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
-                 <option value="1">January</option>
-                 <option value="2">February</option>
-                 <option value="3">March</option>
-                 <option value="4">April</option>
-                 <option value="5">May</option>
-                 <option value="6">June</option>
-                 <option value="7">July</option>
-                 <option value="8">August</option>
-                 <option value="9">September</option>
-                 <option value="10">October</option>
-                 <option value="11">November</option>
-                 <option value="12">December</option>
-               </select>
-               <select id="item-stats-month-year-select" onchange="ItemSales.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
-               </select>
-               <button onclick="ItemSales.changeMonthStep(1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Month">
+               <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                 <select id="item-stats-month-select" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent text-xs font-black text-slate-900 outline-none cursor-pointer py-1 pr-1 border-0">
+                   <option value="1">January</option>
+                   <option value="2">February</option>
+                   <option value="3">March</option>
+                   <option value="4">April</option>
+                   <option value="5">May</option>
+                   <option value="6">June</option>
+                   <option value="7">July</option>
+                   <option value="8">August</option>
+                   <option value="9">September</option>
+                   <option value="10">October</option>
+                   <option value="11">November</option>
+                   <option value="12">December</option>
+                 </select>
+                 <span class="text-slate-300 font-bold">•</span>
+                 <select id="item-stats-month-year-select" onchange="ItemSales.applyFilters()" class="bg-transparent text-xs font-black text-slate-900 outline-none cursor-pointer py-1 pl-1 border-0">
+                 </select>
+               </div>
+               <button type="button" onclick="ItemSales.changeMonthStep(1)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer active:scale-95" title="Next Month">
                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                </button>
-               <button onclick="ItemSales.setThisMonth()" class="px-2 py-1 text-[10px] font-black uppercase bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded transition-all cursor-pointer ml-0.5">This Month</button>
+               <button type="button" onclick="ItemSales.setThisMonth()" class="px-2.5 py-1 text-[11px] font-black uppercase bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/80 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95 ml-0.5">This Month</button>
             </div>
 
             <!-- Annual controls -->
-            <div id="item-annual-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
-               <select id="item-stats-year-picker" onchange="ItemSales.applyFilters()" class="bg-transparent border-0 px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+            <div id="item-annual-controls" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 hidden select-none">
+               <select id="item-stats-year-picker" onchange="ItemSales.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-3 py-1 text-xs font-black text-slate-900 outline-none cursor-pointer">
                </select>
+               <button type="button" onclick="ItemSales.setPeriodType('year')" class="px-2.5 py-1 text-[11px] font-black uppercase bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/80 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95 ml-0.5">This Year</button>
             </div>
 
             <!-- Custom Range controls -->
-            <div id="item-custom-controls" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl hidden">
+            <div id="item-custom-controls" class="flex items-center gap-1.5 bg-slate-100 border border-slate-200/80 px-2.5 py-1 rounded-xl hidden select-none">
               <span class="text-[10px] font-black uppercase text-slate-400">From</span>
-              <input type="date" id="item-start-date" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              <input type="date" id="item-start-date" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2 py-0.5 text-xs font-black text-slate-900 outline-none cursor-pointer">
               <span class="text-[10px] font-black uppercase text-slate-400">To</span>
-              <input type="date" id="item-end-date" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+              <input type="date" id="item-end-date" onchange="ItemSales.applyFilters()" oninput="ItemSales.applyFilters()" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2 py-0.5 text-xs font-black text-slate-900 outline-none cursor-pointer">
             </div>
 
-            <button id="item-clear-period-btn" onclick="ItemSales.resetPeriodToDefault()" class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all hidden cursor-pointer active:scale-95" title="Reset to Daily (Today)">
-               <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
-            </button>
-          </div>
+          <button id="item-clear-period-btn" onclick="ItemSales.resetPeriodToDefault()" class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all hidden cursor-pointer active:scale-95" title="Reset to Daily (Today)">
+             <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+          </button>
         </div>
       </div>
 
@@ -360,6 +374,15 @@ window.ItemSales = {
 
   parseSaleDate(dateStr) {
     if (!dateStr) return null;
+    const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      return {
+        year: parseInt(m[1]),
+        month: parseInt(m[2]),
+        day: parseInt(m[3]),
+        dateStr: `${m[1]}-${m[2]}-${m[3]}`
+      };
+    }
     try {
       const d = new Date(dateStr);
       if (!isNaN(d.getTime())) {
@@ -371,24 +394,44 @@ window.ItemSales = {
         };
       }
     } catch (e) {}
-
-    const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) {
-      return {
-        year: parseInt(m[1]),
-        month: parseInt(m[2]),
-        day: parseInt(m[3]),
-        dateStr: `${m[1]}-${m[2]}-${m[3]}`
-      };
-    }
     return null;
   },
 
   setPeriodType(type) {
     this.currentPeriodType = type;
-    if (type === 'custom') {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const now = new Date();
+    const curYear = String(now.getFullYear());
+    const curMonth = String(now.getMonth() + 1);
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    if (type === 'day') {
+      const datePicker = document.getElementById('item-stats-date-picker');
+      if (datePicker) datePicker.value = todayStr;
+    } else if (type === 'month') {
+      const monthSelect = document.getElementById('item-stats-month-select');
+      const monthYearSelect = document.getElementById('item-stats-month-year-select');
+      if (monthSelect) monthSelect.value = curMonth;
+      if (monthYearSelect) {
+        if (!Array.from(monthYearSelect.options).some(o => o.value === curYear)) {
+          const opt = document.createElement('option');
+          opt.value = curYear;
+          opt.textContent = curYear;
+          monthYearSelect.prepend(opt);
+        }
+        monthYearSelect.value = curYear;
+      }
+    } else if (type === 'year') {
+      const yearPicker = document.getElementById('item-stats-year-picker');
+      if (yearPicker) {
+        if (!Array.from(yearPicker.options).some(o => o.value === curYear)) {
+          const opt = document.createElement('option');
+          opt.value = curYear;
+          opt.textContent = curYear;
+          yearPicker.prepend(opt);
+        }
+        yearPicker.value = curYear;
+      }
+    } else if (type === 'custom') {
       const sDate = document.getElementById('item-start-date');
       const eDate = document.getElementById('item-end-date');
       if (sDate && !sDate.value) sDate.value = document.getElementById('item-stats-date-picker')?.value || todayStr;
@@ -399,9 +442,9 @@ window.ItemSales = {
       const tab = document.getElementById(`item-period-${t}-tab`);
       if (tab) {
         if (t === type) {
-          tab.className = 'px-2.5 py-1 text-xs font-bold rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer';
+          tab.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all bg-white shadow-2xs text-slate-900 cursor-pointer';
         } else {
-          tab.className = 'px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer';
+          tab.className = 'px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
         }
       }
     });
@@ -430,10 +473,19 @@ window.ItemSales = {
 
   setThisMonth() {
     const now = new Date();
+    const curYear = String(now.getFullYear());
     const monthSelect = document.getElementById('item-stats-month-select');
     const monthYearSelect = document.getElementById('item-stats-month-year-select');
-    if (monthSelect) monthSelect.value = now.getMonth() + 1;
-    if (monthYearSelect) monthYearSelect.value = now.getFullYear();
+    if (monthSelect) monthSelect.value = String(now.getMonth() + 1);
+    if (monthYearSelect) {
+      if (!Array.from(monthYearSelect.options).some(o => o.value === curYear)) {
+        const opt = document.createElement('option');
+        opt.value = curYear;
+        opt.textContent = curYear;
+        monthYearSelect.prepend(opt);
+      }
+      monthYearSelect.value = curYear;
+    }
     this.applyFilters();
   },
 
@@ -794,6 +846,11 @@ window.ItemSales = {
   async viewInvoiceReceipt(proposalId) {
     try {
       app.showLoading();
+      const delivery = await window.api.getShopDelivery(proposalId);
+      if (delivery && window.Proposals && typeof Proposals.printA5DeliveryReport === 'function') {
+        app.hideLoading();
+        return Proposals.printA5DeliveryReport(delivery.id);
+      }
       const proposal = await window.api.getProposal(proposalId);
       app.hideLoading();
       if (proposal && window.SalesForm) {
@@ -845,130 +902,157 @@ window.ItemSales = {
 
     try {
       app.showLoading();
-      const settings = await window.api.getSettings();
+      const settings = (await window.api.getSettings()) || {};
+      const companyName = settings.company_name || 'Delicious Superstar Foods';
+      const address = settings.address || 'Hasan Abdal';
+      const phone = settings.phone || '0315-6795995';
+
       let periodLabel = 'All Time';
       if (this.currentPeriodType === 'day') {
         const d = document.getElementById('item-stats-date-picker')?.value;
-        periodLabel = `Daily: ${d || 'Today'}`;
+        periodLabel = `Daily: ${d ? (app.formatDateOnly ? app.formatDateOnly(d) : d) : 'Today'}`;
       } else if (this.currentPeriodType === 'month') {
         const m = document.getElementById('item-stats-month-select')?.value;
         const y = document.getElementById('item-stats-month-year-select')?.value;
         const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        periodLabel = `Monthly: ${monthNames[parseInt(m)]} ${y}`;
+        periodLabel = `Monthly: ${monthNames[parseInt(m)] || m} ${y || ''}`;
       } else if (this.currentPeriodType === 'year') {
         const y = document.getElementById('item-stats-year-picker')?.value;
-        periodLabel = `Annual: ${y}`;
+        periodLabel = `Annual: ${y || ''}`;
       } else if (this.currentPeriodType === 'custom') {
         const s = document.getElementById('item-start-date')?.value;
         const e = document.getElementById('item-end-date')?.value;
-        periodLabel = `Custom: ${s ? app.formatDateOnly(s) : ''} - ${e ? app.formatDateOnly(e) : ''}`;
+        periodLabel = `Custom: ${s ? (app.formatDateOnly ? app.formatDateOnly(s) : s) : ''} - ${e ? (app.formatDateOnly ? app.formatDateOnly(e) : e) : ''}`;
       }
 
       let totalQty = 0, totalRev = 0, totalCost = 0, totalProfit = 0;
       list.forEach(i => {
-        totalQty += i.totalQty;
-        totalRev += i.totalRevenue;
-        totalCost += i.totalCost;
-        totalProfit += i.totalProfit;
+        totalQty += Number(i.totalQty) || 0;
+        totalRev += Number(i.totalRevenue) || 0;
+        totalCost += Number(i.totalCost) || 0;
+        totalProfit += Number(i.totalProfit) || 0;
       });
 
-      const rowsHtml = list.length === 0 ? `
-        <tr>
-          <td colspan="5" style="text-align: center; padding: 6px 0; font-style: italic; color: #444;">No items sold in this period</td>
-        </tr>
-      ` : list.map((item, idx, arr) => {
-        let uStr = (item.unit && item.unit !== '-') ? item.unit.trim().toUpperCase() : '';
-        if (uStr === 'PCS' && Math.abs(Number(item.totalQty)) === 1) uStr = 'PC';
-        const unitSuffix = uStr ? ` ${uStr}` : '';
+      const overallMargin = totalRev > 0 ? ((totalProfit / totalRev) * 100).toFixed(1) : '0.0';
+      const avgRateTotal = totalQty > 0 ? (totalRev / totalQty) : 0;
+
+      const rowsHtml = list.map((item, idx) => {
+        const avgPrice = item.totalQty > 0 ? (item.totalRevenue / item.totalQty) : 0;
+        const margin = item.totalRevenue > 0 ? ((item.totalProfit / item.totalRevenue) * 100).toFixed(1) : '0.0';
+        const catLabel = this.categoryLabels[item.section] || (item.section ? item.section.toUpperCase() : '-');
+        const unitStr = (item.unit && item.unit !== '-') ? item.unit.trim().toUpperCase() : '-';
+
         return `
-        <tr style="border-bottom: ${idx === arr.length - 1 ? 'none' : '1px solid #000'}; font-size: 9.5px;">
-          <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${idx + 1}</td>
-          <td style="padding: 2.5px 4px; text-align: left; font-weight: 800; word-break: break-word; line-height: 1.2; border-right: 1px solid #000;">${item.description} (${this.categoryLabels[item.section] || item.section.toUpperCase()})</td>
-          <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(item.totalQty)}${unitSuffix}</td>
-          <td style="padding: 2.5px 3px; text-align: right; font-weight: 600; white-space: nowrap; border-right: 1px solid #000;">${app.formatAmount(item.totalRevenue / (item.totalQty || 1))}</td>
-          <td style="padding: 2.5px 4px; text-align: right; font-weight: 800; white-space: nowrap;">${app.formatAmount(item.totalRevenue)}</td>
-        </tr>
-      `;
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 700; color: #000;">${idx + 1}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 600; font-size: 9.5px; color: #000;">${item.description}</td>
+            <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; color: #000;">${catLabel}</td>
+            <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; text-transform: uppercase; color: #000;">${unitStr}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-size: 9.5px; color: #000;">${app.formatQty ? app.formatQty(item.totalQty) : item.totalQty.toLocaleString()}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${Math.round(avgPrice).toLocaleString()}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${Math.round(item.totalCost).toLocaleString()}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-size: 9.5px; color: #000;">Rs. ${Math.round(item.totalRevenue).toLocaleString()}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-size: 9.5px; color: #000;">Rs. ${Math.round(item.totalProfit).toLocaleString()}</td>
+            <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 8.5px; font-weight: 700; color: #000;">${margin}%</td>
+          </tr>
+        `;
       }).join('');
 
       const html = `
-        <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
-          <!-- Header -->
-          <div style="text-align: center; margin-bottom: 4px;">
-            <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
-            <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${settings.address || 'Hasan Abdal'}</div>
-            <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
-              <div>Phone: ${settings.phone || '0315-6795995'}</div>
-            </div>
-            <div style="margin-top: 5px;">
-              <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">ITEM SALES REPORT</span>
-            </div>
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
+          <!-- Factory Header -->
+          <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+            <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${companyName}</h1>
+            <div style="font-size: 9.5px; color: #000; margin-top: 1px; font-weight: 600;">${address} • Phone: ${phone}</div>
           </div>
-          
-          <!-- Metadata -->
-          <div style="font-size: 11px; line-height: 1.35; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed #000;">
-            <div style="display: flex; justify-content: space-between;">
-              <span><b>Period:</b> ${periodLabel}</span>
-              <span><b>Items:</b> ${list.length}</span>
+
+          <!-- Document Title -->
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+            ITEM WISE PRODUCTS SALES REPORT
+          </div>
+
+          <!-- Filter & Summary Bar -->
+          <div class="a5-meta-box" style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; margin-bottom: 8px; padding: 7px 11px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.55;">
+            <div style="line-height: 1.45;">
+              <div><strong>Period:</strong> ${periodLabel}</div>
+              <div><strong>Products Listed:</strong> ${list.length} Items</div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 1px;">
-              <span><b>Date:</b> ${app.formatDateTime(new Date().toISOString())}</span>
+            <div style="text-align: right; line-height: 1.45;">
+              <div><strong>Total Units Sold:</strong> ${app.formatQty ? app.formatQty(totalQty) : totalQty.toLocaleString()}</div>
+              <div><strong>Printed Date:</strong> ${app.formatDate ? app.formatDate(new Date()) : new Date().toLocaleDateString()}</div>
             </div>
           </div>
 
-          <!-- Items Table -->
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 9.5px; border: 1.5px solid #000;">
+          <!-- KPI Summary Cards -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 9.5px;">
+            <div style="background: #fff; padding: 4px; border: 1px solid #000;">
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 600; display: block;">Total Sales</span>
+              <span style="font-size: 11px; font-weight: 700; color: #000;">Rs. ${Math.round(totalRev).toLocaleString()}</span>
+            </div>
+            <div style="background: #fff; padding: 4px; border: 1px solid #000;">
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 600; display: block;">Product Cost</span>
+              <span style="font-size: 11px; font-weight: 700; color: #000;">Rs. ${Math.round(totalCost).toLocaleString()}</span>
+            </div>
+            <div style="background: #fff; padding: 4px; border: 1px solid #000;">
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 600; display: block;">Gross Profit</span>
+              <span style="font-size: 11px; font-weight: 700; color: #000;">Rs. ${Math.round(totalProfit).toLocaleString()}</span>
+            </div>
+            <div style="background: #fff; padding: 4px; border: 1px solid #000;">
+              <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 600; display: block;">Avg Margin</span>
+              <span style="font-size: 11px; font-weight: 700; color: #000;">${overallMargin}%</span>
+            </div>
+          </div>
+
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
             <thead>
-              <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 900; text-transform: uppercase;">
-                <th style="padding: 3px 2px; text-align: center; width: 7%; border-right: 1px solid #000;">#</th>
-                <th style="padding: 3px 4px; text-align: left; width: 45%; border-right: 1px solid #000;">ITEM</th>
-                <th style="padding: 3px 2px; text-align: center; width: 14%; border-right: 1px solid #000;">QTY</th>
-                <th style="padding: 3px 3px; text-align: right; width: 17%; border-right: 1px solid #000;">RATE</th>
-                <th style="padding: 3px 4px; text-align: right; width: 17%;">TOTAL</th>
+              <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 22px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Product Name</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Unit</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 48px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Qty</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 55px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Avg Rate</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 68px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Sales</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Profit</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 45px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Margin</th>
               </tr>
             </thead>
             <tbody>
               ${rowsHtml}
             </tbody>
+            <tfoot>
+              <tr style="background: #fff; font-weight: 700; border-top: 1.5px solid #000; color: #000;">
+                <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000; font-size: 8.5px;">•</td>
+                <td colspan="3" style="border: 1px solid #000; padding: 4px 6px; text-transform: uppercase; color: #000; font-size: 8.5px;">GRAND TOTAL (${list.length} PRODUCTS):</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 9px;">${app.formatQty ? app.formatQty(totalQty) : totalQty.toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 8.5px;">Rs. ${Math.round(avgRateTotal).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 8.5px;">Rs. ${Math.round(totalCost).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 9px;">Rs. ${Math.round(totalRev).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; color: #000; font-size: 9px;">Rs. ${Math.round(totalProfit).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; color: #000; font-size: 8.5px;">${overallMargin}%</td>
+              </tr>
+            </tfoot>
           </table>
 
-          <!-- Summary Box -->
-          <div style="border-top: 1px dashed #000; padding-top: 4px; font-size: 11.5px; line-height: 1.45;">
-            <div style="display: flex; justify-content: space-between;">
-              <span>Total Units Sold:</span>
-              <span style="font-weight: 700;">${app.formatQty(totalQty)}</span>
+          <!-- Signatures -->
+          <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
+              Salesman / Accountant
             </div>
-            <div style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 3px 0; margin-top: 3px; font-size: 13.5px; font-weight: 900;">
-              <span>TOTAL REVENUE:</span>
-              <span>${app.formatCurrency(totalRev)}</span>
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
+              Factory Manager Signature
             </div>
-          </div>
-
-          <!-- Footer -->
-          <div style="text-align: center; margin-top: 6px; border-top: 1px dashed #000; padding-top: 4px; font-size: 10px;">
-            <p style="margin: 0; font-weight: 700; text-transform: uppercase;">*** END OF ITEM SALES REPORT ***</p>
           </div>
         </div>
       `;
 
-      app.setPrintContent('report-print-container', html);
-      const previewPaper = document.getElementById('preview-paper');
-      const previewTitle = document.getElementById('preview-title');
-      const previewSubtitle = document.getElementById('preview-subtitle');
-      if (previewTitle) previewTitle.textContent = 'Item Sales Preview';
-      if (previewSubtitle) previewSubtitle.textContent = '80MM THERMAL RECEIPT â€¢ ITEM SALES';
-      if (previewPaper) previewPaper.innerHTML = html;
-
-      const modal = document.getElementById('preview-modal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      }
       app.hideLoading();
+      app.showA5Preview(html, 'Item Wise Sales Report (A5)');
     } catch (err) {
-      console.error(err);
       app.hideLoading();
-      app.showAlert("Failed to prepare Item Sales report.");
+      console.error('Failed to print item sales report:', err);
+      app.showAlert('Failed to generate printable report: ' + err.message);
     }
   }
 };

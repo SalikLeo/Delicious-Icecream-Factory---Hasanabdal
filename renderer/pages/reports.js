@@ -30,19 +30,22 @@ window.Reports = {
     container.innerHTML = `
       <div class="h-full flex flex-col gap-3.5 w-full overflow-y-auto custom-scrollbar">
         
-        <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white p-4 px-5 rounded-2xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border border-slate-700 shrink-0">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-black">REPORTS HUB</span>
-              <h2 class="text-xl md:text-2xl font-black tracking-tight text-white">Ice Cream Factory Reports</h2>
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 no-print">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+              <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
             </div>
-            <p class="text-xs text-slate-300 font-medium">Daily &amp; monthly tracking for delivery vehicles, raw materials stock balance, and warehouse inventory in standard A5 format.</p>
+            <div>
+              <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Factory Reports</h2>
+              <p class="text-xs text-slate-500 font-medium">Daily &amp; monthly tracking for delivery vehicles, raw materials stock, and warehouse inventory in standard A5 format.</p>
+            </div>
           </div>
 
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-2 flex-wrap">
             <button type="button" onclick="Reports.printCurrentReport()"
-                    class="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                    title="Print Active Report (A5)">
               <i data-lucide="printer" class="w-4 h-4"></i> Print Report
             </button>
           </div>
@@ -279,35 +282,35 @@ window.Reports = {
       <!-- Summary KPI Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Total Deliveries</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Deliveries</p>
           <h3 class="text-xl font-black text-slate-900 mt-1">${filtered.length} Orders</h3>
-          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${totalDeliveredCartons} Cartons Sold</p>
+          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${totalDeliveredCartons} Cartons Delivered</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Total Sales Value</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Sales</p>
           <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalSales).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-slate-400 mt-0.5">Gross Invoiced</p>
+          <p class="text-[11px] font-bold text-slate-500 mt-0.5">Total Billed Amount</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Cash Collected</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Cash Received</p>
           <h3 class="text-xl font-black text-slate-900 mt-1">Rs. ${Math.round(totalCashReceived).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Driver Handover Cash</p>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Cash Collected by Driver</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Pending Khata Credit</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Balance Due</p>
           <h3 class="text-xl font-black text-rose-600 mt-1">Rs. ${Math.round(totalRemainingKhata).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-rose-500 mt-0.5">Added to Shop Ledger</p>
+          <p class="text-[11px] font-bold text-rose-600 mt-0.5">Remaining Khata Balance</p>
         </div>
       </div>
 
       <!-- Deliveries Table -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
         <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Vehicle Delivery Log (${filtered.length} entries)</h4>
-          <span class="text-[11px] font-bold text-slate-400">All amounts in PKR</span>
+          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Delivery Orders (${filtered.length} orders)</h4>
+          <span class="text-[11px] font-bold text-slate-500">All amounts in PKR</span>
         </div>
 
         <div class="overflow-x-auto flex-1">
@@ -318,11 +321,11 @@ window.Reports = {
                 <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
                 <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
                 <th class="py-2 px-3 border-r border-slate-200">Vehicle &amp; Driver</th>
-                <th class="py-2 px-3 border-r border-slate-200">Shop / Customer</th>
+                <th class="py-2 px-3 border-r border-slate-200">Salesman</th>
                 <th class="py-2 px-2 text-center border-r border-slate-200">Cartons</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Total (Rs.)</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Cash (Rs.)</th>
-                <th class="py-2 px-3 text-right border-r border-slate-200">Khata Due</th>
+                <th class="py-2 px-3 text-right border-r border-slate-200">Balance Due</th>
                 <th class="py-2 px-3 text-center">Action</th>
               </tr>
             </thead>
@@ -741,8 +744,12 @@ window.Reports = {
         const qtyUsed = Math.abs(change);
         if (!usageByMaterial[mid]) usageByMaterial[mid] = { qty: 0, cost: 0, count: 0 };
         const mat = rawListAll.find(m => m.id === mid);
-        const unitCost = mat ? (Number(mat.cost_price) || 0) : 0;
-        const usedCost = qtyUsed * unitCost;
+        const cost = mat ? (Number(mat.cost_price) || 0) : 0;
+        const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+        const isBulk = spec ? spec.isBulk : Boolean((mat?.has_bulk === 1 || mat?.has_bulk === '1') && Number(mat?.pack_size) > 1);
+        const packSize = spec ? spec.packSize : (Number(mat?.pack_size) || 1);
+        const unitSubCost = isBulk ? (cost / packSize) : cost;
+        const usedCost = qtyUsed * unitSubCost;
         usageByMaterial[mid].qty += qtyUsed;
         usageByMaterial[mid].cost += usedCost;
         usageByMaterial[mid].count += 1;
@@ -768,27 +775,27 @@ window.Reports = {
       <!-- KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Available Stock Valuation</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Stock Value</p>
           <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalValuation).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">${rawList.length} Materials on Hand</p>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">${rawList.length} Materials in Stock</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Purchased in Period</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Purchased</p>
           <h3 class="text-xl font-black text-blue-700 mt-1">Rs. ${Math.round(totalPurchasedCostInPeriod).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${filteredPurchases.length} Purchase Orders (${this.formatPeriodDate(this.selectedDate)})</p>
+          <p class="text-[11px] font-bold text-blue-600 mt-0.5">${filteredPurchases.length} Orders (${this.formatPeriodDate(this.selectedDate)})</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Used in Production (Period)</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Used in Factory</p>
           <h3 class="text-xl font-black text-rose-700 mt-1">Rs. ${Math.round(totalConsumedCostInPeriod).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-rose-600 mt-0.5">${consumedBatchesCount} Consumptions in Period</p>
+          <p class="text-[11px] font-bold text-rose-600 mt-0.5">${consumedBatchesCount} Batches Consumed</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Low Stock Alerts</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Low Stock</p>
           <h3 class="text-xl font-black ${lowStockCount > 0 ? 'text-amber-600' : 'text-slate-900'} mt-1">${lowStockCount} Materials</h3>
-          <p class="text-[11px] font-bold ${lowStockCount > 0 ? 'text-amber-600' : 'text-slate-400'} mt-0.5">Below alert threshold</p>
+          <p class="text-[11px] font-bold ${lowStockCount > 0 ? 'text-amber-600' : 'text-slate-400'} mt-0.5">${lowStockCount > 0 ? 'Needs Reorder' : 'All stocks sufficient'}</p>
         </div>
       </div>
 
@@ -801,11 +808,11 @@ window.Reports = {
                 <th class="py-2.5 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
                 <th class="py-2.5 px-3 border-r border-slate-200">Material Name</th>
                 <th class="py-2.5 px-3 border-r border-slate-200">Category</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Purchased in Period</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Used / Consumed</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Available Stock</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Cost Price / Unit</th>
-                <th class="py-2.5 px-3 text-right border-r border-slate-200">Available Worth (Rs.)</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Purchased</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Used</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">In Stock</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Unit Cost</th>
+                <th class="py-2.5 px-3 text-right border-r border-slate-200">Total Value (Rs.)</th>
                 <th class="py-2.5 px-3 text-center">Status</th>
               </tr>
             </thead>
@@ -827,16 +834,16 @@ window.Reports = {
                     </td>
                     <td class="py-2 px-3 text-right tabular-nums border-r border-slate-200">
                       ${use && use.qty > 0 ? `
-                        <span class="font-black text-rose-700">-${use.qty} <span class="text-[10px] text-rose-500">${m.unit || ''}</span></span>
+                        <span class="font-black text-rose-700">${window.RawMaterials ? RawMaterials.formatLogQuantity(-use.qty, m, true) : `-${use.qty} ${m.unit || ''}`}</span>
                         <div class="text-[10px] font-bold text-slate-500">Rs. ${Math.round(use.cost).toLocaleString()}</div>
                       ` : '<span class="text-slate-300 font-normal">-</span>'}
                     </td>
                     <td class="py-2 px-3 text-right font-black text-xs text-slate-900 tabular-nums border-r border-slate-200">
-                      ${m.current_stock} <span class="text-[10px] text-slate-400 font-bold">${m.unit || ''}</span>
+                      ${window.RawMaterials ? RawMaterials.formatStockDisplay(m) : `${m.current_stock} ${m.unit || ''}`}
                     </td>
-                    <td class="py-2 px-3 text-right text-slate-600 tabular-nums border-r border-slate-200">Rs. ${m.cost_price}</td>
+                    <td class="py-2 px-3 text-right text-slate-600 tabular-nums border-r border-slate-200">Rs. ${m.cost_price} / ${m.unit || 'Unit'}</td>
                     <td class="py-2 px-3 text-right font-black text-emerald-800 tabular-nums border-r border-slate-200">
-                      Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}
+                      Rs. ${Math.round(m.total_value != null ? m.total_value : (m.current_stock * m.cost_price)).toLocaleString()}
                     </td>
                     <td class="py-2 px-3 text-center">
                       ${isLow ? `
@@ -1087,40 +1094,40 @@ window.Reports = {
       <!-- KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Warehouse Stock</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Factory Stock</p>
           <h3 class="text-xl font-black text-slate-900 mt-1">${totalWarehouseCartons} Units</h3>
           <p class="text-[11px] font-bold text-purple-600 mt-0.5">${whCtns} ctns • ${whShopers} shopers</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Loaded in Delivery Cars</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">In Vehicles</p>
           <h3 class="text-xl font-black text-blue-700 mt-1">${totalCartonsInCars} Units</h3>
-          <p class="text-[11px] font-bold text-blue-600 mt-0.5">On the Road in Vehicles</p>
+          <p class="text-[11px] font-bold text-blue-600 mt-0.5">Loaded in Cars</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Packed in Period</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Packed Stock</p>
           <h3 class="text-xl font-black text-emerald-700 mt-1">${totalPackedInPeriod} Units</h3>
           <p class="text-[11px] font-bold text-emerald-600 mt-0.5">${filteredPacking.length} batches (${this.formatPeriodDate(this.selectedDate)})</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Dispatched in Period</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Delivered to Shops</p>
           <h3 class="text-xl font-black text-amber-700 mt-1">${totalDeliveredInPeriod} Units</h3>
-          <p class="text-[11px] font-bold text-amber-600 mt-0.5">Delivered to Shops</p>
+          <p class="text-[11px] font-bold text-amber-600 mt-0.5">Delivered to Customers</p>
         </div>
 
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Total Stock Value</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Value</p>
           <h3 class="text-xl font-black text-emerald-700 mt-1">Rs. ${Math.round(totalSaleValuation).toLocaleString()}</h3>
-          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Expected Revenue</p>
+          <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Expected Sales Value</p>
         </div>
       </div>
 
       <!-- Inventory Table -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
         <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Carton &amp; Shoper Inventory Catalog</h4>
+          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Cartons &amp; Shopers Stock List</h4>
           <span class="text-[11px] font-bold text-slate-400">${cartons.length} Products</span>
         </div>
 
@@ -1352,30 +1359,30 @@ window.Reports = {
       <!-- Financial Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Gross Sales Revenue</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Sales</p>
           <h3 class="text-xl font-black text-slate-900 mt-1">Rs. ${Math.round(totalSales).toLocaleString()}</h3>
           <p class="text-[11px] font-bold text-slate-500 mt-0.5">Cash: Rs. ${Math.round(totalCashReceived).toLocaleString()}</p>
         </div>
 
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Est. Production Cost</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Cost of Materials</p>
           <h3 class="text-xl font-black text-rose-700 mt-1">Rs. ${Math.round(estCogs).toLocaleString()}</h3>
           <p class="text-[11px] font-bold text-rose-500 mt-0.5">Raw materials &amp; packs</p>
         </div>
 
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Operating Expenses</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Expenses</p>
           <h3 class="text-xl font-black text-amber-700 mt-1">Rs. ${Math.round(totalExpenses).toLocaleString()}</h3>
           <p class="text-[11px] font-bold text-amber-600 mt-0.5">Fuel, power, labor, repairs</p>
         </div>
 
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-          <p class="text-[10px] font-black uppercase text-slate-400">Estimated Net Profit</p>
+          <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Net Profit</p>
           <h3 class="text-xl font-black ${netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700'} mt-1">
             Rs. ${Math.round(netProfit).toLocaleString()}
           </h3>
           <p class="text-[11px] font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'} mt-0.5">
-            ${totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) + '% net margin' : '0%'}
+            ${totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) + '% profit margin' : '0%'}
           </p>
         </div>
       </div>
@@ -1383,7 +1390,7 @@ window.Reports = {
       <!-- Expenses Breakdown Table -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex-1 flex flex-col">
         <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Recorded Expenses Log (${filtExp.length} items)</h4>
+          <h4 class="font-black text-xs text-slate-800 uppercase tracking-wider">Expenses List (${filtExp.length} items)</h4>
           <span class="text-[11px] font-bold text-slate-400">Total Expenses: Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
         </div>
 
@@ -1394,7 +1401,7 @@ window.Reports = {
                 <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
                 <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
                 <th class="py-2 px-3 border-r border-slate-200">Category</th>
-                <th class="py-2 px-3 border-r border-slate-200">Description / Remarks</th>
+                <th class="py-2 px-3 border-r border-slate-200">Details</th>
                 <th class="py-2 px-3 text-right">Amount (Rs.)</th>
               </tr>
             </thead>
@@ -1513,79 +1520,79 @@ window.Reports = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
           <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          DELIVERY VEHICLE SALES &amp; PERFORMANCE REPORT
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 4px 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          VEHICLE SALES &amp; DELIVERY REPORT
         </div>
 
-        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 7px 11px; margin: 6px 0 8px 0; display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 600; line-height: 1.55; background: #fff; color: #000;">
           <div>
             <div><strong>Vehicle:</strong> <span style="font-weight: 800;">${carName}</span></div>
             <div><strong>Driver Phone:</strong> ${car?.phone || 'N/A'}</div>
           </div>
           <div style="text-align: right;">
             <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
-            <div><strong>Printed On:</strong> ${app.formatDateTime(new Date())}</div>
+            <div><strong>Printed:</strong> ${app.formatDateTime(new Date())}</div>
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 68px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 80px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Inv #</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Shop / Customer</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 35px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Ctns</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 60px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cash (Rs.)</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; white-space: nowrap; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Khata Due</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 68px; white-space: nowrap; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; width: 75px; white-space: nowrap; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Invoice</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Salesman</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 42px; white-space: nowrap; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Cartons</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 68px; white-space: nowrap; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; white-space: nowrap; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Cash (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 68px; white-space: nowrap; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Balance Due</th>
             </tr>
           </thead>
           <tbody>
             ${filtered.map(d => `
               <tr>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000; white-space: nowrap;">${app.formatDateTime(d.date, d.created_at)}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 700; font-family: -apple-system, monospace; color: #000; white-space: nowrap;">${d.invoice_no}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 600; color: #000;">${d.shop_name}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; font-weight: 800; color: #000; white-space: nowrap;">${d.total_cartons_delivered || 0}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.remaining_balance).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; font-size: 8px; font-weight: 600; color: #000; white-space: nowrap;">${app.formatDateTime(d.date, d.created_at)}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; font-size: 8px; font-weight: 800; color: #000; white-space: nowrap;">${d.invoice_no}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; font-size: 8px; font-weight: 700; color: #000;">${d.shop_name}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-size: 8px; font-weight: 700; color: #000; white-space: nowrap;">${d.total_cartons_delivered || 0}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.total_amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 800; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.received_amount).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 800; font-size: 8.5px; color: #000; white-space: nowrap;">Rs. ${Math.round(d.remaining_balance).toLocaleString()}</td>
               </tr>
             `).join('')}
-            ${filtered.length === 0 ? '<tr><td colspan="7" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No delivery orders found for this selection.</td></tr>' : ''}
+            ${filtered.length === 0 ? '<tr><td colspan="7" style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: 600; color: #000;">No delivery orders found for this selection.</td></tr>' : ''}
           </tbody>
         </table>
 
         <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
           <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Total Deliveries Completed:</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">${filtered.length} Orders</span>
+            <span style="font-weight: 600; ">${filtered.length} Orders</span>
           </div>
           <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Total Cartons Delivered to Shops:</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">${totalCartons} Cartons</span>
+            <span style="font-weight: 600; ">${totalCartons} Cartons</span>
           </div>
           <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Gross Sales Value:</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
+            <span style="font-weight: 600; ">Rs. ${Math.round(totalSales).toLocaleString()}</span>
           </div>
           <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
             <span>Cash Collected by Driver:</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalCash).toLocaleString()}</span>
+            <span style="font-weight: 600; ">Rs. ${Math.round(totalCash).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 900; font-size: 10.5px;">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 700; font-size: 10.5px;">
             <span>Outstanding Khata Added:</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(totalDue).toLocaleString()}</span>
+            <span style="">Rs. ${Math.round(totalDue).toLocaleString()}</span>
           </div>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Driver Signature</div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Cashier / Manager</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Driver Signature</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Cashier / Manager</div>
         </div>
       </div>
     `;
@@ -1652,8 +1659,12 @@ window.Reports = {
         const qtyUsed = Math.abs(change);
         if (!usageByMaterial[mid]) usageByMaterial[mid] = { qty: 0, cost: 0 };
         const mat = rawList.find(m => m.id === mid);
-        const unitCost = mat ? (Number(mat.cost_price) || 0) : 0;
-        const usedCost = qtyUsed * unitCost;
+        const cost = mat ? (Number(mat.cost_price) || 0) : 0;
+        const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+        const isBulk = spec ? spec.isBulk : Boolean((mat?.has_bulk === 1 || mat?.has_bulk === '1') && Number(mat?.pack_size) > 1);
+        const packSize = spec ? spec.packSize : (Number(mat?.pack_size) || 1);
+        const unitSubCost = isBulk ? (cost / packSize) : cost;
+        const usedCost = qtyUsed * unitSubCost;
         usageByMaterial[mid].qty += qtyUsed;
         usageByMaterial[mid].cost += usedCost;
         totalConsumedCost += usedCost;
@@ -1664,39 +1675,39 @@ window.Reports = {
       rawList = rawList.filter(m => m.category === this.selectedRawCategory);
     }
     let totalVal = 0;
-    rawList.forEach(m => totalVal += (m.total_value || (m.current_stock * m.cost_price) || 0));
+    rawList.forEach(m => totalVal += (m.total_value != null ? Number(m.total_value) : (m.current_stock * m.cost_price) || 0));
 
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
           <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          RAW MATERIALS PURCHASE, USAGE &amp; STOCK REPORT
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 4px 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          RAW MATERIALS STOCK REPORT
         </div>
 
-        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 7px 11px; margin: 6px 0 8px 0; display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 600; line-height: 1.55; background: #fff; color: #000;">
           <div>
-            <div><strong>Factory Stage:</strong> Stage 1: Raw Materials Stock Control</div>
+            <div><strong>Section:</strong> Raw Materials Stock</div>
             <div><strong>Category:</strong> ${this.selectedRawCategory || 'All Categories'} (${rawList.length} Items)</div>
           </div>
           <div style="text-align: right;">
             <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
-            <div><strong>Printed On:</strong> ${app.formatDateTime(new Date())}</div>
+            <div><strong>Printed:</strong> ${app.formatDateTime(new Date())}</div>
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr style="border-bottom: 1.5px solid #000; background: #fff;">
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Material Description</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Purchased</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Consumed</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Available Stock</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 60px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Cost/Unit</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000;">Worth (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Raw Material</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Purchased</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 75px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Consumed</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 80px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">In Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 68px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Cost/Unit</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 80px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Total Value</th>
             </tr>
           </thead>
           <tbody>
@@ -1705,23 +1716,23 @@ window.Reports = {
               const use = usageByMaterial[m.id];
               return `
                 <tr>
-                  <td style="border: 1px solid #000; padding: 3px 5px; font-size: 8.5px; font-weight: 700; color: #000;">
-                    ${m.name} <span style="font-size: 7.5px; font-weight: 500; color: #444;">(${m.category || 'General'})</span>
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 700; color: #000;">
+                    ${m.name} <span style="font-size: 8px; font-weight: 500; color: #444;">(${m.category || 'General'})</span>
                   </td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; color: #000;">
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; color: #000;">
                     ${pur && pur.qty > 0 ? `+${pur.qty} ${m.unit || ''}` : '-'}
                   </td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; color: #000;">
-                    ${use && use.qty > 0 ? `-${use.qty} ${m.unit || ''}` : '-'}
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; color: #000;">
+                    ${use && use.qty > 0 ? (window.RawMaterials ? RawMaterials.formatLogQuantity(-use.qty, m, true) : `-${use.qty} ${m.unit || ''}`) : '-'}
                   </td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; font-weight: 800; color: #000;">
-                    ${m.current_stock} ${m.unit || ''}
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; font-weight: 500; color: #000;">
+                    ${window.RawMaterials ? RawMaterials.formatStockDisplay(m) : `${m.current_stock} ${m.unit || ''}`}
                   </td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; color: #000;">
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; color: #000;">
                     Rs. ${m.cost_price}
                   </td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-family: monospace; font-size: 8.5px; font-weight: 800; color: #000;">
-                    Rs. ${Math.round(m.total_value || (m.current_stock * m.cost_price)).toLocaleString()}
+                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; font-weight: 500; color: #000;">
+                    Rs. ${Math.round(m.total_value != null ? m.total_value : (m.current_stock * m.cost_price)).toLocaleString()}
                   </td>
                 </tr>
               `;
@@ -1729,12 +1740,12 @@ window.Reports = {
             ${rawList.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No raw materials found.</td></tr>' : ''}
           </tbody>
           <tfoot>
-            <tr style="border-top: 1.5px solid #000; font-weight: 900; background: #fff;">
-              <td style="border: 1px solid #000; padding: 4px 5px; text-transform: uppercase;">Totals:</td>
-              <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">Rs. ${Math.round(totalPurchasedCost).toLocaleString()}</td>
-              <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">Rs. ${Math.round(totalConsumedCost).toLocaleString()}</td>
-              <td colspan="2" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">Total Available Value:</td>
-              <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-family: monospace;">Rs. ${Math.round(totalVal).toLocaleString()}</td>
+            <tr style="border-top: 1.5px solid #000; font-weight: 700; font-size: 8.5px; background: #fff;">
+              <td style="border: 1px solid #000; padding: 4.5px 5px; text-transform: uppercase;">Totals:</td>
+              <td style="border: 1px solid #000; padding: 4.5px 5px; text-align: right;">Rs. ${Math.round(totalPurchasedCost).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4.5px 5px; text-align: right;">Rs. ${Math.round(totalConsumedCost).toLocaleString()}</td>
+              <td colspan="2" style="border: 1px solid #000; padding: 4.5px 5px; text-align: right; text-transform: uppercase;">Total Available Value:</td>
+              <td style="border: 1px solid #000; padding: 4.5px 5px; text-align: right;">Rs. ${Math.round(totalVal).toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
@@ -1742,26 +1753,24 @@ window.Reports = {
         <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 6px 10px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000; line-height: 1.6;">
           <div style="display: flex; justify-content: space-between;">
             <span>Total Raw Material Purchases (${this.periodType.toUpperCase()}):</span>
-            <span style="font-weight: 800; font-family: monospace;">Rs. ${Math.round(totalPurchasedCost).toLocaleString()}</span>
+            <span style="font-weight: 600; ">Rs. ${Math.round(totalPurchasedCost).toLocaleString()}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span>Total Factory Usage / Consumption in Batches:</span>
-            <span style="font-weight: 800; font-family: monospace;">Rs. ${Math.round(totalConsumedCost).toLocaleString()}</span>
+            <span style="font-weight: 600; ">Rs. ${Math.round(totalConsumedCost).toLocaleString()}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 3px; margin-top: 3px; font-weight: 900; font-size: 10px;">
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 3px; margin-top: 3px; font-weight: 700; font-size: 10px;">
             <span>Current Available Stock Worth on Hand:</span>
-            <span style="font-family: monospace;">Rs. ${Math.round(totalVal).toLocaleString()}</span>
+            <span style="">Rs. ${Math.round(totalVal).toLocaleString()}</span>
           </div>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Store Keeper</div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Supervisor</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Store Keeper</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Factory Supervisor</div>
         </div>
       </div>
     `;
-
-    app.showA5Preview(html, 'Raw Material Stock Balance Sheet');
 
     app.showA5Preview(html, 'Raw Material Stock Balance Sheet');
   },
@@ -1783,64 +1792,64 @@ window.Reports = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
           <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          PACKED CARTONS &amp; READY STOCK SHEET
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 4px 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          PACKED STOCK SHEET
         </div>
 
-        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 7px 11px; margin: 6px 0 8px 0; display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 600; line-height: 1.55; background: #fff; color: #000;">
           <div>
-            <div><strong>Stock Location:</strong> Factory Cold Storage Stock</div>
-            <div><strong>Carton:</strong> ${this.selectedCartonId && cartons[0] ? cartons[0].carton_name : `All Cartons (${cartons.length} Products)`}</div>
+            <div><strong>Location:</strong> Factory Cold Storage</div>
+            <div><strong>Product:</strong> ${this.selectedCartonId && cartons[0] ? cartons[0].carton_name : `All Cartons (${cartons.length} Products)`}</div>
           </div>
           <div style="text-align: right;">
             <div><strong>Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
-            <div><strong>Printed On:</strong> ${app.formatDateTime(new Date())}</div>
+            <div><strong>Printed:</strong> ${app.formatDateTime(new Date())}</div>
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Carton Product</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 55px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Pcs/Ctn</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cost (Rs.)</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 65px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Sale (Rs.)</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Factory Stock</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Value</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Product Name</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 60px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Pieces/Box</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 68px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Cost (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 68px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Sale (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">In Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Total Value</th>
             </tr>
           </thead>
           <tbody>
             ${cartons.map(c => `
               <tr>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; font-weight: 700; color: #000;">${c.carton_name}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; color: #000;">${c.pieces_per_carton}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${c.carton_cost_price}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${c.carton_sale_price}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-size: 8.5px; font-weight: 800; color: #000;">${c.factory_carton_stock} ctns</td>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-family: -apple-system, monospace; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${Math.round((c.factory_carton_stock || 0) * (c.carton_sale_price || 0)).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; font-size: 8.5px; font-weight: 700; color: #000;">${c.carton_name}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-size: 8px; font-weight: 600; color: #000;">${c.pieces_per_carton}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; font-weight: 600; color: #000;">Rs. ${c.carton_cost_price}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; font-weight: 700; color: #000;">Rs. ${c.carton_sale_price}</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; font-weight: 700; color: #000;">${c.factory_carton_stock} ctns</td>
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-size: 8.5px; font-weight: 800; color: #000;">Rs. ${Math.round((c.factory_carton_stock || 0) * (c.carton_sale_price || 0)).toLocaleString()}</td>
               </tr>
             `).join('')}
-            ${cartons.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No packed cartons in stock.</td></tr>' : ''}
+            ${cartons.length === 0 ? '<tr><td colspan="6" style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: 600; color: #000;">No packed stock currently available.</td></tr>' : ''}
           </tbody>
         </table>
 
-        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
-            <span>Total Packed Cartons in Stock:</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">${totalStock} Cartons</span>
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 7px 11px; margin-top: 6px; font-size: 10.5px; font-weight: 600; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
+            <span style="font-weight: 600;">Total Boxes in Stock:</span>
+            <span style="font-weight: 700;">${totalStock} Cartons</span>
           </div>
-          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 900; font-size: 10.5px;">
-            <span>Total Factory Stock Value:</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(totalWorth).toLocaleString()}</span>
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 4px; margin-top: 3px; font-weight: 800; font-size: 11.5px;">
+            <span>Total Stock Value:</span>
+            <span style="font-weight: 800;">Rs. ${Math.round(totalWorth).toLocaleString()}</span>
           </div>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Store Keeper Signature</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Store Keeper</div>
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Manager</div>
         </div>
       </div>
@@ -1895,74 +1904,74 @@ window.Reports = {
     const html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #000;">${s.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
           <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${s.address || 'Hasan Abdal'} • Phone: ${s.phone || '0315-6795995'}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          FACTORY PROFIT &amp; LOSS FINANCIAL STATEMENT
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 4px 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          FACTORY PROFIT &amp; LOSS REPORT
         </div>
 
-        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 7px 11px; margin: 6px 0 8px 0; display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 600; line-height: 1.55; background: #fff; color: #000;">
           <div>
-            <div><strong>Financial Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
-            <div><strong>Currency:</strong> Pakistani Rupee (PKR)</div>
+            <div><strong>Report Period:</strong> ${this.periodType.toUpperCase()} (${this.formatPeriodDate(this.selectedDate)})</div>
+            <div><strong>Currency:</strong> PKR (Rs.)</div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Generated:</strong> ${app.formatDateTime(new Date())}</div>
-            <div><strong>Audited By:</strong> Management</div>
+            <div><strong>Printed:</strong> ${app.formatDateTime(new Date())}</div>
+            <div><strong>Checked By:</strong> Management</div>
           </div>
         </div>
 
-        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 6px 10px; margin-top: 10px; font-size: 9.5px; background: #fff; color: #000;">
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
-            <span>Gross Ice Cream Sales Revenue:</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 7px 11px; margin-top: 10px; font-size: 10.5px; font-weight: 600; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-weight: 600;">Total Sales:</span>
+            <span style="font-weight: 700;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
-            <span>Estimated Cost of Goods Sold (Raw Materials &amp; Packaging):</span>
-            <span style="font-weight: 700; font-family: -apple-system, monospace;">- Rs. ${Math.round(estCogs).toLocaleString()}</span>
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-weight: 600;">Cost of Raw Materials &amp; Packaging:</span>
+            <span style="font-weight: 700;">- Rs. ${Math.round(estCogs).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; border-top: 1px dashed #000; padding: 3px 0; margin-top: 2px;">
-            <span>Gross Manufacturing Profit:</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(grossProfit).toLocaleString()}</span>
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; border-top: 1px dashed #000; padding: 4px 0; margin-top: 2px;">
+            <span style="font-weight: 700;">Gross Profit:</span>
+            <span style="font-weight: 700;">Rs. ${Math.round(grossProfit).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
-            <span>Factory Operating &amp; Delivery Expenses:</span>
-            <span style="font-weight: 700; font-family: -apple-system, monospace;">- Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-weight: 600;">Total Operating &amp; Delivery Expenses:</span>
+            <span style="font-weight: 700;">- Rs. ${Math.round(totalExpenses).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; font-size: 11.5px; margin-top: 4px; padding-top: 4px; font-weight: 900;">
-            <span>Net Factory Profit / (Loss):</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(netProfit).toLocaleString()}</span>
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; font-size: 12px; margin-top: 4px; padding-top: 5px; font-weight: 800;">
+            <span>Net Profit / (Loss):</span>
+            <span style="font-weight: 800;">Rs. ${Math.round(netProfit).toLocaleString()}</span>
           </div>
         </div>
 
         <div style="margin-top: 12px;">
-          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; color: #000;">Key Operating Expenses Summary</div>
-          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; background: #fff;">
+          <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; color: #000;">Expenses Breakdown</div>
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; background: #fff;">
             <thead>
               <tr>
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Remarks</th>
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; width: 85px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Amount (Rs.)</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; font-weight: 800; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Details</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: right; width: 95px; font-weight: 800; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Amount (Rs.)</th>
               </tr>
             </thead>
             <tbody>
               ${filtExp.slice(0, 8).map(e => `
                 <tr>
-                  <td style="border: 1px solid #000; padding: 3px 5px; font-weight: 700; color: #000;">${e.category}</td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; color: #000;">${e.description || e.notes || 'Operating expense'}</td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 700; font-size: 9.5px; color: #000;">${e.category}</td>
+                  <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 600; font-size: 9.5px; color: #000;">${e.description || e.notes || 'Operating expense'}</td>
+                  <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">Rs. ${Math.round(e.amount).toLocaleString()}</td>
                 </tr>
               `).join('')}
-              ${filtExp.length === 0 ? '<tr><td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center; color: #000;">No operating expenses recorded.</td></tr>' : ''}
+              ${filtExp.length === 0 ? '<tr><td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: 600; color: #000;">No expenses recorded.</td></tr>' : ''}
             </tbody>
           </table>
         </div>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Accountant</div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Owner / Director</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Owner / Manager</div>
         </div>
       </div>
     `;

@@ -52,18 +52,23 @@ contextBridge.exposeInMainWorld('api', {
   addExpenseCategory: (name) => ipcRenderer.invoke('add-expense-category', name),
   deleteExpenseCategory: (id) => ipcRenderer.invoke('delete-expense-category', id),
 
-  // Employees
-  getEmployees: (status) => ipcRenderer.invoke('get-employees', status),
+  // Employees, Salaries & Attendance
+  getEmployees: (options) => ipcRenderer.invoke('get-employees', options),
+  getEmployee: (id) => ipcRenderer.invoke('get-employee', id),
   saveEmployee: (data) => ipcRenderer.invoke('save-employee', data),
   deleteEmployee: (id) => ipcRenderer.invoke('delete-employee', id),
+  recordSalaryPayment: (data) => ipcRenderer.invoke('record-salary-payment', data),
+  deleteSalaryPayment: (id) => ipcRenderer.invoke('delete-salary-payment', id),
+  getSalaryPayments: (filters) => ipcRenderer.invoke('get-salary-payments', filters),
+  getMonthlyAttendance: (month) => ipcRenderer.invoke('get-monthly-attendance', month),
+  setAttendance: (employeeId, date, status, notes) => ipcRenderer.invoke('set-attendance', employeeId, date, status, notes),
+  bulkSetAttendance: (date, records) => ipcRenderer.invoke('bulk-set-attendance', date, records),
+  getEmployeesPayrollSummary: (month) => ipcRenderer.invoke('get-employees-payroll-summary', month),
 
-  // Companies & Suppliers
+  // Companies
   getCompanies: () => ipcRenderer.invoke('get-companies'),
   saveCompany: (data) => ipcRenderer.invoke('save-company', data),
   deleteCompany: (id) => ipcRenderer.invoke('delete-company', id),
-  getSuppliers: () => ipcRenderer.invoke('get-companies'),
-  saveSupplier: (data) => ipcRenderer.invoke('save-company', data),
-  deleteSupplier: (id) => ipcRenderer.invoke('delete-company', id),
 
   // Customers
   getCustomers: () => ipcRenderer.invoke('get-customers'),
@@ -98,7 +103,7 @@ contextBridge.exposeInMainWorld('api', {
   getRawMaterials: () => ipcRenderer.invoke('get-raw-materials'),
   getRawMaterial: (id) => ipcRenderer.invoke('get-raw-material', id),
   saveRawMaterial: (data) => ipcRenderer.invoke('save-raw-material', data),
-  deleteRawMaterial: (id) => ipcRenderer.invoke('delete-raw-material', id),
+  deleteRawMaterial: (id, force) => ipcRenderer.invoke('delete-raw-material', id, force),
   addRawMaterialPurchase: (data) => ipcRenderer.invoke('add-raw-material-purchase', data),
   getRawMaterialLogs: (filters) => ipcRenderer.invoke('get-raw-material-logs', filters),
   deleteRawMaterialLog: (id, revertStock) => ipcRenderer.invoke('delete-raw-material-log', id, revertStock),
@@ -112,6 +117,13 @@ contextBridge.exposeInMainWorld('api', {
   getRawMaterialCategories: () => ipcRenderer.invoke('get-raw-material-categories'),
   addRawMaterialCategory: (name) => ipcRenderer.invoke('add-raw-material-category', name),
   deleteRawMaterialCategory: (id) => ipcRenderer.invoke('delete-raw-material-category', id),
+
+  // Chocolate Production & Stock
+  getChocolateStock: () => ipcRenderer.invoke('get-chocolate-stock'),
+  getChocolateBatches: (filters) => ipcRenderer.invoke('get-chocolate-batches', filters),
+  createChocolateBatch: (data) => ipcRenderer.invoke('create-chocolate-batch', data),
+  deleteChocolateBatch: (id) => ipcRenderer.invoke('delete-chocolate-batch', id),
+  getChocolateLogs: (filters) => ipcRenderer.invoke('get-chocolate-logs', filters),
 
   // Suppliers & Vendor Khata
   getSuppliers: () => ipcRenderer.invoke('get-suppliers'),
@@ -166,9 +178,10 @@ contextBridge.exposeInMainWorld('api', {
   updateShopDelivery: (id, data) => ipcRenderer.invoke('update-shop-delivery', id, data),
   processShopReturn: (data) => ipcRenderer.invoke('process-shop-return', data),
   getShopDeliveries: (filters) => ipcRenderer.invoke('get-shop-deliveries', filters),
-  getShopReturns: (deliveryId) => ipcRenderer.invoke('get-shop-returns', deliveryId),
+  getShopReturns: (filters) => ipcRenderer.invoke('get-shop-returns', filters),
   getShopDelivery: (id) => ipcRenderer.invoke('get-shop-delivery', id),
   getShopReturn: (id) => ipcRenderer.invoke('get-shop-return', id),
+  deleteShopReturn: (id) => ipcRenderer.invoke('delete-shop-return', id),
   deleteShopDelivery: (id) => ipcRenderer.invoke('delete-shop-delivery', id),
   receiveShopPayment: (data) => ipcRenderer.invoke('receive-shop-payment', data),
   updateShopPayment: (id, data) => ipcRenderer.invoke('update-shop-payment', id, data),
@@ -190,7 +203,15 @@ contextBridge.exposeInMainWorld('api', {
   saveBmpBatch: (data) => ipcRenderer.invoke('save-bmp-batch', data),
 
   // App Zoom & Scale
-  getZoomFactor: () => ipcRenderer.invoke('get-zoom-factor'),
+  getZoomFactor: () => {
+    try {
+      if (typeof webFrame !== 'undefined' && webFrame && typeof webFrame.getZoomFactor === 'function') {
+        const z = webFrame.getZoomFactor();
+        if (z && !isNaN(z) && z >= 0.5 && z <= 1.5) return z;
+      }
+    } catch (e) {}
+    return ipcRenderer.invoke('get-zoom-factor');
+  },
   setZoomFactor: (factor) => {
     try { webFrame.setZoomFactor(factor); } catch (e) {}
     return ipcRenderer.invoke('set-zoom-factor', factor);

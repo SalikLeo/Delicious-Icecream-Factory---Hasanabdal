@@ -73,7 +73,7 @@ window.Production = {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Ice Cream Items</p>
+              <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Ice Cream Items</p>
               <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalItems} <span class="text-xs font-bold text-slate-400">types</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-black">
@@ -83,7 +83,7 @@ window.Production = {
 
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Total Loose Pieces in Stock</p>
+              <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Total Loose Pieces in Stock</p>
               <h3 class="text-2xl font-black text-cyan-700 mt-1 tabular-nums">${totalSinglePieces.toLocaleString()} <span class="text-xs font-bold text-slate-400">pieces ready to pack</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-black">
@@ -93,7 +93,7 @@ window.Production = {
 
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-black uppercase text-slate-400 tracking-wider">Unpacked Production Cost</p>
+              <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Unpacked Production Cost</p>
               <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">Rs. ${Math.round(totalPoolCost).toLocaleString()}</h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center font-black">
@@ -537,37 +537,37 @@ window.Production = {
               <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th onclick="Production.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
-                  <span>Item Name</span>
+                  <span>Item</span>
                   ${this.getSortIcon('name')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('spec')" class="py-2 px-3 text-center border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-center gap-1">
-                  <span>Pack Spec</span>
+                  <span>Pack Size</span>
                   ${this.getSortIcon('spec')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('stock')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Available Stock</span>
+                  <span>Stock</span>
                   ${this.getSortIcon('stock')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Making Cost</span>
+                  <span>Cost</span>
                   ${this.getSortIcon('cost')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('retail')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Retail MRP</span>
+                  <span>Price</span>
                   ${this.getSortIcon('retail')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('total_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Total Stock Cost</span>
+                  <span>Stock Value</span>
                   ${this.getSortIcon('total_cost')}
                 </div>
               </th>
@@ -709,29 +709,29 @@ window.Production = {
               </th>
               <th onclick="Production.toggleSort('item_name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
-                  <span>Item Produced</span>
+                  <span>Item</span>
                   ${this.getSortIcon('item_name')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('produced_pieces')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Quantity Produced</span>
+                  <span>Produced</span>
                   ${this.getSortIcon('produced_pieces')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('unit_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Unit Cost</span>
+                  <span>Cost</span>
                   ${this.getSortIcon('unit_cost')}
                 </div>
               </th>
               <th onclick="Production.toggleSort('total_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-end gap-1">
-                  <span>Total Batch Cost</span>
+                  <span>Total Cost</span>
                   ${this.getSortIcon('total_cost')}
                 </div>
               </th>
-              <th class="py-2 px-3 border-r border-slate-200">Raw Materials Used</th>
+              <th class="py-2 px-3 border-r border-slate-200">Materials Used</th>
               <th class="py-2 px-3 text-center">Actions</th>
             </tr>
           </thead>
@@ -1083,43 +1083,347 @@ window.Production = {
       return;
     }
 
+    const unselected = (this.rawMaterials || []).filter(m => !currentSelected.has(String(m.id)));
+    let defaultVal = '';
+
     const rowId = 'mat-row-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     const div = document.createElement('div');
     div.id = rowId;
-    div.className = 'flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl';
+    div.className = 'p-2 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1 shadow-2xs hover:border-cyan-400 transition-all';
     div.innerHTML = `
-      <select onchange="Production.updateMaterialDropdowns()" class="flex-2 pr-mat-select px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-cyan-500">
-        <option value="">-- Select Material to Deduct --</option>
-        ${this.rawMaterials.map(m => `
-          <option value="${m.id}">${m.name} (Stock: ${m.current_stock} ${m.unit})</option>
-        `).join('')}
-      </select>
-      <div class="flex items-center gap-1 flex-1">
-        <input type="number" step="any" min="0" placeholder="Qty used" oninput="Production.validateMaterialsStock()" class="w-full pr-mat-qty px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none tabular-nums focus:border-cyan-500">
+      <div class="flex items-center gap-1.5">
+        <input type="hidden" class="pr-mat-select" id="${rowId}-val" value="${defaultVal}">
+        <div id="${rowId}-selector-wrap" class="flex-1 min-w-0 relative dropdown-wrap"></div>
+        <div id="${rowId}-inputs-wrap" class="flex items-center gap-1 shrink-0"></div>
+        <button type="button" onclick="Production.removeMaterialRow('${rowId}')"
+                class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                title="Remove material">
+          <i data-lucide="x" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+        </button>
       </div>
-      <button type="button" onclick="Production.removeMaterialRow('${rowId}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer" title="Remove row">
-        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-      </button>
+      <div id="${rowId}-hint" class="text-[10px] font-bold text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-2 py-0.5 hidden"></div>
     `;
     list.appendChild(div);
     if (window.lucide) lucide.createIcons({ root: div });
 
-    // Automatically pick the first unselected material
-    const newSelect = div.querySelector('.pr-mat-select');
-    if (newSelect) {
-      const firstAvailable = this.rawMaterials.find(m => !currentSelected.has(String(m.id)));
-      if (firstAvailable) {
-        newSelect.value = firstAvailable.id;
+    this.renderRowSelector(rowId);
+    this.renderRowInputs(rowId);
+    this.updateMaterialDropdowns();
+
+    setTimeout(() => {
+      document.getElementById(`${rowId}-search`)?.focus();
+    }, 50);
+  },
+
+  renderRowSelector(rowId) {
+    const valInput = document.getElementById(`${rowId}-val`);
+    const selectorWrap = document.getElementById(`${rowId}-selector-wrap`);
+    if (!valInput || !selectorWrap) return;
+
+    const val = String(valInput.value || '').trim();
+
+    if (val) {
+      const matId = Number(val);
+      const mat = (this.rawMaterials || []).find(m => m.id === matId);
+      const stockTxt = window.RawMaterials ? RawMaterials.formatStockDisplay(mat) : `${mat?.current_stock} ${mat?.unit}`;
+      selectorWrap.innerHTML = `
+        <div class="flex items-center justify-between px-2.5 py-1.5 bg-cyan-50/70 border border-cyan-200 rounded-lg text-xs font-black text-slate-900 select-none shadow-2xs min-w-0">
+          <div class="flex items-center gap-1.5 min-w-0 truncate">
+            <i data-lucide="box" class="w-3.5 h-3.5 text-cyan-700 shrink-0"></i>
+            <span class="truncate">${mat ? mat.name : 'Raw Material'}</span>
+            <span class="text-[10.5px] font-bold text-cyan-800 ml-0.5 shrink-0">(Stock: ${stockTxt})</span>
+          </div>
+          <button type="button" onclick="Production.unselectRowMaterial('${rowId}')"
+                  class="ml-1.5 w-5 h-5 rounded-md hover:bg-cyan-200/80 text-slate-500 hover:text-cyan-900 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                  title="Unselect material to choose another item">
+            <i data-lucide="x" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+          </button>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons({ root: selectorWrap });
+      return;
+    }
+
+    // Unselected state: Search input with dropdown
+    selectorWrap.innerHTML = `
+      <div class="relative w-full">
+        <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+        <input type="text" id="${rowId}-search" autocomplete="off"
+               placeholder="Search material..."
+               onfocus="Production.openMaterialDropdown('${rowId}')"
+               onclick="Production.openMaterialDropdown('${rowId}')"
+               oninput="Production.filterMaterialDropdown('${rowId}', this.value)"
+               onkeydown="Production.onMaterialSearchKeydown('${rowId}', event)"
+               class="pr-mat-search w-full pl-8 pr-7 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-cyan-500 transition-all cursor-pointer">
+        <button type="button" onclick="Production.toggleMaterialDropdown('${rowId}')"
+                class="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer">
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+        </button>
+        <div id="${rowId}-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden hidden max-h-52 overflow-y-auto z-[1300] divide-y divide-slate-100">
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: selectorWrap });
+  },
+
+  selectRowMaterial(rowId, itemId) {
+    const valInput = document.getElementById(`${rowId}-val`);
+    if (!valInput) return;
+
+    if (itemId) {
+      const otherVals = Array.from(document.querySelectorAll('#pr-materials-list input[id$="-val"]'))
+        .filter(inp => inp.id !== `${rowId}-val`)
+        .map(inp => inp.value);
+      if (otherVals.includes(String(itemId))) {
+        app.showAlert({ title: 'Duplicate Item', message: 'This raw material is already added to the batch.' });
+        return;
       }
     }
 
+    valInput.value = itemId;
+
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (dropdown) dropdown.classList.add('hidden');
+
+    this.renderRowSelector(rowId);
+    this.renderRowInputs(rowId);
     this.updateMaterialDropdowns();
+  },
+
+  unselectRowMaterial(rowId) {
+    const valInput = document.getElementById(`${rowId}-val`);
+    if (!valInput) return;
+    valInput.value = '';
+
+    this.renderRowSelector(rowId);
+    this.renderRowInputs(rowId);
+    this.updateMaterialDropdowns();
+
+    setTimeout(() => {
+      this.openMaterialDropdown(rowId);
+      document.getElementById(`${rowId}-search`)?.focus();
+    }, 40);
+  },
+
+  toggleMaterialDropdown(rowId) {
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (!dropdown) return;
+    if (dropdown.classList.contains('hidden')) {
+      this.openMaterialDropdown(rowId);
+      document.getElementById(`${rowId}-search`)?.focus();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  openMaterialDropdown(rowId) {
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (!dropdown) return;
+    document.querySelectorAll('.search-dropdown').forEach(d => {
+      if (d !== dropdown) d.classList.add('hidden');
+    });
+    const searchVal = document.getElementById(`${rowId}-search`)?.value || '';
+    this.filterMaterialDropdown(rowId, searchVal);
+  },
+
+  onMaterialSearchKeydown(rowId, e) {
+    if (e.key === 'Escape') {
+      const dd = document.getElementById(`${rowId}-dropdown`);
+      if (dd) dd.classList.add('hidden');
+      e.preventDefault();
+    }
+  },
+
+  filterMaterialDropdown(rowId, query = '') {
+    const dropdown = document.getElementById(`${rowId}-dropdown`);
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+
+    const allSelects = Array.from(document.querySelectorAll('.pr-mat-select'));
+    const selectedInOtherRows = new Set(
+      allSelects
+        .filter(s => s.id !== `${rowId}-val`)
+        .map(s => String(s.value))
+        .filter(Boolean)
+    );
+
+    const items = (this.rawMaterials || []).map(m => {
+      const stockTxt = window.RawMaterials ? RawMaterials.formatStockDisplay(m) : `${m.current_stock} ${m.unit}`;
+      return {
+        id: String(m.id),
+        name: m.name,
+        category: m.category || 'Raw Material',
+        stockTxt
+      };
+    });
+
+    let matches = items;
+    if (q) {
+      matches = items.filter(it => 
+        it.name.toLowerCase().includes(q) || 
+        it.category.toLowerCase().includes(q)
+      );
+    }
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-3 text-center text-xs font-bold text-slate-400">
+          No materials match "${query}"
+        </div>
+      `;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    dropdown.innerHTML = matches.map(it => {
+      const isAlreadyAdded = selectedInOtherRows.has(it.id);
+      if (isAlreadyAdded) {
+        return `
+          <div class="px-3 py-2 bg-slate-50 opacity-50 flex items-center justify-between text-xs font-bold text-slate-400 cursor-not-allowed select-none">
+            <div class="flex items-center gap-1.5 min-w-0 truncate">
+              <span>📦</span>
+              <span class="truncate">${it.name}</span>
+            </div>
+            <span class="text-[10px] font-semibold text-slate-400 shrink-0">Already added</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div onclick="Production.selectRowMaterial('${rowId}', '${it.id}')"
+             class="px-3 py-2 hover:bg-cyan-50 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-100 last:border-b-0">
+          <div class="min-w-0 truncate">
+            <div class="text-xs font-black text-slate-900">${it.name}</div>
+            <div class="text-[10px] text-slate-500 font-bold mt-0.5">${it.category} • Stock: <span class="font-black text-slate-700">${it.stockTxt}</span></div>
+          </div>
+          <span class="text-[10px] font-black text-cyan-800 bg-cyan-100/80 px-2 py-0.5 rounded shrink-0">Select</span>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons({ root: dropdown });
+  },
+
+  renderRowInputs(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const select = row.querySelector('.pr-mat-select');
+    const wrap = document.getElementById(`${rowId}-inputs-wrap`);
+    const hint = document.getElementById(`${rowId}-hint`);
+    if (!wrap) return;
+
+    const matId = Number(select?.value);
+    const mat = (this.rawMaterials || []).find(m => m.id === matId);
+
+    if (!mat) {
+      wrap.innerHTML = `<span class="text-[10px] text-slate-400 italic">Select item</span>`;
+      if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
+      return;
+    }
+
+    const spec = (window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+    const isBulk = spec ? spec.isBulk : Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+    const packUnit = spec ? spec.packageUnit : (mat.pack_unit || 'Pack').trim();
+    const baseUnit = spec ? spec.contentUnit : (mat.unit || 'Units').trim();
+
+    if (isBulk) {
+      wrap.innerHTML = `
+        <div class="relative w-28">
+          <input type="number" step="any" min="0" placeholder="0"
+                 oninput="Production.syncRowStock('${rowId}')"
+                 class="pr-mat-packs w-full pr-14 pl-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-900 outline-none tabular-nums focus:border-cyan-500 text-right"
+                 title="Packs consumed">
+          <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 uppercase pointer-events-none">${packUnit}</span>
+        </div>
+
+        <span class="text-xs font-bold text-slate-400 shrink-0">+</span>
+
+        <div class="relative w-24">
+          <input type="number" step="any" min="0" placeholder="0"
+                 oninput="Production.syncRowStock('${rowId}')"
+                 class="pr-mat-loose w-full pr-10 pl-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-900 outline-none tabular-nums focus:border-cyan-500 text-right"
+                 title="Loose ${baseUnit} consumed">
+          <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 uppercase pointer-events-none">${baseUnit}</span>
+        </div>
+
+        <input type="hidden" class="pr-mat-qty" value="0">
+      `;
+    } else {
+      wrap.innerHTML = `
+        <div class="relative w-28">
+          <input type="number" step="any" min="0" placeholder="0"
+                 oninput="Production.syncRowStock('${rowId}')"
+                 class="pr-mat-qty w-full pr-14 pl-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-900 outline-none tabular-nums focus:border-cyan-500 text-right"
+                 title="Quantity consumed (${baseUnit})">
+          <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 uppercase pointer-events-none">${baseUnit}</span>
+        </div>
+      `;
+    }
+
+    this.syncRowStock(rowId);
+  },
+
+  syncRowStock(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+
+    const select = row.querySelector('.pr-mat-select');
+    const hint = document.getElementById(`${rowId}-hint`);
+    const qtyInput = row.querySelector('.pr-mat-qty');
+    const matId = Number(select?.value);
+    const mat = (this.rawMaterials || []).find(m => m.id === matId);
+
+    if (!mat) {
+      if (qtyInput) qtyInput.value = 0;
+      if (hint) { hint.classList.add('hidden'); hint.textContent = ''; }
+      this.validateMaterialsStock();
+      return;
+    }
+
+    const spec = (window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+    const isBulk = spec ? spec.isBulk : Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+    const packSize = spec ? spec.packSize : (Number(mat.pack_size) || 1);
+    let totalQty = 0;
+
+    if (isBulk) {
+      const packsInput = row.querySelector('.pr-mat-packs');
+      const looseInput = row.querySelector('.pr-mat-loose');
+      const packs = Number(packsInput?.value) || 0;
+      const loose = Number(looseInput?.value) || 0;
+      totalQty = (packs * packSize) + loose;
+      if (qtyInput) qtyInput.value = totalQty;
+    } else {
+      totalQty = Number(qtyInput?.value) || 0;
+    }
+
+    const avail = Number(mat.current_stock) || 0;
+    if (hint) {
+      if (totalQty > 0) {
+        const displayUsage = window.RawMaterials ? RawMaterials.formatUsageQuantity(totalQty, mat) : `${totalQty} ${mat.unit}`;
+        if (totalQty > avail) {
+          hint.className = 'text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-0.5 block';
+          hint.innerHTML = `⚠️ Insufficient Stock! Only ${avail} ${mat.unit} available (need ${displayUsage})`;
+        } else {
+          hint.className = 'text-[10px] font-bold text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-2 py-0.5 block';
+          const leftAfter = Math.round((avail - totalQty) * 100) / 100;
+          hint.innerHTML = `<span class="text-slate-500 font-semibold">Deducting:</span> <b class="text-cyan-950">${displayUsage}</b> (Stock left: ${leftAfter} ${mat.unit})`;
+        }
+        hint.classList.remove('hidden');
+      } else {
+        hint.classList.add('hidden');
+        hint.textContent = '';
+      }
+    }
+
+    this.validateMaterialsStock();
   },
 
   removeMaterialRow(rowId) {
     const el = document.getElementById(rowId);
     if (el) el.remove();
     this.updateMaterialDropdowns();
+    this.validateMaterialsStock();
   },
 
   updateMaterialDropdowns() {
@@ -1129,29 +1433,10 @@ window.Production = {
     const selects = Array.from(list.querySelectorAll('.pr-mat-select'));
     const selectedIds = new Set(selects.map(s => String(s.value)).filter(v => v && v !== ''));
 
-    selects.forEach(select => {
-      const currentVal = String(select.value || '');
-      Array.from(select.options).forEach(opt => {
-        if (!opt.value) return; // Keep placeholder enabled
-        const isCurrent = String(opt.value) === currentVal;
-        const isAlreadyAdded = !isCurrent && selectedIds.has(String(opt.value));
-        const mat = this.rawMaterials.find(m => String(m.id) === String(opt.value));
-        const baseLabel = mat ? `${mat.name} (Stock: ${mat.current_stock} ${mat.unit})` : opt.value;
-
-        if (isAlreadyAdded) {
-          opt.disabled = true;
-          opt.textContent = `${mat ? mat.name : opt.value} (Already added)`;
-        } else {
-          opt.disabled = false;
-          opt.textContent = baseLabel;
-        }
-      });
-    });
-
     // Update "+ Add Material" button enabled state
     const addBtn = document.getElementById('pr-add-mat-btn');
     if (addBtn) {
-      const allSelected = selects.length >= this.rawMaterials.length && this.rawMaterials.length > 0;
+      const allSelected = selectedIds.size >= this.rawMaterials.length && this.rawMaterials.length > 0;
       addBtn.disabled = allSelected;
       if (allSelected) {
         addBtn.classList.add('opacity-40', 'cursor-not-allowed');
@@ -1181,9 +1466,10 @@ window.Production = {
 
       if (mat && qty > (mat.current_stock || 0)) {
         hasExceeding = true;
+        const stockTxt = window.RawMaterials ? RawMaterials.formatStockDisplay(mat) : `${mat.current_stock} ${mat.unit}`;
         qtyInput?.classList.add('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
         qtyInput?.classList.remove('border-slate-300', 'text-slate-900');
-        qtyInput.title = `Exceeds available stock (${mat.current_stock} ${mat.unit})`;
+        qtyInput.title = `Exceeds available stock (${stockTxt})`;
       } else {
         qtyInput?.classList.remove('border-rose-500', 'bg-rose-50/70', 'text-rose-700');
         qtyInput?.classList.add('border-slate-300', 'text-slate-900');
@@ -1298,9 +1584,19 @@ window.Production = {
   async handleItemSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('ii-id').value;
+    const nameVal = (document.getElementById('ii-name')?.value || '').trim();
+    if (!nameVal) {
+      return app.showAlert({ title: 'Item Name Required', message: 'Please enter an item name.' });
+    }
+
+    const dup = (this.items || []).find(i => (!id || i.id !== Number(id)) && i.name.trim().toLowerCase() === nameVal.toLowerCase());
+    if (dup) {
+      return app.showAlert({ title: 'Duplicate Item Name', message: `An ice cream item with the name "<b>${nameVal}</b>" already exists.<br><br>Duplicate item names are not allowed.` });
+    }
+
     const data = {
       id: id ? Number(id) : null,
-      name: (document.getElementById('ii-name').value || '').trim(),
+      name: nameVal,
       flavor: document.getElementById('ii-flavor') ? (document.getElementById('ii-flavor').value || '').trim() : '',
       unit_cost: Number(document.getElementById('ii-cost').value) || 0,
       retail_piece_price: Number(document.getElementById('ii-retail').value) || 0,
@@ -1308,13 +1604,18 @@ window.Production = {
       default_pcs_per_carton: Number(document.getElementById('ii-pcs-carton').value) || 20
     };
 
-    const res = await window.api.saveIcecreamItem(data);
-    if (res && res.success) {
-      this.closeModal();
-      app.showToast('Ice cream item saved!', 'success');
-      await this.loadData();
-    } else {
-      app.showAlert({ title: 'Error', message: res.error || 'Failed to save item.' });
+    try {
+      const res = await window.api.saveIcecreamItem(data);
+      if (res && res.success) {
+        this.closeModal();
+        app.showToast('Ice cream item saved!', 'success');
+        await this.loadData();
+      } else {
+        app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to save item.' });
+      }
+    } catch (err) {
+      console.error('Error saving ice cream item:', err);
+      app.showAlert({ title: 'Error', message: err.message || 'Failed to save item.' });
     }
   },
 
@@ -1344,6 +1645,13 @@ window.Production = {
           return;
         }
         seenMatIds.add(matId);
+        const mat = (this.rawMaterials || []).find(x => x.id === matId);
+        if (mat && (mat.current_stock || 0) < qty) {
+          const avail = window.RawMaterials ? RawMaterials.formatStockDisplay(mat) : `${mat.current_stock} ${mat.unit}`;
+          const req = window.RawMaterials ? RawMaterials.formatUsageQuantity(qty, mat) : `${qty} ${mat.unit}`;
+          app.showAlert({ title: 'Insufficient Stock', message: `Not enough stock for <b>${mat.name}</b>.<br>Available: ${avail}<br>Required: ${req}` });
+          return;
+        }
         materials.push({ material_id: matId, qty_used: qty });
       }
     }
@@ -1362,10 +1670,11 @@ window.Production = {
     const totalBatchCost = pieces * unitCost;
 
     const materialsListHtml = materials.map(m => {
-      const mat = (this.materials || []).find(x => x.id === m.material_id);
+      const mat = (this.rawMaterials || []).find(x => x.id === m.material_id);
+      const usageTxt = window.RawMaterials ? RawMaterials.formatUsageQuantity(m.qty_used, mat) : `${m.qty_used} ${mat ? mat.unit : ''}`;
       return `<li class="flex justify-between items-center py-1 text-xs border-b border-slate-100 last:border-b-0">
         <span class="font-bold text-slate-700">${mat ? mat.name : 'Material'}</span>
-        <span class="font-mono font-black text-cyan-800">-${m.qty_used} ${mat ? mat.unit : ''}</span>
+        <span class="font-mono font-black text-cyan-800">-${usageTxt}</span>
       </li>`;
     }).join('');
 
@@ -1439,12 +1748,17 @@ window.Production = {
       });
 
       if (ok) {
-        const res = await window.api.deleteIcecreamItem(id);
-        if (res && res.success) {
-          app.showToast('Item deleted successfully.', 'success');
-          await this.loadData();
-        } else {
-          app.showAlert({ title: 'Error', message: res.error || 'Failed to delete item.' });
+        try {
+          const res = await window.api.deleteIcecreamItem(id);
+          if (res && res.success) {
+            app.showToast('Item deleted successfully.', 'success');
+            await this.loadData();
+          } else {
+            app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to delete item.' });
+          }
+        } catch (err) {
+          console.error('Error deleting ice cream item:', err);
+          app.showAlert({ title: 'Error', message: err.message || 'Failed to delete item.' });
         }
       }
     }, 'deleting production product');
@@ -1464,12 +1778,17 @@ window.Production = {
       });
 
       if (ok) {
-        const res = await window.api.deleteProductionBatch(id);
-        if (res && res.success) {
-          app.showToast('Batch deleted & stock reversed', 'success');
-          await this.loadData();
-        } else {
-          app.showAlert({ title: 'Error', message: res.error || 'Could not delete batch.' });
+        try {
+          const res = await window.api.deleteProductionBatch(id);
+          if (res && res.success) {
+            app.showToast('Batch deleted & stock reversed', 'success');
+            await this.loadData();
+          } else {
+            app.showAlert({ title: 'Error', message: (res && res.error) || 'Could not delete batch.' });
+          }
+        } catch (err) {
+          console.error('Error deleting production batch:', err);
+          app.showAlert({ title: 'Error', message: err.message || 'Could not delete batch.' });
         }
       }
     }, 'deleting production batch');
@@ -1481,46 +1800,46 @@ window.Production = {
     const date = new Date().toLocaleDateString('en-GB');
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; box-sizing: border-box;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
+          <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
           <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Loose Pieces In Factory Floor</p>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
           STAGE 2: SINGLE ITEMS PRODUCTION STOCK REPORT
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Item Name</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Pieces in Stock</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Cost/Piece</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 90px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Total Cost Value</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Retail MRP</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Item Name</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Pieces in Stock</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Cost/Piece</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 90px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Cost Value</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 600; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Retail MRP</th>
             </tr>
           </thead>
           <tbody>
             ${this.items.map((it, idx) => `
               <tr>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 800; color: #000;">${it.name}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.current_single_stock} pcs</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.unit_cost}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.current_single_stock * it.unit_cost).toLocaleString()}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${it.retail_piece_price}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; font-size: 8.5px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; font-size: 8.5px; font-weight: 500; color: #000;">${it.name}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500; font-size: 8.5px; color: #000;">${it.current_single_stock} pcs</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right;  font-size: 8.5px; color: #000;">Rs. ${it.unit_cost}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500;  font-size: 8.5px; color: #000;">Rs. ${Math.round(it.current_single_stock * it.unit_cost).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right;  font-size: 8.5px; color: #000;">Rs. ${it.retail_piece_price}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
         <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">
             Production Floor Manager
           </div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">
             Quality Assurance Officer
           </div>
         </div>
@@ -1547,18 +1866,18 @@ window.Production = {
       const materials = batch.materials || [];
 
       const html = `
-        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
           <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-            <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+            <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
             <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>
             <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">Tel: ${phone}</p>
           </div>
 
-          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
             PRODUCTION FLOOR BATCH SLIP
           </div>
 
-          <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
+          <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; padding: 7px 11px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.55;">
             <div>
               <div><strong>Batch Number:</strong> ${batch.batch_number}</div>
               <div><strong>Item Produced:</strong> <strong>${batch.item_name}</strong></div>
@@ -1571,24 +1890,24 @@ window.Production = {
             </div>
           </div>
 
-          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
             <thead>
               <tr style="background: #fff; border-bottom: 1.5px solid #000;">
-                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 24px; font-weight: 900; color: #000;">#</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; color: #000;">Recipe Raw Material</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 80px; font-weight: 900; color: #000;">Qty Consumed</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 900; color: #000;">Unit Cost</th>
-                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; color: #000;">Total Line Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 24px; font-weight: 600; font-size: 8px; color: #000;">#</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 600; font-size: 8px; color: #000;">Recipe Raw Material</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 80px; font-weight: 600; font-size: 8px; color: #000;">Qty Consumed</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 75px; font-weight: 600; font-size: 8px; color: #000;">Unit Cost</th>
+                <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 600; font-size: 8px; color: #000;">Total Line Cost</th>
               </tr>
             </thead>
             <tbody>
               ${materials.length > 0 ? materials.map((m, idx) => `
                 <tr>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000;">${idx + 1}</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 800; color: #000;">${m.material_name}</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; color: #000;">${m.qty_used} ${m.unit}</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace; color: #000;">Rs. ${m.unit_cost}</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace; font-weight: 800; color: #000;">Rs. ${Math.round(m.line_cost).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 3px 4px; text-align: center; font-size: 8px; color: #000;">${idx + 1}</td>
+                  <td style="border: 1px solid #000; padding: 3px 6px; font-weight: 500; font-size: 8px; color: #000;">${m.material_name}</td>
+                  <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 700; font-size: 8px; color: #000;">${(window.RawMaterials && m.material_id) ? RawMaterials.formatUsageQuantity(m.qty_used, (RawMaterials.materials || []).find(x => x.id === m.material_id)) : `${m.qty_used} ${m.unit || ''}`}</td>
+                  <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-size: 8px; color: #000;">Rs. ${m.unit_cost}</td>
+                  <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500; font-size: 8px; color: #000;">Rs. ${Math.round(m.line_cost).toLocaleString()}</td>
                 </tr>
               `).join('') : `
                 <tr>
@@ -1599,9 +1918,9 @@ window.Production = {
               `}
             </tbody>
             <tfoot>
-              <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
-                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase;">Total Batch Manufacturing Cost:</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: monospace;">Rs. ${Math.round(batch.total_cost).toLocaleString()}</td>
+              <tr style="background: #fff; font-weight: 700; border-top: 1.5px solid #000; color: #000;">
+                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase; font-size: 8px;">Total Batch Manufacturing Cost:</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8px;">Rs. ${Math.round(batch.total_cost).toLocaleString()}</td>
               </tr>
             </tfoot>
           </table>
@@ -1613,10 +1932,10 @@ window.Production = {
           ` : ''}
 
           <div class="a5-signatures" style="margin-top: 35px; display: flex; justify-content: space-between; font-size: 9px;">
-            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
               Production Floor Supervisor
             </div>
-            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
               Quality Assurance Officer
             </div>
           </div>

@@ -95,7 +95,7 @@ const Expenses = {
                <button id="exp-period-all-tab" onclick="Expenses.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">All</button>
             </div>
 
-            <!-- Daily navigation controls (Prev Day, Calendar Picker, Next Day, Today) -->
+            <!-- Daily navigation controls (Prev Day, Calendar Picker, Next Day) -->
             <div id="exp-daily-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
                <button onclick="Expenses.changeDateStep(-1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Day">
                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
@@ -104,10 +104,9 @@ const Expenses = {
                <button onclick="Expenses.changeDateStep(1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Day">
                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                </button>
-               <button onclick="Expenses.setToday()" class="px-2 py-1 text-[10px] font-black uppercase bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded transition-all cursor-pointer ml-0.5">Today</button>
             </div>
 
-            <!-- Monthly navigation controls (Prev Month, Month Dropdown, Year Dropdown, Next Month, This Month) -->
+            <!-- Monthly navigation controls (Prev Month, Month Dropdown, Year Dropdown, Next Month) -->
             <div id="exp-monthly-controls" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 hidden">
                <button onclick="Expenses.changeMonthStep(-1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Previous Month">
                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
@@ -131,7 +130,6 @@ const Expenses = {
                <button onclick="Expenses.changeMonthStep(1)" class="p-1.5 hover:bg-white rounded text-slate-500 hover:text-slate-800 transition-all cursor-pointer" title="Next Month">
                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                </button>
-               <button onclick="Expenses.setThisMonth()" class="px-2 py-1 text-[10px] font-black uppercase bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded transition-all cursor-pointer ml-0.5">This Month</button>
             </div>
 
             <!-- Annual controls -->
@@ -179,7 +177,7 @@ const Expenses = {
       </div>
 
       <!-- Expense Modal -->
-      <div id="expense-modal" onclick="if(event.target === this) Expenses.closeForm()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print p-4">
+      <div id="expense-modal" onclick="if(event.target === this) Expenses.closeForm()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1200] backdrop-blur-md transition-opacity opacity-0 no-print p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 transform transition-all scale-95" id="expense-card">
           <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -223,7 +221,7 @@ const Expenses = {
       </div>
 
       <!-- Category Management Modal -->
-      <div id="cat-modal" onclick="if(event.target === this) Expenses.closeCategoryModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md transition-opacity opacity-0 no-print p-4">
+      <div id="cat-modal" onclick="if(event.target === this) Expenses.closeCategoryModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1200] backdrop-blur-md transition-opacity opacity-0 no-print p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 transform transition-all scale-95" id="cat-card">
           <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -239,21 +237,44 @@ const Expenses = {
               <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
           </div>
-          <div class="p-6">
-            <div class="mb-4">
+          <div class="p-6 space-y-3.5">
+            <div>
               <form id="cat-add-form" onsubmit="Expenses.addCategory(event)" class="flex gap-2">
-                <input type="text" id="new-cat-name" placeholder="New Category Name" required class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent">
-                <button type="submit" class="bg-accent hover:bg-amber-500 text-slate-900 font-bold px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer">Add</button>
+                <input type="text" id="new-cat-name" placeholder="New Category Name" required class="flex-1 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <button type="submit" class="bg-accent hover:bg-amber-500 active:scale-95 text-slate-900 font-bold px-4 py-2 rounded-xl text-xs transition-all cursor-pointer">Add</button>
               </form>
             </div>
-            <div class="max-h-60 overflow-y-auto border border-slate-100 rounded-lg">
+
+            <!-- Search & Count Header -->
+            <div class="space-y-2">
+              <div class="relative">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="cat-search" oninput="Expenses.filterCategories(this.value)" placeholder="Search categories..."
+                       class="w-full pl-8.5 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-500">
+                <button type="button" id="cat-search-clear" onclick="Expenses.clearCategorySearch()" title="Clear search"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer hidden">
+                  <i data-lucide="x" class="w-3 h-3"></i>
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 px-0.5">
+                <span id="cat-count-label">Existing Categories</span>
+                <button type="button" onclick="Expenses.toggleCategorySort()" id="cat-sort-btn"
+                        class="text-[10px] font-black text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-2 py-0.5 rounded-md flex items-center gap-1 transition-all cursor-pointer shadow-2xs">
+                  <i data-lucide="arrow-down-wide-narrow" class="w-3 h-3"></i>
+                  <span id="cat-sort-text">Highest to Lowest</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="max-h-60 overflow-y-auto border border-slate-200 rounded-xl bg-slate-50/50 divide-y divide-slate-100 custom-scrollbar">
               <table class="w-full text-sm text-left">
                 <tbody id="cats-list" class="divide-y divide-slate-100">
                 </tbody>
               </table>
             </div>
-            <div class="pt-4 flex justify-end">
-              <button onclick="Expenses.closeCategoryModal()" class="px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition-colors cursor-pointer">Close</button>
+            <div class="pt-2 flex justify-end">
+              <button onclick="Expenses.closeCategoryModal()" class="px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-xs transition-colors cursor-pointer">Close</button>
             </div>
           </div>
         </div>
@@ -365,7 +386,8 @@ const Expenses = {
     let total = 0, salaries = 0;
     list.forEach(e => {
       total += (e.amount || 0);
-      if (e.category?.toLowerCase().includes('salary')) {
+      const cat = (e.category || '').toLowerCase().trim();
+      if (cat.includes('salar') || cat.includes('wage') || cat.includes('payroll')) {
         salaries += (e.amount || 0);
       }
     });
@@ -373,15 +395,15 @@ const Expenses = {
 
     summaryContainer.innerHTML = `
       <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-red-500">
-        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Total Expenses</p>
+        <p class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Total Expenses</p>
         <p class="text-2xl font-black text-red-600 font-outfit tabular-nums">${app.formatCurrency(total)}</p>
       </div>
       <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
-        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">General / Other</p>
+        <p class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">General Expenses</p>
         <p class="text-2xl font-black text-blue-600 font-outfit tabular-nums">${app.formatCurrency(other)}</p>
       </div>
       <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
-        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Salaries (Paid)</p>
+        <p class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Salaries Paid</p>
         <p class="text-2xl font-black text-emerald-600 font-outfit tabular-nums">${app.formatCurrency(salaries)}</p>
       </div>
     `;
@@ -586,19 +608,49 @@ const Expenses = {
 
   setPeriodType(type) {
     this.currentPeriodType = type;
-    document.getElementById('exp-daily-controls')?.classList.toggle('hidden', type !== 'day');
-    document.getElementById('exp-monthly-controls')?.classList.toggle('hidden', type !== 'month');
-    document.getElementById('exp-annual-controls')?.classList.toggle('hidden', type !== 'year');
-    document.getElementById('exp-custom-controls')?.classList.toggle('hidden', type !== 'custom');
-    
-    if (type === 'custom') {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const now = new Date();
+    const curYear = String(now.getFullYear());
+    const curMonth = String(now.getMonth() + 1);
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    if (type === 'day') {
+      const dPicker = document.getElementById('exp-stats-date-picker');
+      if (dPicker) dPicker.value = todayStr;
+    } else if (type === 'month') {
+      const mSel = document.getElementById('exp-stats-month-select');
+      const ySel = document.getElementById('exp-stats-month-year-select');
+      if (mSel) mSel.value = curMonth;
+      if (ySel) {
+        if (!Array.from(ySel.options).some(o => o.value === curYear)) {
+          const opt = document.createElement('option');
+          opt.value = curYear;
+          opt.textContent = curYear;
+          ySel.prepend(opt);
+        }
+        ySel.value = curYear;
+      }
+    } else if (type === 'year') {
+      const yPicker = document.getElementById('exp-stats-year-picker');
+      if (yPicker) {
+        if (!Array.from(yPicker.options).some(o => o.value === curYear)) {
+          const opt = document.createElement('option');
+          opt.value = curYear;
+          opt.textContent = curYear;
+          yPicker.prepend(opt);
+        }
+        yPicker.value = curYear;
+      }
+    } else if (type === 'custom') {
       const sDate = document.getElementById('exp-start-date');
       const eDate = document.getElementById('exp-end-date');
       if (sDate && !sDate.value) sDate.value = document.getElementById('exp-stats-date-picker')?.value || todayStr;
       if (eDate && !eDate.value) eDate.value = document.getElementById('exp-stats-date-picker')?.value || todayStr;
     }
+
+    document.getElementById('exp-daily-controls')?.classList.toggle('hidden', type !== 'day');
+    document.getElementById('exp-monthly-controls')?.classList.toggle('hidden', type !== 'month');
+    document.getElementById('exp-annual-controls')?.classList.toggle('hidden', type !== 'year');
+    document.getElementById('exp-custom-controls')?.classList.toggle('hidden', type !== 'custom');
 
     ['day', 'month', 'year', 'custom', 'all'].forEach(t => {
       const btn = document.getElementById(`exp-period-${t}-tab`);
@@ -704,17 +756,17 @@ const Expenses = {
     const a5Html = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #000;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
           <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Hasan Abdal'} • Phone: ${settings.phone || '0315-6795995'}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 6px 0;">
           FACTORY EXPENSES REPORT
         </div>
 
-        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 5px 8px; margin: 6px 0; display: flex; justify-content: space-between; font-size: 9px; line-height: 1.45; background: #fff; color: #000;">
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 7px 11px; margin: 6px 0 8px 0; display: flex; justify-content: space-between; font-size: 10.5px; line-height: 1.55; background: #fff; color: #000;">
           <div>
-            <div><strong>Period:</strong> <span style="font-weight: 800;">${period}</span></div>
+            <div><strong>Period:</strong> <span style="font-weight: 600;">${period}</span></div>
             <div><strong>Category:</strong> ${cat}</div>
           </div>
           <div style="text-align: right;">
@@ -723,51 +775,51 @@ const Expenses = {
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr>
-              <th style="border: 1px solid #000; padding: 4px 5px; width: 6%; text-align: center; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Expense / Description</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; width: 22%; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; width: 22%; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Amount (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 4px 5px; width: 6%; text-align: center; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">#</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Expense Details</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; width: 24%; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Category</th>
+              <th style="border: 1px solid #000; padding: 4px 6px; width: 24%; text-align: right; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000; background: #fff;">Amount (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             ${list.map((e, idx) => `
               <tr>
-                <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: center; font-size: 8.5px; font-weight: 700; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 6px; font-size: 9px; color: #000;">
-                  <div style="font-weight: 800; line-height: 1.25;">${e.description || e.category || 'Expense'}</div>
-                  <div style="font-size: 8px; color: #334155; margin-top: 1px;">
+                <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-size: 8px; font-weight: 700; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; font-size: 8.5px; color: #000;">
+                  <div style="font-weight: 700; line-height: 1.25;">${e.description || e.category || 'Expense'}</div>
+                  <div style="font-size: 7.5px; font-weight: 600; color: #000; margin-top: 1px;">
                     ${app.formatDateTime(e.date, e.created_at)}${e.paid_by ? ` • By: ${e.paid_by}` : ''}
                   </div>
                 </td>
-                <td style="border: 1px solid #000; padding: 3.5px 6px; font-size: 8.5px; font-weight: 600; color: #000;">${e.category || 'General'}</td>
-                <td style="border: 1px solid #000; padding: 3.5px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000; white-space: nowrap;">
+                <td style="border: 1px solid #000; padding: 3px 6px; font-size: 8.5px; font-weight: 600; color: #000;">${e.category || 'General'}</td>
+                <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 800; font-size: 9px; color: #000; white-space: nowrap;">
                   Rs. ${Math.round(e.amount).toLocaleString()}
                 </td>
               </tr>
             `).join('')}
-            ${list.length === 0 ? '<tr><td colspan="4" style="border: 1px solid #000; padding: 10px; text-align: center; color: #000;">No expenses recorded.</td></tr>' : ''}
+            ${list.length === 0 ? '<tr><td colspan="4" style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: 600; color: #000;">No expenses recorded.</td></tr>' : ''}
           </tbody>
         </table>
 
-        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
-          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; font-weight: 900; font-size: 11px;">
+        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 7px 11px; margin-top: 6px; font-size: 10.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; font-weight: 800; font-size: 11.5px;">
             <span>TOTAL EXPENSES:</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(total).toLocaleString()}</span>
+            <span>Rs. ${Math.round(total).toLocaleString()}</span>
           </div>
         </div>
 
         ${(catKeys.length > 1 && list.length > 1) ? `
           <div style="margin-top: 10px;">
-            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; color: #000;">Category Breakdown</div>
+            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 3px; color: #000;">Category Breakdown</div>
             <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; background: #fff;">
               <tbody>
                 ${catKeys.map(catName => `
                   <tr>
                     <td style="border: 1px solid #000; padding: 3px 6px; font-weight: 700; color: #000;">${catName}</td>
-                    <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; color: #000; white-space: nowrap;">Rs. ${Math.round(catTotals[catName]).toLocaleString()}</td>
+                    <td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 500;  color: #000; white-space: nowrap;">Rs. ${Math.round(catTotals[catName]).toLocaleString()}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -776,8 +828,8 @@ const Expenses = {
         ` : ''}
 
         <div class="a5-signatures" style="margin-top: 28px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Prepared By</div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Approved By</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Prepared By</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Approved By</div>
         </div>
       </div>
     `;
@@ -814,56 +866,56 @@ const Expenses = {
     const voucherHtml = `
       <div class="a5-container">
         <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${company}</div>
+          <div class="a5-title" style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #000;">${company}</div>
           <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${address} • Phone: ${phone}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 4px 10px; font-size: 12px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 8px 0;">
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; margin: 4px 0 8px 0;">
           PAYMENT / EXPENSE VOUCHER
         </div>
 
-        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 6px 10px; margin-bottom: 10px; display: flex; justify-content: space-between; font-size: 9.5px; line-height: 1.6; background: #fff; color: #000;">
+        <div class="a5-meta-box" style="border: 1.5px solid #000; padding: 7px 11px; margin-bottom: 10px; display: flex; justify-content: space-between; font-size: 10.5px; line-height: 1.6; background: #fff; color: #000;">
           <div>
-            <div><strong>Voucher No:</strong> <span style="font-family: monospace; font-weight: 800;">EXP-${exp.id}</span></div>
+            <div><strong>Voucher No:</strong> <span style=" font-weight: 600;">EXP-${exp.id}</span></div>
             <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(exp.date, exp.created_at)}</div>
-            <div><strong>Category:</strong> <span style="font-weight: 800; text-transform: uppercase;">${exp.category || 'General'}</span></div>
+            <div><strong>Category:</strong> <span style="font-weight: 600; text-transform: uppercase;">${exp.category || 'General'}</span></div>
           </div>
           <div style="text-align: right;">
-            <div><strong>Paid By / Account:</strong> <span style="font-weight: 800;">${exp.paid_by || 'Factory Cash'}</span></div>
+            <div><strong>Paid By / Account:</strong> <span style="font-weight: 600;">${exp.paid_by || 'Factory Cash'}</span></div>
             <div><strong>Payment Mode:</strong> Cash / Factory Expense</div>
           </div>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9.5px; border: 1.5px solid #000;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8.5px; border: 1.5px solid #000; background: #fff;">
           <thead>
             <tr style="border-bottom: 1.5px solid #000; background: #fff;">
-              <th style="padding: 6px 8px; text-align: left; font-weight: 900; width: 75%; border-right: 1px solid #000;">Particulars / Description</th>
-              <th style="padding: 6px 8px; text-align: right; font-weight: 900; width: 25%;">Amount (Rs.)</th>
+              <th style="padding: 4px 6px; text-align: left; font-weight: 800; font-size: 8px; width: 75%; border: 1px solid #000; text-transform: uppercase;">Particulars / Description</th>
+              <th style="padding: 4px 6px; text-align: right; font-weight: 800; font-size: 8px; width: 25%; border: 1px solid #000; text-transform: uppercase;">Amount (Rs.)</th>
             </tr>
           </thead>
           <tbody>
             <tr style="border-bottom: 1.5px solid #000;">
-              <td style="padding: 10px 8px; border-right: 1px solid #000; vertical-align: top;">
-                <div style="font-weight: 800; font-size: 10px; text-transform: uppercase;">${exp.description || 'Factory Expense'}</div>
-                <div style="font-size: 8.5px; color: #333; margin-top: 3px;">Category: ${exp.category}</div>
+              <td style="padding: 6px; border: 1px solid #000; vertical-align: top;">
+                <div style="font-weight: 700; font-size: 9px; text-transform: uppercase;">${exp.description || 'Factory Expense'}</div>
+                <div style="font-size: 8px; color: #000; margin-top: 2px;">Category: ${exp.category}</div>
               </td>
-              <td style="padding: 10px 8px; text-align: right; font-weight: 900; font-size: 12px; vertical-align: top;">
+              <td style="padding: 6px; text-align: right; font-weight: 700; font-size: 9.5px; vertical-align: top; border: 1px solid #000;">
                 Rs. ${Number(exp.amount || 0).toLocaleString()}
               </td>
             </tr>
           </tbody>
           <tfoot>
-            <tr style="background: #fff; font-weight: 900;">
-              <td style="padding: 6px 8px; text-align: right; border-right: 1px solid #000; font-size: 10px; text-transform: uppercase;">Total Paid Amount:</td>
-              <td style="padding: 6px 8px; text-align: right; font-size: 12px;">Rs. ${Number(exp.amount || 0).toLocaleString()}</td>
+            <tr style="background: #fff; font-weight: 800; border-top: 1.5px solid #000;">
+              <td style="padding: 4px 6px; text-align: right; border: 1px solid #000; font-size: 8.5px; text-transform: uppercase;">Total Paid Amount:</td>
+              <td style="padding: 4px 6px; text-align: right; font-size: 9.5px; border: 1px solid #000;">Rs. ${Number(exp.amount || 0).toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
 
         <div style="margin-top: 40px; display: flex; justify-content: space-between;">
-          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Prepared By</div>
-          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Verified By</div>
-          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Received By / Payee</div>
+          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Prepared By</div>
+          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Verified By</div>
+          <div style="border-top: 1.5px solid #000; width: 28%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">Received By / Payee</div>
         </div>
       </div>
     `;
@@ -1104,7 +1156,19 @@ const Expenses = {
     });
   },
 
+  categorySearchQuery: '',
+  categorySortOrder: 'count_desc',
+
   openCategoryModal() {
+    this.categorySearchQuery = '';
+    const searchInput = document.getElementById('cat-search');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('cat-search-clear');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    const sortText = document.getElementById('cat-sort-text');
+    if (sortText) {
+      sortText.textContent = this.categorySortOrder === 'alpha' ? 'Name (A-Z)' : 'Highest to Lowest';
+    }
     this.renderCategories();
     const modal = document.getElementById('cat-modal');
     modal.classList.remove('hidden');
@@ -1125,18 +1189,111 @@ const Expenses = {
     }, 200);
   },
 
+  filterCategories(query) {
+    this.categorySearchQuery = (query || '').trim().toLowerCase();
+    const clearBtn = document.getElementById('cat-search-clear');
+    if (clearBtn) {
+      if (this.categorySearchQuery) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+    }
+    this.renderCategories();
+  },
+
+  clearCategorySearch() {
+    this.categorySearchQuery = '';
+    const searchInput = document.getElementById('cat-search');
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.focus();
+    }
+    const clearBtn = document.getElementById('cat-search-clear');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    this.renderCategories();
+  },
+
+  toggleCategorySort() {
+    this.categorySortOrder = (this.categorySortOrder === 'count_desc') ? 'alpha' : 'count_desc';
+    const sortText = document.getElementById('cat-sort-text');
+    if (sortText) {
+      sortText.textContent = this.categorySortOrder === 'alpha' ? 'Name (A-Z)' : 'Highest to Lowest';
+    }
+    this.renderCategories();
+  },
+
   renderCategories() {
     const tbody = document.getElementById('cats-list');
-    tbody.innerHTML = this.categories.map(c => `
-      <tr class="hover:bg-slate-50">
-        <td class="px-4 py-2 font-medium text-slate-700">${c.name}</td>
+    if (!tbody) return;
+
+    // Attach expense counts
+    let list = (this.categories || []).map(c => {
+      const count = (this.expenses || []).filter(e => (e.category || '').toLowerCase().trim() === (c.name || '').toLowerCase().trim()).length;
+      return { ...c, count };
+    });
+
+    // Filter by search query
+    if (this.categorySearchQuery) {
+      list = list.filter(c => (c.name || '').toLowerCase().includes(this.categorySearchQuery));
+    }
+
+    // Sort: default count_desc (high to low expenses count)
+    const order = this.categorySortOrder || 'count_desc';
+    if (order === 'count_desc') {
+      list.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    } else {
+      list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    const countLabel = document.getElementById('cat-count-label');
+    if (countLabel) {
+      countLabel.textContent = `Existing Categories (${list.length}${this.categorySearchQuery ? ` of ${this.categories.length}` : ''})`;
+    }
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="2" class="p-6 text-center text-slate-400 text-xs font-bold">
+            ${this.categorySearchQuery ? `No categories found matching "${this.categorySearchQuery}".` : 'No categories found.'}
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = list.map(c => {
+      const count = c.count;
+      const lowerName = (c.name || '').toLowerCase().trim();
+      const isSalaries = lowerName === 'salaries' || lowerName === 'salary' || lowerName.includes('salar');
+
+      return `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="px-4 py-2 font-medium text-slate-700">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-900">${c.name}</span>
+            ${isSalaries ? `
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">System (Protected)</span>
+            ` : ''}
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${count > 0 ? 'bg-amber-50 text-amber-800 border border-amber-200/60' : 'bg-slate-100 text-slate-400'}">${count} ${count === 1 ? 'expense' : 'expenses'}</span>
+          </div>
+        </td>
         <td class="px-4 py-2 text-right">
-          <button onclick="Expenses.deleteCategory(${c.id}, '${c.name}')" class="text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors cursor-pointer">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
+          ${isSalaries ? `
+            <span class="text-xs font-bold text-slate-400 italic px-2 py-1 select-none" title="Salaries category is protected and cannot be deleted">Protected</span>
+          ` : count > 0 ? `
+            <button onclick="Expenses.deleteCategory(${c.id}, '${c.name.replace(/'/g, "\\'")}', ${count})" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-md transition-colors cursor-not-allowed" title="Cannot delete: ${count} expense entries exist">
+              <i data-lucide="trash-2" class="w-4 h-4 opacity-50"></i>
+            </button>
+          ` : `
+            <button onclick="Expenses.deleteCategory(${c.id}, '${c.name.replace(/'/g, "\\'")}', 0)" class="text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors cursor-pointer" title="Delete Category">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          `}
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
     if (window.lucide) lucide.createIcons();
   },
 
@@ -1161,19 +1318,41 @@ const Expenses = {
     app.hideLoading();
   },
 
-  async deleteCategory(id, name) {
+  async deleteCategory(id, name, count = 0) {
+    const lowerName = (name || '').toLowerCase().trim();
+    if (lowerName === 'salaries' || lowerName === 'salary' || lowerName.includes('salar')) {
+      app.showAlert({
+        title: 'Protected Category',
+        message: 'The "Salaries" category is a permanent system category required for tracking employee salaries and cannot be deleted.'
+      });
+      return;
+    }
+
+    if (count > 0) {
+      app.showAlert({
+        title: 'Category Cannot Be Deleted',
+        message: `Category "<b>${name}</b>" cannot be deleted because it currently has <b>${count}</b> expense record(s).<br><br>Please reassign or delete these expense entries first before deleting this category.`
+      });
+      return;
+    }
+
     app.verifyPassword({
       title: 'Delete Category Verification',
       message: `Please enter password to delete category "${name}":`,
       onVerified: () => {
         app.showConfirm({
           title: 'Delete Category',
-          message: `Are you sure you want to delete the "${name}" category? This will not delete expenses associated with it, but they will no longer match the filter.`,
+          message: `Are you sure you want to delete the "${name}" category?`,
           confirmText: 'Delete',
           confirmColor: 'red',
           onConfirm: async () => {
             app.showLoading();
-            await window.api.deleteExpenseCategory(id);
+            const res = await window.api.deleteExpenseCategory(id);
+            if (res && res.error) {
+              app.hideLoading();
+              app.showAlert({ title: 'Error', message: res.error });
+              return;
+            }
             this.categories = await window.api.getExpenseCategories();
             this.renderCategories();
             this.updateDropdowns();

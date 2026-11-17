@@ -316,7 +316,7 @@ window.Companies = {
       </div>
 
       <!-- Add/Edit Modal -->
-      <div id="company-modal" onclick="if(event.target === this) Companies.hideModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[500] backdrop-blur-md animate-in fade-in duration-200">
+      <div id="company-modal" onclick="if(event.target === this) Companies.hideModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1200] backdrop-blur-md animate-in fade-in duration-200">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200">
           <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
             <h3 id="modal-title" class="text-xl font-bold text-slate-800">Add New Company</h3>
@@ -362,7 +362,7 @@ window.Companies = {
       </div>
 
       <!-- Transaction Modal (Purchase/Pay) -->
-      <div id="txn-modal" onclick="if(event.target === this) Companies.hideTxnModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[510] backdrop-blur-md animate-in fade-in duration-200">
+      <div id="txn-modal" onclick="if(event.target === this) Companies.hideTxnModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1210] backdrop-blur-md animate-in fade-in duration-200">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200">
           <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -399,7 +399,7 @@ window.Companies = {
       </div>
 
       <!-- History Modal -->
-      <div id="history-modal" onclick="if(event.target === this) Companies.hideHistoryModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[520] backdrop-blur-md animate-in fade-in duration-200">
+      <div id="history-modal" onclick="if(event.target === this) Companies.hideHistoryModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1220] backdrop-blur-md animate-in fade-in duration-200">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl lg:max-w-6xl mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200 max-h-[88vh] flex flex-col">
           <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3 shrink-0">
             <div class="flex justify-between items-center">
@@ -515,7 +515,7 @@ window.Companies = {
       </div>
 
       <!-- New Purchase Modal (Dynamic Rows) -->
-      <div id="new-purchase-modal" onclick="if(event.target === this) Companies.hideNewPurchaseModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[530] backdrop-blur-md animate-in fade-in duration-200 no-print">
+      <div id="new-purchase-modal" onclick="if(event.target === this) Companies.hideNewPurchaseModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1230] backdrop-blur-md animate-in fade-in duration-200 no-print">
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl mx-4 lg:mx-8 overflow-hidden transform animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
               <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
                   <div class="flex items-center gap-3">
@@ -604,7 +604,7 @@ window.Companies = {
       </div>
 
       <!-- All Transactions Modal -->
-      <div id="all-txns-modal" onclick="if(event.target === this) Companies.hideAllTxnsModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[540] backdrop-blur-md animate-in fade-in duration-200">
+      <div id="all-txns-modal" onclick="if(event.target === this) Companies.hideAllTxnsModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1240] backdrop-blur-md animate-in fade-in duration-200">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-4 overflow-hidden transform animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
           <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
             <div class="flex-1">
@@ -2705,7 +2705,7 @@ window.Companies = {
                    oninput="Companies.handleItemSearch(this); Companies.calculateNewTxnTotal();" 
                    onkeydown="Companies.handlePurchaseRowKeyDown(event, this, 'name')"
                    class="np-item-name w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-xs focus:bg-white focus:border-accent outline-none transition-all font-bold ${isSelected ? 'bg-slate-100 text-slate-700 font-black' : ''}">
-            <div class="np-search-results hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-[550] max-h-52 overflow-y-auto"></div>
+            <div class="np-search-results hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-[1300] max-h-52 overflow-y-auto"></div>
             <button type="button" onclick="Companies.clearItemSearch(this)" class="np-clear-btn ${hasValue ? '' : 'hidden'} absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer">
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
             </button>
@@ -3838,27 +3838,27 @@ window.Companies = {
             return `
             <tr style="border-bottom: ${isLast ? 'none' : '1px solid #000'}; font-size: 10.5px;">
                 <td style="padding: 3px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${i + 1}</td>
-                <td style="padding: 3px 4px; text-align: left; font-weight: 800; word-break: break-word; line-height: 1.25; border-right: 1px solid #000;">
+                <td style="padding: 3px 4px; text-align: left; font-weight: 500; word-break: break-word; line-height: 1.25; border-right: 1px solid #000;">
                     ${item.name}
                 </td>
-                <td style="padding: 3px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(qVal)}${unitSuffix}</td>
+                <td style="padding: 3px 2px; text-align: center; font-weight: 500; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(qVal)}${unitSuffix}</td>
                 <td style="padding: 3px 3px; text-align: right; font-weight: 600; white-space: nowrap; border-right: 1px solid #000;">${app.formatAmount(item.box_cost || item.price || item.carton_cost)}</td>
-                <td style="padding: 3px 4px; text-align: right; font-weight: 800; white-space: nowrap;">${app.formatAmount(item.lineTotal || item.price)}</td>
+                <td style="padding: 3px 4px; text-align: right; font-weight: 500; white-space: nowrap;">${app.formatAmount(item.lineTotal || item.price)}</td>
             </tr>
             `;
         }).join('');
 
         const html = `
-            <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
+            <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
                 <!-- Header -->
                 <div style="text-align: center; margin-bottom: 4px;">
-                    <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
+                    <h1 style="font-size: 16px; font-weight: 700; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
                     <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${settings.address || 'Hasan Abdal'}</div>
                     <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
                         <div>Phone: ${settings.phone || '0315-6795995'}</div>
                     </div>
                     <div style="margin-top: 5px;">
-                        <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">PURCHASE RECEIPT / VOUCHER</span>
+                        <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">PURCHASE RECEIPT / VOUCHER</span>
                     </div>
                 </div>
                 
@@ -3878,7 +3878,7 @@ window.Companies = {
                 <!-- Items Table -->
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 10.5px; border: 1.5px solid #000;">
                     <thead>
-                        <tr style="border-bottom: 1.5px solid #000; font-size: 10px; font-weight: 900; text-transform: uppercase;">
+                        <tr style="border-bottom: 1.5px solid #000; font-size: 10px; font-weight: 700; text-transform: uppercase;">
                             <th style="padding: 4px 2px; text-align: center; width: 7%; border-right: 1px solid #000;">#</th>
                             <th style="padding: 4px 4px; text-align: left; width: 45%; border-right: 1px solid #000;">ITEM</th>
                             <th style="padding: 4px 2px; text-align: center; width: 16%; border-right: 1px solid #000;">QTY</th>
@@ -3895,15 +3895,15 @@ window.Companies = {
                 <div style="border-top: 1px dashed #000; padding-top: 4px; font-size: 11.5px; line-height: 1.45;">
                     <div style="display: flex; justify-content: space-between; font-weight: 600;">
                         <span>Subtotal:</span>
-                        <span style="font-weight: 800;">${app.formatCurrency(txn.subtotal || txn.amount)}</span>
+                        <span style="font-weight: 600;">${app.formatCurrency(txn.subtotal || txn.amount)}</span>
                     </div>
                     ${txn.discount > 0 ? `
                     <div style="display: flex; justify-content: space-between; font-weight: 600;">
                         <span>Discount:</span>
-                        <span style="font-weight: 800;">-${app.formatCurrency(txn.discount)}</span>
+                        <span style="font-weight: 600;">-${app.formatCurrency(txn.discount)}</span>
                     </div>
                     ` : ''}
-                    <div style="display: flex; justify-content: space-between; padding: 3px 0; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; margin-top: 3px; font-size: 13.5px; font-weight: 900;">
+                    <div style="display: flex; justify-content: space-between; padding: 3px 0; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; margin-top: 3px; font-size: 13.5px; font-weight: 700;">
                         <span>NET TOTAL:</span>
                         <span>${app.formatCurrency(txn.amount)}</span>
                     </div>
@@ -3926,7 +3926,7 @@ window.Companies = {
 
                 <!-- Footer -->
                 <div style="border-top: 1px dashed #000; margin-top: 6px; padding-top: 5px; text-align: center;">
-                    <div style="font-size: 10.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">*** Thank You For Shopping With Us! ***</div>
+                    <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">*** Thank You For Shopping With Us! ***</div>
                     <div style="font-size: 9.5px; font-weight: 700; color: #1e293b; margin-top: 2px;">Please Visit Again!</div>
                 </div>
             </div>
@@ -3980,27 +3980,27 @@ window.Companies = {
             return `
             <tr style="border-bottom: ${isLast ? 'none' : '1px solid #000'}; font-size: 10.5px;">
                 <td style="padding: 3px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${i + 1}</td>
-                <td style="padding: 3px 4px; text-align: left; font-weight: 800; word-break: break-word; line-height: 1.25; border-right: 1px solid #000;">
+                <td style="padding: 3px 4px; text-align: left; font-weight: 500; word-break: break-word; line-height: 1.25; border-right: 1px solid #000;">
                     ${item.name}
                 </td>
-                <td style="padding: 3px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(qVal)}${unitSuffix}</td>
+                <td style="padding: 3px 2px; text-align: center; font-weight: 500; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(qVal)}${unitSuffix}</td>
                 <td style="padding: 3px 3px; text-align: right; font-weight: 600; white-space: nowrap; border-right: 1px solid #000;">${app.formatAmount(item.box_cost || item.price || item.carton_cost)}</td>
-                <td style="padding: 3px 4px; text-align: right; font-weight: 800; white-space: nowrap;">${app.formatAmount(item.lineTotal || item.price)}</td>
+                <td style="padding: 3px 4px; text-align: right; font-weight: 500; white-space: nowrap;">${app.formatAmount(item.lineTotal || item.price)}</td>
             </tr>
             `;
         }).join('');
 
         const html = `
-            <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
+            <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
                 <!-- Header -->
                 <div style="text-align: center; margin-bottom: 4px;">
-                    <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
+                    <h1 style="font-size: 16px; font-weight: 700; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</h1>
                     <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${settings.address || 'Hasan Abdal'}</div>
                     <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
                         <div>Phone: ${settings.phone || '0315-6795995'}</div>
                     </div>
                     <div style="margin-top: 5px;">
-                        <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">PURCHASE RECEIPT / VOUCHER</span>
+                        <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">PURCHASE RECEIPT / VOUCHER</span>
                     </div>
                 </div>
                 
@@ -4020,7 +4020,7 @@ window.Companies = {
                 <!-- Items Table -->
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 10.5px; border: 1.5px solid #000;">
                     <thead>
-                        <tr style="border-bottom: 1.5px solid #000; font-size: 10px; font-weight: 900; text-transform: uppercase;">
+                        <tr style="border-bottom: 1.5px solid #000; font-size: 10px; font-weight: 700; text-transform: uppercase;">
                             <th style="padding: 4px 2px; text-align: center; width: 7%; border-right: 1px solid #000;">#</th>
                             <th style="padding: 4px 4px; text-align: left; width: 45%; border-right: 1px solid #000;">ITEM</th>
                             <th style="padding: 4px 2px; text-align: center; width: 16%; border-right: 1px solid #000;">QTY</th>
@@ -4037,15 +4037,15 @@ window.Companies = {
                 <div style="border-top: 1px dashed #000; padding-top: 4px; font-size: 11.5px; line-height: 1.45;">
                     <div style="display: flex; justify-content: space-between; font-weight: 600;">
                         <span>Subtotal:</span>
-                        <span style="font-weight: 800;">${app.formatCurrency(txn.subtotal || txn.amount)}</span>
+                        <span style="font-weight: 600;">${app.formatCurrency(txn.subtotal || txn.amount)}</span>
                     </div>
                     ${txn.discount > 0 ? `
                     <div style="display: flex; justify-content: space-between; font-weight: 600;">
                         <span>Discount:</span>
-                        <span style="font-weight: 800;">-${app.formatCurrency(txn.discount)}</span>
+                        <span style="font-weight: 600;">-${app.formatCurrency(txn.discount)}</span>
                     </div>
                     ` : ''}
-                    <div style="display: flex; justify-content: space-between; padding: 3px 0; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; margin-top: 3px; font-size: 13.5px; font-weight: 900;">
+                    <div style="display: flex; justify-content: space-between; padding: 3px 0; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; margin-top: 3px; font-size: 13.5px; font-weight: 700;">
                         <span>NET TOTAL:</span>
                         <span>${app.formatCurrency(txn.amount)}</span>
                     </div>
@@ -4068,7 +4068,7 @@ window.Companies = {
 
                 <!-- Footer -->
                 <div style="border-top: 1px dashed #000; margin-top: 6px; padding-top: 5px; text-align: center;">
-                    <div style="font-size: 10.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">*** Thank You For Shopping With Us! ***</div>
+                    <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">*** Thank You For Shopping With Us! ***</div>
                     <div style="font-size: 9.5px; font-weight: 700; color: #1e293b; margin-top: 2px;">Please Visit Again!</div>
                 </div>
             </div>

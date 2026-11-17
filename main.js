@@ -3,6 +3,18 @@ const path = require('path');
 const fs = require('fs');
 
 app.setName('delicious-superstar-foods');
+
+// Enforce single instance to prevent duplicate processes fighting over SQLite & cache locks
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+  process.exit(0);
+}
+
+// Disable redundant HTTP & GPU disk caches that cause "Access is denied (0x5)" locking errors on Windows
+app.commandLine.appendSwitch('disable-http-cache');
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+
 const db = require('./database');
 
 let mainWindow;
@@ -28,7 +40,7 @@ const getSavedAppZoom = () => {
       if (!isNaN(z) && z >= 0.5 && z <= 1.5) return z;
     }
   } catch (e) {}
-  return 0.82; // ~18% reduction (ideal 15-20% for laptops)
+  return 1.0; // Default standard scale
 };
 
 function createWindow() {
@@ -36,6 +48,8 @@ function createWindow() {
     title: 'Delicious Superstar Foods',
     width: 1200,
     height: 800,
+    show: false,
+    backgroundColor: '#0f172a',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -46,6 +60,18 @@ function createWindow() {
   mainWindow.maximize();
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
+  mainWindow.once('ready-to-show', () => {
+    try { mainWindow.webContents.setZoomFactor(getSavedAppZoom()); } catch (e) {}
+    mainWindow.show();
+  });
+
+  // Fallback safety timeout so window is never stuck hidden under any circumstance
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  }, 1200);
+
   mainWindow.webContents.on('dom-ready', () => {
     try { mainWindow.webContents.setZoomFactor(getSavedAppZoom()); } catch (e) {}
   });
@@ -54,8 +80,14 @@ function createWindow() {
     try { mainWindow.webContents.setZoomFactor(getSavedAppZoom()); } catch (e) {}
   });
 
-  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`[Renderer] ${message} (${sourceId}:${line})`);
+  mainWindow.webContents.on('console-message', (event, ...args) => {
+    if (typeof args[0] === 'object' && args[0] !== null && 'message' in args[0]) {
+      const { message, lineNumber, sourceId } = args[0];
+      console.log(`[Renderer] ${message} (${sourceId}:${lineNumber})`);
+    } else {
+      const [level, message, line, sourceId] = args;
+      console.log(`[Renderer] ${message} (${sourceId}:${line})`);
+    }
   });
 
   // Intercept F6 and F8 globally before Chromium's native handlers intercept or suppress them
@@ -138,6 +170,13 @@ app.whenReady().then(() => {
   db.init(); // Initialize database
   createWindow();
 
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -197,10 +236,18 @@ ipcMain.handle('get-expense-categories', () => db.getExpenseCategories());
 ipcMain.handle('add-expense-category', (event, name) => db.addExpenseCategory(name));
 ipcMain.handle('delete-expense-category', (event, id) => db.deleteExpenseCategory(id));
 
-// Employees IPC
-ipcMain.handle('get-employees', (event, status) => db.getEmployees(status));
+// Employees, Salaries & Attendance IPC
+ipcMain.handle('get-employees', (event, options) => db.getEmployees(options));
+ipcMain.handle('get-employee', (event, id) => db.getEmployee(id));
 ipcMain.handle('save-employee', (event, data) => db.saveEmployee(data));
 ipcMain.handle('delete-employee', (event, id) => db.deleteEmployee(id));
+ipcMain.handle('record-salary-payment', (event, data) => db.recordSalaryPayment(data));
+ipcMain.handle('delete-salary-payment', (event, id) => db.deleteSalaryPayment(id));
+ipcMain.handle('get-salary-payments', (event, filters) => db.getSalaryPayments(filters));
+ipcMain.handle('get-monthly-attendance', (event, month) => db.getMonthlyAttendance(month));
+ipcMain.handle('set-attendance', (event, employeeId, date, status, notes) => db.setAttendance(employeeId, date, status, notes));
+ipcMain.handle('bulk-set-attendance', (event, date, records) => db.bulkSetAttendance(date, records));
+ipcMain.handle('get-employees-payroll-summary', (event, month) => db.getEmployeesPayrollSummary(month));
 
 // Companies IPC
 ipcMain.handle('get-companies', () => db.getCompanies());
@@ -226,7 +273,7 @@ ipcMain.handle('delete-shop', (event, id) => db.deleteShop(id));
 ipcMain.handle('get-raw-materials', () => db.getRawMaterials());
 ipcMain.handle('get-raw-material', (event, id) => db.getRawMaterial(id));
 ipcMain.handle('save-raw-material', (event, data) => db.saveRawMaterial(data));
-ipcMain.handle('delete-raw-material', (event, id) => db.deleteRawMaterial(id));
+ipcMain.handle('delete-raw-material', (event, id, force) => db.deleteRawMaterial(id, force));
 ipcMain.handle('add-raw-material-purchase', (event, data) => db.addRawMaterialPurchase(data));
 ipcMain.handle('get-raw-material-logs', (event, filters) => db.getRawMaterialLogs(filters));
 ipcMain.handle('delete-raw-material-log', (event, id, revertStock) => db.deleteRawMaterialLog(id, revertStock));
@@ -240,6 +287,13 @@ ipcMain.handle('get-next-purchase-invoice-no', () => db.getNextPurchaseInvoiceNo
 ipcMain.handle('get-raw-material-categories', () => db.getRawMaterialCategories());
 ipcMain.handle('add-raw-material-category', (event, name) => db.addRawMaterialCategory(name));
 ipcMain.handle('delete-raw-material-category', (event, id) => db.deleteRawMaterialCategory(id));
+
+// Chocolate Production & Stock IPC
+ipcMain.handle('get-chocolate-stock', () => db.getChocolateStock());
+ipcMain.handle('get-chocolate-batches', (event, filters) => db.getChocolateBatches(filters));
+ipcMain.handle('create-chocolate-batch', (event, data) => db.createChocolateBatch(data));
+ipcMain.handle('delete-chocolate-batch', (event, id) => db.deleteChocolateBatch(id));
+ipcMain.handle('get-chocolate-logs', (event, filters) => db.getChocolateLogs(filters));
 
 // Suppliers & Vendor Khata IPC
 ipcMain.handle('get-suppliers', () => db.getSuppliers());
@@ -294,9 +348,10 @@ ipcMain.handle('save-shop-delivery', (event, data) => db.saveShopDelivery(data))
 ipcMain.handle('update-shop-delivery', (event, id, data) => db.updateShopDelivery(id, data));
 ipcMain.handle('process-shop-return', (event, data) => db.processShopReturn(data));
 ipcMain.handle('get-shop-deliveries', (event, filters) => db.getShopDeliveries(filters));
-ipcMain.handle('get-shop-returns', (event, deliveryId) => db.getShopReturns(deliveryId));
+ipcMain.handle('get-shop-returns', (event, filters) => db.getShopReturns(filters));
 ipcMain.handle('get-shop-delivery', (event, id) => db.getShopDelivery(id));
 ipcMain.handle('get-shop-return', (event, id) => db.getShopReturn(id));
+ipcMain.handle('delete-shop-return', (event, id) => db.deleteShopReturn(id));
 ipcMain.handle('delete-shop-delivery', (event, id) => db.deleteShopDelivery(id));
 ipcMain.handle('receive-shop-payment', (event, data) => db.receiveShopPayment(data));
 ipcMain.handle('update-shop-payment', (event, id, data) => db.updateShopPayment(id, data));
@@ -329,7 +384,7 @@ function pruneOldBackups(dir, keepCount = 50) {
   try {
     if (!fs.existsSync(dir)) return;
     const files = fs.readdirSync(dir)
-      .filter(f => (f.startsWith('DeliciousSuperstarFoods-AutoBackup-') || f.startsWith('IceCreamFactory-AutoBackup-') || f.startsWith('IshaqJadoonTraders-AutoBackup-')) && f.endsWith('.db'))
+      .filter(f => (f.includes('-AutoBackup-') || f.includes('-Backup-')) && f.endsWith('.db'))
       .map(f => {
         const fullPath = path.join(dir, f);
         return { name: f, fullPath, mtime: fs.statSync(fullPath).mtimeMs };
@@ -349,8 +404,9 @@ function pruneOldBackups(dir, keepCount = 50) {
 async function performAutoBackup() {
   try {
     const settings = db.getSettings();
+    const cleanName = (settings.company_name || 'DeliciousSuperstarFoods').replace(/[^a-zA-Z0-9_-]/g, '');
     let targetDir = settings.auto_backup_dir;
-    const defaultDir = path.join(app.getPath('documents'), 'Delicious Superstar Foods Backups');
+    const defaultDir = path.join(app.getPath('documents'), `${cleanName || 'Delicious Superstar Foods'} Backups`);
 
     if (!targetDir || !fs.existsSync(targetDir)) {
       try {
@@ -367,7 +423,7 @@ async function performAutoBackup() {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-    const fileName = `DeliciousSuperstarFoods-AutoBackup-${datetimeStr}.db`;
+    const fileName = `${cleanName || 'DeliciousSuperstarFoods'}-AutoBackup-${datetimeStr}.db`;
     const destPath = path.join(targetDir, fileName);
 
     console.log(`[AutoBackup] Backing up database to: ${destPath}`);
@@ -430,13 +486,15 @@ ipcMain.handle('open-backup-directory', async () => {
 
 // Backup/Restore IPC
 ipcMain.handle('backup-data', async () => {
+  const settings = db.getSettings ? db.getSettings() : {};
+  const cleanName = (settings.company_name || 'DeliciousSuperstarFoods').replace(/[^a-zA-Z0-9_-]/g, '');
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Backup Factory Database',
-    defaultPath: `DeliciousSuperstarFoods-Backup-${datetimeStr}.db`,
+    defaultPath: `${cleanName || 'DeliciousSuperstarFoods'}-Backup-${datetimeStr}.db`,
     filters: [
       { name: 'SQLite Database (*.db)', extensions: ['db'] },
       { name: 'All Files (*.*)', extensions: ['*'] }
@@ -598,16 +656,19 @@ ipcMain.handle('print-receipt', async (event, options = {}) => {
     const printers = await win.webContents.getPrintersAsync();
     let targetPrinter = options.deviceName;
     
+    const isA5 = options.pageSize === 'A5' || options.isA5 || (!options.pageSize && !options.isThermal);
+
     // Only auto-target thermal printer when NOT printing A5
-    if (!targetPrinter && options.pageSize !== 'A5' && !options.isA5) {
+    if (!targetPrinter && !isA5) {
       const posPrinter = printers.find(p => /pos|receipt|thermal|xp-|80mm|58mm|xprinter|speed-x|sp-650/i.test(p.name));
       if (posPrinter) targetPrinter = posPrinter.name;
     }
 
     const printOptions = {
       silent: options.silent !== undefined ? options.silent : false,
-      printBackground: true,
-      pageSize: options.pageSize || 'A5',
+      printBackground: isA5 ? false : true,
+      pageSize: isA5 ? 'A5' : (options.pageSize || 'A5'),
+      landscape: false,
       margins: {
         marginType: 'none',
         top: 0,
@@ -620,16 +681,27 @@ ipcMain.handle('print-receipt', async (event, options = {}) => {
     if (targetPrinter) {
       printOptions.deviceName = targetPrinter;
     }
-    if (options.pageSize) {
-      printOptions.pageSize = options.pageSize;
-    }
     if (options.copies && Number(options.copies) > 1) {
       printOptions.copies = Number(options.copies);
+    }
+    if (options.pageRanges) {
+      printOptions.pageRanges = options.pageRanges;
+    } else if (isA5 && !options.allPages) {
+      // Restrict single-sheet A5 prints to Page 1 only to prevent trailing extra blank pages
+      printOptions.pageRanges = [{ from: 0, to: 0 }];
+    }
+
+    const origBgColor = win.getBackgroundColor();
+    if (isA5) {
+      win.setBackgroundColor('#ffffff');
     }
 
     return new Promise((resolve) => {
       win.webContents.print(printOptions, (success, failureReason) => {
         if (win && !win.isDestroyed()) {
+          if (isA5) {
+            win.setBackgroundColor(origBgColor || '#0f172a');
+          }
           win.webContents.setZoomFactor(currentZoom);
         }
         resolve({ success, failureReason });
@@ -758,12 +830,12 @@ ipcMain.handle('get-zoom-factor', (event) => {
   const saved = getSavedAppZoom();
   if (saved && !isNaN(saved)) return saved;
   const win = BrowserWindow.fromWebContents(event.sender);
-  return win ? win.webContents.getZoomFactor() : 0.82;
+  return win ? win.webContents.getZoomFactor() : 1.0;
 });
 
 ipcMain.handle('set-zoom-factor', (event, factor) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  const z = Math.min(1.4, Math.max(0.6, parseFloat(factor) || 0.82));
+  const z = Math.min(1.4, Math.max(0.6, parseFloat(factor) || 1.0));
   if (win && !win.isDestroyed()) {
     win.webContents.setZoomFactor(z);
   }

@@ -2562,12 +2562,12 @@ window.SalesForm = {
         rowsHtml += `
           <tr style="border-bottom: ${isLast ? 'none' : '1px solid #000'}; font-size: 9.5px;">
             <td style="padding: 2.5px 2px; text-align: center; font-weight: 700; border-right: 1px solid #000;">${i + 1}</td>
-            <td style="padding: 2.5px 4px; text-align: left; font-weight: 800; word-break: break-word; line-height: 1.2; border-right: 1px solid #000;">
+            <td style="padding: 2.5px 4px; text-align: left; font-weight: 500; word-break: break-word; line-height: 1.2; border-right: 1px solid #000;">
               <div>${desc}</div>
             </td>
-            <td style="padding: 2.5px 2px; text-align: center; font-weight: 800; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(item.qty)} ${unitDisplay}</td>
+            <td style="padding: 2.5px 2px; text-align: center; font-weight: 500; white-space: nowrap; border-right: 1px solid #000;">${app.formatQty(item.qty)} ${unitDisplay}</td>
             <td style="padding: 2.5px 3px; text-align: right; font-weight: 600; white-space: nowrap; border-right: 1px solid #000;">${app.formatAmount(rate)}</td>
-            <td style="padding: 2.5px 4px; text-align: right; font-weight: 800; white-space: nowrap;">${app.formatAmount(lineTotal)}</td>
+            <td style="padding: 2.5px 4px; text-align: right; font-weight: 500; white-space: nowrap;">${app.formatAmount(lineTotal)}</td>
           </tr>
         `;
       });
@@ -2597,17 +2597,17 @@ window.SalesForm = {
     const paymentMethod = data.payment_method || 'Cash';
 
     const html = `
-      <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
+      <div class="receipt-80mm" style="width: 100%; max-width: 80mm; margin: 0 auto; padding: 4px 6px; background: #fff; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, Roboto, 'Courier New', monospace, sans-serif; color: #000; box-sizing: border-box; font-size: 11px; line-height: 1.35; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;">
         
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 4px;">
-          <h1 style="font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${(this.settings.company_name || 'Delicious Superstar Foods').replace(/\s*\(Branch \d+\)/i, '').trim()}</h1>
+          <h1 style="font-size: 16px; font-weight: 700; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #000; line-height: 1.2;">${(this.settings.company_name || 'Delicious Superstar Foods').replace(/\s*\(Branch \d+\)/i, '').trim()}</h1>
           <div style="font-size: 11px; font-weight: 600; color: #000; line-height: 1.25; margin-bottom: 2px;">${this.settings.address || 'Hasan Abdal'}</div>
           <div style="font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;">
             <div>Phone: ${this.settings.phone || '0315-6795995'}</div>
           </div>
           <div style="margin-top: 5px;">
-            <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 12px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px;">SALES INVOICE</span>
+            <span style="display: inline-block; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">SALES INVOICE</span>
           </div>
         </div>
 
@@ -2630,7 +2630,7 @@ window.SalesForm = {
         <!-- Items Table -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 9.5px; border: 1.5px solid #000;">
           <thead>
-            <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 900; text-transform: uppercase;">
+            <tr style="border-bottom: 1.5px solid #000; font-size: 9px; font-weight: 700; text-transform: uppercase;">
               <th style="padding: 3px 2px; text-align: center; width: 6%; border-right: 1px solid #000;">#</th>
               <th style="padding: 3px 4px; text-align: left; width: 42%; border-right: 1px solid #000;">ITEM</th>
               <th style="padding: 3px 2px; text-align: center; width: 20%; border-right: 1px solid #000;">QTY</th>
@@ -2647,28 +2647,28 @@ window.SalesForm = {
         <div style="border-top: 1px dashed #000; padding-top: 4px; font-size: 11.5px; line-height: 1.45;">
           <div style="display: flex; justify-content: space-between; font-weight: 600;">
             <span>SUB TOTAL:</span>
-            <span style="font-weight: 800;">${app.formatAmount(grossSubtotal)}</span>
+            <span style="font-weight: 600;">${app.formatAmount(grossSubtotal)}</span>
           </div>
           ${discountAmount > 0 ? `
           <div style="display: flex; justify-content: space-between; font-weight: 600;">
             <span>DISCOUNT:</span>
-            <span style="font-weight: 800;">-${app.formatAmount(discountAmount)}</span>
+            <span style="font-weight: 600;">-${app.formatAmount(discountAmount)}</span>
           </div>` : ''}
           ${(taxAmount > 0) ? `
           <div style="display: flex; justify-content: space-between; font-weight: 600;">
             <span>TAX (${taxPercent}%):</span>
-            <span style="font-weight: 800;">${app.formatAmount(taxAmount)}</span>
+            <span style="font-weight: 600;">${app.formatAmount(taxAmount)}</span>
           </div>` : ''}
-          <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; margin-top: 4px; font-size: 14.5px; font-weight: 900;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; margin-top: 4px; font-size: 14.5px; font-weight: 700;">
             <span>TOTAL BILL:</span>
-            <span style="font-size: 16.5px; font-weight: 900;">Rs. ${app.formatAmount(grandTotal)}</span>
+            <span style="font-size: 16.5px; font-weight: 700;">Rs. ${app.formatAmount(grandTotal)}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 12px; font-weight: 900;">
+          <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 12px; font-weight: 700;">
             <span>RECEIVED (${paymentMethod.toUpperCase()}):</span>
             <span>Rs. ${app.formatAmount(receivedAmount)}</span>
           </div>
           ${remainingDue > 0 ? `
-          <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 12px; font-weight: 900; color: #000; border-top: 1px dashed #000; padding-top: 2px;">
+          <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 12px; font-weight: 700; color: #000; border-top: 1px dashed #000; padding-top: 2px;">
             <span>KHATA REMAINING:</span>
             <span>Rs. ${app.formatAmount(remainingDue)}</span>
           </div>` : ''}
@@ -2680,7 +2680,7 @@ window.SalesForm = {
 
         <!-- Footer Notice -->
         <div style="border-top: 1px dashed #000; margin-top: 6px; padding-top: 5px; text-align: center;">
-          <div style="font-size: 10.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">
+          <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
             *** Thank You For Shopping With Us! ***
           </div>
           <div style="font-size: 9.5px; font-weight: 700; color: #1e293b; margin-top: 2px;">

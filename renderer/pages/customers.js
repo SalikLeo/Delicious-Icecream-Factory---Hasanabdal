@@ -17,46 +17,50 @@ window.Customers = {
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
           <div class="flex items-center gap-3">
             <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
-              <i data-lucide="store" class="w-6 h-6"></i>
+              <i data-lucide="user-check" class="w-6 h-6"></i>
             </div>
             <div>
-              <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Shops &amp; Khata Accounts</h2>
-              <p class="text-xs text-slate-500 font-medium">Manage customer shops, track credit balances, collect cash payments, and print A5 ledger statements.</p>
+              <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Salesmen &amp; Khata Accounts</h2>
+              <p class="text-xs text-slate-500 font-medium">Manage salesmen profiles, track credit balances, collect cash payments, and print A5 ledger statements.</p>
             </div>
           </div>
 
           <div class="flex items-center gap-2">
+            <button type="button" onclick="Customers.printSalesmenBalancesList()"
+                    class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95" title="Print Salesmen Balances & Khata Summary">
+              <i data-lucide="printer" class="w-4 h-4 text-slate-600"></i> Print
+            </button>
             <button type="button" onclick="Customers.openShopModal()"
                     class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95">
-              <i data-lucide="plus" class="w-4 h-4"></i> Add New Shop
+              <i data-lucide="plus" class="w-4 h-4"></i> Add New Salesman
             </button>
           </div>
         </div>
 
         <!-- KPI Stats Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Registered Shops</p>
-            <h3 class="text-xl font-black text-slate-900 mt-1" id="shop-stat-count">0</h3>
-            <p class="text-[11px] font-bold text-slate-400 mt-0.5">Active retail customers</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Salesmen</p>
+            <h3 class="text-2xl font-black text-slate-900 mt-1" id="shop-stat-count">0</h3>
+            <p class="text-xs font-semibold text-slate-500 mt-1">All salesmen</p>
           </div>
 
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Total Khata Balance Due</p>
-            <h3 class="text-xl font-black text-rose-600 mt-1" id="shop-stat-due">Rs. 0</h3>
-            <p class="text-[11px] font-bold text-rose-500 mt-0.5">Receivable from all shops</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Balance</p>
+            <h3 class="text-2xl font-black text-rose-600 mt-1" id="shop-stat-due">Rs. 0</h3>
+            <p class="text-xs font-semibold text-rose-600 mt-1">To collect from salesmen</p>
           </div>
 
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Shops With Credit Due</p>
-            <h3 class="text-xl font-black text-amber-600 mt-1" id="shop-stat-pending-shops">0</h3>
-            <p class="text-[11px] font-bold text-amber-600 mt-0.5">Have pending balance</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">To Collect</p>
+            <h3 class="text-2xl font-black text-amber-600 mt-1" id="shop-stat-pending-shops">0</h3>
+            <p class="text-xs font-semibold text-amber-600 mt-1">Salesmen with balance</p>
           </div>
 
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Clean / Zero Balance</p>
-            <h3 class="text-xl font-black text-emerald-700 mt-1" id="shop-stat-clean-shops">0</h3>
-            <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Fully paid accounts</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Zero Balance</p>
+            <h3 class="text-2xl font-black text-emerald-700 mt-1" id="shop-stat-clean-shops">0</h3>
+            <p class="text-xs font-semibold text-emerald-600 mt-1">Fully cleared</p>
           </div>
         </div>
 
@@ -70,7 +74,7 @@ window.Customers = {
               <div class="relative w-full">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="shop-search" oninput="Customers.onSearch(this.value)"
-                       placeholder="Search shop, owner, area, phone..."
+                       placeholder="Search salesman, area, phone..."
                        class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-400">
               </div>
 
@@ -78,7 +82,7 @@ window.Customers = {
               <div class="flex bg-slate-200/80 p-0.5 rounded-xl text-[11px] font-black">
                 <button type="button" onclick="Customers.setFilter('all')" id="shop-filter-all"
                         class="flex-1 py-1 rounded-lg transition-all cursor-pointer bg-white text-slate-900 shadow-2xs text-center">
-                  All Shops
+                  All Salesmen
                 </button>
                 <button type="button" onclick="Customers.setFilter('due')" id="shop-filter-due"
                         class="flex-1 py-1 rounded-lg transition-all cursor-pointer text-slate-500 hover:text-slate-900 text-center">
@@ -112,54 +116,54 @@ window.Customers = {
       </div>
 
       <!-- Shop Add/Edit Modal -->
-      <div id="shop-edit-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4 cursor-pointer" onclick="if(event.target === this) Customers.closeShopModal()">
+      <div id="shop-edit-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1200] p-4 cursor-pointer" onclick="if(event.target === this) Customers.closeShopModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 flex flex-col cursor-default" onclick="event.stopPropagation()">
-          <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
-            <h3 class="font-black text-sm text-white flex items-center gap-2" id="shop-modal-title">
-              <i data-lucide="store" class="w-4 h-4 text-amber-400"></i> Add New Shop
-            </h3>
-            <button type="button" onclick="Customers.closeShopModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer">
-              <i data-lucide="x" class="w-4 h-4"></i>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="user-check" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug" id="shop-modal-title">Add New Salesman</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5" id="shop-modal-subtitle">Salesman profile, contact &amp; khata balance</p>
+              </div>
+            </div>
+            <button type="button" onclick="Customers.closeShopModal()" class="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-100 active:scale-95 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
           </div>
 
           <form id="shop-form" onsubmit="Customers.saveShopForm(event)" class="p-5 space-y-3">
-            <input type="hidden" id="sf-id">
+            <input type="hidden" id="sm-id">
             
             <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Shop / Business Name *</label>
-              <input type="text" id="sf-name" required placeholder="e.g. Madina Bakers & Cold Point"
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Salesman Name *</label>
+              <input type="text" id="sm-name" required placeholder="e.g. Tariq Mehmood, Ali Khan..."
                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Owner Name</label>
-                <input type="text" id="sf-owner" placeholder="e.g. Haji Aslam"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number *</label>
+                <input type="text" id="sm-phone" required placeholder="0300-1234567"
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400 font-mono">
               </div>
               <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Phone Number *</label>
-                <input type="text" id="sf-phone" required placeholder="0300-1234567"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Opening Khata Balance (Rs.)</label>
+                <input type="number" step="any" min="0" id="sm-amount" placeholder="0"
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400 tabular-nums">
               </div>
             </div>
 
             <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Opening Khata Balance (Rs.)</label>
-              <input type="number" step="any" min="0" id="sf-amount" placeholder="0"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-400">
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Shop Address</label>
-              <input type="text" id="sf-address" placeholder="e.g. Main GT Road, Near Bus Stand, Hasan Abdal"
+              <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Address</label>
+              <input type="text" id="sm-address" placeholder="e.g. Main GT Road, Near Bus Stand, Hasan Abdal"
                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-amber-400">
             </div>
 
             <div>
               <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Notes / Instructions</label>
-              <textarea id="sf-notes" rows="2" placeholder="e.g. Delivers every Monday & Thursday morning"
+              <textarea id="sm-notes" rows="2" placeholder="e.g. Delivers every Monday & Thursday morning"
                         class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-amber-400"></textarea>
             </div>
 
@@ -167,8 +171,8 @@ window.Customers = {
               <button type="button" onclick="Customers.closeShopModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
                 Cancel
               </button>
-              <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs cursor-pointer">
-                Save Shop
+              <button type="submit" id="sm-submit-btn" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xs cursor-pointer">
+                Save Salesman
               </button>
             </div>
           </form>
@@ -176,14 +180,20 @@ window.Customers = {
       </div>
 
       <!-- Receive Payment Modal -->
-      <div id="shop-payment-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4 cursor-pointer" onclick="if(event.target === this) Customers.closePaymentModal()">
+      <div id="shop-payment-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1200] p-4 cursor-pointer" onclick="if(event.target === this) Customers.closePaymentModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200 flex flex-col cursor-default" onclick="event.stopPropagation()">
-          <div class="p-4 bg-emerald-800 text-white flex justify-between items-center">
-            <h3 class="font-black text-sm text-white flex items-center gap-2">
-              <i data-lucide="hand-coins" class="w-4 h-4 text-emerald-300"></i> Receive Cash Payment
-            </h3>
-            <button type="button" onclick="Customers.closePaymentModal()" class="text-emerald-200 hover:text-white p-1 cursor-pointer">
-              <i data-lucide="x" class="w-4 h-4"></i>
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+                <i data-lucide="hand-coins" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Receive Salesman Payment</h3>
+                <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Record cash or online payment received</p>
+              </div>
+            </div>
+            <button type="button" onclick="Customers.closePaymentModal()" class="w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-100 active:scale-95 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
           </div>
 
@@ -192,7 +202,7 @@ window.Customers = {
 
             <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center text-xs">
               <div>
-                <span class="text-[10px] font-black uppercase text-emerald-800 block">Shop:</span>
+                <span class="text-[10px] font-black uppercase text-emerald-800 block">Salesman:</span>
                 <span class="font-black text-slate-900" id="pf-shop-name">--</span>
               </div>
               <div class="text-right">
@@ -221,8 +231,8 @@ window.Customers = {
                 </select>
               </div>
               <div>
-                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Receipt Date</label>
-                <input type="date" id="pf-date" value="${new Date().toISOString().split('T')[0]}"
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Receipt Date &amp; Time</label>
+                <input type="datetime-local" id="pf-date" value="${(() => { const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset()); return n.toISOString().slice(0, 16); })()}"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none">
               </div>
             </div>
@@ -343,10 +353,10 @@ window.Customers = {
     const pendEl = document.getElementById('shop-stat-pending-shops');
     const cleanEl = document.getElementById('shop-stat-clean-shops');
 
-    if (cntEl) cntEl.textContent = `${this.shops.length} Shops`;
+    if (cntEl) cntEl.textContent = `${this.shops.length} Salesmen`;
     if (dueEl) dueEl.textContent = `Rs. ${Math.round(totalDue).toLocaleString()}`;
-    if (pendEl) pendEl.textContent = `${pendingShops} Shops`;
-    if (cleanEl) cleanEl.textContent = `${cleanShops} Shops`;
+    if (pendEl) pendEl.textContent = `${pendingShops} Salesmen`;
+    if (cleanEl) cleanEl.textContent = `${cleanShops} Salesmen`;
   },
 
   renderShopsList() {
@@ -380,18 +390,11 @@ window.Customers = {
         <div onclick="Customers.selectShop(${s.id})"
              class="relative py-2.5 px-3 transition-all cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 ${isSelected ? 'bg-amber-500/10 font-bold' : 'hover:bg-slate-50'}">
           ${isSelected ? '<span class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500 rounded-r shadow-xs"></span>' : ''}
-          <div class="flex items-center gap-2.5 min-w-0">
-            <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-100 text-slate-500 font-bold'} font-mono text-[11px] flex items-center justify-center shrink-0 border ${isSelected ? 'border-amber-400' : 'border-slate-200'}">
-              ${idx + 1}
-            </span>
-            <div class="min-w-0">
-              <h4 class="font-black text-xs text-slate-900 truncate">${s.name}</h4>
-              <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 leading-tight">
-                <span>${s.owner_name || 'No Owner'}</span>
-                <span>•</span>
-                <span>${s.city || 'Wah Cantt'}</span>
-              </div>
-              ${s.phone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">${window.app && app.formatPhone ? app.formatPhone(s.phone) : s.phone}</div>` : ''}
+          <div class="min-w-0 flex-1">
+            <h4 class="font-black text-xs text-slate-900 truncate">${s.name}</h4>
+            <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 leading-tight">
+              <span>${s.address || s.city || 'Salesman'}</span>
+              ${s.phone ? `<span>•</span><span class="font-mono text-slate-400">${window.app && app.formatPhone ? app.formatPhone(s.phone) : s.phone}</span>` : ''}
             </div>
           </div>
 
@@ -409,7 +412,7 @@ window.Customers = {
       footer.innerHTML = `
         <div class="flex items-center gap-1.5">
           <span class="text-[10px] font-black uppercase text-slate-400">Total:</span>
-          <span class="font-mono font-black text-xs text-slate-800 px-2 py-0.5 rounded-md bg-slate-200/80 border border-slate-300/60">${this.filteredShops.length} Shops</span>
+          <span class="font-mono font-black text-xs text-slate-800 px-2 py-0.5 rounded-md bg-slate-200/80 border border-slate-300/60">${this.filteredShops.length} Salesmen</span>
         </div>
         <div class="text-right">
           <span class="text-[10px] font-black uppercase text-slate-400 block leading-tight">Total Balance</span>
@@ -483,7 +486,7 @@ window.Customers = {
             </span>
           </div>
           <p class="text-[11px] text-slate-500 font-medium mt-0.5">
-            Owner: <strong>${shop.owner_name || 'N/A'}</strong> • Phone: <strong>${shop.phone ? (window.app && app.formatPhone ? app.formatPhone(shop.phone) : shop.phone) : 'N/A'}</strong> • Area: <strong>${shop.city || ''} ${shop.address || ''}</strong>
+            Phone: <strong>${shop.phone ? (window.app && app.formatPhone ? app.formatPhone(shop.phone) : shop.phone) : 'N/A'}</strong> • Address: <strong>${shop.address || shop.city || 'N/A'}</strong>
           </p>
         </div>
 
@@ -504,11 +507,11 @@ window.Customers = {
             <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Khata
           </button>
           <button type="button" onclick="Customers.openShopModal(${shop.id})"
-                  class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Shop Details">
+                  class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Edit Salesman Details">
             <i data-lucide="pencil" class="w-4 h-4"></i>
           </button>
           <button type="button" onclick="Customers.deleteShop(${shop.id}, '${shop.name}')"
-                  class="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/70 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Shop">
+                  class="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/70 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs" title="Delete Salesman">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
@@ -532,11 +535,11 @@ window.Customers = {
             <tr>
               <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
               <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
-              <th class="py-2 px-3 border-r border-slate-200">Ref / Invoice</th>
-              <th class="py-2 px-3 border-r border-slate-200">Type &amp; Remarks</th>
+              <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
+              <th class="py-2 px-3 border-r border-slate-200">Description</th>
               <th class="py-2 px-2 text-center border-r border-slate-200">Cartons</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Debit / Billed</th>
-              <th class="py-2 px-3 text-right border-r border-slate-200">Credit / Paid</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Billed</th>
+              <th class="py-2 px-3 text-right border-r border-slate-200">Paid</th>
               <th class="py-2 px-3 text-center">Action</th>
             </tr>
           </thead>
@@ -665,29 +668,32 @@ window.Customers = {
   _renderShopModal(shopId = null) {
     const modal = document.getElementById('shop-edit-modal');
     const title = document.getElementById('shop-modal-title');
-    const fId = document.getElementById('sf-id');
-    const fName = document.getElementById('sf-name');
-    const fOwner = document.getElementById('sf-owner');
-    const fPhone = document.getElementById('sf-phone');
-    const fAmount = document.getElementById('sf-amount');
-    const fAddress = document.getElementById('sf-address');
-    const fNotes = document.getElementById('sf-notes');
+    const subtitle = document.getElementById('shop-modal-subtitle');
+    const submitBtn = document.getElementById('sm-submit-btn');
+    const fId = document.getElementById('sm-id');
+    const fName = document.getElementById('sm-name');
+    const fPhone = document.getElementById('sm-phone');
+    const fAmount = document.getElementById('sm-amount');
+    const fAddress = document.getElementById('sm-address');
+    const fNotes = document.getElementById('sm-notes');
 
     if (shopId) {
       const s = this.shops.find(x => x.id === shopId);
-      if (title) title.innerHTML = '<i data-lucide="store" class="w-4 h-4 text-amber-400"></i> Edit Shop Details';
+      if (title) title.textContent = 'Edit Salesman Details';
+      if (subtitle) subtitle.textContent = 'Update salesman contact, address & notes';
+      if (submitBtn) submitBtn.textContent = 'Update Salesman';
       if (fId) fId.value = s.id;
       if (fName) fName.value = s.name || '';
-      if (fOwner) fOwner.value = s.owner_name || '';
       if (fPhone) fPhone.value = s.phone || '';
       if (fAmount) fAmount.value = s.opening_balance !== undefined && s.opening_balance !== null ? s.opening_balance : (s.amount || 0);
       if (fAddress) fAddress.value = s.address || s.city || '';
       if (fNotes) fNotes.value = s.notes || '';
     } else {
-      if (title) title.innerHTML = '<i data-lucide="store" class="w-4 h-4 text-amber-400"></i> Add New Shop';
+      if (title) title.textContent = 'Add New Salesman';
+      if (subtitle) subtitle.textContent = 'Salesman profile, contact & khata balance';
+      if (submitBtn) submitBtn.textContent = 'Save Salesman';
       if (fId) fId.value = '';
       if (fName) fName.value = '';
-      if (fOwner) fOwner.value = '';
       if (fPhone) fPhone.value = '';
       if (fAmount) fAmount.value = '0';
       if (fAddress) fAddress.value = '';
@@ -698,7 +704,7 @@ window.Customers = {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) lucide.createIcons({ root: modal });
   },
 
   closeShopModal() {
@@ -713,24 +719,34 @@ window.Customers = {
     e.preventDefault();
     try {
       app.showLoading();
-      const id = document.getElementById('sf-id')?.value;
-      const phone = document.getElementById('sf-phone')?.value?.trim();
+      const id = document.getElementById('sm-id')?.value;
+      const name = document.getElementById('sm-name')?.value?.trim();
+      const phone = document.getElementById('sm-phone')?.value?.trim();
+      if (!name) {
+        app.showAlert({ title: 'Name Required', message: 'Please enter a valid name for the salesman.' });
+        return;
+      }
+
+      const dup = (this.shops || []).find(s => (!id || s.id !== Number(id)) && s.name.trim().toLowerCase() === name.toLowerCase());
+      if (dup) {
+        return app.showAlert({ title: 'Duplicate Salesman', message: `A salesman with the name "<b>${name}</b>" already exists.<br><br>Duplicate salesman names are not allowed.` });
+      }
       if (!phone) {
-        app.showAlert({ title: 'Phone Required', message: 'Please enter a valid phone number for the shop.' });
+        app.showAlert({ title: 'Phone Required', message: 'Please enter a valid phone number for the salesman.' });
         return;
       }
       const existingShop = id ? this.shops.find(x => x.id === Number(id)) : null;
-      const openingBal = Number(document.getElementById('sf-amount')?.value) || 0;
-      const addressVal = document.getElementById('sf-address')?.value?.trim() || '';
+      const openingBal = Number(document.getElementById('sm-amount')?.value) || 0;
+      const addressVal = document.getElementById('sm-address')?.value?.trim() || '';
       const data = {
-        name: document.getElementById('sf-name')?.value?.trim(),
-        owner_name: document.getElementById('sf-owner')?.value?.trim() || '',
+        name: name,
+        owner_name: existingShop?.owner_name || '',
         phone: phone,
         city: addressVal ? addressVal.split(',')[0].trim() : (existingShop?.city || 'Hasan Abdal'),
         opening_balance: openingBal,
         amount: openingBal,
         address: addressVal,
-        notes: document.getElementById('sf-notes')?.value?.trim() || ''
+        notes: document.getElementById('sm-notes')?.value?.trim() || ''
       };
       if (id) data.id = Number(id);
 
@@ -738,7 +754,7 @@ window.Customers = {
       this.closeShopModal();
       this.selectedShopId = id ? Number(id) : savedId;
       await this.loadData();
-      app.showAlert({ title: 'Saved', message: 'Shop information updated successfully.' });
+      app.showAlert({ title: 'Saved', message: 'Salesman information updated successfully.' });
     } catch(err) {
       app.showAlert({ title: 'Error', message: err.message });
     } finally {
@@ -913,10 +929,10 @@ window.Customers = {
         title: 'Confirm Cash Receipt',
         message: `
           <div class="space-y-2.5 text-left mt-2 text-xs">
-            <p class="text-slate-600 font-medium">Please confirm receiving cash recovery payment from shop customer:</p>
+            <p class="text-slate-600 font-medium">Please confirm receiving recovery payment from salesman:</p>
             <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
               <div class="flex justify-between">
-                <span class="text-slate-500 font-bold">Shop / Customer:</span>
+                <span class="text-slate-500 font-bold">Salesman:</span>
                 <span class="font-black text-slate-900">${shop.name}</span>
               </div>
               <div class="flex justify-between">
@@ -941,32 +957,36 @@ window.Customers = {
         confirmText: 'Receive & Print Receipt',
         confirmColor: 'green',
         onConfirm: async () => {
-          app.showLoading();
-          const res = await window.api.receiveShopPayment({
-            shop_id: shopId,
-            amount,
-            payment_method: paymentMethod,
-            date,
-            notes
-          });
+          try {
+            app.showLoading();
+            const res = await window.api.receiveShopPayment({
+              shop_id: shopId,
+              amount,
+              payment_method: paymentMethod,
+              date,
+              notes
+            });
 
-          if (res && res.error) {
-            app.showAlert({ title: 'Error', message: res.error });
-            return;
+            if (res && res.error) {
+              app.showAlert({ title: 'Error', message: res.error });
+              return;
+            }
+
+            this.closePaymentModal();
+            await this.loadData();
+
+            // Print A5 Payment Voucher Receipt
+            this.printPaymentVoucherReceipt(res);
+          } catch(err) {
+            app.showAlert({ title: 'Error', message: err.message });
+          } finally {
+            app.hideLoading();
           }
-
-          this.closePaymentModal();
-          await this.loadData();
-
-          // Print A5 Payment Voucher Receipt
-          this.printPaymentVoucherReceipt(res);
         }
       });
 
     } catch(err) {
       app.showAlert({ title: 'Error', message: err.message });
-    } finally {
-      app.hideLoading();
     }
   },
 
@@ -989,40 +1009,42 @@ window.Customers = {
     });
 
     const html = `
-      <div class="a5-container">
-        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Hasan Abdal'} • Phone: ${settings.phone || '0315-6795995'}</div>
+      <div class="a5-container" style="padding: 6px 8px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; line-height: 1.35;">
+        <div class="a5-header" style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 17px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 10px; font-weight: 600; color: #000; margin-top: 2px;">${settings.address || 'Hasan Abdal'} • Phone: ${settings.phone || '0315-6795995'}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          SHOP KHATA ACCOUNT STATEMENT
+        <div style="text-align: center; margin: 4px 0 6px 0;">
+          <span style="display: inline-block; padding: 3px 14px; background: #fff; border: 1.5px solid #000; border-radius: 9999px; font-size: 11px; font-weight: 800; color: #000; letter-spacing: 0.8px; text-transform: uppercase;">
+            SALESMAN KHATA ACCOUNT STATEMENT
+          </span>
         </div>
 
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
-          <div style="line-height: 1.45;">
-            <div><strong>Shop Name:</strong> <span style="font-weight: 800;">${shop.name}</span></div>
-            <div><strong>Owner / Contact:</strong> ${shop.owner_name || 'N/A'} • ${shop.phone || 'N/A'}</div>
-            <div><strong>Area / Address:</strong> ${shop.city || ''} ${shop.address || ''}</div>
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; border: 1.5px solid #000; padding: 7px 10px; background: #fff; color: #000; line-height: 1.55;">
+          <div>
+            <div><strong>Salesman Name:</strong> <span style="font-weight: 800;">${shop.name}</span></div>
+            <div><strong>Phone / Contact:</strong> ${shop.phone || 'N/A'}</div>
+            <div><strong>Address:</strong> ${shop.address || shop.city || 'N/A'}</div>
           </div>
-          <div style="text-align: right; line-height: 1.45;">
+          <div style="text-align: right; line-height: 1.55;">
             <div><strong>Statement Date:</strong> ${app.formatDateTime(new Date())}</div>
             <div><strong>Total Transactions:</strong> ${entries.length} Records</div>
-            <div style="font-size: 11px; font-weight: 900; color: #000; margin-top: 2px;">
+            <div style="font-size: 11.5px; font-weight: 800; color: #000; margin-top: 2px;">
               Outstanding Balance: Rs. ${Math.round(shop.amount || 0).toLocaleString()}
             </div>
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
           <thead>
-            <tr>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Ref / Inv #</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Type / Description</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 45px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Ctns</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Debit Billed (Rs.)</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 85px; font-weight: 900; font-size: 9.5px; text-transform: uppercase; color: #000; background: #fff;">Credit Paid (Rs.)</th>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 4.5px 5px; text-align: left; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Date</th>
+              <th style="border: 1px solid #000; padding: 4.5px 5px; text-align: left; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Ref / Inv #</th>
+              <th style="border: 1px solid #000; padding: 4.5px 5px; text-align: left; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Type / Description</th>
+              <th style="border: 1px solid #000; padding: 4.5px 4px; text-align: center; width: 40px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Ctns</th>
+              <th style="border: 1px solid #000; padding: 4.5px 5px; text-align: right; width: 75px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Debit Billed</th>
+              <th style="border: 1px solid #000; padding: 4.5px 5px; text-align: right; width: 75px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Credit Paid</th>
             </tr>
           </thead>
           <tbody>
@@ -1034,36 +1056,36 @@ window.Customers = {
               else if (isOpening) desc = 'Starting Balance (Opening Khata)';
               return `
               <tr>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000; white-space: nowrap;">${app.formatDateTime(e.date, e.created_at)}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; font-weight: 700; font-family: -apple-system, monospace; color: #000;">${e.invoice_no}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-size: 9.5px; color: #000;">${desc}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 9.5px; color: #000;">${isDelivery ? (e.cartons_count || 0) : '-'}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">${(isDelivery || isOpening) ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">${!isOpening ? `Rs. ${Math.round(e.received_amount).toLocaleString()}` : '-'}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; font-size: 8px; color: #000; white-space: nowrap;">${app.formatDateTime(e.date, e.created_at)}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; font-size: 8.5px; font-weight: 700; color: #000;">${e.invoice_no}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; font-size: 8.5px; color: #000;">${desc}</td>
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-size: 8.5px; color: #000;">${isDelivery ? (e.cartons_count || 0) : '-'}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 600; font-size: 8.5px; color: #000;">${(isDelivery || isOpening) ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 600; font-size: 8.5px; color: #000;">${!isOpening ? `Rs. ${Math.round(e.received_amount).toLocaleString()}` : '-'}</td>
               </tr>
               `;
             }).join('')}
           </tbody>
         </table>
 
-        <div class="a5-summary-box" style="border: 1.5px solid #000; padding: 5px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
+        <div class="a5-summary-box" style="border: 1px solid #000; padding: 6px 8px; margin-top: 6px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Total Goods Billed (Debits):</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalBilled).toLocaleString()}</span>
+            <span style="font-weight: 700; color: #000;">Rs. ${Math.round(totalBilled).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 1.5px 0;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Total Payments Received (Credits):</span>
-            <span style="font-weight: 800; font-family: -apple-system, monospace;">Rs. ${Math.round(totalPaid).toLocaleString()}</span>
+            <span style="font-weight: 700; color: #000;">Rs. ${Math.round(totalPaid).toLocaleString()}</span>
           </div>
-          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 3px; margin-top: 2px; font-weight: 900; font-size: 10.5px;">
+          <div class="a5-summary-row a5-total" style="display: flex; justify-content: space-between; border-top: 1.5px solid #000; padding-top: 4px; margin-top: 3px; font-weight: 800; font-size: 11.5px; color: #000;">
             <span>Current Outstanding Khata Balance:</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(shop.amount || 0).toLocaleString()}</span>
+            <span>Rs. ${Math.round(shop.amount || 0).toLocaleString()}</span>
           </div>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 30px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Shop Owner Signature</div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Factory Accountant</div>
+        <div class="a5-signatures" style="margin-top: 32px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 700; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">Salesman Signature</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 700; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">Factory Accountant</div>
         </div>
       </div>
     `;
@@ -1093,51 +1115,51 @@ window.Customers = {
     const settings = await window.api.getSettings() || {};
 
     const html = `
-      <div class="a5-container">
-        <div class="a5-header" style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <div class="a5-title" style="font-size: 16px; font-weight: 900; text-transform: uppercase; color: #000;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
-          <div class="a5-subtitle" style="font-size: 9px; font-weight: 500; color: #000; margin-top: 1px;">${settings.address || 'Hasan Abdal'} • Phone: ${settings.phone || '0315-6795995'}</div>
+      <div class="a5-container" style="padding: 6px 8px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; line-height: 1.35;">
+        <div class="a5-header" style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <div class="a5-title" style="font-size: 17px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">${settings.company_name || 'DELICIOUS SUPERSTAR FOODS'}</div>
+          <div class="a5-subtitle" style="font-size: 10px; font-weight: 600; color: #000; margin-top: 2px;">${settings.address || 'Hasan Abdal'} • Phone: ${settings.phone || '0315-6795995'}</div>
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          OFFICIAL CASH PAYMENT RECEIPT VOUCHER
+        <div style="text-align: center; margin: 4px 0 6px 0;">
+          <span style="display: inline-block; padding: 3px 14px; background: #fff; border: 1.5px solid #000; border-radius: 9999px; font-size: 11px; font-weight: 800; color: #000; letter-spacing: 0.8px; text-transform: uppercase;">
+            OFFICIAL CASH PAYMENT RECEIPT VOUCHER
+          </span>
         </div>
 
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; border: 1px solid #000; padding: 5px 8px; background: #fff; color: #000;">
-          <div style="line-height: 1.45;">
-            <div><strong>Receipt No:</strong> <span style="font-family: -apple-system, monospace; font-weight: 800;">${data.receipt_no}</span></div>
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; border: 1.5px solid #000; padding: 7px 10px; background: #fff; color: #000; line-height: 1.55;">
+          <div>
+            <div><strong>Receipt No:</strong> <span style="font-weight: 800;">${data.receipt_no}</span></div>
             <div><strong>Received From:</strong> <span style="font-weight: 800;">${data.shop_name}</span></div>
           </div>
-          <div style="text-align: right; line-height: 1.45;">
+          <div style="text-align: right; line-height: 1.55;">
             <div><strong>Payment Date &amp; Time:</strong> ${app.formatDateTime(data.date, data.created_at)}</div>
-            <div><strong>Payment Mode:</strong> ${data.payment_method}</div>
+            <div><strong>Payment Mode:</strong> <span style="font-weight: 800;">${data.payment_method}</span></div>
           </div>
         </div>
 
-        <div class="a5-summary-box" style="margin-top: 12px; border: 1.5px solid #000; padding: 8px 10px; font-size: 10px; background: #fff; color: #000;">
-          <div class="a5-summary-row a5-total" style="font-size: 13px; font-weight: 900; color: #000; display: flex; justify-content: space-between;">
-            <span>Amount Received:</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(data.amount_paid).toLocaleString()}</span>
-          </div>
-          <div class="a5-summary-row" style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; font-weight: 700; color: #000;">
+        <div style="background: #fff; border: 1.5px solid #000; border-radius: 4px; padding: 10px; text-align: center; margin: 8px 0; color: #000;">
+          <span style="font-size: 9.5px; font-weight: 800; color: #000; text-transform: uppercase; letter-spacing: 0.8px; display: block;">AMOUNT RECEIVED</span>
+          <span style="font-size: 24px; font-weight: 800; color: #000; display: block; margin-top: 2px;">
+            Rs. ${Math.round(data.amount_paid).toLocaleString()}
+          </span>
+          ${data.notes ? `<p style="font-size: 9.5px; color: #000; margin: 4px 0 0 0; font-weight: 600;">Remarks: ${data.notes}</p>` : ''}
+        </div>
+
+        <div class="a5-summary-box" style="margin-top: 8px; border: 1px solid #000; padding: 6px 8px; font-size: 9.5px; background: #fff; color: #000;">
+          <div class="a5-summary-row" style="display: flex; justify-content: space-between; font-weight: 700; color: #000;">
             <span>Remaining Khata Balance:</span>
-            <span style="font-family: -apple-system, monospace;">Rs. ${Math.round(data.new_balance).toLocaleString()}</span>
+            <span style="font-size: 11px;">Rs. ${Math.round(data.new_balance).toLocaleString()}</span>
           </div>
-          ${data.notes ? `
-            <div class="a5-summary-row" style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 9.5px; color: #000;">
-              <span>Remarks / Notes:</span>
-              <span>${data.notes}</span>
-            </div>
-          ` : ''}
         </div>
 
-        <div style="margin-top: 25px; font-size: 9px; color: #000; text-align: center; border-top: 1px dotted #000; padding-top: 6px; font-weight: 500;">
+        <div style="margin-top: 20px; font-size: 9px; color: #000; text-align: center; border-top: 1px dotted #000; padding-top: 4px; font-weight: 500;">
           Thank you for your payment. This voucher is an official computer-generated receipt.
         </div>
 
-        <div class="a5-signatures" style="margin-top: 45px; display: flex; justify-content: space-between;">
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Payer / Shopkeeper</div>
-          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; font-size: 9.5px; padding-top: 4px; font-weight: 800; text-transform: uppercase;">Authorized Collector</div>
+        <div class="a5-signatures" style="margin-top: 36px; display: flex; justify-content: space-between;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 700; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">Payer / Salesman</div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 700; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">Authorized Collector</div>
         </div>
       </div>
     `;
@@ -1266,5 +1288,133 @@ window.Customers = {
         app.hideLoading();
       }
     }
+  },
+
+  printSalesmenBalancesList() {
+    const list = (this.shops || []).filter(s => {
+      const bal = Number(s.amount) || 0;
+      return bal !== 0; // Exclude 0 balance value entries
+    });
+
+    if (list.length === 0) {
+      return app.showAlert({
+        title: 'No Balances to Print',
+        message: 'There are currently no salesmen with an outstanding credit balance or advance (all salesmen have 0 balance).'
+      });
+    }
+
+    // Sort: highest balance first
+    list.sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
+
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Delicious Superstar Foods';
+    const address = settings.company_address || '';
+    const phone = settings.company_phone || '';
+    const printDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const printTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    let totalDue = 0;
+    let totalAdvance = 0;
+    let dueCount = 0;
+    let advanceCount = 0;
+
+    list.forEach(s => {
+      const bal = Number(s.amount) || 0;
+      if (bal > 0) {
+        totalDue += bal;
+        dueCount++;
+      } else if (bal < 0) {
+        totalAdvance += Math.abs(bal);
+        advanceCount++;
+      }
+    });
+
+    const rows = list.map((s, idx) => {
+      const bal = Number(s.amount) || 0;
+      const isAdv = bal < 0;
+      const absBal = Math.abs(bal);
+      const statusLabel = isAdv ? 'ADVANCE' : 'BALANCE';
+
+      return `
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-size: 8px; font-weight: 600; color: #000;">${idx + 1}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-size: 8.5px; font-weight: 700; color: #000;">${s.name}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-size: 8.5px; font-weight: 600; color: #000;">${s.phone || '-'}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; font-size: 8.5px; font-weight: 600; color: #000;">${s.address || s.city || '-'}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-size: 8px; font-weight: 800; color: #000; text-transform: uppercase;">
+            ${statusLabel}
+          </td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 9px; font-weight: 800; color: #000;">
+            Rs. ${Math.round(absBal).toLocaleString()}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.4;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
+          <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          ${address ? `<p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>` : ''}
+          ${phone ? `<p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Tel: ${phone}</p>` : ''}
+        </div>
+
+        <div style="text-align: center; margin: 4px 0 8px 0;">
+          <span style="display: inline-block; padding: 3px 14px; background: #fff; border: 1.5px solid #000; border-radius: 9999px; font-size: 10.5px; font-weight: 800; color: #000; letter-spacing: 0.8px; text-transform: uppercase;">
+            SALESMEN KHATA BALANCES SUMMARY
+          </span>
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; padding: 7px 10px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.55;">
+          <div>
+            <div><strong style="color: #000;">Report:</strong> Salesmen Balances &amp; Advances</div>
+            <div><strong style="color: #000;">Generated:</strong> ${printDate} at ${printTime}</div>
+          </div>
+          <div style="text-align: right; line-height: 1.55;">
+            <div><strong style="color: #000;">Balance:</strong> Rs. ${Math.round(totalDue).toLocaleString()} (${dueCount} ${dueCount === 1 ? 'salesman' : 'salesmen'})</div>
+            ${totalAdvance > 0 ? `<div><strong style="color: #000;">Advance:</strong> Rs. ${Math.round(totalAdvance).toLocaleString()} (${advanceCount} ${advanceCount === 1 ? 'salesman' : 'salesmen'})</div>` : ''}
+          </div>
+        </div>
+
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 8px; background: #fff;">
+          <thead>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: center; width: 22px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">#</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Salesman Name</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Phone</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Assigned Area / Address</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; font-weight: 800; font-size: 8px; text-transform: uppercase; width: 70px; color: #000;">Status</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: 800; font-size: 8px; text-transform: uppercase; width: 85px; color: #000;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+          <tfoot>
+            <tr style="background: #fff; font-weight: 800; border-top: 2px solid #000; color: #000;">
+              <td colspan="4" style="border: 1px solid #000; padding: 5px 6px; text-align: right; text-transform: uppercase; font-size: 8.5px;">TOTAL BALANCE:</td>
+              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-size: 9.5px; color: #000;">Rs. ${Math.round(totalDue).toLocaleString()}</td>
+            </tr>
+            ${totalAdvance > 0 ? `
+            <tr style="background: #fff; font-weight: 800; color: #000;">
+              <td colspan="4" style="border: 1px solid #000; padding: 5px 6px; text-align: right; text-transform: uppercase; font-size: 8.5px;">TOTAL ADVANCE:</td>
+              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-size: 9.5px; color: #000;">Rs. ${Math.round(totalAdvance).toLocaleString()}</td>
+            </tr>
+            ` : ''}
+          </tfoot>
+        </table>
+
+        <div style="margin-top: 32px; display: flex; justify-content: space-between; font-size: 9.5px;">
+          <div style="border-top: 1.5px solid #000; width: 38%; text-align: center; padding-top: 5px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Recovery Officer
+          </div>
+          <div style="border-top: 1.5px solid #000; width: 38%; text-align: center; padding-top: 5px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Manager / Admin
+          </div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, 'Salesmen Khata Balances Summary');
   }
 };

@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <title>Delicious Superstar Foods</title>
   <link rel="stylesheet" href="styles/fonts.css">
+  <script>
+    // Enforce Pakistani / South Asian currency grouping (e.g. 12,25,300) everywhere across the application
+    (function() {
+      const _origNumberToLocaleString = Number.prototype.toLocaleString;
+      Number.prototype.toLocaleString = function(locales, options) {
+        return _origNumberToLocaleString.call(this, locales || 'en-IN', options);
+      };
+    })();
+  </script>
   <script src="libs/tailwind.min.js"></script>
   <script>
     tailwind.config = {
@@ -35,19 +44,26 @@
     }
 
     *, body, html, input, button, select, textarea {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
     }
     h1, h2, h3, h4, h5, h6, .font-display, .font-outfit, .font-poppins {
-      font-family: 'Inter', sans-serif !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
     }
     .tabular-nums {
       font-variant-numeric: tabular-nums;
-      font-family: 'Inter', sans-serif !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
     }
 
-    /* Ensure entire receipt and preview document uniformly uses Inter (same as Generated At text) */
-    .receipt-80mm, .receipt-80mm *, #preview-paper, #preview-paper * {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    /* Ensure entire receipt and preview document uniformly uses Inter modern system stack */
+    .receipt-80mm, .receipt-80mm *, 
+    .receipt-a5, .receipt-a5 *,
+    .a5-container, .a5-container *,
+    #preview-paper, #preview-paper *,
+    #receipt-print, #receipt-print *,
+    .active-print-target, .active-print-target * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
     }
 
     /* Custom App Scrollbar */
@@ -93,6 +109,13 @@
 
 
     @media print {
+      body, html, #receipt-print, .active-print-target, .active-print-target * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       .no-print,
       #app-toast-container,
       #barcode-sticker-modal,
@@ -122,16 +145,36 @@
       }
     }
 
-    /* A5 Paper Format Styles for on-screen Preview Paper and Reports */
+    /* Modal Stacking & Z-Index Guarantee: Overlays and preview dialogs must always stay on top */
+    #preview-modal {
+      z-index: 5000 !important;
+    }
+    #loading-overlay {
+      z-index: 9990 !important;
+    }
+    #confirm-modal {
+      z-index: 9995 !important;
+    }
+    #quick-calculator-widget {
+      z-index: 9998 !important;
+    }
+    #app-toast-container {
+      z-index: 99999 !important;
+    }
+
+    /* A5 Paper Format Styles for on-screen Preview Paper and Reports (Strictly Pure Black & White for print) */
     #preview-paper {
       background-color: #ffffff !important;
       color: #000000 !important;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
     }
 
     #preview-paper *,
     .active-print-target * {
       box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
       color: #000000;
     }
 
@@ -140,149 +183,200 @@
     .receipt-a5,
     .a5-container {
       width: 100%;
-      color: #000000;
-      background: #ffffff;
-      font-size: 9.5px;
-      line-height: 1.35;
+      color: #000000 !important;
+      background: #ffffff !important;
+      font-size: 10px;
+      font-weight: 600 !important;
+      line-height: 1.4;
       box-sizing: border-box;
     }
 
     #preview-paper .a5-header,
     .a5-header {
       text-align: center;
-      border-bottom: 2px solid #000000;
-      padding-bottom: 5px;
-      margin-bottom: 6px;
+      border-bottom: 2px solid #000000 !important;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     #preview-paper .a5-title,
     .a5-title {
-      font-size: 16px;
-      font-weight: 900;
+      font-size: 17px;
+      font-weight: 800;
       text-transform: uppercase;
-      color: #000000;
+      color: #000000 !important;
       line-height: 1.2;
       letter-spacing: 0.5px;
     }
 
     #preview-paper .a5-subtitle,
     .a5-subtitle {
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 600;
-      color: #000000;
-      margin-top: 1px;
+      color: #000000 !important;
+      margin-top: 2px;
     }
 
     #preview-paper .a5-doc-title,
     .a5-doc-title {
-      border: 1.5px solid #000000;
-      color: #000000;
-      background: #ffffff;
-      text-align: center;
-      padding: 3px 10px;
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      margin: 4px auto 6px auto;
-      display: inline-block;
+      border: 1.5px solid #000000 !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+      text-align: center !important;
+      padding: 4px 16px !important;
+      font-size: 11px !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.8px !important;
+      text-transform: uppercase !important;
+      margin: 4px auto 8px auto !important;
+      display: inline-block !important;
+      border-radius: 9999px !important;
     }
 
     #preview-paper .a5-meta-box,
     .a5-meta-box {
-      border: 1.5px solid #000000;
-      padding: 5px 8px;
-      margin: 6px 0;
-      display: flex;
-      justify-content: space-between;
-      font-size: 9px;
-      line-height: 1.45;
-      background: #ffffff;
-      color: #000000;
+      border: 1.5px solid #000000 !important;
+      border-radius: 4px !important;
+      padding: 7px 11px !important;
+      margin: 6px 0 8px 0 !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      font-size: 10.5px !important;
+      font-weight: 600 !important;
+      line-height: 1.55 !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    #preview-paper .a5-meta-box strong,
+    .a5-meta-box strong,
+    #preview-paper .a5-meta-box b,
+    .a5-meta-box b {
+      font-weight: 800 !important;
+      color: #000000 !important;
     }
 
     #preview-paper .a5-table,
     .a5-table {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1.5px solid #000000;
-      margin-top: 4px;
-      margin-bottom: 6px;
-      font-size: 9px;
-      background: #ffffff;
+      width: 100% !important;
+      border-collapse: collapse !important;
+      border: 1.5px solid #000000 !important;
+      margin-top: 4px !important;
+      margin-bottom: 6px !important;
+      font-size: 8.5px !important;
+      background: #ffffff !important;
     }
 
     #preview-paper .a5-table th,
     .a5-table th {
-      border: 1px solid #000000;
-      padding: 4px 5px;
-      font-size: 8.5px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      color: #000000;
-      background: #ffffff;
-      line-height: 1.2;
+      border: 1px solid #000000 !important;
+      padding: 4px 5px !important;
+      font-size: 8px !important;
+      font-weight: 800 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.03em !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+      line-height: 1.25 !important;
     }
 
     #preview-paper .a5-table td,
     .a5-table td {
-      border: 1px solid #000000;
-      padding: 3.5px 5px;
-      font-size: 9px;
-      color: #000000;
-      background: #ffffff;
-      line-height: 1.25;
+      border: 1px solid #000000 !important;
+      padding: 3.5px 5px !important;
+      font-size: 8.5px;
+      font-weight: 600 !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+      line-height: 1.35 !important;
+    }
+
+    #preview-paper .a5-table tbody tr,
+    .a5-table tbody tr,
+    #preview-paper .a5-table tbody tr td,
+    .a5-table tbody tr td {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    #preview-paper .a5-table tfoot tr,
+    .a5-table tfoot tr {
+      background: #ffffff !important;
+      font-weight: 800 !important;
+      border-top: 2px solid #000000 !important;
+      color: #000000 !important;
+    }
+
+    #preview-paper .a5-table tfoot td,
+    .a5-table tfoot td {
+      border: 1px solid #000000 !important;
+      border-top: 2px solid #000000 !important;
+      padding: 4px 5px !important;
+      font-weight: 800 !important;
+      font-size: 8.5px;
+      color: #000000 !important;
+      background: #ffffff !important;
     }
 
     #preview-paper .a5-summary-box,
     .a5-summary-box {
-      border: 1.5px solid #000000;
-      padding: 5px 8px;
-      margin-top: 6px;
-      font-size: 9.5px;
-      background: #ffffff;
-      color: #000000;
+      border: 1.5px solid #000000 !important;
+      border-radius: 4px !important;
+      padding: 7px 11px !important;
+      margin-top: 8px !important;
+      font-size: 10.5px !important;
+      font-weight: 600 !important;
+      background: #ffffff !important;
+      color: #000000 !important;
     }
 
     #preview-paper .a5-summary-row,
     .a5-summary-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 1.5px 0;
-      color: #000000;
-      font-size: 9.5px;
-      line-height: 1.3;
+      display: flex !important;
+      justify-content: space-between !important;
+      padding: 3px 0 !important;
+      color: #000000 !important;
+      font-size: 10.5px !important;
+      font-weight: 600 !important;
+      line-height: 1.4 !important;
+    }
+
+    #preview-paper .a5-summary-row span:last-child,
+    .a5-summary-row span:last-child {
+      font-weight: 700 !important;
     }
 
     #preview-paper .a5-summary-row.a5-total,
     .a5-summary-row.a5-total {
-      border-top: 1.5px solid #000000;
-      font-weight: 900;
-      font-size: 10.5px;
-      padding-top: 3px;
-      margin-top: 2px;
+      border-top: 1.5px solid #000000 !important;
+      font-weight: 800 !important;
+      font-size: 12px !important;
+      color: #000000 !important;
+      padding-top: 5px !important;
+      margin-top: 4px !important;
     }
 
     #preview-paper .a5-signatures,
     .a5-signatures {
-      margin-top: 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding-top: 6px;
+      margin-top: 32px !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: flex-end !important;
+      padding-top: 6px !important;
     }
 
     #preview-paper .a5-sig-line,
     .a5-sig-line {
-      border-top: 1.5px solid #000000;
-      width: 42%;
-      text-align: center;
-      font-size: 9px;
-      font-weight: 800;
-      color: #000000;
-      padding-top: 4px;
-      text-transform: uppercase;
+      border-top: 1.5px solid #000000 !important;
+      width: 40% !important;
+      text-align: center !important;
+      font-size: 9.5px !important;
+      font-weight: 800 !important;
+      color: #000000 !important;
+      padding-top: 5px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
     }
 
     /* Show all cross (X) close/dismiss/clear icons in red across the entire app */
@@ -353,6 +447,7 @@
   <link rel="stylesheet" href="styles/print.css" media="print">
   <script src="libs/lucide.min.js"></script>
   <script src="libs/jsbarcode.min.js"></script>
+  <script src="libs/qrcode.min.js"></script>
 </head>
 <body class="bg-gray-50 text-slate-800 font-sans h-screen flex overflow-hidden">
 
@@ -392,21 +487,12 @@
           </span>
         </button>
 
-        <button onclick="app.navigate('production')" id="nav-production" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
-          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-cyan-400 shadow-2xs group-hover:border-slate-500 transition-all">
-            <i data-lucide="layers" class="w-4 h-4 stroke-[2.2]"></i>
-          </span>
-          <span class="nav-text flex-1 py-1.5 px-2 rounded-xl font-bold text-[13.5px] truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
-            2. Production
-          </span>
-        </button>
-
         <button onclick="app.navigate('carton-packing')" id="nav-carton-packing" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
           <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-purple-400 shadow-2xs group-hover:border-slate-500 transition-all">
             <i data-lucide="package" class="w-4 h-4 stroke-[2.2]"></i>
           </span>
           <span class="nav-text flex-1 py-1.5 px-2 rounded-xl font-bold text-[13.5px] truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
-            3. Carton Packing
+            2. Carton Packing
           </span>
         </button>
 
@@ -415,7 +501,7 @@
             <i data-lucide="truck" class="w-4 h-4 stroke-[2.2]"></i>
           </span>
           <span class="nav-text flex-1 py-1.5 px-2 rounded-xl font-bold text-[13.5px] truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
-            4. Cars &amp; Loading
+            3. Cars &amp; Loading
           </span>
         </button>
 
@@ -424,7 +510,7 @@
             <i data-lucide="shopping-cart" class="w-4 h-4 stroke-[2.2]"></i>
           </span>
           <span class="nav-text flex-1 py-1.5 px-2 rounded-xl font-bold text-[13.5px] truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
-            5. New Sale
+            4. New Sale
           </span>
         </button>
 
@@ -459,10 +545,10 @@
 
         <button onclick="app.navigate('customers')" id="nav-customers" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
           <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
-            <i data-lucide="store" class="w-4 h-4 stroke-[2.2]"></i>
+            <i data-lucide="user-check" class="w-4 h-4 stroke-[2.2]"></i>
           </span>
           <span class="nav-text flex-1 py-1.5 px-2 rounded-xl font-bold text-[13.5px] truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
-            Shops / Khata
+            Salesmen / Khata
           </span>
         </button>
 
@@ -484,6 +570,15 @@
           </span>
         </button>
 
+        <button onclick="app.navigate('employees')" id="nav-employees" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
+          <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
+            <i data-lucide="users" class="w-4 h-4 stroke-[2.2]"></i>
+          </span>
+          <span class="nav-text flex-1 py-1.5 px-2 rounded-xl font-bold text-[13.5px] truncate transition-all text-slate-300 group-hover:text-white group-hover:bg-slate-800/60">
+            Employees
+          </span>
+        </button>
+
         <button onclick="app.navigate('settings')" id="nav-settings" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
           <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
             <i data-lucide="settings" class="w-4 h-4 stroke-[2.2]"></i>
@@ -502,7 +597,7 @@
       </span>
       <div class="flex items-center gap-1">
         <button type="button" onclick="app.adjustZoom(-0.05)" title="Zoom Out (Ctrl -)" class="w-5 h-5 rounded flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-black text-xs cursor-pointer transition-colors leading-none">-</button>
-        <span id="sidebar-zoom-label" onclick="app.setZoom(0.82)" title="Reset to Laptop Scale (Ctrl 0)" class="text-[10.5px] font-mono font-bold text-blue-400 px-1 cursor-pointer hover:underline tabular-nums" style="min-width: 34px; text-align: center;">82%</span>
+        <span id="sidebar-zoom-label" onclick="app.setZoom(1.0)" title="Reset to 100% Scale (Ctrl 0)" class="text-[10.5px] font-mono font-bold text-blue-400 px-1 cursor-pointer hover:underline tabular-nums" style="min-width: 34px; text-align: center;">100%</span>
         <button type="button" onclick="app.adjustZoom(0.05)" title="Zoom In (Ctrl +)" class="w-5 h-5 rounded flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-black text-xs cursor-pointer transition-colors leading-none">+</button>
       </div>
     </div>
@@ -513,6 +608,12 @@
       <p class="text-[13px] font-medium text-slate-400 mt-1.5">Contact: <span class="text-white font-semibold text-[13px] tracking-wide tabular-nums">0309-5369472</span></p>
     </div>
   </aside>
+  <script>
+    // Immediate sidebar icon rendering so icons never appear as blank squares
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+      try { lucide.createIcons(); } catch (e) {}
+    }
+  </script>
 
   <!-- Main Content -->
   <main class="flex-1 relative flex flex-col overflow-y-auto print-full-width">
@@ -522,7 +623,7 @@
   </main>
 
   <!-- Custom Confirm Modal -->
-  <div id="confirm-modal" onclick="if(event.target === this) app.hideConfirm()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[9990] no-print p-4">
+  <div id="confirm-modal" onclick="if(event.target === this) app.hideConfirm(true)" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[9995] no-print p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col md:flex-row max-h-[92vh]" id="confirm-card">
       
       <!-- Left Column: Receipt / Document Preview (hidden by default, shown when previewHtml provided) -->
@@ -568,24 +669,24 @@
   </div>
 
   <!-- Quick Price Inquiry Modal (F6 Price Checker) -->
-  <div id="price-checker-modal" onclick="if(event.target === this) app.closePriceChecker()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs hidden items-center justify-center z-[1200] no-print p-4">
+  <div id="price-checker-modal" onclick="if(event.target === this) app.closePriceChecker()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[5000] no-print p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col border border-slate-200" id="price-checker-card">
       <!-- Header -->
-      <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800">
+      <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
-            <i data-lucide="scan-barcode" class="w-5 h-5"></i>
+          <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+            <i data-lucide="scan-barcode" class="w-4.5 h-4.5"></i>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h3 class="text-base font-black tracking-tight text-white uppercase">Quick Price Inquiry</h3>
-              <kbd class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-mono text-[10px] font-black shadow-xs">F6</kbd>
+              <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Quick Price Inquiry</h3>
+              <kbd class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-mono text-[10px] font-black border border-amber-200 shadow-2xs">F6</kbd>
             </div>
-            <p class="text-[11px] font-bold text-slate-400">Instant price & stock lookup without clearing current bill</p>
+            <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Instant price &amp; stock lookup without clearing current bill</p>
           </div>
         </div>
-        <button type="button" onclick="app.closePriceChecker()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" title="Close (Esc)">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <button type="button" onclick="app.closePriceChecker()" class="modal-close-btn" title="Close (Esc)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
         </button>
       </div>
 
@@ -631,7 +732,7 @@
   </div>
 
   <!-- Payment Modal -->
-  <div id="payment-modal" onclick="if(event.target === this) app.hidePaymentModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[1100] no-print">
+  <div id="payment-modal" onclick="if(event.target === this) app.hidePaymentModal()" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[4000] no-print">
     <div class="bg-white rounded-2xl shadow-2xl p-0 max-w-md w-full mx-4 overflow-hidden" id="payment-card">
       <div class="bg-slate-900 py-4 px-6 text-white flex justify-between items-center">
         <div>
@@ -757,12 +858,12 @@
   </div>
 
   <!-- Loading Overlay -->
-  <div id="loading-overlay" class="fixed inset-0 bg-white/70 hidden items-center justify-center z-[2000] no-print">
+  <div id="loading-overlay" class="fixed inset-0 bg-white/70 hidden items-center justify-center z-[9990] no-print">
     <i data-lucide="loader-2" class="w-10 h-10 text-accent animate-spin"></i>
   </div>
 
   <!-- Print Preview Modal -->
-  <div id="preview-modal" onclick="if(event.target === this) app.closePreview()" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[900] no-print overflow-hidden">
+  <div id="preview-modal" onclick="if(event.target === this) app.closePreview()" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[5000] no-print overflow-hidden">
     <div class="bg-slate-100 w-full max-w-4xl h-[95vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden m-4">
       <!-- Toolbar -->
       <div class="p-4 bg-white border-b flex justify-between items-center shadow-sm">
@@ -792,26 +893,26 @@
 
   
   <!-- Barcode Sticker & Label Printer Modal (Speed-X SP-650UL Optimized) -->
-  <div id="barcode-sticker-modal" onclick="if(event.target === this) app.closeBarcodeStickerModal()" class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs hidden items-center justify-center z-[1300] no-print p-4">
+  <div id="barcode-sticker-modal" onclick="if(event.target === this) app.closeBarcodeStickerModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[5000] no-print p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col overflow-hidden border border-slate-200" id="barcode-sticker-card">
       <!-- Modal Header -->
-      <div class="bg-slate-900 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800 shrink-0">
+      <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
-            <i data-lucide="printer" class="w-5 h-5"></i>
+          <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+            <i data-lucide="printer" class="w-4.5 h-4.5"></i>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h3 class="text-base font-black tracking-tight text-white uppercase">Barcode Sticker &amp; Label Printer</h3>
-              <span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-400/30 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 38 × 28 mm Die-Cut
+              <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Barcode Sticker &amp; Label Printer</h3>
+              <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 font-mono text-[10px] font-bold border border-amber-200 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> 38 × 28 mm Die-Cut
               </span>
             </div>
-            <p class="text-[11px] font-bold text-slate-400">Print adhesive thermal barcode stickers for store items</p>
+            <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 2 • Print adhesive thermal barcode stickers for store items</p>
           </div>
         </div>
-        <button type="button" onclick="app.closeBarcodeStickerModal()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" title="Close (Esc)">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <button type="button" onclick="app.closeBarcodeStickerModal()" class="modal-close-btn" title="Close (Esc)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
         </button>
       </div>
 
@@ -972,26 +1073,26 @@
   </div>
 
   <!-- DC-1750 Handheld Thermal Inkjet (TIJ) 1-Bit BMP Export Modal -->
-  <div id="tij-export-modal" onclick="if(event.target === this) app.closeTijExportModal()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs hidden items-center justify-center z-[1350] no-print p-4">
+  <div id="tij-export-modal" onclick="if(event.target === this) app.closeTijExportModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[5000] no-print p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200" id="tij-export-card">
       <!-- Modal Header -->
-      <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 py-3.5 px-6 text-white flex justify-between items-center border-b border-slate-800 shrink-0">
+      <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black shadow-md shrink-0">
-            <i data-lucide="usb" class="w-5 h-5"></i>
+          <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center font-black shadow-2xs shrink-0">
+            <i data-lucide="usb" class="w-4.5 h-4.5"></i>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h3 class="text-base font-black tracking-tight text-white uppercase">DC-1750 Handheld TIJ Barcode Exporter</h3>
-              <span class="px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-400/30">
+              <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">DC-1750 Handheld TIJ Barcode &amp; QR Exporter</h3>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-mono text-[10px] font-bold border border-emerald-200">
                 1-Bit Monochrome .BMP
               </span>
             </div>
-            <p class="text-[11px] font-bold text-slate-400">Export high-contrast bitmap graphics directly for DC-1750 / DC Jet handheld inkjet marking</p>
+            <p class="text-[11px] font-semibold text-slate-400 leading-none mt-0.5">Stage 2 • Export high-contrast 1D Barcode &amp; 2D QR Code bitmaps for DC-1750 / DC Jet handheld inkjet marking</p>
           </div>
         </div>
-        <button type="button" onclick="app.closeTijExportModal()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" title="Close (Esc)">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <button type="button" onclick="app.closeTijExportModal()" class="modal-close-btn" title="Close (Esc)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
         </button>
       </div>
 
@@ -1015,22 +1116,37 @@
           </span>
         </div>
 
-        <!-- Format Preset -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
-          <label class="block text-[11px] font-black uppercase text-slate-500 tracking-wider">TIJ Layout Format &amp; Cartridge Height</label>
+        <!-- Format Preset & Code Type -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 flex-wrap gap-2">
+            <label class="block text-[11px] font-black uppercase text-slate-600 tracking-wider flex items-center gap-1.5">
+              <i data-lucide="qr-code" class="w-3.5 h-3.5 text-emerald-600"></i> Mark Type &amp; Symbology
+            </label>
+            <div class="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-black border border-slate-200">
+              <button type="button" id="tij-type-barcode-btn" onclick="app.setTijCodeType('barcode')"
+                      class="px-3 py-1 rounded-md transition-all cursor-pointer bg-emerald-600 text-white font-black shadow-2xs flex items-center gap-1.5">
+                <i data-lucide="barcode" class="w-3.5 h-3.5"></i> 1D Barcode
+              </button>
+              <button type="button" id="tij-type-qrcode-btn" onclick="app.setTijCodeType('qrcode')"
+                      class="px-3 py-1 rounded-md transition-all cursor-pointer text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1.5">
+                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> 2D QR Code (Fast-Scan)
+              </button>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 bg-slate-50 cursor-pointer transition-all select-none has-checked:border-emerald-500 has-checked:bg-emerald-50/40">
               <input type="radio" name="tij-layout" value="full" checked onchange="app.updateTijPreview()" class="mt-0.5 text-emerald-600">
               <div>
-                <span class="text-xs font-black text-slate-900 block">Full Carton Mark (Standard)</span>
-                <span class="text-[10px] font-bold text-slate-500">Store Name + Item + Barcode + Price (480 × 152 px / 12.7 mm)</span>
+                <span class="text-xs font-black text-slate-900 block" id="tij-layout-full-title">Full Carton Mark (Standard)</span>
+                <span class="text-[10px] font-bold text-slate-500" id="tij-layout-full-desc">Store Name + Item + Barcode + Price (480 × 152 px / 12.7 mm)</span>
               </div>
             </label>
             <label class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 bg-slate-50 cursor-pointer transition-all select-none has-checked:border-emerald-500 has-checked:bg-emerald-50/40">
               <input type="radio" name="tij-layout" value="barcode-only" onchange="app.updateTijPreview()" class="mt-0.5 text-emerald-600">
               <div>
-                <span class="text-xs font-black text-slate-900 block">Barcode Only (Compact)</span>
-                <span class="text-[10px] font-bold text-slate-500">Barcode Bars + Digits only (360 × 152 px / 12.7 mm)</span>
+                <span class="text-xs font-black text-slate-900 block" id="tij-layout-compact-title">Barcode Only (Compact)</span>
+                <span class="text-[10px] font-bold text-slate-500" id="tij-layout-compact-desc">Barcode Bars + Digits only (360 × 152 px / 12.7 mm)</span>
               </div>
             </label>
           </div>
@@ -1055,7 +1171,7 @@
           </div>
 
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Barcode Density:</span>
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider" id="tij-density-label">Barcode Density:</span>
             <select id="tij-bar-width" onchange="app.updateTijPreview()" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none cursor-pointer">
               <option value="2.0" selected>Standard (2.0 px - High Density)</option>
               <option value="2.3">Thick Bars (2.3 px - High Contrast)</option>
@@ -1081,13 +1197,13 @@
       </div>
 
       <!-- Modal Footer Action Buttons -->
-      <div class="p-4 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
-        <button type="button" onclick="app.closeTijExportModal()" class="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer">
+      <div class="px-6 py-3.5 bg-slate-50/90 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <button type="button" onclick="app.closeTijExportModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-all">
           Close
         </button>
 
         <div class="flex items-center gap-2">
-          <button type="button" onclick="app.exportAllCartonsToTIJ()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+          <button type="button" onclick="app.exportAllCartonsToTIJ()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
             <i data-lucide="folder-archive" class="w-4 h-4 text-blue-400"></i>
             <span>Export ALL Cartons to USB</span>
           </button>
@@ -1105,21 +1221,23 @@
   <div id="sale-return-modal-container"></div>
 
   <!-- Print Containers (Root level for proper pagination and isolation) -->
-  <div id="receipt-print" class="hidden print:block bg-white"></div>
-  <div id="db-print-container" class="hidden print:block bg-white"></div>
-  <div id="voucher-print" class="hidden print:block bg-white"></div>
-  <div id="report-print-container" class="hidden print:block bg-white"></div>
-  <div id="barcode-sticker-print" class="hidden print:block bg-white"></div>
+  <div id="receipt-print" class="hidden bg-white"></div>
+  <div id="db-print-container" class="hidden bg-white"></div>
+  <div id="voucher-print" class="hidden bg-white"></div>
+  <div id="report-print-container" class="hidden bg-white"></div>
+  <div id="barcode-sticker-print" class="hidden bg-white"></div>
 
   <!-- Scripts -->
   <script src="pages/dashboard.js"></script>
   <script src="pages/proposals.js"></script>
   <script src="pages/customers.js"></script>
   <script src="pages/item-sales.js"></script>
+  <script src="pages/return-sales.js"></script>
   <script src="pages/sales-form.js"></script>
   <script src="pages/master-db.js"></script>
   <script src="pages/rate-list.js"></script>
   <script src="pages/expenses.js"></script>
+  <script src="pages/employees.js"></script>
   <script src="pages/companies.js"></script>
   <script src="pages/purchases.js"></script>
   <script src="pages/suppliers.js"></script>

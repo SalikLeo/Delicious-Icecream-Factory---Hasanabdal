@@ -43,6 +43,10 @@ var Proposals = window.Proposals = {
                     title="Print Sales Report (A5)">
               <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i> Print Sales Report
             </button>
+            <button type="button" onclick="app.navigate('return-sales')"
+                    class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95" title="View customer sales returns & returned items">
+              <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400"></i> Return Sales
+            </button>
             <button type="button" onclick="app.navigate('item-sales')"
                     class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95" title="View item-wise carton sales breakdown">
               <i data-lucide="package" class="w-4 h-4 text-amber-400"></i> Item Sales
@@ -57,33 +61,33 @@ var Proposals = window.Proposals = {
         <!-- KPI Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 shrink-0">
           <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Total Deliveries</p>
+            <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Total Deliveries</p>
             <h3 class="text-xl font-black text-slate-900 mt-1" id="prop-stat-count">0</h3>
-            <p class="text-[11px] font-bold text-slate-400 mt-0.5">Orders dispatched</p>
+            <p class="text-[11px] font-bold text-slate-500 mt-0.5">Orders dispatched</p>
           </div>
 
           <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Cartons Delivered</p>
+            <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Cartons &amp; Shopers Delivered</p>
             <h3 class="text-xl font-black text-blue-700 mt-1" id="prop-stat-cartons">0 Ctns</h3>
             <p class="text-[11px] font-bold text-blue-600 mt-0.5">Sold to shops</p>
           </div>
 
           <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Total Billed Sale</p>
+            <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Total Billed Sale</p>
             <h3 class="text-xl font-black text-slate-900 mt-1" id="prop-stat-total">Rs. 0</h3>
-            <p class="text-[11px] font-bold text-slate-400 mt-0.5">Gross amount</p>
+            <p class="text-[11px] font-bold text-slate-500 mt-0.5">Gross amount</p>
           </div>
 
           <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Cash Received</p>
+            <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Cash Received</p>
             <h3 class="text-xl font-black text-emerald-700 mt-1" id="prop-stat-cash">Rs. 0</h3>
             <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Collected by driver</p>
           </div>
 
           <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Pending Khata Credit</p>
+            <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Total Khata Balance Due</p>
             <h3 class="text-xl font-black text-rose-600 mt-1" id="prop-stat-due">Rs. 0</h3>
-            <p class="text-[11px] font-bold text-rose-500 mt-0.5">Added to shop balance</p>
+            <p class="text-[11px] font-bold text-rose-500 mt-0.5" id="prop-stat-due-sub">Receivable from all salesmen</p>
           </div>
         </div>
 
@@ -127,11 +131,11 @@ var Proposals = window.Proposals = {
               </select>
             </div>
 
-            <!-- Shop Filter -->
+            <!-- Salesman Filter -->
             <div>
               <select id="prop-shop-select" onchange="Proposals.onShopChange(this.value)"
                       class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">
-                <option value="">-- All Shops --</option>
+                <option value="">-- All Salesmen --</option>
               </select>
             </div>
 
@@ -199,13 +203,13 @@ var Proposals = window.Proposals = {
                   </th>
                   <th onclick="Proposals.toggleSort('car_driver')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-between gap-1">
-                      <span>Car &amp; Driver</span>
+                      <span>Car / Driver</span>
                       ${this.getSortIcon('car_driver')}
                     </div>
                   </th>
                   <th onclick="Proposals.toggleSort('shop')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-between gap-1">
-                      <span>Shop / Customer</span>
+                      <span>Salesman</span>
                       ${this.getSortIcon('shop')}
                     </div>
                   </th>
@@ -217,19 +221,19 @@ var Proposals = window.Proposals = {
                   </th>
                   <th onclick="Proposals.toggleSort('total')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-end gap-1">
-                      <span>Total (Rs.)</span>
+                      <span>Total</span>
                       ${this.getSortIcon('total')}
                     </div>
                   </th>
                   <th onclick="Proposals.toggleSort('received')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-end gap-1">
-                      <span>Cash Received</span>
+                      <span>Received</span>
                       ${this.getSortIcon('received')}
                     </div>
                   </th>
                   <th onclick="Proposals.toggleSort('balance')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-end gap-1">
-                      <span>Khata Remaining</span>
+                      <span>Balance</span>
                       ${this.getSortIcon('balance')}
                     </div>
                   </th>
@@ -355,13 +359,13 @@ var Proposals = window.Proposals = {
         </th>
         <th onclick="Proposals.toggleSort('car_driver')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
           <div class="flex items-center justify-between gap-1">
-            <span>Car &amp; Driver</span>
+            <span>Car / Driver</span>
             ${this.getSortIcon('car_driver')}
           </div>
         </th>
         <th onclick="Proposals.toggleSort('shop')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
           <div class="flex items-center justify-between gap-1">
-            <span>Shop / Customer</span>
+            <span>Salesman</span>
             ${this.getSortIcon('shop')}
           </div>
         </th>
@@ -373,19 +377,19 @@ var Proposals = window.Proposals = {
         </th>
         <th onclick="Proposals.toggleSort('total')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
           <div class="flex items-center justify-end gap-1">
-            <span>Total (Rs.)</span>
+            <span>Total</span>
             ${this.getSortIcon('total')}
           </div>
         </th>
         <th onclick="Proposals.toggleSort('received')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
           <div class="flex items-center justify-end gap-1">
-            <span>Cash Received</span>
+            <span>Received</span>
             ${this.getSortIcon('received')}
           </div>
         </th>
         <th onclick="Proposals.toggleSort('balance')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
           <div class="flex items-center justify-end gap-1">
-            <span>Khata Remaining</span>
+            <span>Balance</span>
             ${this.getSortIcon('balance')}
           </div>
         </th>
@@ -589,33 +593,62 @@ var Proposals = window.Proposals = {
   },
 
   updateStats() {
-    let totalCartons = 0;
+    let totalCtns = 0;
+    let totalShopers = 0;
     let totalReturned = 0;
     let totalSales = 0;
     let totalCash = 0;
-    let totalDue = 0;
 
     this.filteredDeliveries.forEach(d => {
-      totalCartons += Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
-      totalReturned += (Number(d.total_cartons_returned) || 0);
+      const dCtns = d.delivered_ctns !== undefined ? (Number(d.delivered_ctns) || 0) : (Number(d.total_cartons_delivered) || 0);
+      const dShp = Number(d.delivered_shopers) || 0;
+      const rCtns = d.returned_ctns !== undefined ? (Number(d.returned_ctns) || 0) : (Number(d.total_cartons_returned) || 0);
+      const rShp = Number(d.returned_shopers) || 0;
+      totalCtns += Math.max(0, dCtns - rCtns);
+      totalShopers += Math.max(0, dShp - rShp);
+      totalReturned += (rCtns + rShp);
       totalSales += (d.total_amount || 0);
       totalCash += (d.received_amount || 0);
-      totalDue += (d.remaining_balance || 0);
     });
+
+    // Real-time Khata Balance matching the Salesmen & Khata Accounts tab
+    let totalDue = 0;
+    if (this.selectedShopId) {
+      const s = (this.shops || []).find(x => String(x.id) === String(this.selectedShopId));
+      totalDue = s ? (Number(s.amount) || 0) : 0;
+    } else {
+      totalDue = (this.shops || []).reduce((acc, s) => acc + (Number(s.amount) || 0), 0);
+    }
 
     const cEl = document.getElementById('prop-stat-count');
     const ctEl = document.getElementById('prop-stat-cartons');
     const tEl = document.getElementById('prop-stat-total');
     const csEl = document.getElementById('prop-stat-cash');
     const dEl = document.getElementById('prop-stat-due');
+    const dSubEl = document.getElementById('prop-stat-due-sub');
 
     if (cEl) cEl.textContent = `${this.filteredDeliveries.length}`;
     if (ctEl) {
-      ctEl.innerHTML = `${totalCartons}${totalReturned > 0 ? ` <span class="text-rose-600 text-xs font-bold font-mono">(-${totalReturned})</span>` : ''} <span class="text-xs font-bold text-slate-400">Ctns</span>`;
+      const retBadge = totalReturned > 0 ? ` <span class="text-rose-600 text-xs font-bold font-mono">(-${totalReturned})</span>` : '';
+      if (totalShopers > 0 && totalCtns > 0) {
+        ctEl.innerHTML = `${totalCtns} <span class="text-xs font-bold text-slate-400">Ctns</span> • <span class="text-sky-600">${totalShopers}</span> <span class="text-xs font-bold text-slate-400">Shopers</span>${retBadge}`;
+      } else if (totalShopers > 0) {
+        ctEl.innerHTML = `<span class="text-sky-600">${totalShopers}</span> <span class="text-xs font-bold text-slate-400">Shopers</span>${retBadge}`;
+      } else {
+        ctEl.innerHTML = `${totalCtns}${retBadge} <span class="text-xs font-bold text-slate-400">Ctns</span>`;
+      }
     }
     if (tEl) tEl.textContent = `Rs. ${Math.round(totalSales).toLocaleString()}`;
     if (csEl) csEl.textContent = `Rs. ${Math.round(totalCash).toLocaleString()}`;
     if (dEl) dEl.textContent = `Rs. ${Math.round(totalDue).toLocaleString()}`;
+    if (dSubEl) {
+      if (this.selectedShopId) {
+        const s = (this.shops || []).find(x => String(x.id) === String(this.selectedShopId));
+        dSubEl.textContent = s ? `${s.name} Khata` : 'Receivable from all salesmen';
+      } else {
+        dSubEl.textContent = 'Receivable from all salesmen';
+      }
+    }
   },
 
   renderTable() {
@@ -639,7 +672,8 @@ var Proposals = window.Proposals = {
       return;
     }
 
-    let totalCartons = 0;
+    let totalCtns = 0;
+    let totalShopers = 0;
     let totalReturned = 0;
     let totalSales = 0;
     let totalCash = 0;
@@ -651,10 +685,19 @@ var Proposals = window.Proposals = {
       else if (d.payment_method === 'Online') badgeClass = 'bg-blue-100 text-blue-800';
       else if (d.payment_method === 'Credit') badgeClass = 'bg-amber-100 text-amber-800';
 
-      const remainingCtns = Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0));
-      const retCtns = Number(d.total_cartons_returned) || 0;
-      totalCartons += remainingCtns;
-      totalReturned += retCtns;
+      const delCtns = d.delivered_ctns !== undefined ? (Number(d.delivered_ctns) || 0) : (Number(d.total_cartons_delivered) || 0);
+      const delShopers = Number(d.delivered_shopers) || 0;
+      const retCtns = d.returned_ctns !== undefined ? (Number(d.returned_ctns) || 0) : (Number(d.total_cartons_returned) || 0);
+      const retShopers = Number(d.returned_shopers) || 0;
+
+      const netCtns = Math.max(0, delCtns - retCtns);
+      const netShopers = Math.max(0, delShopers - retShopers);
+      const remainingTotal = netCtns + netShopers;
+      const retTotal = retCtns + retShopers;
+
+      totalCtns += netCtns;
+      totalShopers += netShopers;
+      totalReturned += retTotal;
       totalSales += (Number(d.total_amount) || 0);
       totalCash += (Number(d.received_amount) || 0);
       totalDue += (Number(d.remaining_balance) || 0);
@@ -673,10 +716,18 @@ var Proposals = window.Proposals = {
             <div class="text-[10px] text-slate-400 leading-tight">${d.shop_phone || d.shop_address || ''}</div>
           </td>
           <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/30 border-r border-slate-200">
-            <div>${remainingCtns}</div>
-            ${(d.total_cartons_returned || 0) > 0 ? `
-              <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${d.total_cartons_returned} cartons returned (orig: ${d.total_cartons_delivered})">
-                -${d.total_cartons_returned} ret
+            <div>
+              ${(netCtns > 0 && netShopers > 0)
+                ? `<span class="text-blue-700 font-black">${netCtns} <span class="text-[10px] text-slate-400 font-normal">ctns</span></span> <span class="text-slate-300 font-normal">•</span> <span class="text-sky-600 font-black">${netShopers} <span class="text-[10px] text-slate-400 font-normal">shp</span></span>`
+                : (netShopers > 0
+                  ? `<span class="text-sky-600 font-black">${netShopers} <span class="text-[10px] text-slate-400 font-normal">shopers</span></span>`
+                  : `<span class="text-blue-700 font-black">${netCtns} <span class="text-[10px] text-slate-400 font-normal">ctns</span></span>`
+                )
+              }
+            </div>
+            ${retTotal > 0 ? `
+              <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${retTotal} returned (${retCtns} ctns, ${retShopers} shopers)">
+                -${retTotal} ret
               </span>
             ` : ''}
           </td>
@@ -697,9 +748,9 @@ var Proposals = window.Proposals = {
           <td class="py-1.5 px-3 text-center">
             <div class="flex items-center justify-center gap-1.5">
               <button type="button" onclick="ShopSales.openReturnModal(${d.id})"
-                      class="w-7 h-7 rounded-lg ${remainingCtns <= 0 ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200/80 cursor-pointer active:scale-95 shadow-2xs'} flex items-center justify-center transition-all"
-                      ${remainingCtns <= 0 ? 'disabled' : ''}
-                      title="${remainingCtns <= 0 ? 'All cartons on this delivery have already been returned' : 'Process Return (Keep in car or return to factory stock)'}">
+                      class="w-7 h-7 rounded-lg ${remainingTotal <= 0 ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60' : 'bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200/80 cursor-pointer active:scale-95 shadow-2xs'} flex items-center justify-center transition-all"
+                      ${remainingTotal <= 0 ? 'disabled' : ''}
+                      title="${remainingTotal <= 0 ? 'All packages on this delivery have already been returned' : 'Process Return (Keep in car or return to factory stock)'}">
                 <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
               </button>
               <button type="button" onclick="ShopSales.printDeliveryInvoice(${d.id})"
@@ -733,7 +784,16 @@ var Proposals = window.Proposals = {
             </div>
           </td>
           <td class="py-2.5 px-2 text-center font-black text-xs text-blue-800 bg-blue-100/40 border-r border-slate-200 tabular-nums">
-            <span>${totalCartons}</span>${totalReturned > 0 ? `<span class="text-rose-600 font-bold text-[11px] ml-0.5" title="${totalReturned} cartons returned (orig: ${totalCartons + totalReturned})">(-${totalReturned})</span>` : ''}
+            <div>
+              ${(totalCtns > 0 && totalShopers > 0)
+                ? `<span>${totalCtns} ctns</span> <span class="text-slate-400 font-normal">•</span> <span class="text-sky-700">${totalShopers} shp</span>`
+                : (totalShopers > 0
+                  ? `<span class="text-sky-700">${totalShopers} shopers</span>`
+                  : `<span>${totalCtns} ctns</span>`
+                )
+              }
+            </div>
+            ${totalReturned > 0 ? `<div class="text-rose-600 font-bold text-[10px]" title="${totalReturned} returned">(-${totalReturned})</div>` : ''}
           </td>
           <td class="py-2.5 px-3 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
             Rs. ${Math.round(totalSales).toLocaleString()}
@@ -914,97 +974,123 @@ var Proposals = window.Proposals = {
       if (s) periodDesc += ` • Shop: ${s.name}`;
     }
 
-    const totalCartons = list.reduce((sum, d) => sum + Math.max(0, (Number(d.total_cartons_delivered) || 0) - (Number(d.total_cartons_returned) || 0)), 0);
-    const totalReturned = list.reduce((sum, d) => sum + (Number(d.total_cartons_returned) || 0), 0);
-    const totalSales = list.reduce((sum, d) => sum + (Number(d.total_amount) || 0), 0);
-    const totalCash = list.reduce((sum, d) => sum + (Number(d.received_amount) || 0), 0);
-    const totalPending = list.reduce((sum, d) => sum + (Number(d.remaining_balance) || 0), 0);
+    let totalCartons = 0;
+    let totalShopers = 0;
+    let totalReturned = 0;
+    let totalSales = 0;
+    let totalCash = 0;
+    let totalPending = 0;
+
+    list.forEach(d => {
+      const dCtns = d.delivered_ctns !== undefined ? (Number(d.delivered_ctns) || 0) : (Number(d.total_cartons_delivered) || 0);
+      const dShp = Number(d.delivered_shopers) || 0;
+      const rCtns = d.returned_ctns !== undefined ? (Number(d.returned_ctns) || 0) : (Number(d.total_cartons_returned) || 0);
+      const rShp = Number(d.returned_shopers) || 0;
+      totalCartons += Math.max(0, dCtns - rCtns);
+      totalShopers += Math.max(0, dShp - rShp);
+      totalReturned += (rCtns + rShp);
+      totalSales += (Number(d.total_amount) || 0);
+      totalCash += (Number(d.received_amount) || 0);
+      totalPending += (Number(d.remaining_balance) || 0);
+    });
+
+    const dispatchedText = (totalShopers > 0 && totalCartons > 0)
+      ? `${totalCartons} Ctns, ${totalShopers} Shopers${totalReturned > 0 ? ` (${totalReturned} returned)` : ''}`
+      : (totalShopers > 0
+        ? `${totalShopers} Shopers${totalReturned > 0 ? ` (${totalReturned} returned)` : ''}`
+        : `${totalCartons} Ctns${totalReturned > 0 ? ` (${totalReturned} returned)` : ''}`
+      );
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px 8px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px 8px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9px;">
         
         <!-- Factory Header -->
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
-          <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${tagline}</p>
-          <p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">${address} • Phone: ${phone}</p>
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #0f172a;">${company}</h1>
+          <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: 600;">${tagline}</p>
+          <p style="font-size: 8.5px; color: #64748b; margin: 1px 0 0 0; font-weight: 500;">${address} • Phone: ${phone}</p>
         </div>
 
         <!-- Document Title -->
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          FACTORY SALES &amp; DISPATCH REPORT
+        <div style="text-align: center; margin: 3px 0 6px 0;">
+          <span style="display: inline-block; padding: 2.5px 14px; background: #fff; border: 1.5px solid #000; border-radius: 9999px; font-size: 10px; font-weight: 800; color: #000; letter-spacing: 0.8px; text-transform: uppercase;">
+            FACTORY SALES &amp; DISPATCH REPORT
+          </span>
         </div>
 
         <!-- Filter & Summary Bar -->
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
-          <div style="line-height: 1.45;">
-            <div><strong>Report Period:</strong> ${periodDesc}</div>
-            <div><strong>Total Deliveries:</strong> ${list.length} orders</div>
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; margin-bottom: 6px; padding: 5px 9px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.5;">
+          <div>
+            <div><strong style="color: #000;">Period:</strong> ${periodDesc}</div>
+            <div><strong style="color: #000;">Deliveries:</strong> ${list.length} orders</div>
           </div>
-          <div style="text-align: right; line-height: 1.45;">
-            <div><strong>Printed Date:</strong> ${date}</div>
-            <div><strong>Cartons Dispatched:</strong> <b>${totalCartons}${totalReturned > 0 ? ` (-${totalReturned})` : ''} Ctns</b></div>
+          <div style="text-align: right; line-height: 1.5;">
+            <div><strong style="color: #000;">Printed:</strong> ${date}</div>
+            <div><strong style="color: #000;">Dispatched:</strong> <b style="color: #000;">${dispatchedText}</b></div>
           </div>
         </div>
 
         <!-- KPI Summary Cards in Printout -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 6px; text-align: center; font-size: 9.5px;">
-          <div style="background: #fff; padding: 4px; border: 1px solid #000;">
-            <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 800; display: block;">Total Billed Sale</span>
-            <span style="font-size: 11px; font-weight: 900; color: #000; font-family: -apple-system, monospace;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; text-align: center;">
+          <div style="background: #fff; padding: 5px 6px; border: 1.5px solid #000; color: #000;">
+            <span style="font-size: 8.5px; color: #000; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; display: block; margin-bottom: 1px;">TOTAL SALES</span>
+            <span style="font-size: 12.5px; font-weight: 800; color: #000;">Rs. ${Math.round(totalSales).toLocaleString()}</span>
           </div>
-          <div style="background: #fff; padding: 4px; border: 1px solid #000;">
-            <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 800; display: block;">Cash Received</span>
-            <span style="font-size: 11px; font-weight: 900; color: #000; font-family: -apple-system, monospace;">Rs. ${Math.round(totalCash).toLocaleString()}</span>
+          <div style="background: #fff; padding: 5px 6px; border: 1.5px solid #000; color: #000;">
+            <span style="font-size: 8.5px; color: #000; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; display: block; margin-bottom: 1px;">CASH RECEIVED</span>
+            <span style="font-size: 12.5px; font-weight: 800; color: #000;">Rs. ${Math.round(totalCash).toLocaleString()}</span>
           </div>
-          <div style="background: #fff; padding: 4px; border: 1px solid #000;">
-            <span style="font-size: 8px; color: #000; text-transform: uppercase; font-weight: 800; display: block;">Khata Balance Due</span>
-            <span style="font-size: 11px; font-weight: 900; color: #000; font-family: -apple-system, monospace;">Rs. ${Math.round(totalPending).toLocaleString()}</span>
+          <div style="background: #fff; padding: 5px 6px; border: 1.5px solid #000; color: #000;">
+            <span style="font-size: 8.5px; color: #000; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; display: block; margin-bottom: 1px;">BALANCE DUE</span>
+            <span style="font-size: 12.5px; font-weight: 800; color: #000;">Rs. ${Math.round(totalPending).toLocaleString()}</span>
           </div>
         </div>
 
         <!-- Deliveries Table -->
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 3px; margin-bottom: 6px; background: #fff;">
           <thead>
             <tr style="background: #fff; border-bottom: 1.5px solid #000;">
-              <th style="border: 1px solid #000; padding: 4px 3px; text-align: center; width: 18px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">#</th>
-              <th style="border: 1px solid #000; padding: 4px 4px; text-align: left; width: 62px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
-              <th style="border: 1px solid #000; padding: 4px 4px; text-align: left; width: 55px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Invoice #</th>
-              <th style="border: 1px solid #000; padding: 4px 4px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Car &amp; Driver</th>
-              <th style="border: 1px solid #000; padding: 4px 4px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Shop / Customer</th>
-              <th style="border: 1px solid #000; padding: 4px 3px; text-align: center; width: 34px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Ctns</th>
-              <th style="border: 1px solid #000; padding: 4px 4px; text-align: right; width: 58px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
-              <th style="border: 1px solid #000; padding: 4px 4px; text-align: right; width: 58px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Received</th>
-              <th style="border: 1px solid #000; padding: 4px 4px; text-align: right; width: 58px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Balance</th>
-              <th style="border: 1px solid #000; padding: 4px 3px; text-align: center; width: 38px; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Mode</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: center; width: 20px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">#</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: left; width: 70px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Date</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: left; width: 52px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Invoice</th>
+              <th style="border: 1px solid #000; padding: 4px 4px; text-align: left; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Salesman</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: center; width: 50px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Packages</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: right; width: 60px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Total</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: right; width: 60px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Received</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: right; width: 60px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Balance</th>
+              <th style="border: 1px solid #000; padding: 4px 3px; text-align: center; width: 44px; font-weight: 800; font-size: 8.5px; text-transform: uppercase; color: #000;">Mode</th>
             </tr>
           </thead>
           <tbody>
             ${list.map((d, idx) => {
-              const remainingCtns = Math.max(0, (Number(d.total_cartons_delivered) || 0) - (Number(d.total_cartons_returned) || 0));
+              const dCtns = d.delivered_ctns !== undefined ? (Number(d.delivered_ctns) || 0) : (Number(d.total_cartons_delivered) || 0);
+              const dShp = Number(d.delivered_shopers) || 0;
+              const rCtns = d.returned_ctns !== undefined ? (Number(d.returned_ctns) || 0) : (Number(d.total_cartons_returned) || 0);
+              const rShp = Number(d.returned_shopers) || 0;
+              const netC = Math.max(0, dCtns - rCtns);
+              const netS = Math.max(0, dShp - rShp);
+              const pkgText = (netC > 0 && netS > 0) ? `${netC}c, ${netS}s` : (netS > 0 ? `${netS} shp` : `${netC} ctn`);
               const dt = app.formatDateTime(d.date, d.created_at);
+              const balVal = Math.round(d.remaining_balance || 0);
               return `
-                <tr>
-                  <td style="border: 1px solid #000; padding: 3.5px 2px; text-align: center; font-size: 8.5px; color: #000;">${idx + 1}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 4px; white-space: nowrap; font-size: 8.5px; color: #000;">${dt}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 4px; font-weight: 700; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">${d.invoice_no}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 4px; font-size: 8.5px; color: #000;">
-                    <b>${d.car_number || '—'}</b>${d.driver_name ? `<br><span style="color:#000; font-size:7.5px;">${d.driver_name}</span>` : ''}
-                  </td>
+                <tr style="page-break-inside: avoid;">
+                  <td style="border: 1px solid #000; padding: 3.5px 2px; text-align: center; font-size: 8px; color: #000;">${idx + 1}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 3px; white-space: nowrap; font-size: 8px; color: #000;">${dt}</td>
+                  <td style="border: 1px solid #000; padding: 3.5px 3px; font-weight: 800; font-size: 8.5px; color: #000;">${d.invoice_no}</td>
                   <td style="border: 1px solid #000; padding: 3.5px 4px; font-size: 8.5px; color: #000;">
                     <b>${d.shop_name || 'Walk-in'}</b>
                   </td>
-                  <td style="border: 1px solid #000; padding: 3.5px 2px; text-align: center; font-weight: 800; font-size: 8.5px; color: #000;">
-                    ${remainingCtns}
+                  <td style="border: 1px solid #000; padding: 3.5px 2px; text-align: center; font-weight: 600; font-size: 8px; color: #000;">
+                    ${pkgText}
                   </td>
-                  <td style="border: 1px solid #000; padding: 3.5px 4px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">
+                  <td style="border: 1px solid #000; padding: 3.5px 3px; text-align: right; font-weight: 700; font-size: 8.5px; color: #000;">
                     ${Math.round(d.total_amount).toLocaleString()}
                   </td>
-                  <td style="border: 1px solid #000; padding: 3.5px 4px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">
+                  <td style="border: 1px solid #000; padding: 3.5px 3px; text-align: right; font-weight: 700; font-size: 8.5px; color: #000;">
                     ${Math.round(d.received_amount).toLocaleString()}
                   </td>
-                  <td style="border: 1px solid #000; padding: 3.5px 4px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">
-                    ${Math.round(d.remaining_balance).toLocaleString()}
+                  <td style="border: 1px solid #000; padding: 3.5px 3px; text-align: right; font-weight: 800; font-size: 8.5px; color: #000;">
+                    ${balVal.toLocaleString()}
                   </td>
                   <td style="border: 1px solid #000; padding: 3.5px 2px; text-align: center; font-size: 8px; color: #000;">
                     ${d.payment_method || 'Cash'}
@@ -1014,24 +1100,29 @@ var Proposals = window.Proposals = {
             }).join('')}
           </tbody>
           <tfoot>
-            <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
-              <td colspan="5" style="border: 1px solid #000; padding: 4px; text-align: right; text-transform: uppercase; color: #000;">GRAND TOTALS (${list.length} ORDERS):</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: center; color: #000;">${totalCartons}${totalReturned > 0 ? ` (-${totalReturned})` : ''}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalSales).toLocaleString()}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalCash).toLocaleString()}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalPending).toLocaleString()}</td>
-              <td style="border: 1px solid #000; padding: 4px;"></td>
+            <tr style="background: #fff; font-weight: 800; border-top: 2px solid #000; color: #000;">
+              <td colspan="4" style="border: 1px solid #000; padding: 4.5px 3px; text-align: right; text-transform: uppercase; color: #000; font-size: 8.5px;">GRAND TOTALS (${list.length} ORDERS):</td>
+              <td style="border: 1px solid #000; padding: 4.5px 2px; text-align: center; color: #000; font-size: 8px;">
+                ${(totalShopers > 0 && totalCartons > 0)
+                  ? `${totalCartons}c, ${totalShopers}s`
+                  : (totalShopers > 0 ? `${totalShopers} shp` : `${totalCartons} ctn`)
+                }
+              </td>
+              <td style="border: 1px solid #000; padding: 4.5px 3px; text-align: right; color: #000; font-size: 9px;">Rs. ${Math.round(totalSales).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4.5px 3px; text-align: right; color: #000; font-size: 9px;">Rs. ${Math.round(totalCash).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4.5px 3px; text-align: right; color: #000; font-size: 9px;">Rs. ${Math.round(totalPending).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 4.5px 2px;"></td>
             </tr>
           </tfoot>
         </table>
 
         <!-- Signatures -->
-        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 8.5px;">
-          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
-            Sales / Driver Signature
+        <div style="margin-top: 18px; display: flex; justify-content: space-between; font-size: 9px;">
+          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Driver / Salesman
           </div>
-          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
-            Factory Manager Signature
+          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Factory Manager
           </div>
         </div>
 

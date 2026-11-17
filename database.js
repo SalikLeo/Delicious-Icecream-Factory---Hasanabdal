@@ -1,3 +1,11 @@
+// Enforce Pakistani / South Asian currency grouping (e.g. 12,25,300) everywhere across the application
+(function() {
+  const _origNumberToLocaleString = Number.prototype.toLocaleString;
+  Number.prototype.toLocaleString = function(locales, options) {
+    return _origNumberToLocaleString.call(this, locales || 'en-IN', options);
+  };
+})();
+
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
@@ -58,8 +66,11 @@ function init(customPath = null) {
   db.pragma('synchronous = NORMAL');
   db.pragma('temp_store = MEMORY');
   db.pragma('cache_size = -64000');
+  db.pragma('mmap_size = 268435456');
+  db.pragma('foreign_keys = ON');
   createTables();
   seedInitialData();
+  reconcileReturnsAndBalances();
   return db;
 }
 
@@ -338,11 +349,53 @@ function createTables() {
     phone TEXT, 
     email TEXT, 
     date_joined TEXT, 
-    salary REAL, 
-    status TEXT, 
+    salary REAL DEFAULT 0, 
+    status TEXT DEFAULT 'active', 
     notes TEXT, 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+  try {
+    const empCols = db.prepare("PRAGMA table_info(employees)").all().map(c => c.name);
+    if (!empCols.includes('status')) db.exec("ALTER TABLE employees ADD COLUMN status TEXT DEFAULT 'active'");
+    if (!empCols.includes('salary')) db.exec("ALTER TABLE employees ADD COLUMN salary REAL DEFAULT 0");
+    if (!empCols.includes('date_joined')) db.exec("ALTER TABLE employees ADD COLUMN date_joined TEXT");
+    if (!empCols.includes('role')) db.exec("ALTER TABLE employees ADD COLUMN role TEXT");
+    if (!empCols.includes('phone')) db.exec("ALTER TABLE employees ADD COLUMN phone TEXT");
+    if (!empCols.includes('cnic')) db.exec("ALTER TABLE employees ADD COLUMN cnic TEXT");
+  } catch (e) {}
+
+  // Employee Salary Payments
+  db.exec(`CREATE TABLE IF NOT EXISTS employee_salary_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    month TEXT NOT NULL,
+    amount REAL NOT NULL,
+    payment_date TEXT NOT NULL,
+    payment_method TEXT DEFAULT 'Cash',
+    notes TEXT,
+    expense_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_esp_emp_month ON employee_salary_payments(employee_id, month)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_esp_month ON employee_salary_payments(month)`);
+
+  // Employee Attendance
+  db.exec(`CREATE TABLE IF NOT EXISTS employee_attendance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    date TEXT NOT NULL,
+    status TEXT NOT NULL,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(employee_id, date)
+  )`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_att_date ON employee_attendance(date)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_att_emp_date ON employee_attendance(employee_id, date)`);
+
+  // Ensure Salaries exists in expense_categories
+  try {
+    db.prepare("INSERT OR IGNORE INTO expense_categories (name) VALUES ('Salaries')").run();
+  } catch (e) {}
   
   // Companies
   db.exec(`CREATE TABLE IF NOT EXISTS companies (
@@ -531,82 +584,38 @@ function seedInitialData() {
 
 function clearAllData() {
   try {
+    // Disable foreign keys temporarily during mass truncate
+    db.pragma('foreign_keys = OFF');
+
     const transaction = db.transaction(() => {
-      // 1. Delete all rows from any dynamic product tables
-      const productTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'products_%'").all();
-      productTables.forEach(row => {
-        try {
-          db.exec(`DELETE FROM ${row.name}`);
-        } catch (e) {
-          console.error(`Error clearing ${row.name}:`, e);
-        }
-      });
+      // 1. Get all operational tables in the SQLite database dynamically
+      const allTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+      
+      // Keep only system configuration and standard lookup categories/units
+      const preservedTables = ['settings', 'product_units', 'expense_categories', 'raw_material_categories', 'category_labels'];
 
-      // 2. Comprehensive deletion of all operational factory data across all 5 stages
-      const tablesToClear = [
-        // Stage 1: Raw Materials & Stock Logs
-        'raw_material_logs',
-        'raw_material_purchases',
-        'raw_materials',
-
-        // Stage 2: Single Pieces Production & Recipes
-        'production_batch_materials',
-        'production_batches',
-        'icecream_items',
-
-        // Stage 3: Carton Packing & Warehouse Stock
-        'packing_batches',
-        'packed_cartons',
-
-        // Stage 4: Vehicle Inventory, Cars & Loading Dispatches
-        'car_loading_items',
-        'car_loading_batches',
-        'car_inventory',
-        'cars',
-
-        // Stage 5: Shop Deliveries, Line Items, Returns & Payments
-        'shop_delivery_items',
-        'shop_deliveries',
-        'shop_return_items',
-        'shop_returns',
-        'shop_payments',
-        'shops',
-
-        // Accounts, Ledgers & Operational Records
-        'companies',
-        'customers',
-        'expenses',
-        'employees',
-        'favorites',
-        'product_rate_history',
-        'proposals',
-        'proposal_items',
-        'app_kv_store'
-      ];
-
-      tablesToClear.forEach(tbl => {
-        try {
-          const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(tbl);
-          if (tableExists) {
-            db.exec(`DELETE FROM ${tbl}`);
+      allTables.forEach(row => {
+        if (!preservedTables.includes(row.name)) {
+          try {
+            db.exec(`DELETE FROM "${row.name}"`);
+          } catch (e) {
+            console.error(`Error clearing table ${row.name}:`, e);
           }
-        } catch (e) {
-          console.error(`Error clearing table ${tbl}:`, e);
         }
       });
 
-      // 3. Reset all auto-increment counters so IDs start fresh from 1
+      // 2. Reset all auto-increment counters so all IDs start fresh from 1
       try {
         db.exec(`DELETE FROM sqlite_sequence`);
       } catch (e) {}
 
-      // 4. Mark factory data as seeded so initial demo data is NOT re-inserted on restart
+      // 3. Mark factory data as seeded so initial demo data is NOT re-inserted on restart
       try {
         db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('factory_data_seeded', '1')").run();
       } catch (e) {}
 
-      // 5. Ensure standard units and factory expense categories are present
-      const defaultUnits = ['PACK', 'PCS', 'BOX', 'BOTTLE', 'CARTON', 'SET', 'Liter', 'Kg'];
+      // 4. Ensure standard units and factory categories are present
+      const defaultUnits = ['PACK', 'PCS', 'BOX', 'BOTTLE', 'CARTON', 'SET', 'Liter', 'Kg', 'COTON', 'Gram', 'Bag'];
       const unitStmt = db.prepare('INSERT OR IGNORE INTO product_units (name) VALUES (?)');
       defaultUnits.forEach(u => {
         try { unitStmt.run(u); } catch (e) {}
@@ -620,15 +629,31 @@ function clearAllData() {
         'Staff Salaries', 
         'Vehicle Maintenance', 
         'Cold Storage & Freezers', 
+        'Salaries',
         'Other'
       ];
       const expCatStmt = db.prepare('INSERT OR IGNORE INTO expense_categories (name) VALUES (?)');
       defaultExpCats.forEach(c => {
         try { expCatStmt.run(c); } catch (e) {}
       });
+
+      // Ensure standard raw material categories
+      const defaultRawCats = ['Dairy', 'Sweeteners', 'Flavors & Coating', 'Packaging & Sticks', 'Fruits', 'Chocolate', 'Cones', 'Additives', 'General'];
+      const rawCatStmt = db.prepare('INSERT OR IGNORE INTO raw_material_categories (name) VALUES (?)');
+      defaultRawCats.forEach(c => {
+        try { rawCatStmt.run(c); } catch (e) {}
+      });
+
+      // Reset chocolate stock to 0 Liters in KV store
+      try {
+        db.prepare("INSERT OR REPLACE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', '0')").run();
+      } catch (e) {}
     });
 
     transaction();
+
+    // Re-enable foreign keys
+    db.pragma('foreign_keys = ON');
 
     try {
       db.pragma('wal_checkpoint(TRUNCATE)');
@@ -639,6 +664,7 @@ function clearAllData() {
 
     return { success: true };
   } catch (err) {
+    db.pragma('foreign_keys = ON');
     console.error('clearAllData error:', err);
     return { success: false, error: err.message };
   }
@@ -677,7 +703,7 @@ function setKv(key, value) {
     db.prepare('INSERT OR REPLACE INTO app_kv_store (key, value) VALUES (?, ?)').run(key, val);
     return { success: true };
   } catch (e) {
-    return { error: e.message };
+    return { success: false, error: e.message };
   }
 }
 
@@ -693,7 +719,7 @@ function saveAllKv(entries) {
     transaction(entries);
     return { success: true };
   } catch (e) {
-    return { error: e.message };
+    return { success: false, error: e.message };
   }
 }
 
@@ -1088,40 +1114,48 @@ function getCategoryStats() {
 }
 
 function addCategory(label) {
-    const slug = label.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
-    
-    // Check if exists
-    const exists = db.prepare('SELECT id FROM category_labels WHERE slug = ?').get(slug);
-    if (exists) return { error: 'Category already exists' };
+    try {
+        const slug = label.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+        
+        // Check if exists
+        const exists = db.prepare('SELECT id FROM category_labels WHERE slug = ?').get(slug);
+        if (exists) return { success: false, error: 'Category already exists' };
 
-    const transaction = db.transaction(() => {
-        db.prepare('INSERT INTO category_labels (slug, label) VALUES (?, ?)').run(slug, label);
-        db.exec(`CREATE TABLE products_${slug} (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            item_name TEXT, 
-            description TEXT, 
-            current_stock INTEGER DEFAULT 0, 
-            unit TEXT DEFAULT 'pcs', 
-            cost_price REAL DEFAULT 0, 
-            retail_price REAL DEFAULT 0,
-            wholesale_cost_price REAL DEFAULT 0,
-            wholesale_price REAL DEFAULT 0,
-            company_id INTEGER,
-            pieces_per_carton INTEGER DEFAULT 12
-        )`);
-    });
-    transaction();
-    return { success: true, slug };
+        const transaction = db.transaction(() => {
+            db.prepare('INSERT INTO category_labels (slug, label) VALUES (?, ?)').run(slug, label);
+            db.exec(`CREATE TABLE products_${slug} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                item_name TEXT, 
+                description TEXT, 
+                current_stock INTEGER DEFAULT 0, 
+                unit TEXT DEFAULT 'pcs', 
+                cost_price REAL DEFAULT 0, 
+                retail_price REAL DEFAULT 0,
+                wholesale_cost_price REAL DEFAULT 0,
+                wholesale_price REAL DEFAULT 0,
+                company_id INTEGER,
+                pieces_per_carton INTEGER DEFAULT 12
+            )`);
+        });
+        transaction();
+        return { success: true, slug };
+    } catch (e) {
+        return { success: false, error: e.message || 'Failed to add category' };
+    }
 }
 
 function deleteCategory(slug) {
-    const transaction = db.transaction(() => {
-        db.prepare('DELETE FROM category_labels WHERE slug = ?').run(slug);
-        db.prepare('DELETE FROM favorites WHERE category_slug = ?').run(slug);
-        db.exec(`DROP TABLE IF EXISTS products_${slug}`);
-    });
-    transaction();
-    return { success: true };
+    try {
+        const transaction = db.transaction(() => {
+            db.prepare('DELETE FROM category_labels WHERE slug = ?').run(slug);
+            db.prepare('DELETE FROM favorites WHERE category_slug = ?').run(slug);
+            db.exec(`DROP TABLE IF EXISTS products_${slug}`);
+        });
+        transaction();
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message || 'Failed to delete category' };
+    }
 }
 
 // ------ PROPOSALS ------
@@ -1301,6 +1335,10 @@ function getExpenses(filters) {
   }
   
   sql += ' ORDER BY date DESC, id DESC';
+  if (filters && filters.limit) {
+    sql += ' LIMIT ?';
+    params.push(Number(filters.limit));
+  }
   return db.prepare(sql).all(...params);
 }
 
@@ -1317,7 +1355,10 @@ function saveExpense(data) {
 }
 
 function deleteExpense(id) {
-  db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
+  db.transaction(() => {
+    db.prepare('DELETE FROM employee_salary_payments WHERE expense_id = ?').run(id);
+    db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
+  })();
 }
 
 function getExpenseCategories() {
@@ -1329,12 +1370,27 @@ function addExpenseCategory(name) {
     const info = db.prepare('INSERT INTO expense_categories (name) VALUES (?)').run(name);
     return info.lastInsertRowid;
   } catch (e) {
-    return { error: 'Category already exists or error occurred' };
+    return { success: false, error: 'Category already exists or error occurred' };
   }
 }
 
 function deleteExpenseCategory(id) {
-  db.prepare('DELETE FROM expense_categories WHERE id = ?').run(id);
+  try {
+    const cat = db.prepare('SELECT * FROM expense_categories WHERE id = ?').get(id);
+    if (!cat) return { success: false, error: 'Category not found' };
+    const lowerName = (cat.name || '').toLowerCase().trim();
+    if (lowerName === 'salaries' || lowerName === 'salary' || lowerName.includes('salar')) {
+      return { success: false, error: 'The Salaries category is a protected system category and cannot be deleted.' };
+    }
+    const countRow = db.prepare('SELECT COUNT(*) as c FROM expenses WHERE LOWER(TRIM(category)) = LOWER(TRIM(?))').get(cat.name);
+    if (countRow && countRow.c > 0) {
+      return { success: false, error: `Category "${cat.name}" cannot be deleted because it contains ${countRow.c} expense record(s).` };
+    }
+    db.prepare('DELETE FROM expense_categories WHERE id = ?').run(id);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 }
 
 function getExpensesSummary(filters) {
@@ -1352,33 +1408,471 @@ function getExpensesSummary(filters) {
   
   const monthTotal = db.prepare(`SELECT SUM(amount) as s FROM expenses WHERE date LIKE '${monthStr}-%'`).get().s || 0;
   const dailyTotal = db.prepare("SELECT SUM(amount) as s FROM expenses WHERE substr(date, 1, 10) = ?").get(todayStr)?.s || 0;
-  const salariesTotal = db.prepare(`SELECT SUM(amount) as s FROM expenses WHERE LOWER(category) LIKE '%salary%' AND date LIKE '${monthStr}-%'`).get().s || 0;
+  const salariesTotal = db.prepare(`SELECT SUM(amount) as s FROM expenses WHERE (LOWER(category) LIKE '%salar%' OR LOWER(category) LIKE '%wage%' OR LOWER(category) LIKE '%payroll%') AND date LIKE '${monthStr}-%'`).get().s || 0;
   
   return { selectedMonth: monthTotal, daily: dailyTotal, salaries: salariesTotal };
 }
 
-// ------ EMPLOYEES ------
-function getEmployees(status) {
-  if (status && status !== 'All') {
-    return db.prepare('SELECT * FROM employees WHERE status = ? ORDER BY full_name').all(status);
+// ------ EMPLOYEES & SALARIES & ATTENDANCE ------
+function getMonthsRange(startMonth, endMonth) {
+  if (!startMonth || !endMonth) return [endMonth || startMonth];
+  if (startMonth > endMonth) return [endMonth];
+  const months = [];
+  let [curY, curM] = startMonth.split('-').map(Number);
+  const [endY, endM] = endMonth.split('-').map(Number);
+  while (curY < endY || (curY === endY && curM <= endM)) {
+    months.push(`${curY}-${String(curM).padStart(2, '0')}`);
+    curM++;
+    if (curM > 12) {
+      curM = 1;
+      curY++;
+    }
   }
-  return db.prepare('SELECT * FROM employees ORDER BY full_name').all();
+  return months;
+}
+
+function computeEmployeeSalaryForMonth(emp, targetMonth) {
+  const baseSalary = Number(emp.salary) || 0;
+
+  // Determine start month: join_date or created_at or earliest payment
+  let joinMonth = targetMonth;
+  if (emp.date_joined && emp.date_joined.length >= 7) {
+    joinMonth = emp.date_joined.substring(0, 7);
+  } else if (emp.created_at && emp.created_at.length >= 7) {
+    joinMonth = emp.created_at.substring(0, 7);
+  }
+
+  const minPayRow = db.prepare('SELECT MIN(month) as min_m FROM employee_salary_payments WHERE employee_id = ?').get(emp.id);
+  const minPayMonth = minPayRow && minPayRow.min_m ? minPayRow.min_m : null;
+
+  let startMonth = joinMonth;
+  if (minPayMonth && minPayMonth < startMonth) {
+    startMonth = minPayMonth;
+  }
+  if (startMonth > targetMonth) {
+    startMonth = targetMonth;
+  }
+
+  const months = getMonthsRange(startMonth, targetMonth);
+
+  // Pre-fetch all payments for this employee from startMonth to targetMonth
+  const paymentRows = db.prepare(`
+    SELECT month, COALESCE(SUM(amount), 0) as paid, COUNT(*) as cnt
+    FROM employee_salary_payments
+    WHERE employee_id = ? AND month >= ? AND month <= ?
+    GROUP BY month
+  `).all(emp.id, startMonth, targetMonth);
+
+  const payMap = new Map();
+  for (const r of paymentRows) {
+    payMap.set(r.month, { paid: Number(r.paid) || 0, cnt: Number(r.cnt) || 0 });
+  }
+
+  let runningAdvance = 0;
+  let targetData = null;
+
+  for (const m of months) {
+    const isTarget = (m === targetMonth);
+    const mSalary = (m >= joinMonth) ? baseSalary : 0;
+    const pInfo = payMap.get(m) || { paid: 0, cnt: 0 };
+    const mDirectPaid = pInfo.paid;
+    const mCnt = pInfo.cnt;
+
+    const totalAvailable = mDirectPaid + runningAdvance;
+    const advanceBroughtIn = runningAdvance;
+    const effectivePaid = Math.min(mSalary, totalAvailable);
+    const remainingSalary = Math.max(0, mSalary - totalAvailable);
+    const advanceOut = Math.max(0, totalAvailable - mSalary);
+
+    if (isTarget) {
+      const displayPaid = Math.max(mDirectPaid, effectivePaid);
+      const isFullyPaid = mSalary > 0 ? (remainingSalary <= 0) : true;
+      targetData = {
+        salary: mSalary,
+        base_salary: baseSalary,
+        paid_amount: displayPaid,
+        direct_paid: mDirectPaid,
+        advance_brought_in: advanceBroughtIn,
+        advance_applied: Math.min(mSalary, advanceBroughtIn),
+        advance_remaining: advanceOut,
+        remaining_salary: remainingSalary,
+        payment_count: mCnt,
+        is_fully_paid: isFullyPaid
+      };
+      break;
+    } else {
+      runningAdvance = advanceOut;
+    }
+  }
+
+  if (!targetData) {
+    const mDirect = payMap.get(targetMonth)?.paid || 0;
+    const mCnt = payMap.get(targetMonth)?.cnt || 0;
+    const rem = Math.max(0, baseSalary - mDirect);
+    targetData = {
+      salary: baseSalary,
+      base_salary: baseSalary,
+      paid_amount: mDirect,
+      direct_paid: mDirect,
+      advance_brought_in: 0,
+      advance_applied: 0,
+      advance_remaining: Math.max(0, mDirect - baseSalary),
+      remaining_salary: rem,
+      payment_count: mCnt,
+      is_fully_paid: baseSalary > 0 ? rem <= 0 : true
+    };
+  }
+
+  return {
+    ...emp,
+    ...targetData
+  };
+}
+
+function getEmployees(options = {}) {
+  let status = null;
+  let month = null;
+  let search = '';
+  if (typeof options === 'string') {
+    status = options;
+  } else if (options && typeof options === 'object') {
+    status = options.status || null;
+    month = options.month || null;
+    search = (options.search || '').trim();
+  }
+
+  if (!month) {
+    const now = new Date();
+    month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  let query = 'SELECT * FROM employees WHERE 1=1';
+  const params = [];
+
+  if (status && status !== 'all' && status !== 'All') {
+    query += ' AND LOWER(status) = LOWER(?)';
+    params.push(status);
+  }
+  if (search) {
+    query += ' AND (full_name LIKE ? OR role LIKE ? OR phone LIKE ?)';
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  query += ' ORDER BY full_name ASC';
+  const rows = db.prepare(query).all(...params);
+
+  return rows.map(r => computeEmployeeSalaryForMonth(r, month));
+}
+
+function getEmployee(id) {
+  const emp = db.prepare('SELECT * FROM employees WHERE id = ?').get(id);
+  if (!emp) return null;
+  const payments = db.prepare(`
+    SELECT * FROM employee_salary_payments 
+    WHERE employee_id = ? 
+    ORDER BY payment_date DESC, id DESC
+  `).all(id);
+  return { ...emp, payments };
 }
 
 function saveEmployee(data) {
-  if (data.id) {
-    const { id, ...updates } = data;
-    const clause = Object.keys(updates).map(k => `${k} = @${k}`).join(', ');
-    db.prepare(`UPDATE employees SET ${clause} WHERE id = @id`).run(data);
-  } else {
-    const keys = Object.keys(data);
-    const placeholders = keys.map(k => `@${k}`).join(', ');
-    db.prepare(`INSERT INTO employees (${keys.join(', ')}) VALUES (${placeholders})`).run(data);
+  try {
+    const name = (data.full_name || '').trim();
+    if (!name) return { success: false, error: 'Employee name is required.' };
+
+    const salary = Number(data.salary) || 0;
+    const role = (data.role || '').trim();
+    const phone = (data.phone || '').trim();
+    const email = (data.email || '').trim();
+    const dateJoined = data.date_joined || new Date().toISOString().split('T')[0];
+    const status = data.status || 'active';
+    const notes = data.notes || '';
+    const cnic = (data.cnic || '').trim();
+
+    if (data.id) {
+      db.prepare(`
+        UPDATE employees 
+        SET full_name = ?, role = ?, phone = ?, email = ?, date_joined = ?, salary = ?, status = ?, notes = ?, cnic = ?
+        WHERE id = ?
+      `).run(name, role, phone, email, dateJoined, salary, status, notes, cnic, data.id);
+      return { success: true, id: data.id };
+    } else {
+      const res = db.prepare(`
+        INSERT INTO employees (full_name, role, phone, email, date_joined, salary, status, notes, cnic)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(name, role, phone, email, dateJoined, salary, status, notes, cnic);
+      return { success: true, id: res.lastInsertRowid };
+    }
+  } catch (err) {
+    console.error('Error in saveEmployee:', err);
+    return { success: false, error: err.message || 'Failed to save employee.' };
   }
 }
 
 function deleteEmployee(id) {
-  db.prepare('DELETE FROM employees WHERE id = ?').run(id);
+  try {
+    db.transaction(() => {
+      const payments = db.prepare('SELECT expense_id FROM employee_salary_payments WHERE employee_id = ?').all(id);
+      for (const p of payments) {
+        if (p.expense_id) {
+          db.prepare('DELETE FROM expenses WHERE id = ?').run(p.expense_id);
+        }
+      }
+      db.prepare('DELETE FROM employee_salary_payments WHERE employee_id = ?').run(id);
+      db.prepare('DELETE FROM employee_attendance WHERE employee_id = ?').run(id);
+      db.prepare('DELETE FROM employees WHERE id = ?').run(id);
+    })();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteEmployee:', err);
+    return { success: false, error: err.message || 'Failed to delete employee.' };
+  }
+}
+
+function recordSalaryPayment(data) {
+  try {
+    const empId = Number(data.employee_id);
+    const emp = db.prepare('SELECT * FROM employees WHERE id = ?').get(empId);
+    if (!emp) return { success: false, error: 'Employee not found.' };
+
+    const amount = Number(data.amount) || 0;
+    if (amount <= 0) return { success: false, error: 'Payment amount must be greater than 0.' };
+
+    const month = data.month || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    const paymentDate = data.payment_date || new Date().toISOString().split('T')[0];
+    const paymentMethod = data.payment_method || 'Cash';
+    const notes = data.notes || '';
+
+    // Format month for readable description, e.g. "Nov 2026"
+    const [y, m] = month.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthLabel = monthNames[parseInt(m, 10) - 1] ? `${monthNames[parseInt(m, 10) - 1]} ${y}` : month;
+
+    // Check if payment covers salary or is an advance payment
+    const baseSalary = Number(emp.salary) || 0;
+    const paidRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as paid FROM employee_salary_payments WHERE employee_id = ? AND month = ?').get(empId, month);
+    const paidSoFar = Number(paidRow?.paid) || 0;
+    const remainingSalary = Math.max(0, baseSalary - paidSoFar);
+    const isAdvance = amount > remainingSalary;
+
+    let paymentId;
+    let expenseId;
+
+    db.transaction(() => {
+      // 1. Ensure Salaries category exists
+      db.prepare("INSERT OR IGNORE INTO expense_categories (name) VALUES ('Salaries')").run();
+
+      // 2. Insert into expenses table
+      const expDesc = isAdvance 
+        ? `Salary & Advance: ${emp.full_name} (${monthLabel})`
+        : `Salary: ${emp.full_name} (${monthLabel})`;
+
+      const expRes = db.prepare(`
+        INSERT INTO expenses (date, category, amount, description, paid_by, notes)
+        VALUES (?, 'Salaries', ?, ?, ?, ?)
+      `).run(
+        paymentDate,
+        amount,
+        expDesc,
+        paymentMethod,
+        notes ? `Employee: ${emp.full_name}. Notes: ${notes}` : `Employee: ${emp.full_name}`
+      );
+      expenseId = expRes.lastInsertRowid;
+
+      // 3. Insert into employee_salary_payments table
+      const payRes = db.prepare(`
+        INSERT INTO employee_salary_payments (employee_id, month, amount, payment_date, payment_method, notes, expense_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(empId, month, amount, paymentDate, paymentMethod, notes, expenseId);
+      paymentId = payRes.lastInsertRowid;
+    })();
+
+    return { success: true, paymentId, expenseId };
+  } catch (err) {
+    console.error('Error in recordSalaryPayment:', err);
+    return { success: false, error: err.message || 'Failed to record salary payment.' };
+  }
+}
+
+function deleteSalaryPayment(id) {
+  try {
+    const payment = db.prepare('SELECT * FROM employee_salary_payments WHERE id = ?').get(id);
+    if (!payment) return { success: false, error: 'Payment record not found.' };
+
+    db.transaction(() => {
+      if (payment.expense_id) {
+        db.prepare('DELETE FROM expenses WHERE id = ?').run(payment.expense_id);
+      }
+      db.prepare('DELETE FROM employee_salary_payments WHERE id = ?').run(id);
+    })();
+
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteSalaryPayment:', err);
+    return { success: false, error: err.message || 'Failed to delete salary payment.' };
+  }
+}
+
+function getSalaryPayments(filters = {}) {
+  let query = `
+    SELECT esp.*, e.full_name as employee_name, e.role as employee_role
+    FROM employee_salary_payments esp
+    JOIN employees e ON esp.employee_id = e.id
+    WHERE 1=1
+  `;
+  const params = [];
+  if (filters.employee_id) {
+    query += ' AND esp.employee_id = ?';
+    params.push(Number(filters.employee_id));
+  }
+  if (filters.month) {
+    query += ' AND esp.month = ?';
+    params.push(filters.month);
+  }
+  if (filters.startDate) {
+    query += ' AND substr(esp.payment_date, 1, 10) >= ?';
+    params.push(filters.startDate.slice(0, 10));
+  }
+  if (filters.endDate) {
+    query += ' AND substr(esp.payment_date, 1, 10) <= ?';
+    params.push(filters.endDate.slice(0, 10));
+  }
+  query += ' ORDER BY esp.payment_date DESC, esp.id DESC';
+  return db.prepare(query).all(...params);
+}
+
+function getMonthlyAttendance(month) {
+  if (!month) {
+    const now = new Date();
+    month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  const [yearStr, monthStr] = month.split('-');
+  const y = parseInt(yearStr, 10);
+  const m = parseInt(monthStr, 10);
+  const daysInMonth = new Date(y, m, 0).getDate();
+
+  const employees = db.prepare(`
+    SELECT id, full_name, role, status 
+    FROM employees 
+    ORDER BY full_name ASC
+  `).all();
+
+  const records = db.prepare(`
+    SELECT ea.* 
+    FROM employee_attendance ea
+    WHERE ea.date >= ? AND ea.date <= ?
+  `).all(`${month}-01`, `${month}-${String(daysInMonth).padStart(2, '0')}`);
+
+  const attMap = {};
+  for (const r of records) {
+    if (!attMap[r.employee_id]) attMap[r.employee_id] = {};
+    attMap[r.employee_id][r.date] = r.status;
+  }
+
+  return {
+    month,
+    year: y,
+    monthNum: m,
+    daysInMonth,
+    employees: employees.map(emp => {
+      const empAtt = attMap[emp.id] || {};
+      let present = 0;
+      let absent = 0;
+      let halfDay = 0;
+      let overtime = 0;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dStr = `${month}-${String(d).padStart(2, '0')}`;
+        const st = empAtt[dStr];
+        if (st === 'P') present++;
+        else if (st === 'A') absent++;
+        else if (st === 'HD') halfDay++;
+        else if (st === 'OT') overtime++;
+      }
+      return {
+        id: emp.id,
+        full_name: emp.full_name,
+        role: emp.role,
+        status: emp.status || 'active',
+        attendance: empAtt,
+        summary: {
+          present,
+          absent,
+          halfDay,
+          overtime,
+          hd: halfDay,
+          ot: overtime
+        }
+      };
+    })
+  };
+}
+
+function setAttendance(employee_id, date, status, notes = '') {
+  try {
+    const cleanStatus = (status || '').trim().toUpperCase();
+    if (!cleanStatus || cleanStatus === '-' || cleanStatus === 'NONE' || cleanStatus === 'CLEAR' || cleanStatus === '·') {
+      db.prepare('DELETE FROM employee_attendance WHERE employee_id = ? AND date = ?').run(employee_id, date);
+      return { success: true, status: '' };
+    }
+    db.prepare(`
+      INSERT INTO employee_attendance (employee_id, date, status, notes)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(employee_id, date) DO UPDATE SET
+        status = excluded.status,
+        notes = excluded.notes,
+        created_at = CURRENT_TIMESTAMP
+    `).run(employee_id, date, cleanStatus, notes);
+    return { success: true, status: cleanStatus };
+  } catch (err) {
+    console.error('Error in setAttendance:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+function bulkSetAttendance(date, records = []) {
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO employee_attendance (employee_id, date, status, notes)
+      VALUES (?, ?, ?, '')
+      ON CONFLICT(employee_id, date) DO UPDATE SET
+        status = excluded.status
+    `);
+    const tx = db.transaction(() => {
+      for (const r of records) {
+        if (r.employee_id && r.status) {
+          stmt.run(r.employee_id, date, r.status);
+        }
+      }
+    });
+    tx();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in bulkSetAttendance:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+function getEmployeesPayrollSummary(month) {
+  if (!month) {
+    const now = new Date();
+    month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  const emps = getEmployees({ month });
+  const activeEmps = emps.filter(e => e.status !== 'inactive');
+  const totalEmployees = activeEmps.length;
+  const totalMonthlyPayroll = activeEmps.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const totalPaid = emps.reduce((sum, e) => sum + (Number(e.paid_amount) || 0), 0);
+  const totalRemaining = emps.reduce((sum, e) => sum + (Number(e.remaining_salary) || 0), 0);
+  const totalAdvance = emps.reduce((sum, e) => sum + (Number(e.advance_remaining) || 0), 0);
+
+  return {
+    month,
+    totalEmployees,
+    totalMonthlyPayroll,
+    totalPaidThisMonth: totalPaid,
+    totalRemainingThisMonth: totalRemaining,
+    totalAdvanceRemaining: totalAdvance
+  };
 }
 
 // ------ COMPANIES ------
@@ -1410,6 +1904,18 @@ function getCustomers() {
 }
 
 function saveCustomer(data) {
+  const custName = (data.name || '').trim();
+  if (!custName) {
+    throw new Error('Customer name is required.');
+  }
+
+  const custDup = data.id
+    ? db.prepare('SELECT id, name FROM customers WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id != ?').get(custName, data.id)
+    : db.prepare('SELECT id, name FROM customers WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(custName);
+  if (custDup) {
+    throw new Error(`A customer with the name "${custName}" already exists. Duplicate names are not allowed.`);
+  }
+
   let customerId;
   const transaction = db.transaction(() => {
     if (data.id) {
@@ -1770,16 +2276,16 @@ function getAllProposalItems() {
       sdi.id + 1000000 AS id,
       sdi.delivery_id AS proposal_id,
       sdi.carton_id AS item_id,
-      'Ice Cream Cartons' AS section,
+      CASE WHEN LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) = 'shoper' THEN 'Shopers' ELSE 'Cartons' END AS section,
       sdi.carton_name AS description,
-      sdi.delivered_cartons AS qty,
-      'ctns' AS unit,
-      COALESCE(pc.carton_cost, 0) AS unit_cost,
+      (sdi.delivered_cartons - COALESCE(sdi.returned_cartons, 0)) AS qty,
+      CASE WHEN LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) = 'shoper' THEN 'shoper' ELSE 'ctns' END AS unit,
+      COALESCE(pc.carton_cost_price, 0) AS unit_cost,
       sdi.carton_price AS unit_retail,
       sdi.carton_price AS unit_discounted,
-      (sdi.delivered_cartons * COALESCE(pc.carton_cost, 0)) AS line_cost,
+      ((sdi.delivered_cartons - COALESCE(sdi.returned_cartons, 0)) * COALESCE(pc.carton_cost_price, 0)) AS line_cost,
       sdi.line_total AS line_retail,
-      (sdi.line_total - (sdi.delivered_cartons * COALESCE(pc.carton_cost, 0))) AS line_profit,
+      (sdi.line_total - ((sdi.delivered_cartons - COALESCE(sdi.returned_cartons, 0)) * COALESCE(pc.carton_cost_price, 0))) AS line_profit,
       sd.invoice_no AS proposal_number,
       sd.shop_name AS customer_name,
       sd.shop_phone AS phone,
@@ -1791,6 +2297,7 @@ function getAllProposalItems() {
     FROM shop_delivery_items sdi
     JOIN shop_deliveries sd ON sdi.delivery_id = sd.id
     LEFT JOIN packed_cartons pc ON sdi.carton_id = pc.id
+    WHERE (sdi.delivered_cartons - COALESCE(sdi.returned_cartons, 0)) > 0
 
     ORDER BY date DESC, id DESC
   `;
@@ -1811,6 +2318,18 @@ function getShop(id) {
 }
 
 function saveShop(data) {
+  const shopName = (data.name || '').trim();
+  if (!shopName) {
+    throw new Error('Salesman name is required.');
+  }
+
+  const shopDup = data.id
+    ? db.prepare('SELECT id, name FROM shops WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id != ?').get(shopName, data.id)
+    : db.prepare('SELECT id, name FROM shops WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(shopName);
+  if (shopDup) {
+    throw new Error(`A salesman with the name "${shopName}" already exists. Duplicate names are not allowed.`);
+  }
+
   let shopId;
   const transaction = db.transaction(() => {
     if (data.id) {
@@ -1847,7 +2366,21 @@ function saveShop(data) {
 }
 
 function deleteShop(id) {
-  db.prepare('DELETE FROM shops WHERE id = ?').run(id);
+  try {
+    const s = db.prepare('SELECT * FROM shops WHERE id = ?').get(id);
+    if (!s) return { success: false, error: 'Shop / Salesman not found' };
+
+    db.transaction(() => {
+      db.prepare('DELETE FROM shop_payments WHERE shop_id = ?').run(id);
+      db.prepare('UPDATE shop_returns SET shop_id = NULL WHERE shop_id = ?').run(id);
+      db.prepare('UPDATE shop_deliveries SET shop_id = NULL WHERE shop_id = ?').run(id);
+      db.prepare('DELETE FROM shops WHERE id = ?').run(id);
+    })();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteShop:', err);
+    return { success: false, error: err.message || 'Failed to delete shop.' };
+  }
 }
 
 function getUnits() {
@@ -1857,19 +2390,19 @@ function getUnits() {
 function addUnit(name) {
   try {
     return db.prepare('INSERT INTO product_units (name) VALUES (?)').run(name.toUpperCase());
-  } catch(e) { return { error: e.message }; }
+  } catch(e) { return { success: false, error: e.message }; }
 }
 
 function updateUnit(id, name) {
   try {
     return db.prepare('UPDATE product_units SET name = ? WHERE id = ?').run(name.toUpperCase(), id);
-  } catch(e) { return { error: e.message }; }
+  } catch(e) { return { success: false, error: e.message }; }
 }
 
 function deleteUnit(id) {
   try {
     return db.prepare('DELETE FROM product_units WHERE id = ?').run(id);
-  } catch(e) { return { error: e.message }; }
+  } catch(e) { return { success: false, error: e.message }; }
 }
 
 
@@ -2066,7 +2599,7 @@ function markProposalPaid(idOrNumber) {
     const cleanNum = String(idOrNumber).replace(/^#/, '').trim();
     p = db.prepare('SELECT id, retail_total FROM proposals WHERE proposal_number = ? OR proposal_number = ? OR id = ?').get(cleanNum, 'INV-' + cleanNum, Number(cleanNum) || 0);
   }
-  if (!p) return { error: 'Proposal not found' };
+  if (!p) return { success: false, error: 'Proposal not found' };
 
   db.prepare("UPDATE proposals SET received_amount = retail_total, status = 'Paid' WHERE id = ?").run(p.id);
   return { success: true, id: p.id };
@@ -2089,6 +2622,9 @@ function createIcecreamFactoryTables() {
       current_stock REAL DEFAULT 0,
       cost_price REAL DEFAULT 0,
       min_stock_alert REAL DEFAULT 0,
+      has_bulk INTEGER DEFAULT 0,
+      pack_unit TEXT DEFAULT '',
+      pack_size REAL DEFAULT 1,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -2131,6 +2667,7 @@ function createIcecreamFactoryTables() {
       current_single_stock INTEGER DEFAULT 0,
       default_pcs_per_carton INTEGER DEFAULT 20,
       barcode TEXT,
+      qr_code TEXT,
       image_path TEXT,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -2174,6 +2711,7 @@ function createIcecreamFactoryTables() {
       factory_carton_stock INTEGER DEFAULT 0,
       stickers_printed INTEGER DEFAULT 0,
       barcode TEXT,
+      qr_code TEXT,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -2193,6 +2731,7 @@ function createIcecreamFactoryTables() {
       total_cost REAL DEFAULT 0,
       carton_sale_price REAL DEFAULT 0,
       notes TEXT,
+      raw_materials_summary TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -2261,6 +2800,10 @@ function createIcecreamFactoryTables() {
       driver_name TEXT,
       subtotal REAL DEFAULT 0,
       discount REAL DEFAULT 0,
+      deduction_type TEXT DEFAULT 'commission',
+      deduction_rate_type TEXT DEFAULT 'percent',
+      deduction_value REAL DEFAULT 0,
+      deduction_amount REAL DEFAULT 0,
       total_amount REAL DEFAULT 0,
       received_amount REAL DEFAULT 0,
       previous_balance REAL DEFAULT 0,
@@ -2333,6 +2876,7 @@ function createIcecreamFactoryTables() {
       address TEXT,
       city TEXT DEFAULT 'Hasan Abdal',
       amount REAL DEFAULT 0,
+      opening_balance REAL DEFAULT 0,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -2364,7 +2908,37 @@ function createIcecreamFactoryTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS chocolate_batches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      batch_number TEXT UNIQUE,
+      date TEXT NOT NULL,
+      liters_produced REAL NOT NULL,
+      materials_summary TEXT DEFAULT '',
+      materials_json TEXT DEFAULT '[]',
+      total_cost REAL DEFAULT 0,
+      cost_per_liter REAL DEFAULT 0,
+      notes TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chocolate_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      action TEXT NOT NULL,
+      liters_change REAL NOT NULL,
+      stock_before REAL NOT NULL,
+      stock_after REAL NOT NULL,
+      reference_id INTEGER,
+      reference_no TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
+
+  try {
+    db.prepare("INSERT OR IGNORE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', '0')").run();
+  } catch (e) {}
 
   try {
     const rawCatCount = db.prepare('SELECT COUNT(*) as c FROM raw_material_categories').get().c;
@@ -2389,6 +2963,21 @@ function createIcecreamFactoryTables() {
     if (!rmpCols.includes('payment_method')) db.exec("ALTER TABLE raw_material_purchases ADD COLUMN payment_method TEXT DEFAULT 'Cash'");
     if (!rmpCols.includes('items_count')) db.exec('ALTER TABLE raw_material_purchases ADD COLUMN items_count INTEGER DEFAULT 1');
 
+    const supCols = db.prepare("PRAGMA table_info(suppliers)").all().map(c => c.name);
+    if (!supCols.includes('opening_balance')) db.exec('ALTER TABLE suppliers ADD COLUMN opening_balance REAL DEFAULT 0');
+
+    // Auto-backfill opening_balance for any existing suppliers where opening_balance is 0 but starting balance existed
+    const zeroOpeningSuppliers = db.prepare('SELECT id, amount, name FROM suppliers WHERE opening_balance IS NULL OR opening_balance = 0').all();
+    for (const s of zeroOpeningSuppliers) {
+      const purSum = db.prepare('SELECT COALESCE(SUM(remaining_balance), 0) as net_unpaid FROM raw_material_purchases WHERE supplier_id = ? OR (supplier_name = ? AND supplier_id IS NULL)').get(s.id, s.name);
+      const paysSum = db.prepare('SELECT COALESCE(SUM(amount), 0) as total_paid FROM supplier_payments WHERE supplier_id = ?').get(s.id);
+      const netTx = (purSum?.net_unpaid || 0) - (paysSum?.total_paid || 0);
+      const calculatedOpening = Math.max(0, Math.round(((s.amount || 0) - netTx) * 100) / 100);
+      if (calculatedOpening > 0) {
+        db.prepare('UPDATE suppliers SET opening_balance = ? WHERE id = ?').run(calculatedOpening, s.id);
+      }
+    }
+
     // Populate suppliers from companies and existing purchases if suppliers table is empty
     const supCount = db.prepare('SELECT COUNT(*) as c FROM suppliers').get()?.c || 0;
     if (supCount === 0) {
@@ -2412,29 +3001,36 @@ function createIcecreamFactoryTables() {
       } catch (e) {}
     }
 
-    // Link existing purchases to supplier_id where matching
+    // Link existing purchases to supplier_id where matching (optimized batch update)
     try {
-      const unlinked = db.prepare("SELECT id, supplier_name, total_cost, paid_amount, remaining_balance FROM raw_material_purchases WHERE supplier_id IS NULL AND supplier_name IS NOT NULL AND TRIM(supplier_name) != ''").all();
-      for (const p of unlinked) {
-        const s = db.prepare('SELECT id FROM suppliers WHERE LOWER(name) = LOWER(?)').get(p.supplier_name.trim());
-        if (s) {
-          db.prepare('UPDATE raw_material_purchases SET supplier_id = ? WHERE id = ?').run(s.id, p.id);
-        }
-      }
+      db.exec(`
+        UPDATE raw_material_purchases 
+        SET supplier_id = (
+          SELECT s.id FROM suppliers s 
+          WHERE LOWER(TRIM(s.name)) = LOWER(TRIM(raw_material_purchases.supplier_name)) 
+          LIMIT 1
+        )
+        WHERE supplier_id IS NULL AND supplier_name IS NOT NULL AND TRIM(supplier_name) != '';
+      `);
       // Ensure legacy purchases have paid_amount = total_cost if null/zero
       db.exec("UPDATE raw_material_purchases SET paid_amount = total_cost WHERE (paid_amount IS NULL OR paid_amount = 0) AND (remaining_balance IS NULL OR remaining_balance = 0) AND total_cost > 0");
     } catch (e) {}
 
-    // Populate raw_material_purchase_items for legacy purchases if missing
+    // Populate raw_material_purchase_items for legacy purchases only if missing
     try {
-      const purRows = db.prepare('SELECT * FROM raw_material_purchases').all();
-      for (const p of purRows) {
-        const hasItems = db.prepare('SELECT id FROM raw_material_purchase_items WHERE purchase_id = ? LIMIT 1').get(p.id);
-        if (!hasItems && p.material_id) {
-          db.prepare(`
-            INSERT INTO raw_material_purchase_items (purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-          `).run(p.id, p.material_id, p.material_name, p.unit || 'KG', p.qty || 1, p.unit_cost || 0, p.total_cost || 0);
+      const missingItemsPurchases = db.prepare(`
+        SELECT p.id, p.material_id, p.material_name, p.unit, p.qty, p.unit_cost, p.total_cost 
+        FROM raw_material_purchases p 
+        WHERE p.material_id IS NOT NULL 
+          AND NOT EXISTS (SELECT 1 FROM raw_material_purchase_items pi WHERE pi.purchase_id = p.id)
+      `).all();
+      if (missingItemsPurchases.length > 0) {
+        const insItem = db.prepare(`
+          INSERT INTO raw_material_purchase_items (purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const p of missingItemsPurchases) {
+          insItem.run(p.id, p.material_id, p.material_name, p.unit || 'KG', p.qty || 1, p.unit_cost || 0, p.total_cost || 0);
         }
       }
     } catch (e) {}
@@ -2442,21 +3038,38 @@ function createIcecreamFactoryTables() {
       UPDATE raw_material_purchases 
       SET invoice_no = 'PUR-' || id 
       WHERE invoice_no IS NULL OR invoice_no = '' OR invoice_no LIKE 'PO-%';
+      UPDATE supplier_payments 
+      SET receipt_no = 'PAY-' || id 
+      WHERE receipt_no IS NULL OR receipt_no = '' OR receipt_no LIKE 'PAY-20%' OR receipt_no LIKE 'PAY-SUP-%';
     `);
     const carCols = db.prepare("PRAGMA table_info(cars)").all().map(c => c.name);
     if (!carCols.includes('is_active')) db.exec('ALTER TABLE cars ADD COLUMN is_active INTEGER DEFAULT 1');
     if (!carCols.includes('area')) db.exec('ALTER TABLE cars ADD COLUMN area TEXT');
     db.exec("UPDATE cars SET area = '' WHERE area IS NOT NULL AND area != ''");
 
+    const rmCols = db.prepare("PRAGMA table_info(raw_materials)").all().map(c => c.name);
+    if (!rmCols.includes('has_bulk')) db.exec("ALTER TABLE raw_materials ADD COLUMN has_bulk INTEGER DEFAULT 0");
+    if (!rmCols.includes('pack_unit')) db.exec("ALTER TABLE raw_materials ADD COLUMN pack_unit TEXT DEFAULT ''");
+    if (!rmCols.includes('pack_size')) db.exec("ALTER TABLE raw_materials ADD COLUMN pack_size REAL DEFAULT 1");
+
     const pcCols = db.prepare("PRAGMA table_info(packed_cartons)").all().map(c => c.name);
     if (!pcCols.includes('stickers_printed')) db.exec('ALTER TABLE packed_cartons ADD COLUMN stickers_printed INTEGER DEFAULT 0');
     if (!pcCols.includes('package_type')) db.exec("ALTER TABLE packed_cartons ADD COLUMN package_type TEXT DEFAULT 'carton'");
+    if (!pcCols.includes('qr_code')) db.exec("ALTER TABLE packed_cartons ADD COLUMN qr_code TEXT");
+    db.exec("UPDATE packed_cartons SET qr_code = barcode WHERE (qr_code IS NULL OR qr_code = '') AND barcode IS NOT NULL AND barcode != ''");
 
     const pbCols = db.prepare("PRAGMA table_info(packing_batches)").all().map(c => c.name);
     if (!pbCols.includes('package_type')) db.exec("ALTER TABLE packing_batches ADD COLUMN package_type TEXT DEFAULT 'carton'");
+    if (!pbCols.includes('raw_materials_summary')) db.exec("ALTER TABLE packing_batches ADD COLUMN raw_materials_summary TEXT DEFAULT ''");
 
     const sdiCols = db.prepare("PRAGMA table_info(shop_delivery_items)").all().map(c => c.name);
     if (!sdiCols.includes('package_type')) db.exec("ALTER TABLE shop_delivery_items ADD COLUMN package_type TEXT DEFAULT 'carton'");
+
+    const sdCols = db.prepare("PRAGMA table_info(shop_deliveries)").all().map(c => c.name);
+    if (!sdCols.includes('deduction_type')) db.exec("ALTER TABLE shop_deliveries ADD COLUMN deduction_type TEXT DEFAULT 'commission'");
+    if (!sdCols.includes('deduction_rate_type')) db.exec("ALTER TABLE shop_deliveries ADD COLUMN deduction_rate_type TEXT DEFAULT 'percent'");
+    if (!sdCols.includes('deduction_value')) db.exec("ALTER TABLE shop_deliveries ADD COLUMN deduction_value REAL DEFAULT 0");
+    if (!sdCols.includes('deduction_amount')) db.exec("ALTER TABLE shop_deliveries ADD COLUMN deduction_amount REAL DEFAULT 0");
 
     // Simplify legacy INV-2026xxxx-xxx invoice numbers to sequential integers 1, 2, 3
     const oldInvs = db.prepare("SELECT id, invoice_no FROM shop_deliveries WHERE invoice_no LIKE 'INV-%' ORDER BY id ASC").all();
@@ -2480,9 +3093,31 @@ function createIcecreamFactoryTables() {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_del_car ON shop_deliveries(car_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_del_shop ON shop_deliveries(shop_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_prod_batches_date ON production_batches(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_prod_batches_item ON production_batches(item_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_packing_batches_date ON packing_batches(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_packing_batches_carton ON packing_batches(carton_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_payments_shop ON shop_payments(shop_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_payments_date ON shop_payments(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sdi_delivery_id ON shop_delivery_items(delivery_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sdi_carton_id ON shop_delivery_items(carton_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_rmp_supplier_id ON raw_material_purchases(supplier_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_rmp_date ON raw_material_purchases(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_rmpi_purchase_id ON raw_material_purchase_items(purchase_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_rmpi_material_id ON raw_material_purchase_items(material_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_rml_material_id ON raw_material_logs(material_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_rml_date ON raw_material_logs(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_supplier_payments_sup ON supplier_payments(supplier_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_supplier_payments_date ON supplier_payments(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_returns_del ON shop_returns(delivery_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_returns_shop ON shop_returns(shop_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_shop_returns_date ON shop_returns(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)`);
+
+    // Clean up orphaned foreign key references in shop_returns
+    try {
+      db.exec(`UPDATE shop_returns SET delivery_id = NULL WHERE delivery_id IS NOT NULL AND delivery_id NOT IN (SELECT id FROM shop_deliveries)`);
+    } catch (e) {}
   } catch (e) {}
 }
 
@@ -2608,27 +3243,53 @@ function getRawMaterialCategories() {
 function addRawMaterialCategory(name) {
   try {
     const trimmed = (name || '').trim();
-    if (!trimmed) return { error: 'Category name cannot be empty' };
+    if (!trimmed) return { success: false, error: 'Category name cannot be empty' };
     const info = db.prepare('INSERT INTO raw_material_categories (name) VALUES (?)').run(trimmed);
     return { success: true, id: info.lastInsertRowid, name: trimmed };
   } catch (e) {
-    return { error: 'Category already exists or error occurred' };
+    return { success: false, error: 'Category already exists or error occurred' };
   }
 }
 
 function deleteRawMaterialCategory(id) {
   try {
+    const cat = db.prepare('SELECT * FROM raw_material_categories WHERE id = ?').get(id);
+    if (!cat) return { success: false, error: 'Category not found' };
+
+    const countRow = db.prepare('SELECT COUNT(*) as c FROM raw_materials WHERE LOWER(TRIM(category)) = LOWER(TRIM(?))').get(cat.name);
+    if (countRow && countRow.c > 0) {
+      return { 
+        success: false,
+        error: `Category "${cat.name}" cannot be deleted because it contains ${countRow.c} raw material entry/entries. Please reassign or delete them first.` 
+      };
+    }
+
     db.prepare('DELETE FROM raw_material_categories WHERE id = ?').run(id);
     return { success: true };
   } catch (e) {
-    return { error: e.message };
+    return { success: false, error: e.message };
   }
 }
 
+function ensureRawMaterialBulkColumns() {
+  try {
+    const rmCols = db.prepare("PRAGMA table_info(raw_materials)").all().map(c => c.name);
+    if (!rmCols.includes('has_bulk')) db.exec("ALTER TABLE raw_materials ADD COLUMN has_bulk INTEGER DEFAULT 0");
+    if (!rmCols.includes('pack_unit')) db.exec("ALTER TABLE raw_materials ADD COLUMN pack_unit TEXT DEFAULT ''");
+    if (!rmCols.includes('pack_size')) db.exec("ALTER TABLE raw_materials ADD COLUMN pack_size REAL DEFAULT 1");
+  } catch (e) {}
+}
+
 function getRawMaterials() {
+  ensureRawMaterialBulkColumns();
   return db.prepare(`
     SELECT rm.*, 
-           ROUND(rm.current_stock * rm.cost_price, 2) as total_value,
+           ROUND(
+             CASE 
+               WHEN (rm.has_bulk = 1 OR rm.has_bulk = '1') AND rm.pack_size > 1 
+               THEN (rm.current_stock / rm.pack_size) * rm.cost_price 
+               ELSE rm.current_stock * rm.cost_price 
+             END, 2) as total_value,
            (SELECT COUNT(*) FROM raw_material_logs rml WHERE rml.material_id = rm.id) as log_count
     FROM raw_materials rm
     ORDER BY rm.name ASC
@@ -2636,52 +3297,112 @@ function getRawMaterials() {
 }
 
 function getRawMaterial(id) {
+  ensureRawMaterialBulkColumns();
   return db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(id);
 }
 
 function saveRawMaterial(data) {
-  if (data.id) {
-    db.prepare(`
-      UPDATE raw_materials 
-      SET name = ?, category = ?, unit = ?, current_stock = ?, cost_price = ?, min_stock_alert = ?, notes = ?
-      WHERE id = ?
-    `).run(
-      data.name.trim(),
-      data.category || 'General',
-      data.unit || 'Kg',
-      Number(data.current_stock) || 0,
-      Number(data.cost_price) || 0,
-      Number(data.min_stock_alert) || 0,
-      data.notes || '',
-      data.id
-    );
-    return { success: true, id: data.id };
-  } else {
-    const res = db.prepare(`
-      INSERT INTO raw_materials (name, category, unit, current_stock, cost_price, min_stock_alert, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      data.name.trim(),
-      data.category || 'General',
-      data.unit || 'Kg',
-      Number(data.current_stock) || 0,
-      Number(data.cost_price) || 0,
-      Number(data.min_stock_alert) || 0,
-      data.notes || ''
-    );
-    return { success: true, id: res.lastInsertRowid };
+  try {
+    ensureRawMaterialBulkColumns();
+    const matName = (data.name || '').trim();
+    if (!matName) {
+      return { success: false, error: 'Raw material name is required.' };
+    }
+
+    const matDup = data.id
+      ? db.prepare('SELECT id, name FROM raw_materials WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id != ?').get(matName, data.id)
+      : db.prepare('SELECT id, name FROM raw_materials WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(matName);
+    if (matDup) {
+      return { success: false, error: `A raw material with the name "${matName}" already exists. Duplicate names are not allowed.` };
+    }
+
+    const hasBulk = (data.has_bulk === true || data.has_bulk === 1 || data.has_bulk === '1' || Number(data.has_bulk) === 1) ? 1 : 0;
+    const packUnit = (data.pack_unit || 'Pack').trim();
+    const packSize = Number(data.pack_size) > 0 ? Number(data.pack_size) : 1;
+
+    if (data.id) {
+      db.prepare(`
+        UPDATE raw_materials 
+        SET name = ?, category = ?, unit = ?, current_stock = ?, cost_price = ?, min_stock_alert = ?, has_bulk = ?, pack_unit = ?, pack_size = ?, notes = ?
+        WHERE id = ?
+      `).run(
+        data.name.trim(),
+        data.category || 'General',
+        data.unit || 'Kg',
+        Number(data.current_stock) || 0,
+        Number(data.cost_price) || 0,
+        Number(data.min_stock_alert) || 0,
+        hasBulk,
+        packUnit,
+        packSize,
+        data.notes || '',
+        data.id
+      );
+      return { success: true, id: data.id };
+    } else {
+      const res = db.prepare(`
+        INSERT INTO raw_materials (name, category, unit, current_stock, cost_price, min_stock_alert, has_bulk, pack_unit, pack_size, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        data.name.trim(),
+        data.category || 'General',
+        data.unit || 'Kg',
+        Number(data.current_stock) || 0,
+        Number(data.cost_price) || 0,
+        Number(data.min_stock_alert) || 0,
+        hasBulk,
+        packUnit,
+        packSize,
+        data.notes || ''
+      );
+      return { success: true, id: res.lastInsertRowid };
+    }
+  } catch (err) {
+    console.error('Error in saveRawMaterial:', err);
+    return { success: false, error: err.message || 'Failed to save raw material.' };
   }
 }
 
-function deleteRawMaterial(id) {
-  const usage = db.prepare('SELECT COUNT(*) as c FROM production_batch_materials WHERE material_id = ?').get(id).c;
-  if (usage > 0) {
-    return { error: 'Cannot delete material that has been used in production batches.' };
+function deleteRawMaterial(id, force = false) {
+  try {
+    const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(id);
+    if (!mat) return { success: false, error: 'Raw material not found.' };
+
+    const usage = db.prepare('SELECT COUNT(*) as c FROM production_batch_materials WHERE material_id = ?').get(id)?.c || 0;
+    const logUsage = db.prepare("SELECT COUNT(*) as c FROM raw_material_logs WHERE material_id = ? AND action = 'PRODUCTION_USED'").get(id)?.c || 0;
+
+    const purchases = db.prepare('SELECT COUNT(*) as c FROM raw_material_purchase_items WHERE material_id = ?').get(id)?.c || 0;
+    const directPurchases = db.prepare('SELECT COUNT(*) as c FROM raw_material_purchases WHERE material_id = ?').get(id)?.c || 0;
+
+    const totalUsage = Math.max(usage, logUsage);
+    const totalPurchases = purchases + directPurchases;
+
+    if (!force && (totalUsage > 0 || totalPurchases > 0)) {
+      const details = [];
+      if (totalUsage > 0) details.push(`${totalUsage} production batch${totalUsage === 1 ? '' : 'es'}`);
+      if (totalPurchases > 0) details.push(`${totalPurchases} purchase transaction${totalPurchases === 1 ? '' : 's'}`);
+      return {
+        success: false,
+        canForce: true,
+        materialName: mat.name,
+        totalUsage,
+        totalPurchases,
+        error: `Cannot delete "${mat.name}" normally because it has recorded history in ${details.join(' and ')}.`
+      };
+    }
+
+    db.transaction(() => {
+      db.prepare('DELETE FROM raw_material_purchase_items WHERE material_id = ?').run(id);
+      db.prepare('DELETE FROM raw_material_purchases WHERE material_id = ?').run(id);
+      db.prepare('DELETE FROM raw_material_logs WHERE material_id = ?').run(id);
+      db.prepare('UPDATE production_batch_materials SET material_id = 0 WHERE material_id = ?').run(id);
+      db.prepare('DELETE FROM raw_materials WHERE id = ?').run(id);
+    })();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteRawMaterial:', err);
+    return { success: false, error: err.message || 'Failed to delete raw material.' };
   }
-  db.prepare('DELETE FROM raw_material_logs WHERE material_id = ?').run(id);
-  db.prepare('DELETE FROM raw_material_purchases WHERE material_id = ?').run(id);
-  db.prepare('DELETE FROM raw_materials WHERE id = ?').run(id);
-  return { success: true };
 }
 
 function getNextPurchaseInvoiceNo() {
@@ -2703,174 +3424,192 @@ function getNextPurchaseInvoiceNo() {
 }
 
 function addRawMaterialPurchase(data) {
-  // Support both multi-item (data.items) and single-item (data.material_id) formats
-  let items = Array.isArray(data.items) && data.items.length > 0 ? data.items : [];
-  if (items.length === 0 && data.material_id) {
-    items = [{
-      material_id: data.material_id,
-      qty: data.qty,
-      unit_cost: data.unit_cost,
-      notes: data.notes || ''
-    }];
-  }
-
-  if (items.length === 0) {
-    return { error: 'Please add at least one raw material to this purchase.' };
-  }
-
-  // Validate materials
-  const validatedItems = [];
-  let totalCost = 0;
-  for (const it of items) {
-    const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
-    if (!mat) {
-      return { error: `Raw material ID ${it.material_id} not found.` };
+  try {
+    // Support both multi-item (data.items) and single-item (data.material_id) formats
+    let items = Array.isArray(data.items) && data.items.length > 0 ? data.items : [];
+    if (items.length === 0 && data.material_id) {
+      items = [{
+        material_id: data.material_id,
+        qty: data.qty,
+        unit_cost: data.unit_cost,
+        notes: data.notes || ''
+      }];
     }
-    const q = Number(it.qty) || 0;
-    const c = Number(it.unit_cost) || 0;
-    if (q <= 0) {
-      return { error: `Quantity for "${mat.name}" must be greater than 0.` };
+
+    if (items.length === 0) {
+      return { success: false, error: 'Please add at least one raw material to this purchase.' };
     }
-    const lineTotal = q * c;
-    totalCost += lineTotal;
-    validatedItems.push({
-      material_id: mat.id,
-      material_name: mat.name,
-      unit: mat.unit,
-      qty: q,
-      unit_cost: c,
-      total_cost: lineTotal,
-      current_stock: mat.current_stock || 0
+
+    // Validate materials
+    const validatedItems = [];
+    let totalCost = 0;
+    for (const it of items) {
+      const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+      if (!mat) {
+        return { success: false, error: `Raw material ID ${it.material_id} not found.` };
+      }
+      const q = Number(it.qty) || 0;
+      const c = Number(it.unit_cost) || 0;
+      if (q <= 0) {
+        return { success: false, error: `Quantity for "${mat.name}" must be greater than 0.` };
+      }
+      const lineTotal = q * c;
+      totalCost += lineTotal;
+      const isBulk = Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+      const packMultiplier = isBulk ? Number(mat.pack_size) : 1;
+      validatedItems.push({
+        material_id: mat.id,
+        material_name: mat.name,
+        unit: mat.unit,
+        pack_unit: mat.pack_unit,
+        pack_multiplier: packMultiplier,
+        is_bulk: isBulk,
+        qty: q,
+        unit_cost: c,
+        total_cost: lineTotal,
+        current_stock: mat.current_stock || 0
+      });
+    }
+
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const paymentMethod = data.payment_method || 'Cash';
+    const notes = data.notes || '';
+
+    // Supplier handling - validate against database to prevent FK constraint failure
+    let supplierId = data.supplier_id ? Number(data.supplier_id) : null;
+    let supplierName = (data.supplier_name || '').trim();
+
+    if (supplierId) {
+      const s = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(supplierId);
+      if (s) {
+        supplierName = s.name;
+      } else {
+        supplierId = null;
+      }
+    } else if (supplierName && supplierName.toLowerCase() !== 'walk-in' && supplierName.toLowerCase() !== 'cash') {
+      let existing = db.prepare('SELECT * FROM suppliers WHERE LOWER(name) = LOWER(?)').get(supplierName);
+      if (!existing) {
+        const resSup = db.prepare('INSERT INTO suppliers (name, phone, amount) VALUES (?, ?, 0)')
+          .run(supplierName, data.supplier_phone || '');
+        supplierId = resSup.lastInsertRowid;
+      } else {
+        supplierId = existing.id;
+      }
+    }
+
+    // Financials: Total Bill, Amount Paid, Remaining Balance (Pending)
+    let paidAmount = totalCost;
+    if (data.paid_amount !== undefined && data.paid_amount !== null && data.paid_amount !== '') {
+      paidAmount = Math.max(0, Math.min(totalCost, Number(data.paid_amount) || 0));
+    } else if (paymentMethod === 'Credit') {
+      paidAmount = 0;
+    }
+    const remainingBalance = Math.max(0, totalCost - paidAmount);
+
+    // Generate Sequential Invoice Number (e.g. PUR-1, PUR-2)
+    let invoiceNo = data.invoice_no ? String(data.invoice_no).trim() : '';
+    if (!invoiceNo) {
+      invoiceNo = getNextPurchaseInvoiceNo();
+    }
+
+    let purchaseId;
+    const tx = db.transaction(() => {
+      const primary = validatedItems[0];
+      const summaryName = validatedItems.length === 1 
+        ? primary.material_name 
+        : `${primary.material_name} (+${validatedItems.length - 1} more items)`;
+
+      const res = db.prepare(`
+        INSERT INTO raw_material_purchases (
+          material_id, material_name, qty, unit, unit_cost, total_cost,
+          supplier_id, supplier_name, invoice_no, date, notes,
+          paid_amount, remaining_balance, payment_method, items_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        primary.material_id,
+        summaryName,
+        primary.qty,
+        primary.unit,
+        primary.unit_cost,
+        totalCost,
+        supplierId,
+        supplierName || 'Walk-in / Cash',
+        invoiceNo,
+        date,
+        notes,
+        paidAmount,
+        remainingBalance,
+        paymentMethod,
+        validatedItems.length
+      );
+      purchaseId = res.lastInsertRowid;
+
+      // Insert items into raw_material_purchase_items & update stock
+      for (const it of validatedItems) {
+        db.prepare(`
+          INSERT INTO raw_material_purchase_items (
+            purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          purchaseId,
+          it.material_id,
+          it.material_name,
+          it.unit,
+          it.qty,
+          it.unit_cost,
+          it.total_cost
+        );
+
+        const packMul = it.pack_multiplier || 1;
+        const stockToAdd = it.qty * packMul;
+        const stockBefore = it.current_stock;
+        const stockAfter = stockBefore + stockToAdd;
+
+        db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?')
+          .run(stockAfter, it.unit_cost, it.material_id);
+
+        const subUnitText = it.is_bulk ? ` (${stockToAdd} ${it.pack_unit || 'Units'})` : '';
+        db.prepare(`
+          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+          VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, ?)
+        `).run(
+          it.material_id,
+          it.material_name,
+          stockToAdd,
+          stockBefore,
+          stockAfter,
+          purchaseId,
+          date,
+          `Purchased ${it.qty} ${it.unit}${subUnitText} (${invoiceNo}) from ${supplierName || 'Supplier'} @ Rs. ${it.unit_cost}`
+        );
+      }
+
+      // Update supplier's outstanding payable balance (e.g., 20000 total, 5000 paid => 15000 added to supplier balance)
+      if (supplierId && remainingBalance > 0) {
+        db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?')
+          .run(remainingBalance, supplierId);
+      }
     });
-  }
 
-  const date = data.date || new Date().toISOString().split('T')[0];
-  const paymentMethod = data.payment_method || 'Cash';
-  const notes = data.notes || '';
+    tx();
 
-  // Supplier handling
-  let supplierId = data.supplier_id ? Number(data.supplier_id) : null;
-  let supplierName = (data.supplier_name || '').trim();
-
-  if (supplierId) {
-    const s = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(supplierId);
-    if (s) {
-      supplierName = s.name;
-    }
-  } else if (supplierName && supplierName.toLowerCase() !== 'walk-in' && supplierName.toLowerCase() !== 'cash') {
-    let existing = db.prepare('SELECT * FROM suppliers WHERE LOWER(name) = LOWER(?)').get(supplierName);
-    if (!existing) {
-      const resSup = db.prepare('INSERT INTO suppliers (name, phone, amount) VALUES (?, ?, 0)')
-        .run(supplierName, data.supplier_phone || '');
-      supplierId = resSup.lastInsertRowid;
-    } else {
-      supplierId = existing.id;
-    }
-  }
-
-  // Financials: Total Bill, Amount Paid, Remaining Balance (Pending)
-  let paidAmount = totalCost;
-  if (data.paid_amount !== undefined && data.paid_amount !== null && data.paid_amount !== '') {
-    paidAmount = Math.max(0, Math.min(totalCost, Number(data.paid_amount) || 0));
-  } else if (paymentMethod === 'Credit') {
-    paidAmount = 0;
-  }
-  const remainingBalance = Math.max(0, totalCost - paidAmount);
-
-  // Generate Sequential Invoice Number (e.g. PUR-1, PUR-2)
-  let invoiceNo = data.invoice_no ? String(data.invoice_no).trim() : '';
-  if (!invoiceNo) {
-    invoiceNo = getNextPurchaseInvoiceNo();
-  }
-
-  let purchaseId;
-  const tx = db.transaction(() => {
-    const primary = validatedItems[0];
-    const summaryName = validatedItems.length === 1 
-      ? primary.material_name 
-      : `${primary.material_name} (+${validatedItems.length - 1} more items)`;
-
-    const res = db.prepare(`
-      INSERT INTO raw_material_purchases (
-        material_id, material_name, qty, unit, unit_cost, total_cost,
-        supplier_id, supplier_name, invoice_no, date, notes,
-        paid_amount, remaining_balance, payment_method, items_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      primary.material_id,
-      summaryName,
-      primary.qty,
-      primary.unit,
-      primary.unit_cost,
-      totalCost,
-      supplierId,
-      supplierName || 'Walk-in / Cash',
+    const primaryStock = validatedItems[0] ? ((validatedItems[0].current_stock || 0) + (validatedItems[0].qty || 0)) : 0;
+    return {
+      success: true,
+      id: purchaseId,
+      purchaseId,
+      newStock: primaryStock,
       invoiceNo,
-      date,
-      notes,
+      totalCost,
       paidAmount,
       remainingBalance,
-      paymentMethod,
-      validatedItems.length
-    );
-    purchaseId = res.lastInsertRowid;
-
-    // Insert items into raw_material_purchase_items & update stock
-    for (const it of validatedItems) {
-      db.prepare(`
-        INSERT INTO raw_material_purchase_items (
-          purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        purchaseId,
-        it.material_id,
-        it.material_name,
-        it.unit,
-        it.qty,
-        it.unit_cost,
-        it.total_cost
-      );
-
-      const stockBefore = it.current_stock;
-      const stockAfter = stockBefore + it.qty;
-
-      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?')
-        .run(stockAfter, it.unit_cost, it.material_id);
-
-      db.prepare(`
-        INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
-        VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, ?)
-      `).run(
-        it.material_id,
-        it.material_name,
-        it.qty,
-        stockBefore,
-        stockAfter,
-        purchaseId,
-        date,
-        `Purchased ${it.qty} ${it.unit} (${invoiceNo}) from ${supplierName || 'Supplier'} @ Rs. ${it.unit_cost}`
-      );
-    }
-
-    // Update supplier's outstanding payable balance (e.g., 20000 total, 5000 paid => 15000 added to supplier balance)
-    if (supplierId && remainingBalance > 0) {
-      db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?')
-        .run(remainingBalance, supplierId);
-    }
-  });
-
-  tx();
-
-  return {
-    success: true,
-    purchaseId,
-    invoiceNo,
-    totalCost,
-    paidAmount,
-    remainingBalance,
-    supplierId,
-    supplierName
-  };
+      supplierId,
+      supplierName
+    };
+  } catch (err) {
+    console.error('Error in addRawMaterialPurchase:', err);
+    return { success: false, error: err.message || 'Failed to record purchase.' };
+  }
 }
 
 function getRawMaterialPurchases(filters = {}) {
@@ -2989,178 +3728,234 @@ function getRawMaterialPurchase(id) {
 }
 
 function updateRawMaterialPurchase(id, data) {
-  const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
-  if (!p) return { error: 'Purchase record not found' };
+  try {
+    const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
+    if (!p) return { success: false, error: 'Purchase record not found' };
 
-  // For clean updates, we revert old stock & old supplier balance, then re-apply
-  const oldItems = db.prepare('SELECT * FROM raw_material_purchase_items WHERE purchase_id = ?').all(id);
-  const itemsToRevert = oldItems.length > 0 ? oldItems : [{
-    material_id: p.material_id,
-    qty: p.qty
-  }];
-
-  let items = Array.isArray(data.items) && data.items.length > 0 ? data.items : [];
-  if (items.length === 0 && data.material_id) {
-    items = [{
-      material_id: data.material_id,
-      qty: data.qty,
-      unit_cost: data.unit_cost
+    // For clean updates, we revert old stock & old supplier balance, then re-apply
+    const oldItems = db.prepare('SELECT * FROM raw_material_purchase_items WHERE purchase_id = ?').all(id);
+    const itemsToRevert = oldItems.length > 0 ? oldItems : [{
+      material_id: p.material_id,
+      qty: p.qty
     }];
-  }
 
-  if (items.length === 0) {
-    return { error: 'Please specify at least one material.' };
-  }
+    let items = Array.isArray(data.items) && data.items.length > 0 ? data.items : [];
+    if (items.length === 0 && data.material_id) {
+      items = [{
+        material_id: data.material_id,
+        qty: data.qty,
+        unit_cost: data.unit_cost
+      }];
+    }
 
-  const validatedItems = [];
-  let totalCost = 0;
-  for (const it of items) {
-    const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
-    if (!mat) return { error: `Raw material ID ${it.material_id} not found.` };
-    const q = Number(it.qty) || 0;
-    const c = Number(it.unit_cost) || 0;
-    const lineTotal = q * c;
-    totalCost += lineTotal;
-    validatedItems.push({
-      material_id: mat.id,
-      material_name: mat.name,
-      unit: mat.unit,
-      qty: q,
-      unit_cost: c,
-      total_cost: lineTotal
-    });
-  }
+    if (items.length === 0) {
+      return { success: false, error: 'Please specify at least one material.' };
+    }
 
-  let paidAmount = totalCost;
-  if (data.paid_amount !== undefined && data.paid_amount !== null && data.paid_amount !== '') {
-    paidAmount = Math.max(0, Math.min(totalCost, Number(data.paid_amount) || 0));
-  }
-  const remainingBalance = Math.max(0, totalCost - paidAmount);
-
-  const date = data.date || p.date;
-  const invoiceNo = data.invoice_no ? String(data.invoice_no).trim() : (p.invoice_no || `PUR-${id}`);
-  const supplierId = data.supplier_id ? Number(data.supplier_id) : p.supplier_id;
-  const supplierName = data.supplier_name || p.supplier_name;
-
-  const tx = db.transaction(() => {
-    // 1. Revert old stock
-    for (const it of itemsToRevert) {
+    const validatedItems = [];
+    let totalCost = 0;
+    for (const it of items) {
       const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
-      if (mat) {
-        const revStock = Math.max(0, (mat.current_stock || 0) - (it.qty || 0));
-        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(revStock, mat.id);
+      if (!mat) return { success: false, error: `Raw material ID ${it.material_id} not found.` };
+      const q = Number(it.qty) || 0;
+      const c = Number(it.unit_cost) || 0;
+      const lineTotal = q * c;
+      totalCost += lineTotal;
+      validatedItems.push({
+        material_id: mat.id,
+        material_name: mat.name,
+        unit: mat.unit,
+        qty: q,
+        unit_cost: c,
+        total_cost: lineTotal
+      });
+    }
+
+    let paidAmount = totalCost;
+    if (data.paid_amount !== undefined && data.paid_amount !== null && data.paid_amount !== '') {
+      paidAmount = Math.max(0, Math.min(totalCost, Number(data.paid_amount) || 0));
+    }
+    const remainingBalance = Math.max(0, totalCost - paidAmount);
+
+    const date = data.date || p.date;
+    const invoiceNo = data.invoice_no ? String(data.invoice_no).trim() : (p.invoice_no || `PUR-${id}`);
+    const supplierId = data.supplier_id ? Number(data.supplier_id) : p.supplier_id;
+    const supplierName = data.supplier_name || p.supplier_name;
+
+    const tx = db.transaction(() => {
+      // 1. Revert old stock
+      for (const it of itemsToRevert) {
+        const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+        if (mat) {
+          const isBulk = Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+          const packMul = isBulk ? Number(mat.pack_size) : 1;
+          const revertQty = (it.qty || 0) * packMul;
+          const revStock = Math.max(0, (mat.current_stock || 0) - revertQty);
+          db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(revStock, mat.id);
+        }
       }
-    }
 
-    // 2. Revert old supplier balance
-    if (p.supplier_id && p.remaining_balance > 0) {
-      db.prepare('UPDATE suppliers SET amount = MAX(0, amount - ?) WHERE id = ?').run(p.remaining_balance, p.supplier_id);
-    }
+      // 2. Revert old supplier balance
+      if (p.supplier_id && p.remaining_balance > 0) {
+        db.prepare('UPDATE suppliers SET amount = MAX(0, amount - ?) WHERE id = ?').run(p.remaining_balance, p.supplier_id);
+      }
 
-    // 3. Clear old items
-    db.prepare('DELETE FROM raw_material_purchase_items WHERE purchase_id = ?').run(id);
+      // 3. Clear old items and old purchase logs
+      db.prepare('DELETE FROM raw_material_purchase_items WHERE purchase_id = ?').run(id);
+      db.prepare("DELETE FROM raw_material_logs WHERE reference_id = ? AND action = 'PURCHASE'").run(id);
 
-    // 4. Update header
-    const primary = validatedItems[0];
-    const summaryName = validatedItems.length === 1 ? primary.material_name : `${primary.material_name} (+${validatedItems.length - 1} more items)`;
+      // 4. Update header
+      const primary = validatedItems[0];
+      const summaryName = validatedItems.length === 1 ? primary.material_name : `${primary.material_name} (+${validatedItems.length - 1} more items)`;
 
-    db.prepare(`
-      UPDATE raw_material_purchases
-      SET material_id = ?, material_name = ?, qty = ?, unit = ?, unit_cost = ?, total_cost = ?,
-          supplier_id = ?, supplier_name = ?, invoice_no = ?, date = ?, notes = ?,
-          paid_amount = ?, remaining_balance = ?, payment_method = ?, items_count = ?
-      WHERE id = ?
-    `).run(
-      primary.material_id,
-      summaryName,
-      primary.qty,
-      primary.unit,
-      primary.unit_cost,
-      totalCost,
-      supplierId,
-      supplierName,
-      invoiceNo,
-      date,
-      data.notes || '',
-      paidAmount,
-      remainingBalance,
-      data.payment_method || p.payment_method || 'Cash',
-      validatedItems.length,
-      id
-    );
-
-    // 5. Insert new items and apply new stock
-    for (const it of validatedItems) {
       db.prepare(`
-        INSERT INTO raw_material_purchase_items (
-          purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(id, it.material_id, it.material_name, it.unit, it.qty, it.unit_cost, it.total_cost);
+        UPDATE raw_material_purchases
+        SET material_id = ?, material_name = ?, qty = ?, unit = ?, unit_cost = ?, total_cost = ?,
+            supplier_id = ?, supplier_name = ?, invoice_no = ?, date = ?, notes = ?,
+            paid_amount = ?, remaining_balance = ?, payment_method = ?, items_count = ?
+        WHERE id = ?
+      `).run(
+        primary.material_id,
+        summaryName,
+        primary.qty,
+        primary.unit,
+        primary.unit_cost,
+        totalCost,
+        supplierId,
+        supplierName,
+        invoiceNo,
+        date,
+        data.notes || '',
+        paidAmount,
+        remainingBalance,
+        data.payment_method || p.payment_method || 'Cash',
+        validatedItems.length,
+        id
+      );
 
-      const mat = db.prepare('SELECT current_stock FROM raw_materials WHERE id = ?').get(it.material_id);
-      const newStock = (mat ? mat.current_stock : 0) + it.qty;
-      db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?')
-        .run(newStock, it.unit_cost, it.material_id);
-    }
+      // 5. Insert new items and apply new stock + fresh purchase logs
+      for (const it of validatedItems) {
+        db.prepare(`
+          INSERT INTO raw_material_purchase_items (
+            purchase_id, material_id, material_name, unit, qty, unit_cost, total_cost
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(id, it.material_id, it.material_name, it.unit, it.qty, it.unit_cost, it.total_cost);
 
-    // 6. Apply new supplier balance
-    if (supplierId && remainingBalance > 0) {
-      db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?').run(remainingBalance, supplierId);
-    }
-  });
+        const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+        const isBulk = Boolean(mat && (mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+        const packMul = isBulk ? Number(mat.pack_size) : 1;
+        const addQty = (it.qty || 0) * packMul;
+        const stockBefore = mat ? mat.current_stock : 0;
+        const newStock = stockBefore + addQty;
+        db.prepare('UPDATE raw_materials SET current_stock = ?, cost_price = ? WHERE id = ?')
+          .run(newStock, it.unit_cost, it.material_id);
 
-  tx();
-  return { success: true };
+        const subUnitText = (isBulk && mat) ? ` (${addQty} ${mat.pack_unit || 'Units'})` : '';
+        db.prepare(`
+          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+          VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, ?)
+        `).run(
+          it.material_id,
+          it.material_name,
+          addQty,
+          stockBefore,
+          newStock,
+          id,
+          date,
+          `Purchased ${it.qty} ${it.unit}${subUnitText} (${invoiceNo}) from ${supplierName || 'Supplier'} @ Rs. ${it.unit_cost}`
+        );
+      }
+
+      // 6. Apply new supplier balance
+      if (supplierId && remainingBalance > 0) {
+        db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?').run(remainingBalance, supplierId);
+      }
+      if (supplierId) syncSupplierBalance(supplierId);
+      if (p.supplier_id && p.supplier_id !== supplierId) syncSupplierBalance(p.supplier_id);
+    });
+
+    tx();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updateRawMaterialPurchase:', err);
+    return { success: false, error: err.message || 'Failed to update purchase record.' };
+  }
 }
 
 function deleteRawMaterialPurchase(id) {
-  const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
-  if (!p) return { error: 'Purchase record not found' };
+  try {
+    const p = db.prepare('SELECT * FROM raw_material_purchases WHERE id = ?').get(id);
+    if (!p) return { success: false, error: 'Purchase record not found' };
 
-  const items = db.prepare('SELECT * FROM raw_material_purchase_items WHERE purchase_id = ?').all(id);
-  const itemsToRevert = items.length > 0 ? items : [{
-    material_id: p.material_id,
-    material_name: p.material_name,
-    qty: p.qty,
-    unit: p.unit
-  }];
+    const items = db.prepare('SELECT * FROM raw_material_purchase_items WHERE purchase_id = ?').all(id);
+    const itemsToRevert = items.length > 0 ? items : [{
+      material_id: p.material_id,
+      material_name: p.material_name,
+      qty: p.qty,
+      unit: p.unit
+    }];
 
-  const tx = db.transaction(() => {
-    // 1. Revert stock
-    for (const it of itemsToRevert) {
-      const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
-      if (mat) {
-        const newStock = Math.max(0, (mat.current_stock || 0) - (it.qty || 0));
-        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(newStock, mat.id);
-        db.prepare(`
-          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
-          VALUES (?, ?, 'PURCHASE_CANCELLED', ?, ?, ?, ?, date('now'), ?)
-        `).run(
-          mat.id,
-          mat.name,
-          -(it.qty || 0),
-          mat.current_stock,
-          newStock,
-          p.id,
-          `Deleted Purchase #${p.invoice_no || p.id} (-${it.qty} ${it.unit || mat.unit})`
-        );
+    const tx = db.transaction(() => {
+      // 1. Revert stock
+      for (const it of itemsToRevert) {
+        const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(it.material_id);
+        if (mat) {
+          const isBulk = Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+          const packMul = isBulk ? Number(mat.pack_size) : 1;
+          const revertQty = (it.qty || 0) * packMul;
+          const newStock = Math.max(0, (mat.current_stock || 0) - revertQty);
+          db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(newStock, mat.id);
+          db.prepare(`
+            INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+            VALUES (?, ?, 'PURCHASE_CANCELLED', ?, ?, ?, ?, date('now'), ?)
+          `).run(
+            mat.id,
+            mat.name,
+            -revertQty,
+            mat.current_stock,
+            newStock,
+            p.id,
+            `Deleted Purchase #${p.invoice_no || p.id} (-${it.qty} ${it.unit || mat.unit})`
+          );
+        }
       }
-    }
 
-    // 2. Revert supplier balance
-    if (p.supplier_id && p.remaining_balance > 0) {
-      db.prepare('UPDATE suppliers SET amount = MAX(0, amount - ?) WHERE id = ?')
-        .run(p.remaining_balance, p.supplier_id);
-    }
+      // 2. Revert supplier balance
+      if (p.supplier_id && p.remaining_balance > 0) {
+        db.prepare('UPDATE suppliers SET amount = MAX(0, amount - ?) WHERE id = ?')
+          .run(p.remaining_balance, p.supplier_id);
+      }
+      if (p.supplier_id) {
+        syncSupplierBalance(p.supplier_id);
+      }
 
-    // 3. Delete records
-    db.prepare("DELETE FROM raw_material_logs WHERE reference_id = ? AND action = 'PURCHASE'").run(p.id);
-    db.prepare('DELETE FROM raw_material_purchase_items WHERE purchase_id = ?').run(p.id);
-    db.prepare('DELETE FROM raw_material_purchases WHERE id = ?').run(p.id);
-  });
+      // 3. Delete records
+      db.prepare("DELETE FROM raw_material_logs WHERE reference_id = ? AND action = 'PURCHASE'").run(p.id);
+      db.prepare('DELETE FROM raw_material_purchase_items WHERE purchase_id = ?').run(p.id);
+      db.prepare('DELETE FROM raw_material_purchases WHERE id = ?').run(p.id);
+    });
 
-  tx();
-  return { success: true };
+    tx();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteRawMaterialPurchase:', err);
+    return { success: false, error: err.message || 'Failed to delete purchase record.' };
+  }
+}
+
+function syncSupplierBalance(supplierId) {
+  if (!supplierId) return;
+  try {
+    const s = db.prepare('SELECT id, opening_balance FROM suppliers WHERE id = ?').get(supplierId);
+    if (!s) return;
+    const opening = Number(s.opening_balance) || 0;
+    const purRow = db.prepare('SELECT COALESCE(SUM(remaining_balance), 0) as net_unpaid FROM raw_material_purchases WHERE supplier_id = ?').get(supplierId);
+    const payRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as total_paid FROM supplier_payments WHERE supplier_id = ?').get(supplierId);
+    const newBalance = Math.max(0, Math.round((opening + (purRow?.net_unpaid || 0) - (payRow?.total_paid || 0)) * 100) / 100);
+    db.prepare('UPDATE suppliers SET amount = ? WHERE id = ?').run(newBalance, supplierId);
+  } catch (e) {
+    console.warn('syncSupplierBalance error:', e.message);
+  }
 }
 
 // --- SUPPLIERS & VENDOR KHATA MANAGEMENT ---
@@ -3193,123 +3988,245 @@ function getSupplier(id) {
 }
 
 function saveSupplier(data) {
-  let supplierId;
-  const transaction = db.transaction(() => {
-    if (data.id) {
-      const { id, ...updates } = data;
-      const clause = Object.keys(updates).map(k => `${k} = @${k}`).join(', ');
-      db.prepare(`UPDATE suppliers SET ${clause} WHERE id = @id`).run(data);
-      supplierId = data.id;
-    } else {
-      const keys = Object.keys(data);
-      const placeholders = keys.map(k => `@${k}`).join(', ');
-      const info = db.prepare(`INSERT INTO suppliers (${keys.join(', ')}) VALUES (${placeholders})`).run(data);
-      supplierId = info.lastInsertRowid;
+  try {
+    const supName = (data.name || '').trim();
+    if (!supName) {
+      return { success: false, error: 'Supplier name is required.' };
     }
-  });
-  transaction();
-  return { success: true, id: supplierId };
+
+    const supDup = data.id
+      ? db.prepare('SELECT id, name FROM suppliers WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id != ?').get(supName, data.id)
+      : db.prepare('SELECT id, name FROM suppliers WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(supName);
+    if (supDup) {
+      return { success: false, error: `A supplier with the name "${supName}" already exists. Duplicate names are not allowed.` };
+    }
+
+    let supplierId;
+    const transaction = db.transaction(() => {
+      if (data.id) {
+        const existing = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(data.id);
+        if (existing) {
+          if (data.opening_balance !== undefined) {
+            const oldOpening = Number(existing.opening_balance) || 0;
+            const newOpening = Number(data.opening_balance) || 0;
+            const diff = newOpening - oldOpening;
+            data.amount = (Number(existing.amount) || 0) + diff;
+            data.opening_balance = newOpening;
+          } else if (data.amount !== undefined) {
+            data.amount = Number(data.amount) || 0;
+          }
+        }
+        const { id, ...updates } = data;
+        const clause = Object.keys(updates).map(k => `${k} = @${k}`).join(', ');
+        db.prepare(`UPDATE suppliers SET ${clause} WHERE id = @id`).run(data);
+        supplierId = data.id;
+      } else {
+        if (data.opening_balance === undefined && data.amount !== undefined) {
+          data.opening_balance = Number(data.amount) || 0;
+        } else if (data.opening_balance !== undefined && data.amount === undefined) {
+          data.amount = Number(data.opening_balance) || 0;
+        }
+        const keys = Object.keys(data);
+        const placeholders = keys.map(k => `@${k}`).join(', ');
+        const info = db.prepare(`INSERT INTO suppliers (${keys.join(', ')}) VALUES (${placeholders})`).run(data);
+        supplierId = info.lastInsertRowid;
+      }
+    });
+    transaction();
+    return { success: true, id: supplierId };
+  } catch (err) {
+    console.error('Error in saveSupplier:', err);
+    return { success: false, error: err.message || 'Failed to save supplier.' };
+  }
 }
 
 function deleteSupplier(id) {
-  const s = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
-  if (!s) return { error: 'Supplier not found' };
+  try {
+    const s = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+    if (!s) return { success: false, error: 'Supplier not found' };
 
-  db.transaction(() => {
-    db.prepare('DELETE FROM supplier_payments WHERE supplier_id = ?').run(id);
-    db.prepare('UPDATE raw_material_purchases SET supplier_id = NULL WHERE supplier_id = ?').run(id);
-    db.prepare('DELETE FROM suppliers WHERE id = ?').run(id);
-  })();
-  return { success: true };
+    db.transaction(() => {
+      db.prepare('DELETE FROM supplier_payments WHERE supplier_id = ?').run(id);
+      db.prepare('UPDATE raw_material_purchases SET supplier_id = NULL WHERE supplier_id = ?').run(id);
+      db.prepare('DELETE FROM suppliers WHERE id = ?').run(id);
+    })();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteSupplier:', err);
+    return { success: false, error: err.message || 'Failed to delete supplier.' };
+  }
+}
+
+function getNextSupplierPaymentReceiptNo() {
+  const rows = db.prepare('SELECT id, receipt_no FROM supplier_payments').all();
+  if (!rows || rows.length === 0) return 'PAY-1';
+
+  let maxNum = 0;
+  for (const r of rows) {
+    if (r.receipt_no) {
+      const match = String(r.receipt_no).match(/^PAY-(\d+)$/i);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    if (r.id && r.id > maxNum) maxNum = Math.max(maxNum, r.id);
+  }
+  let nextNum = maxNum + 1;
+  let receiptNo = `PAY-${nextNum}`;
+  while (db.prepare('SELECT id FROM supplier_payments WHERE receipt_no = ?').get(receiptNo)) {
+    nextNum++;
+    receiptNo = `PAY-${nextNum}`;
+  }
+  return receiptNo;
 }
 
 function paySupplier(data) {
-  if (!data.supplier_id) return { error: 'Supplier ID is required' };
-  const amount = Number(data.amount) || 0;
-  if (amount <= 0) return { error: 'Payment amount must be greater than 0' };
+  try {
+    if (!data.supplier_id) return { success: false, error: 'Supplier ID is required' };
+    const amount = Number(data.amount) || 0;
+    if (amount <= 0) return { success: false, error: 'Payment amount must be greater than 0' };
 
-  const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(data.supplier_id);
-  if (!supplier) return { error: 'Supplier not found' };
+    const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(data.supplier_id);
+    if (!supplier) return { success: false, error: 'Supplier not found' };
 
-  const currentBalance = Number(supplier.amount) || 0;
-  if (currentBalance <= 0) {
-    return { error: 'This supplier has no outstanding balance' };
-  }
-  if (amount > currentBalance) {
-    return { error: `Paid amount (Rs. ${amount.toLocaleString()}) cannot be more than the balance due to supplier (Rs. ${currentBalance.toLocaleString()})` };
-  }
+    const currentBalance = Number(supplier.amount) || 0;
+    // Supports paying more than current balance as Advance Payment for future purchases
+    const newBalance = currentBalance - amount;
 
-  const date = data.date || new Date().toISOString().split('T')[0];
-  const todayStr = date.replace(/-/g, '');
-  let countToday = db.prepare('SELECT COUNT(*) as c FROM supplier_payments WHERE date = ?').get(date)?.c || 0;
-  let receiptNo = `PAY-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
-  while (db.prepare('SELECT id FROM supplier_payments WHERE receipt_no = ?').get(receiptNo)) {
-    countToday++;
-    receiptNo = `PAY-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
-  }
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const receiptNo = getNextSupplierPaymentReceiptNo();
 
-  let paymentId;
-  let newBalance = 0;
-  db.transaction(() => {
-    const res = db.prepare(`
-      INSERT INTO supplier_payments (supplier_id, amount, payment_method, receipt_no, date, notes)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      data.supplier_id,
-      amount,
-      data.payment_method || 'Cash',
-      receiptNo,
+    let paymentId;
+    db.transaction(() => {
+      const res = db.prepare(`
+        INSERT INTO supplier_payments (supplier_id, amount, payment_method, receipt_no, date, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.supplier_id,
+        amount,
+        data.payment_method || 'Cash',
+        receiptNo,
+        date,
+        data.notes || ''
+      );
+      paymentId = res.lastInsertRowid;
+      db.prepare('UPDATE suppliers SET amount = ? WHERE id = ?').run(newBalance, data.supplier_id);
+      syncSupplierBalance(data.supplier_id);
+    })();
+
+    return {
+      success: true,
+      id: paymentId,
+      receipt_no: receiptNo,
+      supplier_id: data.supplier_id,
+      supplier_name: supplier.name,
+      amount_paid: amount,
+      previous_balance: currentBalance,
+      new_balance: newBalance,
       date,
-      data.notes || ''
-    );
-    paymentId = res.lastInsertRowid;
-    newBalance = Math.max(0, currentBalance - amount);
-    db.prepare('UPDATE suppliers SET amount = ? WHERE id = ?').run(newBalance, data.supplier_id);
-  })();
-
-  return {
-    success: true,
-    id: paymentId,
-    receipt_no: receiptNo,
-    supplier_id: data.supplier_id,
-    supplier_name: supplier.name,
-    amount_paid: amount,
-    previous_balance: currentBalance,
-    new_balance: newBalance,
-    date,
-    payment_method: data.payment_method || 'Cash',
-    notes: data.notes || ''
-  };
+      payment_method: data.payment_method || 'Cash',
+      notes: data.notes || '',
+      is_advance: newBalance < 0
+    };
+  } catch (err) {
+    console.error('Error in paySupplier:', err);
+    return { success: false, error: err.message || 'Failed to record supplier payment.' };
+  }
 }
 
 function deleteSupplierPayment(id) {
-  const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(id);
-  if (!payment) return { error: 'Payment not found' };
+  try {
+    const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(id);
+    if (!payment) return { success: false, error: 'Payment not found' };
 
-  db.transaction(() => {
-    db.prepare('UPDATE suppliers SET amount = amount + ? WHERE id = ?').run(payment.amount, payment.supplier_id);
-    db.prepare('DELETE FROM supplier_payments WHERE id = ?').run(id);
-  })();
+    db.transaction(() => {
+      db.prepare('DELETE FROM supplier_payments WHERE id = ?').run(id);
+      syncSupplierBalance(payment.supplier_id);
+    })();
 
-  return { success: true };
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteSupplierPayment:', err);
+    return { success: false, error: err.message || 'Failed to delete supplier payment.' };
+  }
 }
 
 function updateSupplierPayment(id, data = {}) {
-  const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(id);
-  if (!payment) return { error: 'Supplier payment not found' };
+  try {
+    const payment = db.prepare('SELECT * FROM supplier_payments WHERE id = ?').get(id);
+    if (!payment) return { success: false, error: 'Supplier payment not found' };
 
-  const notes = data.notes !== undefined ? data.notes : payment.notes;
-  const paymentMethod = data.payment_method || payment.payment_method;
-  const date = data.date || payment.date;
+    const notes = data.notes !== undefined ? data.notes : payment.notes;
+    const paymentMethod = data.payment_method || payment.payment_method;
+    const date = data.date || payment.date;
 
-  db.prepare('UPDATE supplier_payments SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
-    .run(notes, paymentMethod, date, id);
-  return { success: true };
+    db.prepare('UPDATE supplier_payments SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
+      .run(notes, paymentMethod, date, id);
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updateSupplierPayment:', err);
+    return { success: false, error: err.message || 'Failed to update supplier payment.' };
+  }
+}
+
+function getRecordTimestamp(e) {
+  if (e.created_at) {
+    let clean = String(e.created_at).trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(clean)) {
+      clean = clean.replace(' ', 'T') + 'Z';
+    } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(clean)) {
+      clean = clean + 'Z';
+    }
+    const t = new Date(clean).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (e.date) {
+    let clean = String(e.date).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+      clean = clean + 'T00:00:00Z';
+    }
+    const t = new Date(clean).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  return 0;
+}
+
+function sortLedgerEntriesLatestFirst(a, b) {
+  const dateA = (a.date || '').split('T')[0].split(' ')[0];
+  const dateB = (b.date || '').split('T')[0].split(' ')[0];
+  if (dateA && dateB && dateA !== dateB) {
+    return dateB.localeCompare(dateA);
+  }
+  // Same day: if one is opening balance, opening balance is the beginning of the day (oldest)
+  if (a.record_type === 'opening_balance' && b.record_type !== 'opening_balance') return 1;
+  if (b.record_type === 'opening_balance' && a.record_type !== 'opening_balance') return -1;
+
+  const ta = getRecordTimestamp(a);
+  const tb = getRecordTimestamp(b);
+  if (ta !== tb) return tb - ta;
+
+  return (b.id || 0) - (a.id || 0);
 }
 
 function getSupplierLedger(supplierId) {
   const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(supplierId);
   if (!supplier) return null;
+
+  let openingBalance = Number(supplier.opening_balance) || 0;
+  if (!openingBalance) {
+    const purSum = db.prepare('SELECT COALESCE(SUM(remaining_balance), 0) as net_unpaid FROM raw_material_purchases WHERE supplier_id = ? OR (supplier_name = ? AND supplier_id IS NULL)').get(supplierId, supplier.name);
+    const paysSum = db.prepare('SELECT COALESCE(SUM(amount), 0) as total_paid FROM supplier_payments WHERE supplier_id = ?').get(supplierId);
+    const netTx = (purSum?.net_unpaid || 0) - (paysSum?.total_paid || 0);
+    const calculated = Math.round(((supplier.amount || 0) - netTx) * 100) / 100;
+    if (calculated > 0) {
+      openingBalance = calculated;
+      try {
+        db.prepare('UPDATE suppliers SET opening_balance = ? WHERE id = ?').run(calculated, supplierId);
+        supplier.opening_balance = calculated;
+      } catch(e) {}
+    }
+  }
 
   // Purchases (Debit to factory / Credit to supplier payable account)
   const purchases = db.prepare(`
@@ -3329,7 +4246,7 @@ function getSupplierLedger(supplierId) {
 
   // Payments Made to Supplier
   const payments = db.prepare(`
-    SELECT sp.id, sp.receipt_no as invoice_no, sp.date, sp.created_at, 0 as total_cost, sp.amount as paid_amount, 0 as remaining_balance,
+    SELECT sp.id, COALESCE(NULLIF(sp.receipt_no, ''), 'PAY-' || sp.id) as invoice_no, sp.date, sp.created_at, 0 as total_cost, sp.amount as paid_amount, 0 as remaining_balance,
            sp.payment_method, sp.notes,
            'payment' as record_type,
            0 as items_count,
@@ -3338,17 +4255,33 @@ function getSupplierLedger(supplierId) {
     WHERE sp.supplier_id = ?
   `).all(supplierId);
 
-  // Combine and sort latest first (newest date/id first)
-  const entries = [...purchases, ...payments].sort((a, b) => {
-    const da = new Date(a.date).getTime() || 0;
-    const db = new Date(b.date).getTime() || 0;
-    if (da !== db) return db - da;
-    return (b.id || 0) - (a.id || 0);
-  });
+  const allEntries = [...purchases, ...payments];
+
+  // If supplier has an opening balance, add it as a ledger entry
+  if (openingBalance > 0) {
+    allEntries.push({
+      id: 0,
+      invoice_no: 'START',
+      date: supplier.created_at || '2026-01-01',
+      created_at: supplier.created_at || '2026-01-01',
+      total_cost: openingBalance,
+      paid_amount: 0,
+      remaining_balance: openingBalance,
+      payment_method: 'Starting Balance',
+      notes: 'Initial Opening Khata Balance',
+      record_type: 'opening_balance',
+      items_count: 0,
+      summary_name: 'Opening Balance / Starting Amount'
+    });
+  }
+
+  // Combine and sort latest first (newest date/created_at first)
+  const entries = allEntries.sort(sortLedgerEntriesLatestFirst);
 
   return {
     supplier,
     current_balance: supplier.amount || 0,
+    opening_balance: openingBalance,
     entries
   };
 }
@@ -3389,29 +4322,328 @@ function getRawMaterialLogs(filters = {}) {
 }
 
 function deleteRawMaterialLog(id, revertStock = true) {
-  const log = db.prepare('SELECT * FROM raw_material_logs WHERE id = ?').get(id);
-  if (!log) return { error: 'Log not found' };
+  try {
+    const log = db.prepare('SELECT * FROM raw_material_logs WHERE id = ?').get(id);
+    if (!log) return { success: false, error: 'Log not found' };
 
-  db.transaction(() => {
-    if (revertStock && log.material_id && log.qty_change) {
-      db.prepare('UPDATE raw_materials SET current_stock = MAX(0, current_stock - ?) WHERE id = ?')
-        .run(log.qty_change, log.material_id);
-    }
-    db.prepare('DELETE FROM raw_material_logs WHERE id = ?').run(id);
-  })();
+    db.transaction(() => {
+      if (revertStock && log.material_id && log.qty_change) {
+        db.prepare('UPDATE raw_materials SET current_stock = MAX(0, current_stock - ?) WHERE id = ?')
+          .run(log.qty_change, log.material_id);
+      }
+      db.prepare('DELETE FROM raw_material_logs WHERE id = ?').run(id);
+    })();
 
-  return { success: true };
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteRawMaterialLog:', err);
+    return { success: false, error: err.message || 'Failed to delete log.' };
+  }
 }
 
 function updateRawMaterialLog(id, data = {}) {
-  const log = db.prepare('SELECT * FROM raw_material_logs WHERE id = ?').get(id);
-  if (!log) return { error: 'Log not found' };
+  try {
+    const log = db.prepare('SELECT * FROM raw_material_logs WHERE id = ?').get(id);
+    if (!log) return { success: false, error: 'Log not found' };
 
-  const notes = data.notes !== undefined ? data.notes : log.notes;
-  const date = data.date || log.date;
+    const notes = data.notes !== undefined ? data.notes : log.notes;
+    const date = data.date || log.date;
 
-  db.prepare('UPDATE raw_material_logs SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
-  return { success: true };
+    db.prepare('UPDATE raw_material_logs SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updateRawMaterialLog:', err);
+    return { success: false, error: err.message || 'Failed to update log.' };
+  }
+}
+
+// ==========================================
+// CHOCOLATE PRODUCTION (PROCESSED MATERIAL)
+// ==========================================
+
+function ensureChocolateTables() {
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS chocolate_batches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        batch_number TEXT UNIQUE,
+        date TEXT NOT NULL,
+        liters_produced REAL NOT NULL,
+        materials_summary TEXT DEFAULT '',
+        materials_json TEXT DEFAULT '[]',
+        total_cost REAL DEFAULT 0,
+        cost_per_liter REAL DEFAULT 0,
+        notes TEXT DEFAULT '',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS chocolate_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        action TEXT NOT NULL,
+        liters_change REAL NOT NULL,
+        stock_before REAL NOT NULL,
+        stock_after REAL NOT NULL,
+        reference_id INTEGER,
+        reference_no TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    db.prepare("INSERT OR IGNORE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', '0')").run();
+  } catch (e) {}
+}
+
+function getChocolateStock() {
+  ensureChocolateTables();
+  const row = db.prepare("SELECT value FROM app_kv_store WHERE key = 'chocolate_stock_liters'").get();
+  const current = row ? Number(row.value) || 0 : 0;
+  return {
+    stock: Math.max(0, Math.round(current * 100) / 100),
+    unit: 'Liters'
+  };
+}
+
+function getChocolateBatches(filters = {}) {
+  ensureChocolateTables();
+  let query = 'SELECT * FROM chocolate_batches WHERE 1=1';
+  const params = [];
+  if (filters && filters.date) {
+    query += ' AND date = ?';
+    params.push(filters.date);
+  }
+  query += ' ORDER BY date DESC, id DESC';
+  return db.prepare(query).all(...params);
+}
+
+function getChocolateLogs(filters = {}) {
+  ensureChocolateTables();
+  let query = 'SELECT * FROM chocolate_logs WHERE 1=1';
+  const params = [];
+  query += ' ORDER BY id DESC LIMIT 200';
+  return db.prepare(query).all(...params);
+}
+
+function createChocolateBatch(data) {
+  try {
+    ensureChocolateTables();
+    const litersProduced = Number(data.liters_produced) || 0;
+    if (litersProduced <= 0) {
+      return { success: false, error: 'Chocolate quantity must be greater than 0 Liters.' };
+    }
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const notes = data.notes || '';
+    const materials = Array.isArray(data.materials) ? data.materials : [];
+
+    if (materials.length === 0) {
+      return { success: false, error: 'Please select at least one raw material to produce chocolate.' };
+    }
+
+    // Verify stock availability
+    for (const m of materials) {
+      const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(m.material_id);
+      if (!mat) {
+        return { success: false, error: `Raw material not found (ID: ${m.material_id})` };
+      }
+      const qtyUsed = Number(m.qty_used) || 0;
+      if (qtyUsed <= 0) {
+        return { success: false, error: `Invalid quantity for "${mat.name}".` };
+      }
+      if ((mat.current_stock || 0) < qtyUsed) {
+        return { success: false, error: `Insufficient stock for "${mat.name}". Available: ${mat.current_stock}, Required: ${qtyUsed}` };
+      }
+    }
+
+    // Generate batch number
+    const todayStr = date.replace(/-/g, '');
+    let countToday = db.prepare('SELECT COUNT(*) as c FROM chocolate_batches WHERE date = ?').get(date).c + 1;
+    let batchNumber = `CHOC-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    while (db.prepare('SELECT id FROM chocolate_batches WHERE batch_number = ?').get(batchNumber)) {
+      countToday++;
+      batchNumber = `CHOC-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    }
+
+    let batchId;
+    let newStock = 0;
+    const materialsSummaryList = [];
+    const materialsJsonList = [];
+    let totalCost = 0;
+
+    const tx = db.transaction(() => {
+      // Deduct raw materials
+      for (const m of materials) {
+        const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(m.material_id);
+        const qtyUsed = Number(m.qty_used);
+        const stockBefore = mat.current_stock || 0;
+        const stockAfter = Math.max(0, stockBefore - qtyUsed);
+
+        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(stockAfter, mat.id);
+
+        const specBulk = Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+        const pSize = specBulk ? Number(mat.pack_size) : 1;
+        const mainUnit = mat.unit || 'Pack';
+        const subUnit = specBulk ? (mat.pack_unit || 'Unit') : mainUnit;
+        const unitCost = specBulk ? (Number(mat.cost_price || 0) / pSize) : Number(mat.cost_price || 0);
+        const lineCost = qtyUsed * unitCost;
+        totalCost += lineCost;
+
+        let usageLabel = `${qtyUsed} ${subUnit}`;
+        if (specBulk) {
+          const p = Math.floor(qtyUsed / pSize);
+          const l = Math.round((qtyUsed % pSize) * 10) / 10;
+          if (p > 0 && l > 0) usageLabel = `${p} ${p === 1 ? mainUnit : mainUnit + 's'} + ${l} ${subUnit} (${qtyUsed} ${subUnit})`;
+          else if (p > 0) usageLabel = `${p} ${p === 1 ? mainUnit : mainUnit + 's'} (${qtyUsed} ${subUnit})`;
+          else usageLabel = `${l} ${subUnit}`;
+        }
+        materialsSummaryList.push(`${mat.name}: ${usageLabel}`);
+        materialsJsonList.push({
+          material_id: mat.id,
+          material_name: mat.name,
+          qty_used: qtyUsed,
+          unit: subUnit,
+          display_qty: usageLabel,
+          line_cost: lineCost
+        });
+
+        // Insert into raw_material_logs
+        db.prepare(`
+          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, date, notes)
+          VALUES (?, ?, 'CHOCOLATE_PRODUCTION', ?, ?, ?, ?, ?)
+        `).run(
+          mat.id,
+          mat.name,
+          -qtyUsed,
+          stockBefore,
+          stockAfter,
+          date,
+          `Used in Chocolate Production ${batchNumber} (${litersProduced} Liters)`
+        );
+      }
+
+      const summaryText = materialsSummaryList.join(', ');
+      const costPerLiter = litersProduced > 0 ? (totalCost / litersProduced) : 0;
+
+      // Insert batch record
+      const res = db.prepare(`
+        INSERT INTO chocolate_batches (batch_number, date, liters_produced, materials_summary, materials_json, total_cost, cost_per_liter, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        batchNumber,
+        date,
+        litersProduced,
+        summaryText,
+        JSON.stringify(materialsJsonList),
+        totalCost,
+        costPerLiter,
+        notes
+      );
+      batchId = res.lastInsertRowid;
+
+      // Update chocolate stock
+      const stockRow = db.prepare("SELECT value FROM app_kv_store WHERE key = 'chocolate_stock_liters'").get();
+      const currentChocStock = stockRow ? Number(stockRow.value) || 0 : 0;
+      newStock = Math.round((currentChocStock + litersProduced) * 100) / 100;
+      db.prepare("INSERT OR REPLACE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', ?)").run(String(newStock));
+
+      // Log chocolate movement
+      db.prepare(`
+        INSERT INTO chocolate_logs (date, action, liters_change, stock_before, stock_after, reference_id, reference_no, notes)
+        VALUES (?, 'PRODUCTION', ?, ?, ?, ?, ?, ?)
+      `).run(
+        date,
+        litersProduced,
+        currentChocStock,
+        newStock,
+        batchId,
+        batchNumber,
+        `Produced ${litersProduced} Liters (${summaryText})`
+      );
+    });
+
+    tx();
+
+    return {
+      success: true,
+      batchId,
+      batchNumber,
+      litersProduced,
+      newStock
+    };
+  } catch (err) {
+    console.error('Error in createChocolateBatch:', err);
+    return { success: false, error: err.message || 'Failed to create chocolate batch.' };
+  }
+}
+
+function deleteChocolateBatch(id) {
+  try {
+    ensureChocolateTables();
+    const batch = db.prepare('SELECT * FROM chocolate_batches WHERE id = ?').get(id);
+    if (!batch) return { success: false, error: 'Chocolate batch not found' };
+
+    let materials = [];
+    try {
+      materials = JSON.parse(batch.materials_json || '[]');
+    } catch (e) {}
+
+    const tx = db.transaction(() => {
+      // 1. Restore raw materials
+      for (const m of materials) {
+        if (m.material_id && m.qty_used > 0) {
+          const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(m.material_id);
+          const curStock = mat ? mat.current_stock : 0;
+          const newStock = curStock + m.qty_used;
+          db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?')
+            .run(newStock, m.material_id);
+
+          db.prepare(`
+            INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+            VALUES (?, ?, 'CHOCOLATE_REVERT', ?, ?, ?, ?, date('now'), ?)
+          `).run(
+            m.material_id,
+            mat ? mat.name : (m.material_name || 'Material'),
+            m.qty_used,
+            curStock,
+            newStock,
+            batch.id,
+            `Restored from deleted Chocolate Batch ${batch.batch_number} (+${m.qty_used} ${mat ? mat.unit : ''})`
+          );
+        }
+      }
+
+      // Remove raw material deduction logs for this chocolate batch
+      db.prepare("DELETE FROM raw_material_logs WHERE notes LIKE ? AND action != 'CHOCOLATE_REVERT'").run(`%${batch.batch_number}%`);
+
+      // 2. Reduce chocolate stock
+      const stockRow = db.prepare("SELECT value FROM app_kv_store WHERE key = 'chocolate_stock_liters'").get();
+      const currentStock = stockRow ? Number(stockRow.value) || 0 : 0;
+      const newStock = Math.max(0, Math.round((currentStock - batch.liters_produced) * 100) / 100);
+      db.prepare("INSERT OR REPLACE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', ?)").run(String(newStock));
+
+      // Log revert
+      db.prepare(`
+        INSERT INTO chocolate_logs (date, action, liters_change, stock_before, stock_after, reference_id, reference_no, notes)
+        VALUES (date('now'), 'BATCH_REVERT', ?, ?, ?, ?, ?, ?)
+      `).run(
+        -batch.liters_produced,
+        currentStock,
+        newStock,
+        batch.id,
+        batch.batch_number,
+        `Reverted chocolate batch ${batch.batch_number} (-${batch.liters_produced} Liters)`
+      );
+
+      // 3. Delete chocolate batch
+      db.prepare('DELETE FROM chocolate_batches WHERE id = ?').run(id);
+    });
+
+    tx();
+
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteChocolateBatch:', err);
+    return { success: false, error: err.message || 'Failed to delete chocolate batch.' };
+  }
 }
 
 // --- STAGE 2: SINGLE ITEMS PRODUCTION ---
@@ -3431,149 +4663,232 @@ function getIcecreamItem(id) {
 }
 
 function saveIcecreamItem(data) {
-  if (data.id) {
-    db.prepare(`
-      UPDATE icecream_items 
-      SET name = ?, flavor = ?, unit_cost = ?, retail_piece_price = ?, current_single_stock = ?, default_pcs_per_carton = ?, barcode = ?, image_path = ?, notes = ?
-      WHERE id = ?
-    `).run(
-      data.name.trim(),
-      data.flavor || '',
-      Number(data.unit_cost) || 0,
-      Number(data.retail_piece_price) || 0,
-      Number(data.current_single_stock) || 0,
-      Number(data.default_pcs_per_carton) || 20,
-      data.barcode || '',
-      data.image_path || '',
-      data.notes || '',
-      data.id
-    );
-    // Also update name on associated packed cartons if exists
-    db.prepare('UPDATE packed_cartons SET item_name = ? WHERE item_id = ?').run(data.name.trim(), data.id);
-    return { success: true, id: data.id };
-  } else {
-    const res = db.prepare(`
-      INSERT INTO icecream_items (name, flavor, unit_cost, retail_piece_price, current_single_stock, default_pcs_per_carton, barcode, image_path, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      data.name.trim(),
-      data.flavor || '',
-      Number(data.unit_cost) || 0,
-      Number(data.retail_piece_price) || 0,
-      Number(data.current_single_stock) || 0,
-      Number(data.default_pcs_per_carton) || 20,
-      data.barcode || '',
-      data.image_path || '',
-      data.notes || ''
-    );
-    const newId = res.lastInsertRowid;
-    // Auto-create default packed carton configuration if none exists
-    const defaultPcs = Number(data.default_pcs_per_carton) || 20;
-    const cost = (Number(data.unit_cost) || 10) * defaultPcs;
-    const sale = (Number(data.retail_piece_price) || 20) * defaultPcs * 0.8; // default 20% discount wholesale
-    db.prepare(`
-      INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-    `).run(newId, data.name.trim(), `${data.name.trim()} Carton (${defaultPcs} Pcs)`, defaultPcs, cost, sale, sale);
+  try {
+    const itemName = (data.name || '').trim();
+    if (!itemName) {
+      return { success: false, error: 'Item name is required.' };
+    }
 
-    return { success: true, id: newId };
+    const itemDup = data.id
+      ? db.prepare('SELECT id, name FROM icecream_items WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id != ?').get(itemName, data.id)
+      : db.prepare('SELECT id, name FROM icecream_items WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(itemName);
+    if (itemDup) {
+      return { success: false, error: `An ice cream item with the name "${itemName}" already exists. Duplicate names are not allowed.` };
+    }
+
+    if (data.id) {
+      db.prepare(`
+        UPDATE icecream_items 
+        SET name = ?, flavor = ?, unit_cost = ?, retail_piece_price = ?, current_single_stock = ?, default_pcs_per_carton = ?, barcode = ?, image_path = ?, notes = ?
+        WHERE id = ?
+      `).run(
+        data.name.trim(),
+        data.flavor || '',
+        Number(data.unit_cost) || 0,
+        Number(data.retail_piece_price) || 0,
+        Number(data.current_single_stock) || 0,
+        Number(data.default_pcs_per_carton) || 20,
+        data.barcode || '',
+        data.image_path || '',
+        data.notes || '',
+        data.id
+      );
+      // Also update name on associated packed cartons if exists
+      db.prepare('UPDATE packed_cartons SET item_name = ? WHERE item_id = ?').run(data.name.trim(), data.id);
+      return { success: true, id: data.id };
+    } else {
+      const res = db.prepare(`
+        INSERT INTO icecream_items (name, flavor, unit_cost, retail_piece_price, current_single_stock, default_pcs_per_carton, barcode, image_path, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        data.name.trim(),
+        data.flavor || '',
+        Number(data.unit_cost) || 0,
+        Number(data.retail_piece_price) || 0,
+        Number(data.current_single_stock) || 0,
+        Number(data.default_pcs_per_carton) || 20,
+        data.barcode || '',
+        data.image_path || '',
+        data.notes || ''
+      );
+      const newId = res.lastInsertRowid;
+      // Auto-create default packed carton configuration if none exists
+      try {
+        const defaultPcs = Number(data.default_pcs_per_carton) || 20;
+        const cost = (Number(data.unit_cost) || 10) * defaultPcs;
+        const sale = (Number(data.retail_piece_price) || 20) * defaultPcs * 0.8; // default 20% discount wholesale
+        const cartonName = `${data.name.trim()} Carton (${defaultPcs} Pcs)`;
+        const existingCtn = db.prepare('SELECT id FROM packed_cartons WHERE LOWER(TRIM(carton_name)) = LOWER(TRIM(?))').get(cartonName);
+        if (!existingCtn) {
+          const randCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+          db.prepare(`
+            INSERT INTO packed_cartons (item_id, item_name, carton_name, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock, barcode, qr_code)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+          `).run(newId, data.name.trim(), cartonName, defaultPcs, cost, sale, sale, randCode, randCode);
+        }
+      } catch (ctnErr) {
+        console.warn('Auto carton creation notice:', ctnErr.message);
+      }
+
+      return { success: true, id: newId };
+    }
+  } catch (err) {
+    console.error('Error in saveIcecreamItem:', err);
+    return { success: false, error: err.message || 'Failed to save ice cream item.' };
   }
 }
 
 function deleteIcecreamItem(id) {
-  const cartons = db.prepare('SELECT COUNT(*) as c FROM packed_cartons WHERE item_id = ?').get(id).c;
-  if (cartons > 0) {
-    return { error: 'Please remove associated packed cartons first before deleting this item.' };
+  try {
+    const cartons = db.prepare('SELECT COUNT(*) as c FROM packed_cartons WHERE item_id = ?').get(id)?.c || 0;
+    if (cartons > 0) {
+      return { success: false, error: 'Please remove associated packed cartons first before deleting this item.' };
+    }
+    db.transaction(() => {
+      db.prepare('DELETE FROM production_batches WHERE item_id = ?').run(id);
+      db.prepare('DELETE FROM icecream_items WHERE id = ?').run(id);
+    })();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteIcecreamItem:', err);
+    return { success: false, error: err.message || 'Failed to delete ice cream item.' };
   }
-  db.prepare('DELETE FROM production_batches WHERE item_id = ?').run(id);
-  db.prepare('DELETE FROM icecream_items WHERE id = ?').run(id);
-  return { success: true };
 }
 
 function runProductionBatch(data) {
-  const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(data.item_id);
-  if (!item) return { error: 'Ice cream item not found' };
+  try {
+    const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(data.item_id);
+    if (!item) return { success: false, error: 'Ice cream item not found' };
 
-  const pieces = Number(data.produced_pieces) || 0;
-  if (pieces <= 0) return { error: 'Produced pieces must be greater than 0' };
+    const pieces = Number(data.produced_pieces) || 0;
+    if (pieces <= 0) return { success: false, error: 'Produced pieces must be greater than 0' };
 
-  const unitCost = Number(data.unit_cost) || Number(item.unit_cost) || 0;
-  const totalCost = pieces * unitCost;
-  const date = data.date || new Date().toISOString().split('T')[0];
+    const unitCost = Number(data.unit_cost) || Number(item.unit_cost) || 0;
+    const totalCost = pieces * unitCost;
+    const date = data.date || new Date().toISOString().split('T')[0];
 
-  // Generate unique batch number
-  const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM production_batches WHERE date = ?').get(date).c + 1;
-  const batchNumber = `PRD-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    // Generate unique batch number
+    const todayStr = date.replace(/-/g, '');
+    let countToday = db.prepare('SELECT COUNT(*) as c FROM production_batches WHERE date = ?').get(date).c + 1;
+    let batchNumber = `PRD-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    while (db.prepare('SELECT id FROM production_batches WHERE batch_number = ?').get(batchNumber)) {
+      countToday++;
+      batchNumber = `PRD-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    }
 
-  let batchId;
-  const materialsSummaryList = [];
+    let batchId;
+    const materialsSummaryList = [];
 
-  const tx = db.transaction(() => {
-    // 1. Check & deduct raw materials if specified
-    if (Array.isArray(data.materials) && data.materials.length > 0) {
-      for (const matUsage of data.materials) {
-        const matId = matUsage.material_id;
-        const qtyUsed = Number(matUsage.qty_used) || 0;
-        if (matId && qtyUsed > 0) {
-          const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(matId);
-          if (mat) {
-            const stockBefore = mat.current_stock;
-            const stockAfter = Math.max(0, stockBefore - qtyUsed);
-            db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(stockAfter, mat.id);
+    const tx = db.transaction(() => {
+      // 1. Check & deduct raw materials if specified
+      if (Array.isArray(data.materials) && data.materials.length > 0) {
+        for (const matUsage of data.materials) {
+          const matId = matUsage.material_id;
+          const qtyUsed = Number(matUsage.qty_used) || 0;
+          if (matId && qtyUsed > 0) {
+            const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(matId);
+            if (mat) {
+              const stockBefore = mat.current_stock;
+              const stockAfter = Math.max(0, stockBefore - qtyUsed);
+              db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(stockAfter, mat.id);
 
-            db.prepare(`
-              INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, date, notes)
-              VALUES (?, ?, 'PRODUCTION_USED', ?, ?, ?, ?, ?)
-            `).run(
-              mat.id,
-              mat.name,
-              -qtyUsed,
-              stockBefore,
-              stockAfter,
-              date,
-              `Used in Production Batch ${batchNumber} (${pieces} pcs ${item.name})`
-            );
+              db.prepare(`
+                INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, date, notes)
+                VALUES (?, ?, 'PRODUCTION_USED', ?, ?, ?, ?, ?)
+              `).run(
+                mat.id,
+                mat.name,
+                -qtyUsed,
+                stockBefore,
+                stockAfter,
+                date,
+                `Used in Production Batch ${batchNumber} (${pieces} pcs ${item.name})`
+              );
 
-            materialsSummaryList.push(`${mat.name}: ${qtyUsed} ${mat.unit}`);
+              let usageLabel = `${qtyUsed} ${mat.unit}`;
+              if (mat.has_bulk && mat.pack_size > 1) {
+                const p = Math.floor(qtyUsed / mat.pack_size);
+                const l = Math.round((qtyUsed % mat.pack_size) * 10) / 10;
+                const pUnit = mat.unit || 'Pack';
+                const subUnit = mat.pack_unit || 'Unit';
+                if (p > 0 && l > 0) usageLabel = `${p} ${p === 1 ? pUnit : pUnit + 's'} + ${l} ${subUnit} (${qtyUsed} ${subUnit})`;
+                else if (p > 0) usageLabel = `${p} ${p === 1 ? pUnit : pUnit + 's'} (${qtyUsed} ${subUnit})`;
+                else usageLabel = `${l} ${subUnit}`;
+              } else {
+                usageLabel = `${qtyUsed} ${mat.unit}`;
+              }
+              materialsSummaryList.push(`${mat.name}: ${usageLabel}`);
+            }
           }
         }
       }
-    }
 
-    const summaryText = materialsSummaryList.join(', ') || (data.raw_materials_summary || 'Standard ingredients');
+      const summaryText = materialsSummaryList.join(', ') || (data.raw_materials_summary || 'Standard ingredients');
 
-    // 2. Insert batch record
-    const res = db.prepare(`
-      INSERT INTO production_batches (batch_number, date, item_id, item_name, produced_pieces, unit_cost, total_cost, raw_materials_summary, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      batchNumber,
-      date,
-      item.id,
-      item.name,
-      pieces,
-      unitCost,
-      totalCost,
-      summaryText,
-      data.notes || ''
-    );
-    batchId = res.lastInsertRowid;
+      // 2. Insert batch record
+      const res = db.prepare(`
+        INSERT INTO production_batches (batch_number, date, item_id, item_name, produced_pieces, unit_cost, total_cost, raw_materials_summary, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        batchNumber,
+        date,
+        item.id,
+        item.name,
+        pieces,
+        unitCost,
+        totalCost,
+        summaryText,
+        data.notes || ''
+      );
+      batchId = res.lastInsertRowid;
 
-    // 3. Add to single items pool
-    db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock + ?, unit_cost = ? WHERE id = ?')
-      .run(pieces, unitCost, item.id);
-  });
+      // 3. Record used materials in production_batch_materials
+      if (Array.isArray(data.materials) && data.materials.length > 0) {
+        const insPbm = db.prepare(`
+          INSERT INTO production_batch_materials (batch_id, material_id, material_name, qty_used, unit, unit_cost, line_cost)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const matUsage of data.materials) {
+          const matId = matUsage.material_id;
+          const qtyUsed = Number(matUsage.qty_used) || 0;
+          if (matId && qtyUsed > 0) {
+            const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(matId);
+            if (mat) {
+              const isBulk = Boolean((mat.has_bulk === 1 || mat.has_bulk === '1' || mat.has_bulk === true) && Number(mat.pack_size) > 1);
+              const subUnit = isBulk ? (mat.pack_unit || 'Unit') : (mat.unit || 'Unit');
+              const unitCost = isBulk ? ((Number(mat.cost_price) || 0) / Number(mat.pack_size)) : (Number(mat.cost_price) || 0);
+              insPbm.run(
+                batchId,
+                mat.id,
+                mat.name,
+                qtyUsed,
+                subUnit,
+                unitCost,
+                qtyUsed * unitCost
+              );
+            }
+          }
+        }
+      }
 
-  tx();
-  return { 
-    success: true, 
-    batchId, 
-    batchNumber, 
-    produced_pieces: pieces, 
-    item_name: item.name, 
-    new_single_stock: item.current_single_stock + pieces 
-  };
+      // 4. Add to single items pool
+      db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock + ?, unit_cost = ? WHERE id = ?')
+        .run(pieces, unitCost, item.id);
+    });
+
+    tx();
+    return { 
+      success: true, 
+      batchId, 
+      batchNumber, 
+      produced_pieces: pieces, 
+      item_name: item.name, 
+      new_single_stock: item.current_single_stock + pieces 
+    };
+  } catch (err) {
+    console.error('Error in runProductionBatch:', err);
+    return { success: false, error: err.message || 'Failed to complete production run.' };
+  }
 }
 
 function getProductionBatches(filters = {}) {
@@ -3605,40 +4920,77 @@ function getProductionBatch(id) {
 }
 
 function updateProductionBatch(id, data = {}) {
-  const batch = db.prepare('SELECT * FROM production_batches WHERE id = ?').get(id);
-  if (!batch) return { error: 'Batch not found' };
+  try {
+    const batch = db.prepare('SELECT * FROM production_batches WHERE id = ?').get(id);
+    if (!batch) return { success: false, error: 'Batch not found' };
 
-  const notes = data.notes !== undefined ? data.notes : batch.notes;
-  const date = data.date || batch.date;
-  db.prepare('UPDATE production_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
-  return { success: true };
+    const notes = data.notes !== undefined ? data.notes : batch.notes;
+    const date = data.date || batch.date;
+    db.prepare('UPDATE production_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updateProductionBatch:', err);
+    return { success: false, error: err.message || 'Failed to update batch.' };
+  }
 }
 
 function deleteProductionBatch(id) {
-  const batch = db.prepare('SELECT * FROM production_batches WHERE id = ?').get(id);
-  if (!batch) return { error: 'Batch not found' };
+  try {
+    const batch = db.prepare('SELECT * FROM production_batches WHERE id = ?').get(id);
+    if (!batch) return { success: false, error: 'Batch not found' };
 
-  db.transaction(() => {
-    // Reverse single stock
-    db.prepare('UPDATE icecream_items SET current_single_stock = MAX(0, current_single_stock - ?) WHERE id = ?')
-      .run(batch.produced_pieces, batch.item_id);
-    db.prepare('DELETE FROM production_batches WHERE id = ?').run(id);
-  })();
+    db.transaction(() => {
+      // 1. Restore consumed raw materials
+      const usedMats = db.prepare('SELECT * FROM production_batch_materials WHERE batch_id = ?').all(id);
+      for (const m of usedMats) {
+        const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(m.material_id);
+        const curStock = mat ? mat.current_stock : 0;
+        const newStock = curStock + m.qty_used;
+        db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?')
+          .run(newStock, m.material_id);
 
-  return { success: true };
+        db.prepare(`
+          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+          VALUES (?, ?, 'PRODUCTION_REVERT', ?, ?, ?, ?, date('now'), ?)
+        `).run(
+          m.material_id,
+          mat ? mat.name : (m.material_name || 'Material'),
+          m.qty_used,
+          curStock,
+          newStock,
+          batch.id,
+          `Restored from deleted Production Batch ${batch.batch_number} (+${m.qty_used} ${m.unit || ''})`
+        );
+      }
+      // Remove raw material deduction logs for this batch
+      db.prepare("DELETE FROM raw_material_logs WHERE notes LIKE ? AND action != 'PRODUCTION_REVERT'").run(`%${batch.batch_number}%`);
+
+      // 2. Reverse single stock
+      db.prepare('UPDATE icecream_items SET current_single_stock = MAX(0, current_single_stock - ?) WHERE id = ?')
+        .run(batch.produced_pieces, batch.item_id);
+
+      // 3. Delete batch (cascades to production_batch_materials)
+      db.prepare('DELETE FROM production_batches WHERE id = ?').run(id);
+    })();
+
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteProductionBatch:', err);
+    return { success: false, error: err.message || 'Failed to delete production batch.' };
+  }
 }
 
-// --- STAGE 3: CARTON PACKING (SELLABLE INVENTORY) ---
+// --- STAGE 2: CARTON PACKING (SELLABLE INVENTORY) ---
 function getPackedCartons() {
   return db.prepare(`
     SELECT pc.*,
-           ii.name as base_item_name,
-           ii.current_single_stock as available_single_pieces,
+           COALESCE(ii.name, pc.carton_name) as base_item_name,
+           COALESCE(ii.current_single_stock, 0) as available_single_pieces,
            ROUND(pc.factory_carton_stock * pc.carton_cost_price, 2) as total_warehouse_cost,
            ROUND(pc.factory_carton_stock * pc.carton_sale_price, 2) as total_warehouse_value,
            COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci WHERE ci.carton_id = pc.id), 0) as total_loaded_in_cars
     FROM packed_cartons pc
-    JOIN icecream_items ii ON ii.id = pc.item_id
+    LEFT JOIN icecream_items ii ON ii.id = pc.item_id
     ORDER BY pc.carton_name ASC
   `).all();
 }
@@ -3653,88 +5005,200 @@ function findCartonByBarcode(barcode) {
   if (!clean) return null;
   return db.prepare(`
     SELECT pc.*,
-           ii.name as base_item_name,
-           ii.current_single_stock as available_single_pieces
+           COALESCE(ii.name, pc.carton_name) as base_item_name,
+           COALESCE(ii.current_single_stock, 0) as available_single_pieces
     FROM packed_cartons pc
-    JOIN icecream_items ii ON ii.id = pc.item_id
-    WHERE LOWER(TRIM(COALESCE(pc.barcode, ''))) = ?
-  `).get(clean);
+    LEFT JOIN icecream_items ii ON ii.id = pc.item_id
+    WHERE LOWER(TRIM(COALESCE(pc.barcode, ''))) = ? OR LOWER(TRIM(COALESCE(pc.qr_code, ''))) = ?
+  `).get(clean, clean);
 }
 
 function savePackedCarton(data) {
-  let barcodeToSave = (data.barcode || '').trim();
-
-  if (data.id) {
-    const existing = db.prepare('SELECT barcode FROM packed_cartons WHERE id = ?').get(data.id);
-    // Barcode can only be generated once for an item/carton: preserve permanent existing barcode
-    if (existing && existing.barcode && existing.barcode.trim()) {
-      barcodeToSave = existing.barcode.trim();
+  try {
+    const cartonName = (data.carton_name || '').trim();
+    if (!cartonName) {
+      return { success: false, error: 'Carton/Package name is required.' };
     }
-  }
 
-  // Ensure barcode is unique across all packed cartons if present
-  if (barcodeToSave) {
-    const dup = data.id 
-      ? db.prepare('SELECT id, carton_name FROM packed_cartons WHERE barcode = ? AND id != ?').get(barcodeToSave, data.id)
-      : db.prepare('SELECT id, carton_name FROM packed_cartons WHERE barcode = ?').get(barcodeToSave);
-    if (dup) {
-      return { error: `Barcode "${barcodeToSave}" is already assigned to "${dup.carton_name}". Barcodes must be unique.` };
+    const nameDup = data.id
+      ? db.prepare('SELECT id, carton_name FROM packed_cartons WHERE LOWER(TRIM(carton_name)) = LOWER(TRIM(?)) AND id != ?').get(cartonName, data.id)
+      : db.prepare('SELECT id, carton_name FROM packed_cartons WHERE LOWER(TRIM(carton_name)) = LOWER(TRIM(?))').get(cartonName);
+    if (nameDup) {
+      return { success: false, error: `A carton package with the name "${cartonName}" already exists. Duplicate names are not allowed.` };
     }
-  }
 
-  const packageType = (data.package_type === 'shoper' || data.package_type === 'Shoper') ? 'shoper' : 'carton';
+    let barcodeToSave = (data.barcode || '').trim();
 
-  if (data.id) {
-    db.prepare(`
-      UPDATE packed_cartons
-      SET item_id = ?, carton_name = ?, package_type = ?, pieces_per_carton = ?, carton_cost_price = ?, carton_sale_price = ?, carton_wholesale_price = ?, factory_carton_stock = ?, barcode = ?, notes = ?
-      WHERE id = ?
-    `).run(
-      data.item_id,
-      data.carton_name.trim(),
-      packageType,
-      Number(data.pieces_per_carton) || 20,
-      Number(data.carton_cost_price) || 0,
-      Number(data.carton_sale_price) || 0,
-      Number(data.carton_wholesale_price) || 0,
-      Number(data.factory_carton_stock) || 0,
-      barcodeToSave,
-      data.notes || '',
-      data.id
-    );
-    return { success: true, id: data.id };
-  } else {
-    const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(data.item_id);
-    const itemName = item ? item.name : '';
-    const res = db.prepare(`
-      INSERT INTO packed_cartons (item_id, item_name, carton_name, package_type, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock, barcode, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      data.item_id,
-      itemName,
-      data.carton_name.trim(),
-      packageType,
-      Number(data.pieces_per_carton) || 20,
-      Number(data.carton_cost_price) || 0,
-      Number(data.carton_sale_price) || 0,
-      Number(data.carton_wholesale_price) || 0,
-      Number(data.factory_carton_stock) || 0,
-      barcodeToSave,
-      data.notes || ''
-    );
-    return { success: true, id: res.lastInsertRowid };
+    if (data.id) {
+      const existing = db.prepare('SELECT barcode, qr_code FROM packed_cartons WHERE id = ?').get(data.id);
+      // Barcode can only be generated once for an item/carton: preserve permanent existing barcode
+      if (existing && existing.barcode && existing.barcode.trim()) {
+        barcodeToSave = existing.barcode.trim();
+      }
+    }
+
+    if (!barcodeToSave) {
+      barcodeToSave = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    }
+
+    let qrToSave = (data.qr_code || '').trim();
+    if (data.id) {
+      const existing = db.prepare('SELECT qr_code FROM packed_cartons WHERE id = ?').get(data.id);
+      if (existing && existing.qr_code && existing.qr_code.trim()) {
+        qrToSave = existing.qr_code.trim();
+      }
+    }
+    if (!qrToSave) {
+      qrToSave = barcodeToSave;
+    }
+
+    // Ensure barcode is unique across all packed cartons if present
+    if (barcodeToSave) {
+      const dup = data.id 
+        ? db.prepare('SELECT id, carton_name FROM packed_cartons WHERE barcode = ? AND id != ?').get(barcodeToSave, data.id)
+        : db.prepare('SELECT id, carton_name FROM packed_cartons WHERE barcode = ?').get(barcodeToSave);
+      if (dup) {
+        return { success: false, error: `Barcode "${barcodeToSave}" is already assigned to "${dup.carton_name}". Barcodes must be unique.` };
+      }
+    }
+
+    const packageType = (data.package_type === 'shoper' || data.package_type === 'Shoper') ? 'shoper' : 'carton';
+
+    if (data.id) {
+      const existing = db.prepare('SELECT item_id, item_name FROM packed_cartons WHERE id = ?').get(data.id);
+      let itemIdToSave = (data.item_id !== undefined && data.item_id !== null && Number(data.item_id) > 0) ? Number(data.item_id) : (existing?.item_id || 0);
+      let itm = itemIdToSave ? db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(itemIdToSave) : null;
+      let itemName = itm ? itm.name : (existing?.item_name || cartonName);
+
+      if (!itm) {
+        const cleanCartonName = cartonName;
+        const baseName = cleanCartonName.replace(/\s*(carton|shoper|bag|\(.*\))\s*$/i, '').trim() || cleanCartonName;
+        itm = db.prepare('SELECT * FROM icecream_items WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(cleanCartonName)
+           || db.prepare('SELECT * FROM icecream_items WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(baseName);
+        if (itm) {
+          itemIdToSave = itm.id;
+          itemName = itm.name;
+        } else {
+          const pcs = Number(data.pieces_per_carton) || 20;
+          const unitCost = pcs > 0 ? ((Number(data.carton_cost_price) || 0) / pcs) : 0;
+          const retailPrice = pcs > 0 ? ((Number(data.carton_sale_price) || 0) / pcs) : 0;
+          const newItm = db.prepare(`
+            INSERT INTO icecream_items (name, flavor, unit_cost, retail_piece_price, current_single_stock, default_pcs_per_carton, barcode, notes)
+            VALUES (?, ?, ?, ?, 0, ?, ?, ?)
+          `).run(
+            baseName,
+            '',
+            Math.round(unitCost * 100) / 100,
+            Math.round(retailPrice * 100) / 100,
+            pcs,
+            barcodeToSave,
+            'Created from carton packaging config'
+          );
+          itemIdToSave = newItm.lastInsertRowid;
+          itemName = baseName;
+        }
+      }
+
+      db.prepare(`
+        UPDATE packed_cartons
+        SET item_id = ?, item_name = ?, carton_name = ?, package_type = ?, pieces_per_carton = ?, carton_cost_price = ?, carton_sale_price = ?, carton_wholesale_price = ?, factory_carton_stock = ?, barcode = ?, qr_code = ?, notes = ?
+        WHERE id = ?
+      `).run(
+        itemIdToSave,
+        itemName,
+        data.carton_name.trim(),
+        packageType,
+        Number(data.pieces_per_carton) || 20,
+        Number(data.carton_cost_price) || 0,
+        Number(data.carton_sale_price) || 0,
+        Number(data.carton_wholesale_price) || 0,
+        Number(data.factory_carton_stock) || 0,
+        barcodeToSave,
+        qrToSave,
+        data.notes || '',
+        data.id
+      );
+      return { success: true, id: data.id };
+    } else {
+      let itemIdToSave = Number(data.item_id) || 0;
+      let itm = itemIdToSave ? db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(itemIdToSave) : null;
+      const cleanCartonName = cartonName;
+      const baseName = cleanCartonName.replace(/\s*(carton|shoper|bag|\(.*\))\s*$/i, '').trim() || cleanCartonName;
+
+      if (!itm) {
+        itm = db.prepare('SELECT * FROM icecream_items WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(cleanCartonName)
+           || db.prepare('SELECT * FROM icecream_items WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))').get(baseName);
+      }
+      if (!itm) {
+        itm = db.prepare("SELECT * FROM icecream_items WHERE LOWER(TRIM(?)) LIKE '%' || LOWER(TRIM(name)) || '%'").get(cleanCartonName);
+      }
+
+      let itemName;
+      if (itm) {
+        itemIdToSave = itm.id;
+        itemName = itm.name;
+      } else {
+        const pcs = Number(data.pieces_per_carton) || 20;
+        const unitCost = pcs > 0 ? ((Number(data.carton_cost_price) || 0) / pcs) : 0;
+        const retailPrice = pcs > 0 ? ((Number(data.carton_sale_price) || 0) / pcs) : 0;
+        const newItm = db.prepare(`
+          INSERT INTO icecream_items (name, flavor, unit_cost, retail_piece_price, current_single_stock, default_pcs_per_carton, barcode, notes)
+          VALUES (?, ?, ?, ?, 0, ?, ?, ?)
+        `).run(
+          baseName,
+          '',
+          Math.round(unitCost * 100) / 100,
+          Math.round(retailPrice * 100) / 100,
+          pcs,
+          barcodeToSave,
+          'Created from carton packaging config'
+        );
+        itemIdToSave = newItm.lastInsertRowid;
+        itemName = baseName;
+      }
+
+      const res = db.prepare(`
+        INSERT INTO packed_cartons (item_id, item_name, carton_name, package_type, pieces_per_carton, carton_cost_price, carton_sale_price, carton_wholesale_price, factory_carton_stock, barcode, qr_code, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        itemIdToSave,
+        itemName,
+        data.carton_name.trim(),
+        packageType,
+        Number(data.pieces_per_carton) || 20,
+        Number(data.carton_cost_price) || 0,
+        Number(data.carton_sale_price) || 0,
+        Number(data.carton_wholesale_price) || 0,
+        Number(data.factory_carton_stock) || 0,
+        barcodeToSave,
+        qrToSave,
+        data.notes || ''
+      );
+      return { success: true, id: res.lastInsertRowid };
+    }
+  } catch (err) {
+    console.error('savePackedCarton error:', err);
+    return { success: false, error: err.message };
   }
 }
 
 function deletePackedCarton(id) {
-  const loaded = db.prepare('SELECT SUM(cartons_loaded) as s FROM car_inventory WHERE carton_id = ?').get(id).s || 0;
-  if (loaded > 0) {
-    return { error: `Cannot delete: ${loaded} cartons are currently loaded in delivery cars.` };
+  try {
+    const loadedRow = db.prepare('SELECT SUM(CASE WHEN cartons_loaded > 0 THEN cartons_loaded ELSE 0 END) as s FROM car_inventory WHERE carton_id = ?').get(id);
+    const loaded = loadedRow ? (loadedRow.s || 0) : 0;
+    if (loaded > 0) {
+      return { success: false, error: `Cannot delete: ${loaded} cartons are currently loaded in delivery cars. Unload / return them to factory stock first.` };
+    }
+    db.transaction(() => {
+      db.prepare('DELETE FROM car_inventory WHERE carton_id = ?').run(id);
+      db.prepare('DELETE FROM packing_batches WHERE carton_id = ?').run(id);
+      db.prepare('DELETE FROM packed_cartons WHERE id = ?').run(id);
+    })();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deletePackedCarton:', err);
+    return { success: false, error: err.message || 'Failed to delete packed carton.' };
   }
-  db.prepare('DELETE FROM car_inventory WHERE carton_id = ?').run(id);
-  db.prepare('DELETE FROM packing_batches WHERE carton_id = ?').run(id);
-  db.prepare('DELETE FROM packed_cartons WHERE id = ?').run(id);
-  return { success: true };
 }
 
 function incrementCartonStickersPrinted(id, qty = 1) {
@@ -3750,83 +5214,158 @@ function incrementCartonStickersPrinted(id, qty = 1) {
 }
 
 function runCartonPacking(data) {
-  const carton = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(data.carton_id);
-  if (!carton) return { error: 'Packed carton configuration not found' };
+  try {
+    const carton = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(data.carton_id);
+    if (!carton) return { success: false, error: 'Packed carton configuration not found' };
 
-  const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(carton.item_id);
-  if (!item) return { error: 'Associated single ice cream item not found' };
+    const item = db.prepare('SELECT * FROM icecream_items WHERE id = ?').get(carton.item_id);
+    const itemName = item ? item.name : (carton.item_name || carton.carton_name);
+    const itemId = item ? item.id : (carton.item_id || 0);
 
-  const cartonsPacked = Number(data.cartons_packed) || 0;
-  if (cartonsPacked <= 0) return { error: 'Cartons to pack must be greater than 0' };
+    const cartonsPacked = Number(data.cartons_packed) || 0;
+    if (cartonsPacked <= 0) return { success: false, error: 'Cartons to pack must be greater than 0' };
 
-  const piecesPerCarton = Number(data.pieces_per_carton) || Number(carton.pieces_per_carton) || 20;
-  const totalPiecesNeeded = cartonsPacked * piecesPerCarton;
+    const piecesPerCarton = Number(data.pieces_per_carton) || Number(carton.pieces_per_carton) || 20;
+    const totalPiecesNeeded = cartonsPacked * piecesPerCarton;
 
-  if (item.current_single_stock < totalPiecesNeeded) {
+    const cartonCost = Number(data.carton_cost) || carton.carton_cost_price || 0;
+    const totalCost = cartonsPacked * cartonCost;
+    const cartonSalePrice = Number(data.carton_sale_price) || carton.carton_sale_price || 0;
+    const date = data.date || new Date().toISOString().split('T')[0];
+
+    // Batch number with uniqueness loop
+    const todayStr = date.replace(/-/g, '');
+    let countToday = db.prepare('SELECT COUNT(*) as c FROM packing_batches WHERE date = ?').get(date).c + 1;
+    let packingNumber = `PCK-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    while (db.prepare('SELECT id FROM packing_batches WHERE packing_number = ?').get(packingNumber)) {
+      countToday++;
+      packingNumber = `PCK-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    }
+
+    const materialsSummaryList = [];
+
+    let batchId;
+    const tx = db.transaction(() => {
+      // 1. Deduct raw materials & processed chocolate if provided
+      if (Array.isArray(data.materials) && data.materials.length > 0) {
+        for (const matUsage of data.materials) {
+          const matId = matUsage.material_id;
+          const qtyUsed = Number(matUsage.qty_used) || 0;
+          if (!qtyUsed || qtyUsed <= 0) continue;
+
+          // Processed Chocolate handling
+          if (matId === 'chocolate' || matUsage.is_chocolate) {
+            const stockRow = db.prepare("SELECT value FROM app_kv_store WHERE key = 'chocolate_stock_liters'").get();
+            const curStock = stockRow ? Number(stockRow.value) || 0 : 0;
+            const newStock = Math.max(0, Math.round((curStock - qtyUsed) * 100) / 100);
+            db.prepare("INSERT OR REPLACE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', ?)").run(String(newStock));
+
+            db.prepare(`
+              INSERT INTO chocolate_logs (date, action, liters_change, stock_before, stock_after, reference_id, reference_no, notes)
+              VALUES (?, 'CARTON_PACKED', ?, ?, ?, ?, ?, ?)
+            `).run(
+              date,
+              -qtyUsed,
+              curStock,
+              newStock,
+              carton.id,
+              packingNumber,
+              `Used in Packing Batch ${packingNumber} (${cartonsPacked} ${(carton.package_type || 'carton')}s of ${carton.carton_name})`
+            );
+
+            materialsSummaryList.push(`Prepared Chocolate: ${qtyUsed} Liters`);
+            continue;
+          }
+
+          if (matId) {
+            const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(matId);
+            if (mat) {
+              const stockBefore = mat.current_stock;
+              const stockAfter = Math.max(0, stockBefore - qtyUsed);
+              db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?').run(stockAfter, mat.id);
+
+              db.prepare(`
+                INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+                VALUES (?, ?, 'PRODUCTION_USED', ?, ?, ?, ?, ?, ?)
+              `).run(
+                mat.id,
+                mat.name,
+                -qtyUsed,
+                stockBefore,
+                stockAfter,
+                carton.id,
+                date,
+                `Used in Packing Batch ${packingNumber} (${cartonsPacked} ${(carton.package_type || 'carton')}s of ${carton.carton_name})`
+              );
+
+              let usageLabel = `${qtyUsed} ${mat.unit}`;
+              if (mat.has_bulk && mat.pack_size > 1) {
+                const p = Math.floor(qtyUsed / mat.pack_size);
+                const l = Math.round((qtyUsed % mat.pack_size) * 10) / 10;
+                const pUnit = mat.unit || 'Pack';
+                const subUnit = mat.pack_unit || 'Unit';
+                if (p > 0 && l > 0) usageLabel = `${p} ${p === 1 ? pUnit : pUnit + 's'} + ${l} ${subUnit} (${qtyUsed} ${subUnit})`;
+                else if (p > 0) usageLabel = `${p} ${p === 1 ? pUnit : pUnit + 's'} (${qtyUsed} ${subUnit})`;
+                else usageLabel = `${l} ${subUnit}`;
+              } else {
+                usageLabel = `${qtyUsed} ${mat.unit}`;
+              }
+              materialsSummaryList.push(`${mat.name}: ${usageLabel}`);
+            }
+          }
+        }
+      }
+
+      const summaryText = materialsSummaryList.join(', ') || (data.raw_materials_summary || '');
+
+      // 2. Add cartons to warehouse stock and update prices
+      db.prepare(`
+        UPDATE packed_cartons 
+        SET factory_carton_stock = factory_carton_stock + ?, 
+            pieces_per_carton = ?,
+            carton_cost_price = ?, 
+            carton_sale_price = ? 
+        WHERE id = ?
+      `).run(cartonsPacked, piecesPerCarton, cartonCost, cartonSalePrice, carton.id);
+
+      // 3. Insert packing batch record
+      const pkgType = carton.package_type || 'carton';
+      const res = db.prepare(`
+        INSERT INTO packing_batches (packing_number, date, carton_id, item_id, item_name, package_type, cartons_packed, pieces_per_carton, total_pieces_consumed, carton_cost, total_cost, carton_sale_price, notes, raw_materials_summary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        packingNumber,
+        date,
+        carton.id,
+        itemId,
+        itemName,
+        pkgType,
+        cartonsPacked,
+        piecesPerCarton,
+        totalPiecesNeeded,
+        cartonCost,
+        totalCost,
+        cartonSalePrice,
+        data.notes || '',
+        summaryText
+      );
+      batchId = res.lastInsertRowid;
+    });
+
+    tx();
     return { 
-      error: `Insufficient single pieces! Required: ${totalPiecesNeeded} pieces of ${item.name}, but only ${item.current_single_stock} available in production stock.` 
-    };
-  }
-
-  const cartonCost = Number(data.carton_cost) || (item.unit_cost * piecesPerCarton);
-  const totalCost = cartonsPacked * cartonCost;
-  const cartonSalePrice = Number(data.carton_sale_price) || carton.carton_sale_price;
-  const date = data.date || new Date().toISOString().split('T')[0];
-
-  // Batch number
-  const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM packing_batches WHERE date = ?').get(date).c + 1;
-  const packingNumber = `PCK-${todayStr}-${String(countToday).padStart(3, '0')}`;
-
-  let batchId;
-  const tx = db.transaction(() => {
-    // 1. Deduct single pieces from item pool
-    db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock - ? WHERE id = ?')
-      .run(totalPiecesNeeded, item.id);
-
-    // 2. Add cartons to warehouse stock and update prices
-    db.prepare(`
-      UPDATE packed_cartons 
-      SET factory_carton_stock = factory_carton_stock + ?, 
-          pieces_per_carton = ?,
-          carton_cost_price = ?, 
-          carton_sale_price = ? 
-      WHERE id = ?
-    `).run(cartonsPacked, piecesPerCarton, cartonCost, cartonSalePrice, carton.id);
-
-    // 3. Insert packing batch record
-    const pkgType = carton.package_type || 'carton';
-    const res = db.prepare(`
-      INSERT INTO packing_batches (packing_number, date, carton_id, item_id, item_name, package_type, cartons_packed, pieces_per_carton, total_pieces_consumed, carton_cost, total_cost, carton_sale_price, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      packingNumber,
-      date,
-      carton.id,
-      item.id,
-      item.name,
-      pkgType,
-      cartonsPacked,
-      piecesPerCarton,
+      success: true, 
+      batchId, 
+      packingNumber, 
+      cartonsPacked, 
       totalPiecesNeeded,
-      cartonCost,
-      totalCost,
-      cartonSalePrice,
-      data.notes || ''
-    );
-    batchId = res.lastInsertRowid;
-  });
-
-  tx();
-  return { 
-    success: true, 
-    batchId, 
-    packingNumber, 
-    cartonsPacked, 
-    totalPiecesNeeded,
-    newCartonStock: carton.factory_carton_stock + cartonsPacked,
-    remainingSingleStock: item.current_single_stock - totalPiecesNeeded 
-  };
+      newCartonStock: carton.factory_carton_stock + cartonsPacked,
+      materialsDeducted: materialsSummaryList
+    };
+  } catch (err) {
+    console.error('Error in runCartonPacking:', err);
+    return { success: false, error: err.message || 'Failed to complete packing batch.' };
+  }
 }
 
 function getPackingBatches(filters = {}) {
@@ -3851,33 +5390,144 @@ function getPackingBatches(filters = {}) {
 }
 
 function getPackingBatch(id) {
-  return db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
+  const batch = db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
+  if (!batch) return null;
+
+  try {
+    const matLogs = db.prepare(`
+      SELECT material_id, material_name, ABS(qty_change) as qty_used
+      FROM raw_material_logs 
+      WHERE notes LIKE ? AND qty_change < 0
+    `).all(`%${batch.packing_number}%`);
+
+    const chocLogs = db.prepare(`
+      SELECT ABS(liters_change) as liters_used
+      FROM chocolate_logs
+      WHERE reference_no = ? AND action = 'CARTON_PACKED'
+    `).all(batch.packing_number);
+
+    const materials = [];
+    for (const m of matLogs) {
+      const mat = db.prepare('SELECT unit, pack_unit, pack_size, has_bulk FROM raw_materials WHERE id = ?').get(m.material_id);
+      materials.push({
+        material_id: m.material_id,
+        name: m.material_name,
+        qty_used: m.qty_used,
+        unit: mat?.unit || '',
+        pack_unit: mat?.pack_unit || '',
+        pack_size: mat?.pack_size || 1,
+        has_bulk: mat?.has_bulk || 0
+      });
+    }
+    for (const c of chocLogs) {
+      materials.push({
+        material_id: 'chocolate',
+        name: 'Prepared Chocolate',
+        qty_used: c.liters_used,
+        unit: 'Liters',
+        isChocolate: true
+      });
+    }
+    batch.materials = materials;
+  } catch (e) {
+    batch.materials = [];
+  }
+
+  return batch;
 }
 
 function updatePackingBatch(id, data = {}) {
-  const batch = db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
-  if (!batch) return { error: 'Packing batch not found' };
+  try {
+    const batch = db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
+    if (!batch) return { success: false, error: 'Packing batch not found' };
 
-  const notes = data.notes !== undefined ? data.notes : batch.notes;
-  const date = data.date || batch.date;
-  db.prepare('UPDATE packing_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
-  return { success: true };
+    const notes = data.notes !== undefined ? data.notes : batch.notes;
+    const date = data.date || batch.date;
+    db.prepare('UPDATE packing_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updatePackingBatch:', err);
+    return { success: false, error: err.message || 'Failed to update packing batch.' };
+  }
 }
 
 function deletePackingBatch(id) {
-  const batch = db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
-  if (!batch) return { error: 'Packing batch not found' };
+  try {
+    const batch = db.prepare('SELECT * FROM packing_batches WHERE id = ?').get(id);
+    if (!batch) return { success: false, error: 'Packing batch not found' };
 
-  db.transaction(() => {
-    // Reverse: add back single items, deduct cartons
-    db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock + ? WHERE id = ?')
-      .run(batch.total_pieces_consumed, batch.item_id);
-    db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
-      .run(batch.cartons_packed, batch.carton_id);
-    db.prepare('DELETE FROM packing_batches WHERE id = ?').run(id);
-  })();
+    db.transaction(() => {
+      // 1. Deduct cartons from factory_carton_stock
+      db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
+        .run(batch.cartons_packed, batch.carton_id);
 
-  return { success: true };
+      // 1b. If single pieces were consumed, restore them to icecream_items single stock
+      if (batch.item_id && batch.total_pieces_consumed > 0) {
+        db.prepare('UPDATE icecream_items SET current_single_stock = current_single_stock + ? WHERE id = ?')
+          .run(batch.total_pieces_consumed, batch.item_id);
+      }
+
+      // 2. Restore any raw materials that were deducted for this packing batch
+      const logs = db.prepare("SELECT * FROM raw_material_logs WHERE notes LIKE ?").all(`%${batch.packing_number}%`);
+      for (const log of logs) {
+        if (log.qty_change < 0) {
+          const restoreQty = Math.abs(log.qty_change);
+          const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(log.material_id);
+          const curStock = mat ? mat.current_stock : 0;
+          const newStock = curStock + restoreQty;
+          db.prepare('UPDATE raw_materials SET current_stock = ? WHERE id = ?')
+            .run(newStock, log.material_id);
+
+          db.prepare(`
+            INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+            VALUES (?, ?, 'PACKING_REVERT', ?, ?, ?, ?, date('now'), ?)
+          `).run(
+            log.material_id,
+            mat ? mat.name : log.material_name,
+            restoreQty,
+            curStock,
+            newStock,
+            batch.id,
+            `Restored from deleted Packing Batch ${batch.packing_number} (+${restoreQty} ${mat ? mat.unit : ''})`
+          );
+        }
+      }
+      db.prepare("DELETE FROM raw_material_logs WHERE notes LIKE ? AND action != 'PACKING_REVERT'").run(`%${batch.packing_number}%`);
+
+      // 2b. Restore any chocolate that was deducted for this packing batch
+      const chocLogs = db.prepare("SELECT * FROM chocolate_logs WHERE reference_no = ? AND action = 'CARTON_PACKED'").all(batch.packing_number);
+      for (const cl of chocLogs) {
+        if (cl.liters_change < 0) {
+          const restoreLiters = Math.abs(cl.liters_change);
+          const stockRow = db.prepare("SELECT value FROM app_kv_store WHERE key = 'chocolate_stock_liters'").get();
+          const curStock = stockRow ? Number(stockRow.value) || 0 : 0;
+          const restored = Math.round((curStock + restoreLiters) * 100) / 100;
+          db.prepare("INSERT OR REPLACE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', ?)").run(String(restored));
+
+          db.prepare(`
+            INSERT INTO chocolate_logs (date, action, liters_change, stock_before, stock_after, reference_id, reference_no, notes)
+            VALUES (date('now'), 'PACKING_REVERT', ?, ?, ?, ?, ?, ?)
+          `).run(
+            restoreLiters,
+            curStock,
+            restored,
+            batch.id,
+            batch.packing_number,
+            `Restored from deleted Packing Batch ${batch.packing_number} (+${restoreLiters} Liters)`
+          );
+        }
+      }
+      db.prepare("DELETE FROM chocolate_logs WHERE reference_no = ? AND action = 'CARTON_PACKED'").run(batch.packing_number);
+
+      // 3. Delete batch
+      db.prepare('DELETE FROM packing_batches WHERE id = ?').run(id);
+    })();
+
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deletePackingBatch:', err);
+    return { success: false, error: err.message || 'Failed to delete packing batch.' };
+  }
 }
 
 // --- STAGE 4: CARS & DELIVERY LOADING ---
@@ -3885,8 +5535,8 @@ function getCars() {
   return db.prepare(`
     SELECT c.*,
            COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci WHERE ci.car_id = c.id), 0) as total_loaded_cartons,
-           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND COALESCE(pc.package_type, 'carton') != 'shoper'), 0) as total_loaded_ctns,
-           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND pc.package_type = 'shoper'), 0) as total_loaded_shopers,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND LOWER(COALESCE(pc.package_type, 'carton')) != 'shoper'), 0) as total_loaded_ctns,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND LOWER(COALESCE(pc.package_type, 'carton')) = 'shoper'), 0) as total_loaded_shopers,
            (SELECT COUNT(*) FROM shop_deliveries sd WHERE sd.car_id = c.id) as total_deliveries_count
     FROM cars c
     ORDER BY c.id ASC
@@ -3897,8 +5547,8 @@ function getCar(id) {
   return db.prepare(`
     SELECT c.*,
            COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci WHERE ci.car_id = c.id), 0) as total_loaded_cartons,
-           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND COALESCE(pc.package_type, 'carton') != 'shoper'), 0) as total_loaded_ctns,
-           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND pc.package_type = 'shoper'), 0) as total_loaded_shopers,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND LOWER(COALESCE(pc.package_type, 'carton')) != 'shoper'), 0) as total_loaded_ctns,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE ci.car_id = c.id AND LOWER(COALESCE(pc.package_type, 'carton')) = 'shoper'), 0) as total_loaded_shopers,
            (SELECT COUNT(*) FROM shop_deliveries sd WHERE sd.car_id = c.id) as total_deliveries_count
     FROM cars c
     WHERE c.id = ?
@@ -3906,45 +5556,91 @@ function getCar(id) {
 }
 
 function saveCar(data) {
-  if (data.id) {
-    db.prepare(`
-      UPDATE cars 
-      SET car_number = ?, driver_name = ?, phone = ?, area = ?, is_active = ?, notes = ?
-      WHERE id = ?
-    `).run(
-      data.car_number.trim(),
-      data.driver_name.trim(),
-      data.phone || '',
-      data.area || '',
-      data.is_active !== undefined ? Number(data.is_active) : 1,
-      data.notes || '',
-      data.id
-    );
-    return { success: true, id: data.id };
-  } else {
-    const res = db.prepare(`
-      INSERT INTO cars (car_number, driver_name, phone, area, is_active, notes)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      data.car_number.trim(),
-      data.driver_name.trim(),
-      data.phone || '',
-      data.area || '',
-      data.is_active !== undefined ? Number(data.is_active) : 1,
-      data.notes || ''
-    );
-    return { success: true, id: res.lastInsertRowid };
+  try {
+    const carNum = (data.car_number || '').trim();
+    if (!carNum) {
+      return { success: false, error: 'Vehicle number is required.' };
+    }
+
+    const carDup = data.id
+      ? db.prepare('SELECT id, car_number FROM cars WHERE LOWER(TRIM(car_number)) = LOWER(TRIM(?)) AND id != ?').get(carNum, data.id)
+      : db.prepare('SELECT id, car_number FROM cars WHERE LOWER(TRIM(car_number)) = LOWER(TRIM(?))').get(carNum);
+    if (carDup) {
+      return { success: false, error: `A vehicle with the number "${carNum}" already exists. Duplicate vehicle numbers are not allowed.` };
+    }
+
+    if (data.id) {
+      db.prepare(`
+        UPDATE cars 
+        SET car_number = ?, driver_name = ?, phone = ?, area = ?, is_active = ?, notes = ?
+        WHERE id = ?
+      `).run(
+        data.car_number.trim(),
+        data.driver_name.trim(),
+        data.phone || '',
+        data.area || '',
+        data.is_active !== undefined ? Number(data.is_active) : 1,
+        data.notes || '',
+        data.id
+      );
+      return { success: true, id: data.id };
+    } else {
+      const res = db.prepare(`
+        INSERT INTO cars (car_number, driver_name, phone, area, is_active, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.car_number.trim(),
+        data.driver_name.trim(),
+        data.phone || '',
+        data.area || '',
+        data.is_active !== undefined ? Number(data.is_active) : 1,
+        data.notes || ''
+      );
+      return { success: true, id: res.lastInsertRowid };
+    }
+  } catch (err) {
+    console.error('Error in saveCar:', err);
+    return { success: false, error: err.message || 'Failed to save vehicle.' };
   }
 }
 
 function deleteCar(id) {
-  const loaded = db.prepare('SELECT SUM(cartons_loaded) as s FROM car_inventory WHERE car_id = ?').get(id).s || 0;
-  if (loaded > 0) {
-    return { error: `Cannot delete car: It currently has ${loaded} cartons loaded. Return them to stock first.` };
+  try {
+    const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(id);
+    if (!car) return { success: false, error: 'Car / Vehicle not found' };
+
+    const loadedRow = db.prepare('SELECT SUM(CASE WHEN cartons_loaded > 0 THEN cartons_loaded ELSE 0 END) as s FROM car_inventory WHERE car_id = ?').get(id);
+    const loaded = loadedRow?.s || 0;
+    if (loaded > 0) {
+      return { success: false, error: `Cannot delete vehicle "${car.car_number}": It currently has ${loaded} cartons loaded. Please unload them back to factory stock first.` };
+    }
+
+    db.transaction(() => {
+      // 1. Unlink historical shop deliveries so sales history keeps car_number & driver_name without FK violation
+      db.prepare('UPDATE shop_deliveries SET car_id = NULL WHERE car_id = ?').run(id);
+
+      // 2. Unlink historical shop returns so return history keeps car_number without FK violation
+      db.prepare('UPDATE shop_returns SET car_id = NULL WHERE car_id = ?').run(id);
+
+      // 3. Delete loading batches & items associated with this car
+      db.prepare(`
+        DELETE FROM car_loading_items 
+        WHERE dispatch_id IN (SELECT id FROM car_loading_batches WHERE car_id = ?)
+      `).run(id);
+      db.prepare('DELETE FROM car_loading_batches WHERE car_id = ?').run(id);
+
+      // 4. Delete 0-stock inventory records for this car
+      db.prepare('DELETE FROM car_inventory WHERE car_id = ?').run(id);
+
+      // 5. Delete the car
+      db.prepare('DELETE FROM cars WHERE id = ?').run(id);
+    })();
+
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteCar:', err);
+    return { success: false, error: err.message || 'Failed to delete vehicle.' };
   }
-  db.prepare('DELETE FROM car_inventory WHERE car_id = ?').run(id);
-  db.prepare('DELETE FROM cars WHERE id = ?').run(id);
-  return { success: true };
 }
 
 function getCarInventory(carId) {
@@ -3965,124 +5661,133 @@ function getCarInventory(carId) {
 }
 
 function loadCarStock(data) {
-  const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(data.car_id);
-  if (!car) return { error: 'Car / Vehicle not found' };
+  try {
+    const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(data.car_id);
+    if (!car) return { success: false, error: 'Car / Vehicle not found' };
 
-  if (!Array.isArray(data.items) || data.items.length === 0) {
-    return { error: 'No items selected to load' };
-  }
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      return { success: false, error: 'No items selected to load' };
+    }
 
-  const date = data.date || new Date().toISOString().split('T')[0];
-  const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
-  const dispatchNo = `DISP-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const todayStr = date.replace(/-/g, '');
+    let countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
+    let dispatchNo = `DISP-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    while (db.prepare('SELECT id FROM car_loading_batches WHERE dispatch_no = ?').get(dispatchNo)) {
+      countToday++;
+      dispatchNo = `DISP-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    }
 
-  let totalCartonsLoaded = 0;
-  let batchId;
+    let totalCartonsLoaded = 0;
+    let batchId;
 
-  const tx = db.transaction(() => {
-    // Check factory stock first
-    for (const item of data.items) {
-      const qty = Number(item.cartons_to_load) || 0;
-      if (qty > 0) {
-        const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(item.carton_id);
-        if (!pc || pc.factory_carton_stock < qty) {
-          throw new Error(`Insufficient warehouse stock for ${pc ? pc.carton_name : 'item'}. Available: ${pc ? pc.factory_carton_stock : 0}, requested to load: ${qty}`);
+    const tx = db.transaction(() => {
+      // Check factory stock first
+      for (const item of data.items) {
+        const qty = Number(item.cartons_to_load) || 0;
+        if (qty > 0) {
+          const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(item.carton_id);
+          if (!pc || pc.factory_carton_stock < qty) {
+            throw new Error(`Insufficient warehouse stock for ${pc ? pc.carton_name : 'item'}. Available: ${pc ? pc.factory_carton_stock : 0}, requested to load: ${qty}`);
+          }
         }
       }
-    }
 
-    // Insert loading batch
-    const batchRes = db.prepare(`
-      INSERT INTO car_loading_batches (dispatch_no, car_id, date, total_cartons, notes)
-      VALUES (?, ?, ?, 0, ?)
-    `).run(dispatchNo, car.id, date, data.notes || '');
-    batchId = batchRes.lastInsertRowid;
+      // Insert loading batch
+      const batchRes = db.prepare(`
+        INSERT INTO car_loading_batches (dispatch_no, car_id, date, total_cartons, notes)
+        VALUES (?, ?, ?, 0, ?)
+      `).run(dispatchNo, car.id, date, data.notes || '');
+      batchId = batchRes.lastInsertRowid;
 
-    for (const item of data.items) {
-      const qty = Number(item.cartons_to_load) || 0;
-      if (qty > 0) {
-        const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(item.carton_id);
-        // Deduct from factory warehouse
-        db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock - ? WHERE id = ?')
-          .run(qty, pc.id);
+      for (const item of data.items) {
+        const qty = Number(item.cartons_to_load) || 0;
+        if (qty > 0) {
+          const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(item.carton_id);
+          // Deduct from factory warehouse
+          db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock - ? WHERE id = ?')
+            .run(qty, pc.id);
 
-        // Add to car inventory (upsert)
-        db.prepare(`
-          INSERT INTO car_inventory (car_id, carton_id, cartons_loaded, updated_at)
-          VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-          ON CONFLICT(car_id, carton_id) DO UPDATE SET 
-            cartons_loaded = car_inventory.cartons_loaded + ?,
-            updated_at = CURRENT_TIMESTAMP
-        `).run(car.id, pc.id, qty, qty);
+          // Add to car inventory (upsert)
+          db.prepare(`
+            INSERT INTO car_inventory (car_id, carton_id, cartons_loaded, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(car_id, carton_id) DO UPDATE SET 
+              cartons_loaded = car_inventory.cartons_loaded + ?,
+              updated_at = CURRENT_TIMESTAMP
+          `).run(car.id, pc.id, qty, qty);
 
-        // Insert item log
-        db.prepare(`
-          INSERT INTO car_loading_items (dispatch_id, carton_id, carton_name, pieces_per_carton, cartons_loaded, sale_price)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `).run(batchId, pc.id, pc.carton_name, pc.pieces_per_carton, qty, pc.carton_sale_price);
+          // Insert item log
+          db.prepare(`
+            INSERT INTO car_loading_items (dispatch_id, carton_id, carton_name, pieces_per_carton, cartons_loaded, sale_price)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(batchId, pc.id, pc.carton_name, pc.pieces_per_carton, qty, pc.carton_sale_price);
 
-        totalCartonsLoaded += qty;
+          totalCartonsLoaded += qty;
+        }
       }
-    }
 
-    db.prepare('UPDATE car_loading_batches SET total_cartons = ? WHERE id = ?').run(totalCartonsLoaded, batchId);
-  });
+      db.prepare('UPDATE car_loading_batches SET total_cartons = ? WHERE id = ?').run(totalCartonsLoaded, batchId);
+    });
 
-  try {
     tx();
     return { success: true, batchId, dispatchNo, totalCartonsLoaded, car_number: car.car_number };
   } catch (err) {
-    return { error: err.message };
+    console.error('Error in loadCarStock:', err);
+    return { success: false, error: err.message || 'Failed to load vehicle stock.' };
   }
 }
 
 function unloadCarStock(data) {
-  const carId = Number(data.car_id);
-  const cartonId = Number(data.carton_id);
-  const qty = Math.max(1, parseInt(data.cartons_to_unload) || 1);
-
-  const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
-  if (!car) return { error: 'Vehicle not found' };
-
-  const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(cartonId);
-  if (!pc) return { error: 'Carton product not found' };
-
-  const inv = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(carId, cartonId);
-  if (!inv || (inv.cartons_loaded || 0) < qty) {
-    return { error: `Cannot unload ${qty} cartons. Vehicle only has ${inv ? inv.cartons_loaded : 0} cartons loaded.` };
-  }
-
-  const date = data.date || new Date().toISOString().split('T')[0];
-  const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
-  const unloadNo = `UNLOAD-${todayStr}-${String(countToday).padStart(3, '0')}`;
-
-  const tx = db.transaction(() => {
-    // 1. Deduct from car inventory
-    db.prepare(`
-      UPDATE car_inventory 
-      SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP 
-      WHERE car_id = ? AND carton_id = ?
-    `).run(qty, carId, cartonId);
-
-    // 2. Add back to packed_cartons factory warehouse stock
-    db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
-      .run(qty, cartonId);
-
-    // 3. Log unloading batch for audit trail
-    const batchRes = db.prepare(`
-      INSERT INTO car_loading_batches (dispatch_no, car_id, date, total_cartons, notes)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(unloadNo, carId, date, -qty, data.notes || `Moved ${qty} ctns of ${pc.carton_name} back to factory stock`);
-
-    db.prepare(`
-      INSERT INTO car_loading_items (dispatch_id, carton_id, carton_name, pieces_per_carton, cartons_loaded, sale_price)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(batchRes.lastInsertRowid, pc.id, pc.carton_name, pc.pieces_per_carton, -qty, pc.carton_sale_price);
-  });
-
   try {
+    const carId = Number(data.car_id);
+    const cartonId = Number(data.carton_id);
+    const qty = Math.max(1, parseInt(data.cartons_to_unload) || 1);
+
+    const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
+    if (!car) return { success: false, error: 'Vehicle not found' };
+
+    const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(cartonId);
+    if (!pc) return { success: false, error: 'Carton product not found' };
+
+    const inv = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(carId, cartonId);
+    if (!inv || (inv.cartons_loaded || 0) < qty) {
+      return { success: false, error: `Cannot unload ${qty} cartons. Vehicle only has ${inv ? inv.cartons_loaded : 0} cartons loaded.` };
+    }
+
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const todayStr = date.replace(/-/g, '');
+    let countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
+    let unloadNo = `UNLOAD-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    while (db.prepare('SELECT id FROM car_loading_batches WHERE dispatch_no = ?').get(unloadNo)) {
+      countToday++;
+      unloadNo = `UNLOAD-${todayStr}-${String(countToday).padStart(3, '0')}`;
+    }
+
+    const tx = db.transaction(() => {
+      // 1. Deduct from car inventory
+      db.prepare(`
+        UPDATE car_inventory 
+        SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP 
+        WHERE car_id = ? AND carton_id = ?
+      `).run(qty, carId, cartonId);
+
+      // 2. Add back to packed_cartons factory warehouse stock
+      db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+        .run(qty, cartonId);
+
+      // 3. Log unloading batch for audit trail
+      const batchRes = db.prepare(`
+        INSERT INTO car_loading_batches (dispatch_no, car_id, date, total_cartons, notes)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(unloadNo, carId, date, -qty, data.notes || `Moved ${qty} ctns of ${pc.carton_name} back to factory stock`);
+
+      db.prepare(`
+        INSERT INTO car_loading_items (dispatch_id, carton_id, carton_name, pieces_per_carton, cartons_loaded, sale_price)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(batchRes.lastInsertRowid, pc.id, pc.carton_name, pc.pieces_per_carton, -qty, pc.carton_sale_price);
+    });
+
     tx();
     return { 
       success: true, 
@@ -4095,13 +5800,16 @@ function unloadCarStock(data) {
       new_warehouse_stock: (pc.factory_carton_stock || 0) + qty
     };
   } catch (err) {
-    return { error: err.message };
+    console.error('Error in unloadCarStock:', err);
+    return { success: false, error: err.message || 'Failed to unload vehicle stock.' };
   }
 }
 
 function getCarLoadingBatches(carId = null) {
   let query = `
-    SELECT clb.*, c.car_number, c.driver_name
+    SELECT clb.*, c.car_number, c.driver_name,
+           COALESCE((SELECT SUM(cli.cartons_loaded) FROM car_loading_items cli JOIN packed_cartons pc ON pc.id = cli.carton_id WHERE cli.dispatch_id = clb.id AND LOWER(COALESCE(pc.package_type, 'carton')) != 'shoper'), 0) as total_ctns,
+           COALESCE((SELECT SUM(cli.cartons_loaded) FROM car_loading_items cli JOIN packed_cartons pc ON pc.id = cli.carton_id WHERE cli.dispatch_id = clb.id AND LOWER(COALESCE(pc.package_type, 'carton')) = 'shoper'), 0) as total_shopers
     FROM car_loading_batches clb
     JOIN cars c ON c.id = clb.car_id
     WHERE 1=1
@@ -4117,86 +5825,100 @@ function getCarLoadingBatches(carId = null) {
 
 function getCarLoadingBatch(id) {
   const batch = db.prepare(`
-    SELECT clb.*, c.car_number, c.driver_name, c.phone, c.area
+    SELECT clb.*, c.car_number, c.driver_name, c.phone, c.area,
+           COALESCE((SELECT SUM(cli.cartons_loaded) FROM car_loading_items cli JOIN packed_cartons pc ON pc.id = cli.carton_id WHERE cli.dispatch_id = clb.id AND LOWER(COALESCE(pc.package_type, 'carton')) != 'shoper'), 0) as total_ctns,
+           COALESCE((SELECT SUM(cli.cartons_loaded) FROM car_loading_items cli JOIN packed_cartons pc ON pc.id = cli.carton_id WHERE cli.dispatch_id = clb.id AND LOWER(COALESCE(pc.package_type, 'carton')) = 'shoper'), 0) as total_shopers
     FROM car_loading_batches clb
     JOIN cars c ON c.id = clb.car_id
     WHERE clb.id = ?
   `).get(id);
   if (!batch) return null;
-  batch.items = db.prepare('SELECT * FROM car_loading_items WHERE dispatch_id = ?').all(id);
+  batch.items = db.prepare(`
+    SELECT cli.*, COALESCE(pc.package_type, 'carton') as package_type
+    FROM car_loading_items cli
+    LEFT JOIN packed_cartons pc ON pc.id = cli.carton_id
+    WHERE cli.dispatch_id = ?
+  `).all(id);
   return batch;
 }
 
 function deleteCarLoadingBatch(id) {
-  const batch = db.prepare(`
-    SELECT clb.*, c.car_number 
-    FROM car_loading_batches clb
-    LEFT JOIN cars c ON c.id = clb.car_id
-    WHERE clb.id = ?
-  `).get(id);
-  if (!batch) return { error: 'Loading record not found' };
+  try {
+    const batch = db.prepare(`
+      SELECT clb.*, c.car_number 
+      FROM car_loading_batches clb
+      LEFT JOIN cars c ON c.id = clb.car_id
+      WHERE clb.id = ?
+    `).get(id);
+    if (!batch) return { success: false, error: 'Loading record not found' };
 
-  const items = db.prepare('SELECT * FROM car_loading_items WHERE dispatch_id = ?').all(id);
+    const items = db.prepare('SELECT * FROM car_loading_items WHERE dispatch_id = ?').all(id);
 
-  // Validate if car still has the stock to return
-  for (const item of items) {
-    if (item.cartons_loaded > 0) {
-      const inv = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(batch.car_id, item.carton_id);
-      const currentLoaded = inv ? (inv.cartons_loaded || 0) : 0;
-      if (currentLoaded < item.cartons_loaded) {
-        return { 
-          error: `Cannot delete loading record: ${item.cartons_loaded} ctns of "${item.carton_name}" were loaded, but only ${currentLoaded} ctns remain in vehicle ${batch.car_number || ''} (the rest were already delivered/sold).` 
-        };
-      }
-    }
-  }
-
-  const tx = db.transaction(() => {
+    // Validate if car still has the stock to return
     for (const item of items) {
       if (item.cartons_loaded > 0) {
-        // Reverse load: deduct from car, add back to factory warehouse stock
-        db.prepare(`
-          UPDATE car_inventory 
-          SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
-          WHERE car_id = ? AND carton_id = ?
-        `).run(item.cartons_loaded, batch.car_id, item.carton_id);
-
-        db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
-          .run(item.cartons_loaded, item.carton_id);
-      } else if (item.cartons_loaded < 0) {
-        // Reverse unload: add back to car, deduct from factory warehouse stock
-        const absQty = Math.abs(item.cartons_loaded);
-        db.prepare(`
-          UPDATE car_inventory 
-          SET cartons_loaded = cartons_loaded + ?, updated_at = CURRENT_TIMESTAMP
-          WHERE car_id = ? AND carton_id = ?
-        `).run(absQty, batch.car_id, item.carton_id);
-
-        db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
-          .run(absQty, item.carton_id);
+        const inv = db.prepare('SELECT * FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(batch.car_id, item.carton_id);
+        const currentLoaded = inv ? (inv.cartons_loaded || 0) : 0;
+        if (currentLoaded < item.cartons_loaded) {
+          return { 
+            success: false,
+            error: `Cannot delete loading record: ${item.cartons_loaded} ctns of "${item.carton_name}" were loaded, but only ${currentLoaded} ctns remain in vehicle ${batch.car_number || ''} (the rest were already delivered/sold).` 
+          };
+        }
       }
     }
 
-    db.prepare('DELETE FROM car_loading_items WHERE dispatch_id = ?').run(id);
-    db.prepare('DELETE FROM car_loading_batches WHERE id = ?').run(id);
-  });
+    const tx = db.transaction(() => {
+      for (const item of items) {
+        if (item.cartons_loaded > 0) {
+          // Reverse load: deduct from car, add back to factory warehouse stock
+          db.prepare(`
+            UPDATE car_inventory 
+            SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
+            WHERE car_id = ? AND carton_id = ?
+          `).run(item.cartons_loaded, batch.car_id, item.carton_id);
 
-  try {
+          db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+            .run(item.cartons_loaded, item.carton_id);
+        } else if (item.cartons_loaded < 0) {
+          // Reverse unload: add back to car, deduct from factory warehouse stock
+          const absQty = Math.abs(item.cartons_loaded);
+          db.prepare(`
+            UPDATE car_inventory 
+            SET cartons_loaded = cartons_loaded + ?, updated_at = CURRENT_TIMESTAMP
+            WHERE car_id = ? AND carton_id = ?
+          `).run(absQty, batch.car_id, item.carton_id);
+
+          db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
+            .run(absQty, item.carton_id);
+        }
+      }
+
+      db.prepare('DELETE FROM car_loading_items WHERE dispatch_id = ?').run(id);
+      db.prepare('DELETE FROM car_loading_batches WHERE id = ?').run(id);
+    });
+
     tx();
     return { success: true, dispatchNo: batch.dispatch_no };
   } catch (err) {
-    return { error: err.message };
+    console.error('Error in deleteCarLoadingBatch:', err);
+    return { success: false, error: err.message || 'Failed to delete loading batch.' };
   }
 }
 
 function updateCarLoadingBatch(id, data = {}) {
-  const batch = db.prepare('SELECT * FROM car_loading_batches WHERE id = ?').get(id);
-  if (!batch) return { error: 'Loading record not found' };
+  try {
+    const batch = db.prepare('SELECT * FROM car_loading_batches WHERE id = ?').get(id);
+    if (!batch) return { success: false, error: 'Loading record not found' };
 
-  const notes = data.notes !== undefined ? data.notes : batch.notes;
-  const date = data.date || batch.date;
-  db.prepare('UPDATE car_loading_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
-  return { success: true };
+    const notes = data.notes !== undefined ? data.notes : batch.notes;
+    const date = data.date || batch.date;
+    db.prepare('UPDATE car_loading_batches SET notes = ?, date = ? WHERE id = ?').run(notes, date, id);
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updateCarLoadingBatch:', err);
+    return { success: false, error: err.message || 'Failed to update loading batch.' };
+  }
 }
 
 function getNextDeliveryInvoiceNo() {
@@ -4230,150 +5952,186 @@ function getNextDeliveryInvoiceNo() {
 
 // --- STAGE 5: SHOP DELIVERIES, SALES & RETURNS ---
 function saveShopDelivery(data) {
-  if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
-    return { error: 'No items in delivery order' };
-  }
-
-  const car = data.car_id ? db.prepare('SELECT * FROM cars WHERE id = ?').get(data.car_id) : null;
-  const shop = data.shop_id ? db.prepare('SELECT * FROM shops WHERE id = ?').get(data.shop_id) : null;
-  const shopName = data.shop_name || (shop ? shop.name : 'Counter Sale');
-  const shopPhone = data.shop_phone || (shop ? shop.phone : '');
-  const shopAddress = data.shop_address || (shop ? shop.address : '');
-
-  const date = data.date || new Date().toISOString().split('T')[0];
-  const invoiceNo = (data.invoice_no && String(data.invoice_no).trim() && !String(data.invoice_no).startsWith('INV-20'))
-    ? String(data.invoice_no).trim()
-    : getNextDeliveryInvoiceNo();
-
-  const discount = Number(data.discount) || 0;
-  const receivedAmount = Number(data.received_amount) || 0;
-  const paymentMethod = data.payment_method || 'Cash';
-
-  let subtotal = 0;
-  data.items.forEach(it => {
-    const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
-    const price = Number(it.carton_price) || 0;
-    const discNum = parseFloat(it.discount) || 0;
-    let itemDiscAmt = 0;
-    if (it.discountType === 'percent') {
-      itemDiscAmt = (qty * price * discNum) / 100;
-    } else {
-      itemDiscAmt = discNum * qty;
+  try {
+    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      return { success: false, error: 'No items in delivery order' };
     }
-    const lineTotal = it.line_total !== undefined ? Number(it.line_total) : Math.max(0, (qty * price) - itemDiscAmt);
-    it.line_total = lineTotal;
-    subtotal += lineTotal;
-  });
 
-  // Validate total available stock (car + factory warehouse freezer)
-  for (const it of data.items) {
-    const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
-    const pc = db.prepare('SELECT carton_name, factory_carton_stock FROM packed_cartons WHERE id = ?').get(it.carton_id);
-    const name = pc ? pc.carton_name : 'Carton';
-    const whStock = pc ? Number(pc.factory_carton_stock) || 0 : 0;
-    let carStock = 0;
-    if (car) {
-      const ci = db.prepare('SELECT cartons_loaded FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(car.id, it.carton_id);
-      carStock = ci ? Number(ci.cartons_loaded) || 0 : 0;
+    if (!data.shop_id) {
+      return { success: false, error: 'Please select a Salesman before completing the sale.' };
     }
-    const totalAvail = carStock + whStock;
-    if (qty > totalAvail) {
-      return { 
-        error: `Quantity (${qty} ctns) for "${name}" exceeds total available stock (${totalAvail} ctns: ${carStock} in ${car ? car.car_number : 'car'} + ${whStock} in factory warehouse freezer).` 
-      };
+
+    const car = data.car_id ? db.prepare('SELECT * FROM cars WHERE id = ?').get(data.car_id) : null;
+    const shop = db.prepare('SELECT * FROM shops WHERE id = ?').get(data.shop_id);
+    if (!shop) {
+      return { success: false, error: 'Selected salesman not found in database.' };
     }
-  }
+    const shopName = shop.name;
+    const shopPhone = data.shop_phone || shop.phone || '';
+    const shopAddress = data.shop_address || shop.address || '';
 
-  const totalAmount = Math.max(0, subtotal - discount);
-  if (receivedAmount > totalAmount) {
-    return { error: `Received amount (Rs. ${receivedAmount.toLocaleString()}) cannot be more than the net bill total (Rs. ${totalAmount.toLocaleString()})` };
-  }
-  const previousBalance = shop ? Number(shop.amount || 0) : 0;
-  const remainingBillBalance = Math.max(0, totalAmount - receivedAmount);
-  const newShopBalance = previousBalance + remainingBillBalance;
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const invoiceNo = (data.invoice_no && String(data.invoice_no).trim() && !String(data.invoice_no).startsWith('INV-20'))
+      ? String(data.invoice_no).trim()
+      : getNextDeliveryInvoiceNo();
 
-  let deliveryId;
+    const discount = Number(data.discount) || 0;
+    const receivedAmount = Number(data.received_amount) || 0;
+    const paymentMethod = data.payment_method || 'Cash';
 
-  const tx = db.transaction(() => {
-    // 1. Insert delivery invoice
-    const res = db.prepare(`
-      INSERT INTO shop_deliveries (
-        invoice_no, date, shop_id, shop_name, shop_phone, shop_address,
-        car_id, car_number, driver_name, subtotal, discount, total_amount,
-        received_amount, previous_balance, remaining_balance, payment_method, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      invoiceNo,
-      date,
-      shop ? shop.id : null,
-      shopName,
-      shopPhone,
-      shopAddress,
-      car ? car.id : null,
-      car ? car.car_number : 'Direct Warehouse',
-      car ? car.driver_name : 'Direct Dispatch',
-      subtotal,
-      discount,
-      totalAmount,
-      receivedAmount,
-      previousBalance,
-      remainingBillBalance,
-      paymentMethod,
-      data.notes || ''
-    );
-    deliveryId = res.lastInsertRowid;
-
-    // 2. Process each item (clean normal sale)
-    for (const it of data.items) {
-      const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(it.carton_id);
-      const cartonName = pc ? pc.carton_name : (it.carton_name || 'Ice Cream Carton');
-      const pkgType = pc ? (pc.package_type || 'carton') : (it.package_type || 'carton');
-      const pcsPerCarton = pc ? pc.pieces_per_carton : (Number(it.pieces_per_carton) || 20);
+    let subtotal = 0;
+    data.items.forEach(it => {
       const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
       const price = Number(it.carton_price) || 0;
-      const lineTotal = qty * price;
+      const discNum = parseFloat(it.discount) || 0;
+      let itemDiscAmt = 0;
+      if (it.discountType === 'percent') {
+        itemDiscAmt = (qty * price * discNum) / 100;
+      } else {
+        itemDiscAmt = discNum * qty;
+      }
+      const lineTotal = it.line_total !== undefined ? Number(it.line_total) : Math.max(0, (qty * price) - itemDiscAmt);
+      it.line_total = lineTotal;
+      subtotal += lineTotal;
+    });
 
-      // Insert item
-      db.prepare(`
-        INSERT INTO shop_delivery_items (
-          delivery_id, carton_id, carton_name, package_type, pieces_per_carton,
-          ordered_cartons, delivered_cartons, returned_cartons, return_destination,
-          carton_price, line_total
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'car', ?, ?)
-      `).run(
-        deliveryId,
-        it.carton_id,
-        cartonName,
-        pkgType,
-        pcsPerCarton,
-        qty,
-        qty,
-        price,
-        lineTotal
-      );
-
-      // Handle stock and car inventory deduction:
+    // Validate total available stock (car + factory warehouse freezer)
+    for (const it of data.items) {
+      const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
+      const pc = db.prepare('SELECT carton_name, factory_carton_stock FROM packed_cartons WHERE id = ?').get(it.carton_id);
+      const name = pc ? pc.carton_name : 'Carton';
+      const whStock = pc ? Number(pc.factory_carton_stock) || 0 : 0;
+      let carStock = 0;
       if (car) {
         const ci = db.prepare('SELECT cartons_loaded FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(car.id, it.carton_id);
-        const loadedInCar = ci ? Number(ci.cartons_loaded) || 0 : 0;
-        if (loadedInCar >= qty) {
-          db.prepare(`
-            UPDATE car_inventory 
-            SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
-            WHERE car_id = ? AND carton_id = ?
-          `).run(qty, car.id, it.carton_id);
-        } else if (loadedInCar > 0) {
-          db.prepare(`
-            UPDATE car_inventory 
-            SET cartons_loaded = 0, updated_at = CURRENT_TIMESTAMP
-            WHERE car_id = ? AND carton_id = ?
-          `).run(car.id, it.carton_id);
-          const remainder = qty - loadedInCar;
-          db.prepare(`
-            UPDATE packed_cartons 
-            SET factory_carton_stock = MAX(0, factory_carton_stock - ?)
-            WHERE id = ?
-          `).run(remainder, it.carton_id);
+        carStock = ci ? Number(ci.cartons_loaded) || 0 : 0;
+      }
+      const totalAvail = carStock + whStock;
+      if (qty > totalAvail) {
+        return { 
+          success: false,
+          error: `Quantity (${qty} ctns) for "${name}" exceeds total available stock (${totalAvail} ctns: ${carStock} in ${car ? car.car_number : 'car'} + ${whStock} in factory warehouse freezer).` 
+        };
+      }
+    }
+
+    const deductionType = data.deduction_type === 'expense' ? 'expense' : 'commission';
+    const deductionRateType = data.deduction_rate_type === 'amount' ? 'amount' : 'percent';
+    const deductionValue = Math.max(0, Number(data.deduction_value) || 0);
+    const baseForDeduction = Math.max(0, subtotal - discount);
+    let deductionAmount = 0;
+    if (deductionValue > 0) {
+      if (deductionRateType === 'percent') {
+        deductionAmount = Math.round(baseForDeduction * (deductionValue / 100));
+      } else {
+        deductionAmount = Math.min(baseForDeduction, deductionValue);
+      }
+    } else if (data.deduction_amount) {
+      deductionAmount = Math.min(baseForDeduction, Math.max(0, Number(data.deduction_amount) || 0));
+    }
+
+    const totalAmount = Math.max(0, baseForDeduction - deductionAmount);
+    if (receivedAmount > totalAmount) {
+      return { success: false, error: `Received amount (Rs. ${receivedAmount.toLocaleString()}) cannot be more than the net bill total (Rs. ${totalAmount.toLocaleString()})` };
+    }
+    const previousBalance = shop ? Number(shop.amount || 0) : 0;
+    const remainingBillBalance = Math.max(0, totalAmount - receivedAmount);
+    const newShopBalance = previousBalance + remainingBillBalance;
+
+    let deliveryId;
+
+    const tx = db.transaction(() => {
+      // 1. Insert delivery invoice
+      const res = db.prepare(`
+        INSERT INTO shop_deliveries (
+          invoice_no, date, shop_id, shop_name, shop_phone, shop_address,
+          car_id, car_number, driver_name, subtotal, discount,
+          deduction_type, deduction_rate_type, deduction_value, deduction_amount,
+          total_amount, received_amount, previous_balance, remaining_balance, payment_method, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        invoiceNo,
+        date,
+        shop ? shop.id : null,
+        shopName,
+        shopPhone,
+        shopAddress,
+        car ? car.id : null,
+        car ? car.car_number : 'Direct Warehouse',
+        car ? car.driver_name : 'Direct Dispatch',
+        subtotal,
+        discount,
+        deductionType,
+        deductionRateType,
+        deductionValue,
+        deductionAmount,
+        totalAmount,
+        receivedAmount,
+        previousBalance,
+        remainingBillBalance,
+        paymentMethod,
+        data.notes || ''
+      );
+      deliveryId = res.lastInsertRowid;
+
+      // 2. Process each item (clean normal sale)
+      for (const it of data.items) {
+        const pc = db.prepare('SELECT * FROM packed_cartons WHERE id = ?').get(it.carton_id);
+        const cartonName = pc ? pc.carton_name : (it.carton_name || 'Ice Cream Carton');
+        const pkgType = pc ? (pc.package_type || 'carton') : (it.package_type || 'carton');
+        const pcsPerCarton = pc ? pc.pieces_per_carton : (Number(it.pieces_per_carton) || 20);
+        const qty = Number(it.delivered_cartons) || Number(it.ordered_cartons) || Number(it.quantity) || 1;
+        const price = Number(it.carton_price) || 0;
+        const lineTotal = qty * price;
+
+        // Insert item
+        db.prepare(`
+          INSERT INTO shop_delivery_items (
+            delivery_id, carton_id, carton_name, package_type, pieces_per_carton,
+            ordered_cartons, delivered_cartons, returned_cartons, return_destination,
+            carton_price, line_total
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'car', ?, ?)
+        `).run(
+          deliveryId,
+          it.carton_id,
+          cartonName,
+          pkgType,
+          pcsPerCarton,
+          qty,
+          qty,
+          price,
+          lineTotal
+        );
+
+        // Handle stock and car inventory deduction:
+        if (car) {
+          const ci = db.prepare('SELECT cartons_loaded FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(car.id, it.carton_id);
+          const loadedInCar = ci ? Number(ci.cartons_loaded) || 0 : 0;
+          if (loadedInCar >= qty) {
+            db.prepare(`
+              UPDATE car_inventory 
+              SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP
+              WHERE car_id = ? AND carton_id = ?
+            `).run(qty, car.id, it.carton_id);
+          } else if (loadedInCar > 0) {
+            db.prepare(`
+              UPDATE car_inventory 
+              SET cartons_loaded = 0, updated_at = CURRENT_TIMESTAMP
+              WHERE car_id = ? AND carton_id = ?
+            `).run(car.id, it.carton_id);
+            const remainder = qty - loadedInCar;
+            db.prepare(`
+              UPDATE packed_cartons 
+              SET factory_carton_stock = MAX(0, factory_carton_stock - ?)
+              WHERE id = ?
+            `).run(remainder, it.carton_id);
+          } else {
+            db.prepare(`
+              UPDATE packed_cartons 
+              SET factory_carton_stock = MAX(0, factory_carton_stock - ?)
+              WHERE id = ?
+            `).run(qty, it.carton_id);
+          }
         } else {
           db.prepare(`
             UPDATE packed_cartons 
@@ -4381,199 +6139,418 @@ function saveShopDelivery(data) {
             WHERE id = ?
           `).run(qty, it.carton_id);
         }
-      } else {
-        db.prepare(`
-          UPDATE packed_cartons 
-          SET factory_carton_stock = MAX(0, factory_carton_stock - ?)
-          WHERE id = ?
-        `).run(qty, it.carton_id);
       }
-    }
 
-    // 3. Update shop balance if registered shop
-    if (shop) {
-      db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newShopBalance, shop.id);
-    }
-  });
+      // 3. Update shop balance if registered shop
+      if (shop) {
+        db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newShopBalance, shop.id);
+      }
+    });
 
-  tx();
+    tx();
+    return {
+      success: true,
+      id: deliveryId,
+      invoice_no: invoiceNo,
+      subtotal: subtotal,
+      discount: discount,
+      deduction_type: deductionType,
+      deduction_rate_type: deductionRateType,
+      deduction_value: deductionValue,
+      deduction_amount: deductionAmount,
+      total_amount: totalAmount,
+      received_amount: receivedAmount,
+      remaining_balance: remainingBillBalance,
+      previous_balance: previousBalance,
+      new_shop_balance: newShopBalance
+    };
+  } catch (err) {
+    console.error('Error in saveShopDelivery:', err);
+    return { success: false, error: err.message || 'Failed to record delivery invoice.' };
+  }
+}
+
+function recalculateDeliveryTotals(deliveryId, adjType = 'khata') {
+  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(deliveryId);
+  if (!delivery) return null;
+
+  // 1. Calculate actual net subtotal from delivery items
+  // line_total in shop_delivery_items is: (delivered_cartons - returned_cartons) * carton_price
+  const itemRow = db.prepare(`
+    SELECT COALESCE(SUM(line_total), 0) as items_subtotal
+    FROM shop_delivery_items
+    WHERE delivery_id = ?
+  `).get(deliveryId);
+
+  const newSubtotal = Math.max(0, Number(itemRow?.items_subtotal) || 0);
+
+  // 2. Recalculate discount
+  let newDiscount = 0;
+  if (delivery.discount_type === 'percent') {
+    const discVal = Number(delivery.discount_value) || 0;
+    newDiscount = Math.round(newSubtotal * (discVal / 100));
+  } else if (Number(delivery.discount) > 0) {
+    newDiscount = Math.min(newSubtotal, Number(delivery.discount));
+  }
+
+  const baseForDeduction = Math.max(0, newSubtotal - newDiscount);
+
+  // 3. Recalculate deduction (commission or expense) according to the new total
+  let newDeductionAmount = 0;
+  const dedVal = Number(delivery.deduction_value) || 0;
+  if (dedVal > 0) {
+    if (delivery.deduction_rate_type === 'percent') {
+      newDeductionAmount = Math.round(baseForDeduction * (dedVal / 100));
+    } else {
+      newDeductionAmount = Math.min(baseForDeduction, dedVal);
+    }
+  } else if (Number(delivery.deduction_amount) > 0) {
+    const oldBase = Math.max(1, (Number(delivery.subtotal) || 0) - (Number(delivery.discount) || 0));
+    newDeductionAmount = Math.min(baseForDeduction, Math.round((Number(delivery.deduction_amount) || 0) * (baseForDeduction / oldBase)));
+  }
+
+  // 4. Calculate new Net Bill Total
+  const newTotalAmount = Math.max(0, baseForDeduction - newDeductionAmount);
+
+  // 5. Calculate new received & remaining balance
+  // Cash received on the invoice is preserved; capped only if the new total bill dropped below what was received.
+  let newReceivedAmount = Number(delivery.received_amount) || 0;
+  newReceivedAmount = Math.min(newTotalAmount, newReceivedAmount);
+  const newRemainingBalance = Math.max(0, newTotalAmount - newReceivedAmount);
+  const netBillDelta = Math.max(0, (Number(delivery.total_amount) || 0) - newTotalAmount);
+
+  db.prepare(`
+    UPDATE shop_deliveries 
+    SET subtotal = ?, discount = ?, deduction_amount = ?, total_amount = ?, received_amount = ?, remaining_balance = ? 
+    WHERE id = ?
+  `).run(newSubtotal, newDiscount, newDeductionAmount, newTotalAmount, newReceivedAmount, newRemainingBalance, deliveryId);
+
   return {
-    success: true,
-    id: deliveryId,
-    invoice_no: invoiceNo,
-    total_amount: totalAmount,
-    received_amount: receivedAmount,
-    remaining_balance: remainingBillBalance,
-    previous_balance: previousBalance,
-    new_shop_balance: newShopBalance
+    deliveryId,
+    newSubtotal,
+    newDiscount,
+    newDeductionAmount,
+    newTotalAmount,
+    newReceivedAmount,
+    newRemainingBalance,
+    netBillDelta
   };
+}
+
+function syncShopKhataBalance(shopId) {
+  if (!shopId) return;
+  const shop = db.prepare('SELECT id, opening_balance FROM shops WHERE id = ?').get(shopId);
+  if (!shop) return;
+  const opening = Number(shop.opening_balance) || 0;
+  const delivRow = db.prepare('SELECT COALESCE(SUM(remaining_balance), 0) as net_unpaid FROM shop_deliveries WHERE shop_id = ?').get(shopId);
+  const payRow = db.prepare('SELECT COALESCE(SUM(amount), 0) as total_paid FROM shop_payments WHERE shop_id = ?').get(shopId);
+  const newBalance = Math.max(0, Math.round((opening + (delivRow?.net_unpaid || 0) - (payRow?.total_paid || 0)) * 100) / 100);
+  db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newBalance, shopId);
+}
+
+function reconcileReturnsAndBalances() {
+  try {
+    // Specific fix for Invoice 5 if its received amount was wiped to 0 by the previous return calculation bug
+    try {
+      const inv5 = db.prepare("SELECT * FROM shop_deliveries WHERE (invoice_no = '5' OR id = 5) AND (received_amount = 0 OR received_amount IS NULL)").get();
+      if (inv5) {
+        const fixedReceived = 500;
+        const fixedRemaining = Math.max(0, (Number(inv5.total_amount) || 0) - fixedReceived);
+        db.prepare("UPDATE shop_deliveries SET received_amount = ?, remaining_balance = ? WHERE id = ?").run(fixedReceived, fixedRemaining, inv5.id);
+      }
+    } catch (e) {
+      console.warn('Invoice 5 fix warning:', e.message);
+    }
+
+    const deliveriesToReconcile = db.prepare(`
+      SELECT DISTINCT d.id
+      FROM shop_deliveries d
+      WHERE EXISTS (SELECT 1 FROM shop_returns r WHERE r.delivery_id = d.id)
+         OR EXISTS (SELECT 1 FROM shop_delivery_items sdi WHERE sdi.delivery_id = d.id AND sdi.returned_cartons > 0)
+         OR (d.deduction_value > 0 AND d.deduction_rate_type = 'percent')
+    `).all();
+
+    for (const d of deliveriesToReconcile) {
+      recalculateDeliveryTotals(d.id, 'khata');
+    }
+
+    const shops = db.prepare('SELECT id FROM shops').all();
+    for (const s of shops) {
+      syncShopKhataBalance(s.id);
+    }
+
+    // Reconcile legacy raw material purchases where bulk packMultiplier was not applied
+    try {
+      const bulkPurchaseItems = db.prepare(`
+        SELECT pi.id as item_id, pi.purchase_id, pi.material_id, pi.qty, pi.unit, pi.unit_cost,
+               p.invoice_no, rm.name as material_name, rm.pack_size, rm.pack_unit
+        FROM raw_material_purchase_items pi
+        JOIN raw_material_purchases p ON pi.purchase_id = p.id
+        JOIN raw_materials rm ON pi.material_id = rm.id
+        WHERE (rm.has_bulk = 1 OR rm.has_bulk = '1') AND rm.pack_size > 1
+      `).all();
+
+      for (const item of bulkPurchaseItems) {
+        const packMul = Number(item.pack_size) || 1;
+        const expectedAdd = item.qty * packMul;
+        const log = db.prepare(`
+          SELECT * FROM raw_material_logs 
+          WHERE action = 'PURCHASE' AND reference_id = ? AND material_id = ?
+        `).get(item.purchase_id, item.material_id);
+
+        if (log && Math.abs(log.qty_change - item.qty) < 0.001 && packMul > 1) {
+          const stockDiff = expectedAdd - log.qty_change;
+          db.prepare(`
+            UPDATE raw_material_logs 
+            SET qty_change = ?, stock_after = stock_before + ?, notes = ?
+            WHERE id = ?
+          `).run(
+            expectedAdd,
+            expectedAdd,
+            `Purchased ${item.qty} ${item.unit} (${expectedAdd} ${item.pack_unit || 'Units'}) (${item.invoice_no}) @ Rs. ${item.unit_cost}`,
+            log.id
+          );
+          db.prepare(`UPDATE raw_materials SET current_stock = current_stock + ? WHERE id = ?`).run(stockDiff, item.material_id);
+        }
+      }
+    } catch (e) {
+      console.warn('Reconcile bulk purchases notice:', e.message);
+    }
+  } catch (err) {
+    console.error('Error in reconcileReturnsAndBalances:', err);
+  }
 }
 
 function processShopReturn(data) {
-  if (!data.delivery_id) return { error: 'Delivery ID is required' };
-  if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
-    return { error: 'No items specified for return' };
-  }
+  try {
+    if (!data.delivery_id) return { success: false, error: 'Delivery ID is required' };
+    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      return { success: false, error: 'No items specified for return' };
+    }
 
-  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(data.delivery_id);
-  if (!delivery) return { error: 'Sale record not found' };
+    const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(data.delivery_id);
+    if (!delivery) return { success: false, error: 'Sale record not found' };
 
-  const validItems = data.items.filter(it => (Number(it.return_quantity) || 0) > 0);
-  if (validItems.length === 0) {
-    return { error: 'Please enter a return quantity greater than 0 for at least one item' };
-  }
+    const validItems = data.items.filter(it => (Number(it.return_quantity) || 0) > 0);
+    if (validItems.length === 0) {
+      return { success: false, error: 'Please enter a return quantity greater than 0 for at least one item' };
+    }
 
-  const date = data.date || new Date().toISOString().split('T')[0];
-  const todayStr = date.replace(/-/g, '');
-  let returnSeq = db.prepare('SELECT COUNT(*) as c FROM shop_returns WHERE date = ?').get(date).c + 1;
-  let returnNo = `RET-${todayStr}-${String(returnSeq).padStart(3, '0')}`;
-  while (db.prepare('SELECT id FROM shop_returns WHERE return_no = ?').get(returnNo)) {
-    returnSeq++;
-    returnNo = `RET-${todayStr}-${String(returnSeq).padStart(3, '0')}`;
-  }
-  const returnDest = (data.return_destination || 'car').toLowerCase(); // 'car' or 'stock'
-  const adjType = data.adjustment_type || 'khata'; // 'khata' or 'cash'
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const todayStr = date.replace(/-/g, '');
+    let returnSeq = db.prepare('SELECT COUNT(*) as c FROM shop_returns WHERE date = ?').get(date).c + 1;
+    let returnNo = `RET-${todayStr}-${String(returnSeq).padStart(3, '0')}`;
+    while (db.prepare('SELECT id FROM shop_returns WHERE return_no = ?').get(returnNo)) {
+      returnSeq++;
+      returnNo = `RET-${todayStr}-${String(returnSeq).padStart(3, '0')}`;
+    }
+    const returnDest = (data.return_destination || 'car').toLowerCase(); // 'car' or 'stock'
+    const adjType = data.adjustment_type || 'khata'; // 'khata' or 'cash'
 
-  let totalCartonsReturned = 0;
-  let totalRefund = 0;
+    let totalCartonsReturned = 0;
+    let totalRefund = 0;
 
-  validItems.forEach(it => {
-    const qty = Number(it.return_quantity) || 0;
-    const price = Number(it.carton_price) || 0;
-    totalCartonsReturned += qty;
-    totalRefund += qty * price;
-  });
-
-  let returnId;
-
-  const tx = db.transaction(() => {
-    // 1. Insert return header
-    const res = db.prepare(`
-      INSERT INTO shop_returns (
-        return_no, delivery_id, invoice_no, shop_id, shop_name,
-        car_id, car_number, date, total_cartons_returned, total_refund_amount,
-        return_destination, adjustment_type, reason
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      returnNo,
-      delivery.id,
-      delivery.invoice_no,
-      delivery.shop_id,
-      delivery.shop_name,
-      delivery.car_id,
-      delivery.car_number,
-      date,
-      totalCartonsReturned,
-      totalRefund,
-      returnDest,
-      adjType,
-      data.reason || ''
-    );
-    returnId = res.lastInsertRowid;
-
-    // 2. Process each returned item
-    for (const it of validItems) {
+    validItems.forEach(it => {
       const qty = Number(it.return_quantity) || 0;
       const price = Number(it.carton_price) || 0;
-      const itemRefund = qty * price;
+      totalCartonsReturned += qty;
+      totalRefund += qty * price;
+    });
 
-      db.prepare(`
-        INSERT INTO shop_return_items (
-          return_id, carton_id, carton_name, pieces_per_carton,
-          returned_cartons, carton_price, refund_amount, return_destination
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    let returnId;
+    let recalcResult = null;
+
+    const tx = db.transaction(() => {
+      // Validate foreign keys exist before inserting to avoid constraint failure
+      const carExists = delivery.car_id ? db.prepare('SELECT id FROM cars WHERE id = ?').get(delivery.car_id) : null;
+      const shopExists = delivery.shop_id ? db.prepare('SELECT id FROM shops WHERE id = ?').get(delivery.shop_id) : null;
+
+      // 1. Insert return header
+      const res = db.prepare(`
+        INSERT INTO shop_returns (
+          return_no, delivery_id, invoice_no, shop_id, shop_name,
+          car_id, car_number, date, total_cartons_returned, total_refund_amount,
+          return_destination, adjustment_type, reason
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        returnId,
-        it.carton_id,
-        it.carton_name,
-        it.pieces_per_carton || 20,
-        qty,
-        price,
-        itemRefund,
-        returnDest
+        returnNo,
+        delivery.id,
+        delivery.invoice_no,
+        shopExists ? delivery.shop_id : null,
+        delivery.shop_name,
+        carExists ? delivery.car_id : null,
+        delivery.car_number,
+        date,
+        totalCartonsReturned,
+        totalRefund,
+        returnDest,
+        adjType,
+        data.reason || ''
       );
+      returnId = res.lastInsertRowid;
 
-      // Update delivery item returned count and line total
-      if (it.delivery_item_id) {
-        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ?, line_total = MAX(0, line_total - ?) WHERE id = ?')
-          .run(qty, itemRefund, it.delivery_item_id);
-      } else {
-        db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ?, line_total = MAX(0, line_total - ?) WHERE delivery_id = ? AND carton_id = ?')
-          .run(qty, itemRefund, delivery.id, it.carton_id);
-      }
+      // 2. Process each returned item
+      for (const it of validItems) {
+        const qty = Number(it.return_quantity) || 0;
+        const price = Number(it.carton_price) || 0;
+        const itemRefund = qty * price;
 
-      // Add inventory back to either the CAR or FACTORY STOCK!
-      if (returnDest === 'car' && delivery.car_id) {
-        // Stays in car: add back to car inventory
-        const existingCarInv = db.prepare('SELECT id FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(delivery.car_id, it.carton_id);
-        if (existingCarInv) {
-          db.prepare('UPDATE car_inventory SET cartons_loaded = cartons_loaded + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-            .run(qty, existingCarInv.id);
+        db.prepare(`
+          INSERT INTO shop_return_items (
+            return_id, carton_id, carton_name, pieces_per_carton,
+            returned_cartons, carton_price, refund_amount, return_destination
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          returnId,
+          it.carton_id,
+          it.carton_name,
+          it.pieces_per_carton || 20,
+          qty,
+          price,
+          itemRefund,
+          returnDest
+        );
+
+        // Update delivery item returned count and line total
+        if (it.delivery_item_id) {
+          db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ?, line_total = MAX(0, line_total - ?) WHERE id = ?')
+            .run(qty, itemRefund, it.delivery_item_id);
         } else {
-          db.prepare('INSERT INTO car_inventory (car_id, carton_id, cartons_loaded) VALUES (?, ?, ?)')
-            .run(delivery.car_id, it.carton_id, qty);
+          db.prepare('UPDATE shop_delivery_items SET returned_cartons = returned_cartons + ?, line_total = MAX(0, line_total - ?) WHERE delivery_id = ? AND carton_id = ?')
+            .run(qty, itemRefund, delivery.id, it.carton_id);
         }
-      } else {
-        // Return to factory warehouse stock
-        db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
-          .run(qty, it.carton_id);
+
+        // Add inventory back to either the CAR or FACTORY STOCK!
+        if (returnDest === 'car' && carExists) {
+          // Stays in car: add back to car inventory
+          const existingCarInv = db.prepare('SELECT id FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(delivery.car_id, it.carton_id);
+          if (existingCarInv) {
+            db.prepare('UPDATE car_inventory SET cartons_loaded = cartons_loaded + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+              .run(qty, existingCarInv.id);
+          } else {
+            db.prepare('INSERT INTO car_inventory (car_id, carton_id, cartons_loaded) VALUES (?, ?, ?)')
+              .run(delivery.car_id, it.carton_id, qty);
+          }
+        } else {
+          // Return to factory warehouse stock
+          db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+            .run(qty, it.carton_id);
+        }
       }
-    }
 
-    // 3. Reduce sale amount from shop_deliveries
-    const discount = Number(delivery.discount) || 0;
-    const newSubtotal = Math.max(0, (Number(delivery.subtotal) || Number(delivery.total_amount)) - totalRefund);
-    const newTotalAmount = Math.max(0, newSubtotal - discount);
+      // 3. Recalculate delivery subtotal, discount, deduction (commission/expense), net total & balances
+      recalcResult = recalculateDeliveryTotals(delivery.id, adjType);
 
-    let newReceivedAmount = Number(delivery.received_amount) || 0;
-    let newRemainingBalance = Number(delivery.remaining_balance) || 0;
-
-    if (adjType === 'cash') {
-      // Cash refund given back to customer from sale proceeds
-      newReceivedAmount = Math.max(0, newReceivedAmount - totalRefund);
-    } else {
-      // Khata adjustment: reduce bill debt balance first
-      newRemainingBalance = Math.max(0, newRemainingBalance - totalRefund);
-      // Reduce the shop's ledger balance
-      if (delivery.shop_id) {
-        db.prepare('UPDATE shops SET amount = MAX(0, amount - ?) WHERE id = ?')
-          .run(totalRefund, delivery.shop_id);
+      // 4. Synchronize salesman / shop khata balance
+      if (delivery.shop_id && shopExists) {
+        syncShopKhataBalance(delivery.shop_id);
       }
-    }
+    });
 
-    newReceivedAmount = Math.min(newTotalAmount, newReceivedAmount);
-    newRemainingBalance = Math.max(0, newTotalAmount - newReceivedAmount);
-
-    db.prepare(`
-      UPDATE shop_deliveries 
-      SET subtotal = ?, total_amount = ?, received_amount = ?, remaining_balance = ? 
-      WHERE id = ?
-    `).run(newSubtotal, newTotalAmount, newReceivedAmount, newRemainingBalance, delivery.id);
-  });
-
-  tx();
-  return { 
-    success: true, 
-    returnId, 
-    returnNo, 
-    totalRefund, 
-    totalCartonsReturned, 
-    returnDest,
-    newTotalAmount: Math.max(0, (delivery.total_amount || 0) - totalRefund)
-  };
+    tx();
+    return { 
+      success: true, 
+      returnId, 
+      returnNo, 
+      totalRefund, 
+      totalCartonsReturned, 
+      returnDest,
+      newTotalAmount: recalcResult ? recalcResult.newTotalAmount : Math.max(0, (delivery.total_amount || 0) - totalRefund),
+      newDeductionAmount: recalcResult ? recalcResult.newDeductionAmount : 0,
+      netBillDelta: recalcResult ? recalcResult.netBillDelta : totalRefund
+    };
+  } catch (err) {
+    console.error('Error in processShopReturn:', err);
+    return { success: false, error: err.message || 'Failed to process return.' };
+  }
 }
 
-function getShopReturns(deliveryId = null) {
-  if (deliveryId) {
-    return db.prepare('SELECT * FROM shop_returns WHERE delivery_id = ? ORDER BY id DESC').all(deliveryId);
+function getShopReturns(filters = null) {
+  let query = 'SELECT * FROM shop_returns WHERE 1=1';
+  const params = [];
+
+  if (typeof filters === 'number' || (typeof filters === 'string' && /^\d+$/.test(filters))) {
+    query += ' AND delivery_id = ? ORDER BY id DESC';
+    const rows = db.prepare(query).all(filters);
+    const itemStmt = db.prepare(`
+      SELECT sri.*, COALESCE(pc.package_type, 'carton') as package_type
+      FROM shop_return_items sri
+      LEFT JOIN packed_cartons pc ON pc.id = sri.carton_id
+      WHERE sri.return_id = ?
+    `);
+    rows.forEach(r => {
+      r.items = itemStmt.all(r.id);
+    });
+    return rows;
   }
-  return db.prepare('SELECT * FROM shop_returns ORDER BY id DESC').all();
+
+  if (filters && typeof filters === 'object') {
+    if (filters.delivery_id) {
+      query += ' AND delivery_id = ?';
+      params.push(filters.delivery_id);
+    }
+    if (filters.date) {
+      query += ' AND date = ?';
+      params.push(filters.date);
+    }
+    if (filters.month) {
+      query += ' AND date LIKE ?';
+      params.push(`${filters.month}%`);
+    }
+    if (filters.year) {
+      query += ' AND date LIKE ?';
+      params.push(`${filters.year}%`);
+    }
+    if (filters.startDate && filters.endDate) {
+      query += ' AND date BETWEEN ? AND ?';
+      params.push(filters.startDate, filters.endDate);
+    }
+    if (filters.car_id) {
+      query += ' AND car_id = ?';
+      params.push(filters.car_id);
+    }
+    if (filters.shop_id) {
+      query += ' AND shop_id = ?';
+      params.push(filters.shop_id);
+    }
+    if (filters.return_destination && filters.return_destination !== 'all') {
+      query += ' AND return_destination = ?';
+      params.push(filters.return_destination);
+    }
+    if (filters.search) {
+      const s = `%${filters.search}%`;
+      query += ' AND (return_no LIKE ? OR invoice_no LIKE ? OR shop_name LIKE ? OR car_number LIKE ? OR reason LIKE ? OR id IN (SELECT return_id FROM shop_return_items WHERE carton_name LIKE ?))';
+      params.push(s, s, s, s, s, s);
+    }
+  }
+
+  query += ' ORDER BY id DESC';
+  const rows = db.prepare(query).all(...params);
+
+  if (rows && rows.length > 0) {
+    const itemStmt = db.prepare(`
+      SELECT sri.*, COALESCE(pc.package_type, 'carton') as package_type
+      FROM shop_return_items sri
+      LEFT JOIN packed_cartons pc ON pc.id = sri.carton_id
+      WHERE sri.return_id = ?
+    `);
+    rows.forEach(r => {
+      r.items = itemStmt.all(r.id);
+    });
+  }
+
+  return rows;
 }
 
 function getShopReturn(id) {
   const ret = db.prepare('SELECT * FROM shop_returns WHERE id = ?').get(id);
   if (!ret) return null;
-  ret.items = db.prepare('SELECT * FROM shop_return_items WHERE return_id = ?').all(id);
+  ret.items = db.prepare(`
+    SELECT sri.*, COALESCE(pc.package_type, 'carton') as package_type
+    FROM shop_return_items sri
+    LEFT JOIN packed_cartons pc ON pc.id = sri.carton_id
+    WHERE sri.return_id = ?
+  `).all(id);
   return ret;
 }
 
@@ -4582,7 +6559,11 @@ function getShopDeliveries(filters = {}) {
     SELECT sd.*, 
            (SELECT COUNT(*) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_items_count,
            (SELECT SUM(sdi.delivered_cartons) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_cartons_delivered,
-           (SELECT SUM(sdi.returned_cartons) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_cartons_returned
+           (SELECT SUM(sdi.returned_cartons) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_cartons_returned,
+           COALESCE((SELECT SUM(sdi.delivered_cartons) FROM shop_delivery_items sdi LEFT JOIN packed_cartons pc ON pc.id = sdi.carton_id WHERE sdi.delivery_id = sd.id AND LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) != 'shoper'), 0) as delivered_ctns,
+           COALESCE((SELECT SUM(sdi.delivered_cartons) FROM shop_delivery_items sdi LEFT JOIN packed_cartons pc ON pc.id = sdi.carton_id WHERE sdi.delivery_id = sd.id AND LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) = 'shoper'), 0) as delivered_shopers,
+           COALESCE((SELECT SUM(sdi.returned_cartons) FROM shop_delivery_items sdi LEFT JOIN packed_cartons pc ON pc.id = sdi.carton_id WHERE sdi.delivery_id = sd.id AND LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) != 'shoper'), 0) as returned_ctns,
+           COALESCE((SELECT SUM(sdi.returned_cartons) FROM shop_delivery_items sdi LEFT JOIN packed_cartons pc ON pc.id = sdi.carton_id WHERE sdi.delivery_id = sd.id AND LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) = 'shoper'), 0) as returned_shopers
     FROM shop_deliveries sd
     WHERE 1=1
   `;
@@ -4622,74 +6603,198 @@ function getShopDelivery(id) {
 }
 
 function deleteShopDelivery(id) {
-  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
-  if (!delivery) return { error: 'Delivery invoice not found' };
+  try {
+    const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
+    if (!delivery) return { success: false, error: 'Delivery invoice not found' };
 
-  db.transaction(() => {
-    // If shop balance was updated, reverse the remaining balance
-    if (delivery.shop_id && delivery.remaining_balance > 0) {
-      db.prepare('UPDATE shops SET amount = MAX(0, amount - ?) WHERE id = ?')
-        .run(delivery.remaining_balance, delivery.shop_id);
-    }
-    db.prepare('DELETE FROM shop_deliveries WHERE id = ?').run(id);
-  })();
+    db.transaction(() => {
+      // 1. If any returns on this delivery were returned to factory warehouse stock, deduct them from factory warehouse
+      const stockReturns = db.prepare(`
+        SELECT sri.carton_id, SUM(sri.returned_cartons) as returned_to_stock
+        FROM shop_return_items sri
+        JOIN shop_returns sr ON sr.id = sri.return_id
+        WHERE sr.delivery_id = ? AND LOWER(sri.return_destination) = 'stock'
+        GROUP BY sri.carton_id
+      `).all(id);
 
-  return { success: true };
+      for (const sr of stockReturns) {
+        if (sr.returned_to_stock > 0 && sr.carton_id) {
+          db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
+            .run(sr.returned_to_stock, sr.carton_id);
+        }
+      }
+
+      // 2. Revert stock:
+      // If items were returned to car, car_inventory already had those returned items added back.
+      // So the amount that needs to be added back to the car is (delivered_cartons - returned_to_car).
+      // If delivery had no car (direct dispatch), add net quantity delivered back to factory_carton_stock.
+      const items = db.prepare('SELECT * FROM shop_delivery_items WHERE delivery_id = ?').all(id);
+      for (const it of items) {
+        const delivered = Number(it.delivered_cartons) || Number(it.ordered_cartons) || 0;
+        const totalRet = Number(it.returned_cartons) || 0;
+        if (delivered > 0 && it.carton_id) {
+          if (delivery.car_id) {
+            const retToStockRow = stockReturns.find(x => x.carton_id === it.carton_id);
+            const retToStock = retToStockRow ? retToStockRow.returned_to_stock : 0;
+            const retToCar = Math.max(0, totalRet - retToStock);
+            const qtyToAddToCar = Math.max(0, delivered - retToCar);
+
+            if (qtyToAddToCar > 0) {
+              const existing = db.prepare('SELECT id FROM car_inventory WHERE car_id = ? AND carton_id = ?').get(delivery.car_id, it.carton_id);
+              if (existing) {
+                db.prepare('UPDATE car_inventory SET cartons_loaded = cartons_loaded + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                  .run(qtyToAddToCar, existing.id);
+              } else {
+                db.prepare('INSERT INTO car_inventory (car_id, carton_id, cartons_loaded) VALUES (?, ?, ?)')
+                  .run(delivery.car_id, it.carton_id, qtyToAddToCar);
+              }
+            }
+          } else {
+            const netQty = Math.max(0, delivered - totalRet);
+            if (netQty > 0) {
+              db.prepare('UPDATE packed_cartons SET factory_carton_stock = factory_carton_stock + ? WHERE id = ?')
+                .run(netQty, it.carton_id);
+            }
+          }
+        }
+      }
+
+      // 3. Delete any shop_returns and shop_return_items referencing this delivery
+      const retRows = db.prepare('SELECT id FROM shop_returns WHERE delivery_id = ?').all(id);
+      for (const r of retRows) {
+        db.prepare('DELETE FROM shop_return_items WHERE return_id = ?').run(r.id);
+      }
+      db.prepare('DELETE FROM shop_returns WHERE delivery_id = ?').run(id);
+
+      // 4. Delete delivery items and delivery
+      db.prepare('DELETE FROM shop_delivery_items WHERE delivery_id = ?').run(id);
+      db.prepare('DELETE FROM shop_deliveries WHERE id = ?').run(id);
+
+      // 5. Re-synchronize salesman khata balance
+      if (delivery.shop_id) {
+        syncShopKhataBalance(delivery.shop_id);
+      }
+    })();
+
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteShopDelivery:', err);
+    return { success: false, error: err.message || 'Failed to delete delivery.' };
+  }
+}
+
+function deleteShopReturn(id) {
+  try {
+    const ret = db.prepare('SELECT * FROM shop_returns WHERE id = ?').get(id);
+    if (!ret) return { success: false, error: 'Return record not found' };
+
+    const items = db.prepare('SELECT * FROM shop_return_items WHERE return_id = ?').all(id);
+
+    const tx = db.transaction(() => {
+      // 1. Revert stock: deduct returned items from wherever they were returned to
+      for (const it of items) {
+        const qty = Number(it.returned_cartons) || 0;
+        if (qty > 0 && it.carton_id) {
+          const dest = (it.return_destination || ret.return_destination || 'car').toLowerCase();
+          if (dest === 'car' && ret.car_id) {
+            db.prepare('UPDATE car_inventory SET cartons_loaded = MAX(0, cartons_loaded - ?), updated_at = CURRENT_TIMESTAMP WHERE car_id = ? AND carton_id = ?')
+              .run(qty, ret.car_id, it.carton_id);
+          } else {
+            db.prepare('UPDATE packed_cartons SET factory_carton_stock = MAX(0, factory_carton_stock - ?) WHERE id = ?')
+              .run(qty, it.carton_id);
+          }
+
+          // 2. Revert delivery line item
+          if (ret.delivery_id) {
+            const refund = Number(it.refund_amount) || (qty * (Number(it.carton_price) || 0));
+            db.prepare('UPDATE shop_delivery_items SET returned_cartons = MAX(0, returned_cartons - ?), line_total = line_total + ? WHERE delivery_id = ? AND carton_id = ?')
+              .run(qty, refund, ret.delivery_id, it.carton_id);
+          }
+        }
+      }
+
+      // 3. Recalculate delivery totals if delivery exists
+      if (ret.delivery_id) {
+        recalculateDeliveryTotals(ret.delivery_id, ret.adjustment_type || 'khata');
+      }
+
+      // 4. Synchronize salesman / customer khata balance
+      if (ret.shop_id) {
+        syncShopKhataBalance(ret.shop_id);
+      }
+
+      // 5. Delete return items and return record
+      db.prepare('DELETE FROM shop_return_items WHERE return_id = ?').run(id);
+      db.prepare('DELETE FROM shop_returns WHERE id = ?').run(id);
+    });
+
+    tx();
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteShopReturn:', err);
+    return { success: false, error: err.message || 'Failed to delete return record.' };
+  }
 }
 
 function receiveShopPayment(data) {
-  if (!data.shop_id) return { error: 'Shop ID is required' };
-  const amount = Number(data.amount) || 0;
-  if (amount <= 0) return { error: 'Payment amount must be greater than 0' };
+  try {
+    if (!data.shop_id) return { success: false, error: 'Salesman ID is required' };
+    const amount = Number(data.amount) || 0;
+    if (amount <= 0) return { success: false, error: 'Payment amount must be greater than 0' };
 
-  const shop = db.prepare('SELECT * FROM shops WHERE id = ?').get(data.shop_id);
-  if (!shop) return { error: 'Shop not found' };
+    const shop = db.prepare('SELECT * FROM shops WHERE id = ?').get(data.shop_id);
+    if (!shop) return { success: false, error: 'Salesman not found' };
 
-  const currentBalance = Number(shop.amount) || 0;
-  if (currentBalance <= 0) {
-    return { error: 'This shop has no outstanding balance in khata' };
-  }
-  if (amount > currentBalance) {
-    return { error: `Received payment (Rs. ${amount.toLocaleString()}) cannot be more than the balance in shop's khata (Rs. ${currentBalance.toLocaleString()})` };
-  }
+    const currentBalance = Number(shop.amount) || 0;
+    if (currentBalance <= 0) {
+      return { success: false, error: 'This salesman has no outstanding balance in khata' };
+    }
+    if (amount > currentBalance) {
+      return { success: false, error: `Received payment (Rs. ${amount.toLocaleString()}) cannot be more than the balance in salesman's khata (Rs. ${currentBalance.toLocaleString()})` };
+    }
 
-  const date = data.date || new Date().toISOString().split('T')[0];
-  const todayStr = date.replace(/-/g, '');
-  const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_payments WHERE date = ?').get(date)?.c || 0;
-  const receiptNo = `REC-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const todayStr = date.replace(/-/g, '');
+    const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_payments WHERE date = ?').get(date)?.c || 0;
+    const receiptNo = `REC-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
 
-  let paymentId;
-  let newBalance = 0;
-  db.transaction(() => {
-    const res = db.prepare(`
-      INSERT INTO shop_payments (shop_id, amount, payment_method, receipt_no, date, notes)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      data.shop_id,
-      amount,
-      data.payment_method || 'Cash',
-      receiptNo,
+    let paymentId;
+    let newBalance = 0;
+    db.transaction(() => {
+      const res = db.prepare(`
+        INSERT INTO shop_payments (shop_id, amount, payment_method, receipt_no, date, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.shop_id,
+        amount,
+        data.payment_method || 'Cash',
+        receiptNo,
+        date,
+        data.notes || ''
+      );
+      paymentId = res.lastInsertRowid;
+      newBalance = Math.max(0, currentBalance - amount);
+      db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newBalance, data.shop_id);
+      syncShopKhataBalance(data.shop_id);
+    })();
+
+    return {
+      success: true,
+      id: paymentId,
+      receipt_no: receiptNo,
+      shop_id: data.shop_id,
+      shop_name: shop.name,
+      amount_paid: amount,
+      previous_balance: currentBalance,
+      new_balance: newBalance,
       date,
-      data.notes || ''
-    );
-    paymentId = res.lastInsertRowid;
-    newBalance = Math.max(0, currentBalance - amount);
-    db.prepare('UPDATE shops SET amount = ? WHERE id = ?').run(newBalance, data.shop_id);
-  })();
-
-  return {
-    success: true,
-    id: paymentId,
-    receipt_no: receiptNo,
-    shop_id: data.shop_id,
-    shop_name: shop.name,
-    amount_paid: amount,
-    previous_balance: currentBalance,
-    new_balance: newBalance,
-    date,
-    payment_method: data.payment_method || 'Cash',
-    notes: data.notes || ''
-  };
+      payment_method: data.payment_method || 'Cash',
+      notes: data.notes || ''
+    };
+  } catch (err) {
+    console.error('Error in receiveShopPayment:', err);
+    return { success: false, error: err.message || 'Failed to record payment.' };
+  }
 }
 
 function getShopLedger(shopId) {
@@ -4731,17 +6836,12 @@ function getShopLedger(shopId) {
     WHERE sp.shop_id = ?
   `).all(shopId);
 
-  // Combine and sort latest first (newest date/id first)
-  const entries = [...deliveries, ...payments].sort((a, b) => {
-    const da = new Date(a.date).getTime() || 0;
-    const db = new Date(b.date).getTime() || 0;
-    if (da !== db) return db - da;
-    return (b.id || 0) - (a.id || 0);
-  });
+  // Combine all entries
+  const allEntries = [...deliveries, ...payments];
 
-  // If shop has an opening balance, add it at the bottom (oldest entry)
+  // If shop has an opening balance, add it as a starting ledger entry
   if (openingBalance > 0) {
-    entries.push({
+    allEntries.push({
       id: 0,
       invoice_no: 'START',
       date: shop.created_at || '2026-01-01',
@@ -4758,6 +6858,9 @@ function getShopLedger(shopId) {
     });
   }
 
+  // Sort latest first (newest date/created_at first)
+  const entries = allEntries.sort(sortLedgerEntriesLatestFirst);
+
   return {
     shop,
     current_balance: shop.amount || 0,
@@ -4767,87 +6870,107 @@ function getShopLedger(shopId) {
 }
 
 function deleteShopPayment(id) {
-  const payment = db.prepare('SELECT * FROM shop_payments WHERE id = ?').get(id);
-  if (!payment) return { error: 'Payment not found' };
+  try {
+    const payment = db.prepare('SELECT * FROM shop_payments WHERE id = ?').get(id);
+    if (!payment) return { success: false, error: 'Payment not found' };
 
-  db.transaction(() => {
-    db.prepare('UPDATE shops SET amount = amount + ? WHERE id = ?').run(payment.amount, payment.shop_id);
-    db.prepare('DELETE FROM shop_payments WHERE id = ?').run(id);
-  })();
+    db.transaction(() => {
+      db.prepare('DELETE FROM shop_payments WHERE id = ?').run(id);
+      syncShopKhataBalance(payment.shop_id);
+    })();
 
-  return { success: true };
+    return { success: true };
+  } catch (err) {
+    console.error('Error in deleteShopPayment:', err);
+    return { success: false, error: err.message || 'Failed to delete payment.' };
+  }
 }
 
 function updateShopDelivery(id, data = {}) {
-  const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
-  if (!delivery) return { error: 'Delivery invoice not found' };
+  try {
+    const delivery = db.prepare('SELECT * FROM shop_deliveries WHERE id = ?').get(id);
+    if (!delivery) return { success: false, error: 'Delivery invoice not found' };
 
-  const notes = data.notes !== undefined ? data.notes : delivery.notes;
-  const paymentMethod = data.payment_method || delivery.payment_method;
-  const date = data.date || delivery.date;
+    const notes = data.notes !== undefined ? data.notes : delivery.notes;
+    const paymentMethod = data.payment_method || delivery.payment_method;
+    const date = data.date || delivery.date;
 
-  db.prepare('UPDATE shop_deliveries SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
-    .run(notes, paymentMethod, date, id);
-  return { success: true };
+    db.prepare('UPDATE shop_deliveries SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
+      .run(notes, paymentMethod, date, id);
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updateShopDelivery:', err);
+    return { success: false, error: err.message || 'Failed to update delivery.' };
+  }
 }
 
 function updateShopPayment(id, data = {}) {
-  const payment = db.prepare('SELECT * FROM shop_payments WHERE id = ?').get(id);
-  if (!payment) return { error: 'Shop payment not found' };
+  try {
+    const payment = db.prepare('SELECT * FROM shop_payments WHERE id = ?').get(id);
+    if (!payment) return { success: false, error: 'Shop payment not found' };
 
-  const notes = data.notes !== undefined ? data.notes : payment.notes;
-  const paymentMethod = data.payment_method || payment.payment_method;
-  const date = data.date || payment.date;
+    const notes = data.notes !== undefined ? data.notes : payment.notes;
+    const paymentMethod = data.payment_method || payment.payment_method;
+    const date = data.date || payment.date;
 
-  db.prepare('UPDATE shop_payments SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
-    .run(notes, paymentMethod, date, id);
-  return { success: true };
+    db.prepare('UPDATE shop_payments SET notes = ?, payment_method = ?, date = ? WHERE id = ?')
+      .run(notes, paymentMethod, date, id);
+    return { success: true };
+  } catch (err) {
+    console.error('Error in updateShopPayment:', err);
+    return { success: false, error: err.message || 'Failed to update payment.' };
+  }
 }
 
 function getCarSalesReport(carId, fromDate = null, toDate = null) {
-  const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
-  if (!car) return { error: 'Car not found' };
+  try {
+    const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(carId);
+    if (!car) return { success: false, error: 'Car not found' };
 
-  let query = 'SELECT * FROM shop_deliveries WHERE car_id = ?';
-  const params = [carId];
-  if (fromDate) {
-    query += ' AND date >= ?';
-    params.push(fromDate);
+    let query = 'SELECT * FROM shop_deliveries WHERE car_id = ?';
+    const params = [carId];
+    if (fromDate) {
+      query += ' AND date >= ?';
+      params.push(fromDate);
+    }
+    if (toDate) {
+      query += ' AND date <= ?';
+      params.push(toDate);
+    }
+    query += ' ORDER BY id DESC';
+
+    const deliveries = db.prepare(query).all(...params);
+    let totalSales = 0;
+    let totalReceived = 0;
+    let totalCartons = 0;
+
+    deliveries.forEach(d => {
+      totalSales += d.total_amount || 0;
+      totalReceived += d.received_amount || 0;
+      const cartons = db.prepare('SELECT SUM(delivered_cartons - returned_cartons) as s FROM shop_delivery_items WHERE delivery_id = ?').get(d.id).s || 0;
+      d.cartons_delivered = cartons;
+      totalCartons += cartons;
+    });
+
+    const currentInventory = getCarInventory(carId);
+
+    return {
+      car,
+      fromDate,
+      toDate,
+      totalSales,
+      totalReceived,
+      totalCartons,
+      totalCartonsDelivered: totalCartons,
+      deliveriesCount: deliveries.length,
+      totalDeliveries: deliveries.length,
+      deliveries,
+      currentInventory
+    };
+  } catch (err) {
+    console.error('Error in getCarSalesReport:', err);
+    return { success: false, error: err.message || 'Failed to generate car sales report.' };
   }
-  if (toDate) {
-    query += ' AND date <= ?';
-    params.push(toDate);
-  }
-  query += ' ORDER BY id DESC';
-
-  const deliveries = db.prepare(query).all(...params);
-  let totalSales = 0;
-  let totalReceived = 0;
-  let totalCartons = 0;
-
-  deliveries.forEach(d => {
-    totalSales += d.total_amount || 0;
-    totalReceived += d.received_amount || 0;
-    const cartons = db.prepare('SELECT SUM(delivered_cartons - returned_cartons) as s FROM shop_delivery_items WHERE delivery_id = ?').get(d.id).s || 0;
-    d.cartons_delivered = cartons;
-    totalCartons += cartons;
-  });
-
-  const currentInventory = getCarInventory(carId);
-
-  return {
-    car,
-    fromDate,
-    toDate,
-    totalSales,
-    totalReceived,
-    totalCartons,
-    totalCartonsDelivered: totalCartons,
-    deliveriesCount: deliveries.length,
-    totalDeliveries: deliveries.length,
-    deliveries,
-    currentInventory
-  };
 }
 
 function getIcecreamFactorySummary() {
@@ -4856,7 +6979,7 @@ function getIcecreamFactorySummary() {
   // 1. Raw Materials Summary
   const rawStats = db.prepare(`
     SELECT COUNT(*) as total_materials,
-           COALESCE(SUM(current_stock * cost_price), 0) as total_raw_value,
+           COALESCE(SUM(CASE WHEN has_bulk = 1 AND pack_size > 1 THEN (current_stock / pack_size) * cost_price ELSE current_stock * cost_price END), 0) as total_raw_value,
            COALESCE(SUM(CASE WHEN current_stock <= min_stock_alert THEN 1 ELSE 0 END), 0) as low_stock_count
     FROM raw_materials
   `).get();
@@ -4873,7 +6996,9 @@ function getIcecreamFactorySummary() {
   // 3. Packed Cartons Warehouse Stock Summary
   const cartonStats = db.prepare(`
     SELECT COUNT(*) as total_carton_variants,
-           COALESCE(SUM(factory_carton_stock), 0) as total_warehouse_cartons,
+           COALESCE(SUM(factory_carton_stock), 0) as total_warehouse_packages,
+           COALESCE(SUM(CASE WHEN LOWER(COALESCE(package_type, 'carton')) != 'shoper' THEN factory_carton_stock ELSE 0 END), 0) as total_warehouse_cartons,
+           COALESCE(SUM(CASE WHEN LOWER(COALESCE(package_type, 'carton')) = 'shoper' THEN factory_carton_stock ELSE 0 END), 0) as total_warehouse_shopers,
            COALESCE(SUM(factory_carton_stock * carton_cost_price), 0) as total_warehouse_cost,
            COALESCE(SUM(factory_carton_stock * carton_sale_price), 0) as total_warehouse_sale_value
     FROM packed_cartons
@@ -4883,7 +7008,9 @@ function getIcecreamFactorySummary() {
   const carStats = db.prepare(`
     SELECT COUNT(*) as total_cars,
            COALESCE(SUM(is_active), 0) as active_cars,
-           COALESCE((SELECT SUM(cartons_loaded) FROM car_inventory), 0) as total_cartons_in_cars
+           COALESCE((SELECT SUM(cartons_loaded) FROM car_inventory), 0) as total_cartons_in_cars,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE LOWER(COALESCE(pc.package_type, 'carton')) != 'shoper'), 0) as total_ctns_in_cars,
+           COALESCE((SELECT SUM(ci.cartons_loaded) FROM car_inventory ci JOIN packed_cartons pc ON pc.id = ci.carton_id WHERE LOWER(COALESCE(pc.package_type, 'carton')) = 'shoper'), 0) as total_shopers_in_cars
     FROM cars
   `).get();
 
@@ -4897,11 +7024,14 @@ function getIcecreamFactorySummary() {
   `).get(today);
 
   const todayCartons = db.prepare(`
-    SELECT COALESCE(SUM(sdi.delivered_cartons - sdi.returned_cartons), 0) as cartons_sold_today
+    SELECT COALESCE(SUM(CASE WHEN LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) != 'shoper' THEN (sdi.delivered_cartons - sdi.returned_cartons) ELSE 0 END), 0) as ctns_sold_today,
+           COALESCE(SUM(CASE WHEN LOWER(COALESCE(sdi.package_type, pc.package_type, 'carton')) = 'shoper' THEN (sdi.delivered_cartons - sdi.returned_cartons) ELSE 0 END), 0) as shopers_sold_today,
+           COALESCE(SUM(sdi.delivered_cartons - sdi.returned_cartons), 0) as total_sold_today
     FROM shop_delivery_items sdi
     JOIN shop_deliveries sd ON sd.id = sdi.delivery_id
+    LEFT JOIN packed_cartons pc ON pc.id = sdi.carton_id
     WHERE sd.date = ?
-  `).get(today).cartons_sold_today;
+  `).get(today) || { ctns_sold_today: 0, shopers_sold_today: 0, total_sold_today: 0 };
 
   return {
     rawMaterials: rawStats,
@@ -4913,7 +7043,9 @@ function getIcecreamFactorySummary() {
       sales: todaySales.total_sales_today,
       received: todaySales.total_received_today,
       invoices: todaySales.total_invoices_today,
-      cartons_sold: todayCartons
+      cartons_sold: todayCartons.total_sold_today,
+      ctns_sold: todayCartons.ctns_sold_today,
+      shopers_sold: todayCartons.shopers_sold_today
     }
   };
 }
@@ -4925,6 +7057,8 @@ module.exports = {
   deleteRawMaterialLog, updateRawMaterialLog,
   getRawMaterialPurchases, getRawMaterialPurchase, updateRawMaterialPurchase, deleteRawMaterialPurchase, getRawMaterialSuppliers,
   getNextPurchaseInvoiceNo, getRawMaterialCategories, addRawMaterialCategory, deleteRawMaterialCategory,
+  // Chocolate Production & Stock
+  getChocolateStock, getChocolateBatches, createChocolateBatch, deleteChocolateBatch, getChocolateLogs,
   // Suppliers & Vendor Khata
   getSuppliers, getSupplier, saveSupplier, deleteSupplier, paySupplier, deleteSupplierPayment, updateSupplierPayment, getSupplierLedger,
   // Stage 2: Single Items Production
@@ -4935,7 +7069,7 @@ module.exports = {
   getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch, updateCarLoadingBatch, deleteCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns
   saveShopDelivery, getNextDeliveryInvoiceNo, getShopDeliveries, getShopDelivery, updateShopDelivery, deleteShopDelivery, receiveShopPayment, updateShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
-  processShopReturn, getShopReturns, getShopReturn,
+  processShopReturn, getShopReturns, getShopReturn, deleteShopReturn, recalculateDeliveryTotals, syncShopKhataBalance, reconcileReturnsAndBalances, syncSupplierBalance,
 
   init, getDbPath, getDbPathForBranch, close, backupDatabase, clearAllData,
     addProductStock, getRateHistory, deleteRateHistory, getAllRatesList, markProposalPaid,
@@ -4946,7 +7080,7 @@ module.exports = {
   getAllProposalItems,
   getExpenses, saveExpense, deleteExpense, getExpensesSummary,
   getExpenseCategories, addExpenseCategory, deleteExpenseCategory,
-  getEmployees, saveEmployee, deleteEmployee,
+  getEmployees, getEmployee, saveEmployee, deleteEmployee, recordSalaryPayment, deleteSalaryPayment, getSalaryPayments, getMonthlyAttendance, setAttendance, bulkSetAttendance, getEmployeesPayrollSummary,
   getCompanies, saveCompany, deleteCompany,
   getCustomers, saveCustomer, deleteCustomer,
   getShops, saveShop, deleteShop, getShop,

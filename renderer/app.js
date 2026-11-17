@@ -411,6 +411,7 @@ const app = {
               break;
             case 'customers': await (window.Customers || Customers).render(panel); break;
             case 'item-sales': await (window.ItemSales || ItemSales).render(panel, args); break;
+            case 'return-sales': await (window.ReturnSales || ReturnSales).render(panel, args); break;
             case 'proposal-form': 
               if (window.ShopSales) {
                 await ShopSales.render(panel, args);
@@ -421,6 +422,7 @@ const app = {
             case 'master-db': await (window.MasterDB || MasterDB).render(panel); break;
             case 'rate-list': await (window.RateList || RateList).render(panel, args); break;
             case 'expenses': await (window.Expenses || Expenses).render(panel); break;
+            case 'employees': await (window.Employees || Employees).render(panel, args); break;
             case 'purchases':
             case 'companies': await (window.Purchases || window.Companies || Purchases || Companies).render(panel, args); break;
             case 'item-purchases': await (window.ItemPurchases || ItemPurchases).render(panel, args); break;
@@ -468,12 +470,16 @@ const app = {
           Customers.loadData();
         } else if (page === 'item-sales' && window.ItemSales && typeof ItemSales.loadData === 'function') {
           ItemSales.loadData();
+        } else if (page === 'return-sales' && window.ReturnSales && typeof ReturnSales.loadData === 'function') {
+          ReturnSales.loadData();
         } else if (page === 'item-purchases' && window.ItemPurchases && typeof ItemPurchases.loadData === 'function') {
           ItemPurchases.loadData();
         } else if (page === 'suppliers' && window.Suppliers && typeof Suppliers.loadData === 'function') {
           Suppliers.loadData();
         } else if (page === 'expenses' && window.Expenses && typeof Expenses.loadData === 'function') {
           Expenses.loadData();
+        } else if (page === 'employees' && window.Employees && typeof Employees.loadData === 'function') {
+          Employees.loadData();
         } else if (page === 'companies' && window.Companies && typeof Companies.loadCompanies === 'function') {
           Companies.loadCompanies();
         } else if (page === 'proposal-form' && window.SalesForm) {
@@ -997,7 +1003,7 @@ const app = {
     }
 
     container.innerHTML = `
-      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1250] p-4 cursor-pointer animate-in fade-in duration-150" onclick="if(event.target === this) app.closeModal()">
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[3000] p-4 cursor-pointer animate-in fade-in duration-150" onclick="if(event.target === this) app.closeModal()">
         <div class="bg-white rounded-2xl shadow-2xl ${maxWidth} w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 cursor-default" onclick="event.stopPropagation()">
           <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
             <h3 class="font-black text-base text-slate-900 flex items-center gap-2.5">
@@ -1173,8 +1179,6 @@ const app = {
         // If it's a sqlite timestamp 'YYYY-MM-DD HH:MM:SS' without timezone, it's stored in UTC
         if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(clean)) {
           clean = clean.replace(' ', 'T') + 'Z';
-        } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(clean)) {
-          clean = clean + 'Z';
         }
         const d = new Date(clean);
         if (!isNaN(d.getTime())) {
@@ -1827,7 +1831,7 @@ const app = {
     this.clearAllPrintContainers();
     printContainer.innerHTML = htmlContent;
     printContainer.classList.add('active-print-target');
-    return await this.printReceipt({ pageSize: 'A5' });
+    return await this.printReceipt({ pageSize: 'A5', isA5: true });
   },
 
   async confirmPrint() {
@@ -1844,7 +1848,7 @@ const app = {
     if (onConfirm) {
       await onConfirm();
     } else {
-      await this.printReceipt({ pageSize: 'A5' });
+      await this.printReceipt({ pageSize: 'A5', isA5: true });
       
       if (this.currentPage === 'proposal-form' && SalesForm.onAfterPrint) {
           SalesForm.onAfterPrint();
@@ -2592,6 +2596,59 @@ const app = {
     modal.classList.add('flex');
     if (window.lucide) lucide.createIcons({ root: modal });
 
+    if (!this.tijCodeType) {
+      this.tijCodeType = 'barcode';
+    }
+    this.setTijCodeType(this.tijCodeType);
+  },
+
+  setTijCodeType(type) {
+    this.tijCodeType = type === 'qrcode' ? 'qrcode' : 'barcode';
+
+    const barcodeBtn = document.getElementById('tij-type-barcode-btn');
+    const qrcodeBtn = document.getElementById('tij-type-qrcode-btn');
+
+    if (this.tijCodeType === 'qrcode') {
+      if (barcodeBtn) {
+        barcodeBtn.className = 'px-3 py-1 rounded-md transition-all cursor-pointer text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1.5 bg-transparent';
+      }
+      if (qrcodeBtn) {
+        qrcodeBtn.className = 'px-3 py-1 rounded-md transition-all cursor-pointer bg-emerald-600 text-white font-black shadow-2xs flex items-center gap-1.5';
+      }
+
+      const fullDesc = document.getElementById('tij-layout-full-desc');
+      const compactTitle = document.getElementById('tij-layout-compact-title');
+      const compactDesc = document.getElementById('tij-layout-compact-desc');
+      const densityLabel = document.getElementById('tij-density-label');
+
+      if (fullDesc) fullDesc.textContent = 'Store Name + Item + 2D QR Code + Price (480 × 152 px / 12.7 mm)';
+      if (compactTitle) compactTitle.textContent = '2D QR Code Only (Compact)';
+      if (compactDesc) compactDesc.textContent = '2D QR Code + Digits only (360 × 152 px / 12.7 mm)';
+      if (densityLabel) densityLabel.textContent = 'QR Code Size:';
+    } else {
+      if (barcodeBtn) {
+        barcodeBtn.className = 'px-3 py-1 rounded-md transition-all cursor-pointer bg-emerald-600 text-white font-black shadow-2xs flex items-center gap-1.5';
+      }
+      if (qrcodeBtn) {
+        qrcodeBtn.className = 'px-3 py-1 rounded-md transition-all cursor-pointer text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1.5 bg-transparent';
+      }
+
+      const fullDesc = document.getElementById('tij-layout-full-desc');
+      const compactTitle = document.getElementById('tij-layout-compact-title');
+      const compactDesc = document.getElementById('tij-layout-compact-desc');
+      const densityLabel = document.getElementById('tij-density-label');
+
+      if (fullDesc) fullDesc.textContent = 'Store Name + Item + Barcode + Price (480 × 152 px / 12.7 mm)';
+      if (compactTitle) compactTitle.textContent = 'Barcode Only (Compact)';
+      if (compactDesc) compactDesc.textContent = 'Barcode Bars + Digits only (360 × 152 px / 12.7 mm)';
+      if (densityLabel) densityLabel.textContent = 'Barcode Density:';
+    }
+
+    if (window.lucide) {
+      const modal = document.getElementById('tij-export-modal');
+      if (modal) lucide.createIcons({ root: modal });
+    }
+
     this.updateTijPreview();
   },
 
@@ -2610,8 +2667,63 @@ const app = {
     const incPrice = document.getElementById('tij-inc-price')?.checked ?? true;
     const barWidth = Number(document.getElementById('tij-bar-width')?.value) || 2.0;
     const storeName = (document.getElementById('bsm-store-name')?.value || '').trim() || this.barcodeStickerState.storeName || 'DELICIOUS SUPERSTAR FOODS';
+    const codeType = this.tijCodeType || 'barcode';
 
-    return { layout, incStore, incName, incPrice, barWidth, invert: false, storeName };
+    return { layout, incStore, incName, incPrice, barWidth, invert: false, storeName, codeType };
+  },
+
+  drawQRCode(ctx, text, x, y, maxSize) {
+    let qr = null;
+    try {
+      if (typeof window !== 'undefined' && typeof window.qrcode === 'function') {
+        qr = window.qrcode(0, 'M');
+      } else if (typeof require === 'function') {
+        try {
+          const qrc = require('./libs/qrcode.min.js');
+          qr = qrc(0, 'M');
+        } catch (e) {
+          const qrc = require('./renderer/libs/qrcode.min.js');
+          qr = qrc(0, 'M');
+        }
+      }
+    } catch (e) {
+      console.error('QR library error:', e);
+    }
+
+    if (!qr) {
+      ctx.fillStyle = '#000000';
+      ctx.strokeRect(x, y, maxSize, maxSize);
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + maxSize / 2, y + maxSize / 2);
+      return;
+    }
+
+    qr.addData(text);
+    qr.make();
+    const count = qr.getModuleCount();
+    const maxCell = Math.floor(maxSize / (count + 2));
+    const cellSize = Math.max(2, Math.min(4, maxCell));
+    const actualQrSize = cellSize * count;
+    const quietZone = cellSize;
+    const totalBox = actualQrSize + quietZone * 2;
+    const startX = Math.round(x + (maxSize - totalBox) / 2);
+    const startY = Math.round(y + (maxSize - totalBox) / 2);
+
+    // Clean white quiet zone
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(startX, startY, totalBox, totalBox);
+
+    // Black QR modules
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (qr.isDark(r, c)) {
+          ctx.fillRect(startX + quietZone + c * cellSize, startY + quietZone + r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
   },
 
   updateTijPreview() {
@@ -2670,8 +2782,130 @@ const app = {
     const incPrice = options.incPrice ?? true;
     const barWidth = options.barWidth || 2.0;
     const storeName = (options.storeName || this.barcodeStickerState.storeName || 'DELICIOUS SUPERSTAR FOODS').trim();
+    const formattedBc = barcodeVal.length <= 14 ? barcodeVal.split('').join(' ') : barcodeVal;
+    const codeType = options.codeType || this.tijCodeType || 'barcode';
+    const isQR = codeType === 'qrcode';
 
     ctx.fillStyle = '#000000';
+
+    if (isQR) {
+      const displayTitle = (item.item_name || 'Product') + (spec ? ` (${spec})` : '');
+
+      const drawFittedText = (text, tx, ty, maxW, { fontFace = 'sans-serif', baseSize = 14, minSize = 9, weight = '900' } = {}) => {
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#000000';
+
+        let curSize = baseSize;
+        ctx.font = `${weight} ${curSize}px ${fontFace}`;
+        let w = ctx.measureText(text).width;
+        while (w > maxW && curSize > minSize) {
+          curSize -= 0.5;
+          ctx.font = `${weight} ${curSize}px ${fontFace}`;
+          w = ctx.measureText(text).width;
+        }
+        ctx.fillText(text, tx, ty, maxW);
+        return curSize;
+      };
+
+      if (isFull) {
+        // Full Layout (480 × 152 px): 2D QR Code on left, item details on right
+        const qrBoxSize = 114;
+        const qrX = 12;
+        const qrY = Math.round((height - qrBoxSize) / 2);
+        this.drawQRCode(ctx, barcodeVal, qrX, qrY, qrBoxSize);
+
+        const textX = 136;
+        const maxTextWidth = width - textX - 12;
+        const lines = [];
+        if (incStore) lines.push({ type: 'store', text: storeName.toUpperCase() });
+        if (incName) lines.push({ type: 'name', text: displayTitle });
+        lines.push({ type: 'code', text: formattedBc });
+        if (incPrice) lines.push({ type: 'price', text: `Price: Rs. ${price.toLocaleString()}` });
+
+        const lineSpacing = lines.length >= 4 ? 29 : 36;
+        const totalHeight = (lines.length - 1) * lineSpacing + 22;
+        let curY = Math.max(12, Math.floor((height - totalHeight) / 2));
+
+        lines.forEach(l => {
+          if (l.type === 'store') {
+            drawFittedText(l.text, textX, curY, maxTextWidth, {
+              fontFace: 'sans-serif',
+              baseSize: 12.5,
+              minSize: 9,
+              weight: '900'
+            });
+          } else if (l.type === 'name') {
+            drawFittedText(l.text, textX, curY, maxTextWidth, {
+              fontFace: 'sans-serif',
+              baseSize: 15.5,
+              minSize: 10.5,
+              weight: '900'
+            });
+          } else if (l.type === 'code') {
+            drawFittedText(l.text, textX, curY, maxTextWidth, {
+              fontFace: '"Consolas", "Courier New", monospace',
+              baseSize: 17,
+              minSize: 10,
+              weight: '900'
+            });
+          } else if (l.type === 'price') {
+            drawFittedText(l.text, textX, curY, maxTextWidth, {
+              fontFace: 'sans-serif',
+              baseSize: 17.5,
+              minSize: 11,
+              weight: '900'
+            });
+          }
+          curY += lineSpacing;
+        });
+      } else {
+        // Compact Layout (360 × 152 px): 2D QR Code on left, large digits + price on right
+        const qrBoxSize = 114;
+        const qrX = 8;
+        const qrY = Math.round((height - qrBoxSize) / 2);
+        this.drawQRCode(ctx, barcodeVal, qrX, qrY, qrBoxSize);
+
+        const textX = 130;
+        const maxTextWidth = width - textX - 8;
+        const lines = [];
+        if (incName) lines.push({ type: 'name', text: displayTitle });
+        lines.push({ type: 'code', text: formattedBc });
+        if (incPrice) lines.push({ type: 'price', text: `Price: Rs. ${price.toLocaleString()}` });
+
+        const lineSpacing = lines.length >= 3 ? 36 : 46;
+        const totalHeight = (lines.length - 1) * lineSpacing + 22;
+        let curY = Math.max(14, Math.floor((height - totalHeight) / 2));
+
+        lines.forEach(l => {
+          if (l.type === 'name') {
+            drawFittedText(l.text, textX, curY, maxTextWidth, {
+              fontFace: 'sans-serif',
+              baseSize: 15,
+              minSize: 10,
+              weight: '900'
+            });
+          } else if (l.type === 'code') {
+            drawFittedText(l.text, textX, curY, maxTextWidth, {
+              fontFace: '"Consolas", "Courier New", monospace',
+              baseSize: 15.5,
+              minSize: 9.5,
+              weight: '900'
+            });
+          } else if (l.type === 'price') {
+            drawFittedText(l.text, textX, curY, maxTextWidth, {
+              fontFace: 'sans-serif',
+              baseSize: 17,
+              minSize: 11,
+              weight: '900'
+            });
+          }
+          curY += lineSpacing;
+        });
+      }
+
+      return canvas;
+    }
 
     if (isFull) {
       // Dynamic height balancing for 152 px cartridge height
@@ -3237,7 +3471,7 @@ const app = {
   },
 
   // App Zoom & Scale Management
-  currentZoom: 0.82,
+  currentZoom: 1.0,
   async initZoom() {
     let savedZoom = null;
 
@@ -3287,7 +3521,7 @@ const app = {
       } catch (e) {}
     }
 
-    if (!savedZoom || isNaN(savedZoom)) savedZoom = 0.82;
+    if (!savedZoom || isNaN(savedZoom)) savedZoom = 1.0;
     await this.setZoom(savedZoom, false);
 
     // Global keyboard shortcuts for zoom (Ctrl +, Ctrl -, Ctrl 0)
@@ -3301,7 +3535,7 @@ const app = {
           this.adjustZoom(-0.05);
         } else if (e.key === '0' || e.code === 'Numpad0') {
           e.preventDefault();
-          this.setZoom(0.82, true);
+          this.setZoom(1.0, true);
         }
       }
     });
@@ -3339,7 +3573,7 @@ const app = {
   },
 
   async adjustZoom(delta) {
-    await this.setZoom((this.currentZoom || 0.82) + delta, true);
+    await this.setZoom((this.currentZoom || 1.0) + delta, true);
   },
 
   updateZoomUI(z) {

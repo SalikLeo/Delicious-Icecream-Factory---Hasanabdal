@@ -62,28 +62,28 @@ window.Purchases = {
 
         <!-- KPI Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Total Purchases</p>
-            <h3 class="text-xl font-black text-slate-900 mt-1" id="pur-stat-count">0</h3>
-            <p class="text-[11px] font-bold text-slate-400 mt-0.5">Orders in period</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Purchases</p>
+            <h3 class="text-2xl font-black text-slate-900 mt-1" id="pur-stat-count">0</h3>
+            <p class="text-xs font-semibold text-slate-500 mt-1">Purchases in period</p>
           </div>
 
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Total Purchase Spend</p>
-            <h3 class="text-xl font-black text-emerald-700 mt-1" id="pur-stat-total">Rs. 0</h3>
-            <p class="text-[11px] font-bold text-emerald-600 mt-0.5">Gross materials cost</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Bill</p>
+            <h3 class="text-2xl font-black text-emerald-700 mt-1" id="pur-stat-total">Rs. 0</h3>
+            <p class="text-xs font-semibold text-emerald-600 mt-1">Total purchases cost</p>
           </div>
 
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Amount Paid (Outflow)</p>
-            <h3 class="text-xl font-black text-blue-700 mt-1" id="pur-stat-paid">Rs. 0</h3>
-            <p class="text-[11px] font-bold text-blue-600 mt-0.5">Paid in cash / bank</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Paid</p>
+            <h3 class="text-2xl font-black text-blue-700 mt-1" id="pur-stat-paid">Rs. 0</h3>
+            <p class="text-xs font-semibold text-blue-600 mt-1">Paid in cash or bank</p>
           </div>
 
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-400">Pending to Supplier Khata</p>
-            <h3 class="text-xl font-black text-rose-600 mt-1" id="pur-stat-pending">Rs. 0</h3>
-            <p class="text-[11px] font-bold text-rose-500 mt-0.5">Added to vendor debt</p>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+            <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Remaining Balance</p>
+            <h3 class="text-2xl font-black text-rose-600 mt-1" id="pur-stat-pending">Rs. 0</h3>
+            <p class="text-xs font-semibold text-rose-600 mt-1" id="pur-stat-pending-sub">Added to supplier khata</p>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ window.Purchases = {
                     </div>
                   </th>
                   <th class="py-2 px-3 border-r border-slate-200">
-                    <span>Raw Materials / Items</span>
+                    <span>Items</span>
                   </th>
                   <th onclick="Purchases.toggleSort('supplier')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-between gap-1">
@@ -176,15 +176,15 @@ window.Purchases = {
                   </th>
                   <th onclick="Purchases.toggleSort('total_cost')" class="py-2 px-3 text-right border-r border-slate-200 cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-end gap-1">
-                      <span>Total Bill</span>
+                      <span>Total</span>
                       ${this.getSortIcon('total_cost')}
                     </div>
                   </th>
                   <th class="py-2 px-3 text-right border-r border-slate-200">
-                    <span>Paid (Cash)</span>
+                    <span>Paid</span>
                   </th>
                   <th class="py-2 px-3 text-right border-r border-slate-200">
-                    <span>Khata Balance</span>
+                    <span>Balance</span>
                   </th>
                   <th class="py-2 px-3 border-r border-slate-200">Notes</th>
                   <th class="py-2 px-3 text-center">Actions</th>
@@ -374,17 +374,37 @@ window.Purchases = {
     const totalCount = list.length;
     const totalCost = list.reduce((sum, p) => sum + (Number(p.total_cost) || 0), 0);
     const totalPaid = list.reduce((sum, p) => sum + (p.paid_amount != null ? Number(p.paid_amount) : Number(p.total_cost) || 0), 0);
-    const totalPending = list.reduce((sum, p) => sum + (Number(p.remaining_balance) || 0), 0);
+
+    // Real-time Khata Balance matching the Suppliers & Vendor Khata tab
+    let totalPending = 0;
+    if (this.selectedSupplier) {
+      const selSupLower = this.selectedSupplier.toLowerCase();
+      const sup = (this.suppliersList || []).find(s => (s.name || '').toLowerCase() === selSupLower);
+      totalPending = sup ? Math.max(0, Number(sup.amount) || 0) : 0;
+    } else {
+      totalPending = (this.suppliersList || []).reduce((acc, s) => {
+        const bal = Number(s.amount) || 0;
+        return acc + (bal > 0 ? bal : 0);
+      }, 0);
+    }
 
     const countEl = document.getElementById('pur-stat-count');
     const totalEl = document.getElementById('pur-stat-total');
     const paidEl = document.getElementById('pur-stat-paid');
     const pendEl = document.getElementById('pur-stat-pending');
+    const pendSubEl = document.getElementById('pur-stat-pending-sub');
 
-    if (countEl) countEl.textContent = `${totalCount} Orders`;
+    if (countEl) countEl.textContent = `${totalCount} Purchases`;
     if (totalEl) totalEl.textContent = `Rs. ${Math.round(totalCost).toLocaleString()}`;
     if (paidEl) paidEl.textContent = `Rs. ${Math.round(totalPaid).toLocaleString()}`;
     if (pendEl) pendEl.textContent = `Rs. ${Math.round(totalPending).toLocaleString()}`;
+    if (pendSubEl) {
+      if (this.selectedSupplier) {
+        pendSubEl.textContent = `${this.selectedSupplier} Khata`;
+      } else {
+        pendSubEl.textContent = 'Pending to pay suppliers';
+      }
+    }
   },
 
   renderTable() {
@@ -826,7 +846,7 @@ window.Purchases = {
                 <span class="text-xs font-black uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
                   <i data-lucide="boxes" class="w-4 h-4 text-emerald-600"></i> Purchased Raw Materials
                 </span>
-                <button type="button" onclick="Purchases.addModalItemRow()"
+                <button type="button" id="pmo-add-item-btn" onclick="Purchases.addModalItemRow()"
                         class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
                   <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Another Material
                 </button>
@@ -836,10 +856,10 @@ window.Purchases = {
                 <table class="w-full text-left text-xs border-collapse">
                   <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
                     <tr>
-                      <th class="py-2 px-3 border-r border-slate-200 min-w-[220px]">Raw Material *</th>
-                      <th class="py-2 px-2 border-r border-slate-200 text-center w-24">Current Stock</th>
-                      <th class="py-2 px-3 border-r border-slate-200 text-right w-28">Quantity *</th>
-                      <th class="py-2 px-3 border-r border-slate-200 text-right w-28">Rate / Unit (Rs.) *</th>
+                      <th class="py-2 px-3 border-r border-slate-200 min-w-[220px]">Material *</th>
+                      <th class="py-2 px-2 border-r border-slate-200 text-center w-24">Stock</th>
+                      <th class="py-2 px-3 border-r border-slate-200 text-right w-28">Qty *</th>
+                      <th class="py-2 px-3 border-r border-slate-200 text-right w-28">Rate (Rs.) *</th>
                       <th class="py-2 px-3 border-r border-slate-200 text-right w-32">Total (Rs.)</th>
                       <th class="py-2 px-2 text-center w-12"></th>
                     </tr>
@@ -869,7 +889,7 @@ window.Purchases = {
                   </div>
                   <input type="number" step="any" min="0" id="pmo-paid" placeholder="0"
                          value="${p && p.paid_amount != null ? p.paid_amount : ''}"
-                         oninput="Purchases.calcModalSummary()"
+                         oninput="delete this.dataset.autoFilled; Purchases.calcModalSummary()"
                          class="w-full px-2.5 py-1.5 text-base font-black text-emerald-800 bg-emerald-50/30 border border-emerald-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-200 font-mono tabular-nums">
                   
                 </div>
@@ -938,7 +958,17 @@ window.Purchases = {
 
     tbody.innerHTML = this._modalItems.map((item, idx) => {
       const selectedMat = materials.find(m => m.id === Number(item.material_id));
-      const lineTotal = (Number(item.qty) || 0) * (Number(item.unit_cost) || 0);
+      const spec = (selectedMat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs)
+        ? RawMaterials.getMaterialUnitSpecs(selectedMat)
+        : null;
+      const isBulk = Boolean(spec && spec.isBulk);
+      const mainUnit = spec ? spec.packageUnit : (selectedMat ? (selectedMat.unit || 'Unit') : 'Unit');
+      const subUnit = spec ? spec.contentUnit : mainUnit;
+      const packSize = spec ? spec.packSize : 1;
+      const qtyNum = Number(item.qty) || 0;
+      const costNum = Number(item.unit_cost) || 0;
+      const lineTotal = qtyNum * costNum;
+      const totalSub = qtyNum * packSize;
 
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
@@ -946,33 +976,51 @@ window.Purchases = {
             <select onchange="Purchases.onModalItemSelect(${idx}, this.value)"
                     class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-emerald-500">
               <option value="">-- Select Material --</option>
-              ${materials.map(m => `
-                <option value="${m.id}" ${String(item.material_id) === String(m.id) ? 'selected' : ''}>
-                  ${m.name} (${m.unit})
-                </option>
-              `).join('')}
+              ${materials.map(m => {
+                const s = (window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(m) : null;
+                const bulkInfo = s && s.isBulk ? ` (${s.specBadge})` : (m.has_bulk ? ` (${m.pack_size} ${m.pack_unit || 'Unit'}/${m.unit || 'Pack'})` : ` (${m.unit})`);
+                const isSelected = String(item.material_id) === String(m.id);
+                const isUsedElsewhere = !isSelected && this._modalItems.some((it, i) => i !== idx && String(it.material_id) === String(m.id));
+                return `
+                  <option value="${m.id}" ${isSelected ? 'selected' : ''} ${isUsedElsewhere ? 'disabled class="text-slate-400 bg-slate-100"' : ''}>
+                    ${m.name}${bulkInfo}${isUsedElsewhere ? ' — (Already added)' : ''}
+                  </option>
+                `;
+              }).join('')}
             </select>
           </td>
 
           <td class="py-2 px-2 text-center border-r border-slate-200">
             <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700">
-              ${selectedMat ? `${selectedMat.current_stock} ${selectedMat.unit}` : '—'}
+              ${selectedMat ? (window.RawMaterials ? RawMaterials.formatStockDisplay(selectedMat) : `${selectedMat.current_stock} ${selectedMat.unit}`) : '—'}
             </span>
           </td>
 
           <td class="py-2 px-3 border-r border-slate-200">
-            <input type="number" step="any" min="0.01" value="${item.qty !== '' ? item.qty : ''}" placeholder="0"
-                   oninput="Purchases.onModalItemChange(${idx}, 'qty', this.value)"
-                   class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 text-right outline-none focus:bg-white focus:border-emerald-500 font-mono tabular-nums">
+            <div class="relative">
+              <input type="number" step="any" min="0.01" value="${item.qty !== '' ? item.qty : ''}" placeholder="0"
+                     oninput="Purchases.onModalItemChange(${idx}, 'qty', this.value)"
+                     class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 text-right outline-none focus:bg-white focus:border-emerald-500 font-mono tabular-nums">
+            </div>
+            <div id="pmo-qty-hint-${idx}" class="text-[10px] text-right font-bold mt-0.5">
+              ${isBulk 
+                ? `<span class="text-emerald-700 font-black">${mainUnit}</span> <span class="text-slate-400">(= ${totalSub.toLocaleString()} ${subUnit})</span>`
+                : `<span class="text-slate-500 font-bold">${mainUnit}</span>`}
+            </div>
           </td>
 
           <td class="py-2 px-3 border-r border-slate-200">
-            <input type="number" step="any" min="0" value="${item.unit_cost !== '' ? item.unit_cost : ''}" placeholder="0"
-                   oninput="Purchases.onModalItemChange(${idx}, 'unit_cost', this.value)"
-                   class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 text-right outline-none focus:bg-white focus:border-emerald-500 font-mono tabular-nums">
+            <div class="relative">
+              <input type="number" step="any" min="0" value="${item.unit_cost !== '' ? item.unit_cost : ''}" placeholder="0"
+                     oninput="Purchases.onModalItemChange(${idx}, 'unit_cost', this.value)"
+                     class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 text-right outline-none focus:bg-white focus:border-emerald-500 font-mono tabular-nums">
+            </div>
+            <div id="pmo-rate-hint-${idx}" class="text-[10px] text-right font-semibold text-slate-400 mt-0.5">
+              per ${mainUnit}
+            </div>
           </td>
 
-          <td class="py-2 px-3 text-right font-mono font-black text-emerald-800 text-xs border-r border-slate-200 tabular-nums">
+          <td id="pmo-line-total-${idx}" class="py-2 px-3 text-right font-mono font-black text-emerald-800 text-xs border-r border-slate-200 tabular-nums">
             Rs. ${Math.round(lineTotal).toLocaleString()}
           </td>
 
@@ -988,16 +1036,41 @@ window.Purchases = {
     }).join('');
 
     if (window.lucide) lucide.createIcons({ root: tbody });
+
+    const addBtn = document.getElementById('pmo-add-item-btn');
+    if (addBtn) {
+      const allSelected = this._modalItems.length >= materials.length && materials.length > 0;
+      addBtn.disabled = allSelected;
+      if (allSelected) {
+        addBtn.classList.add('opacity-40', 'cursor-not-allowed');
+        addBtn.title = 'All raw materials have already been added';
+      } else {
+        addBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+        addBtn.title = 'Add another raw material';
+      }
+    }
   },
 
   addModalItemRow() {
     const materials = this.materials || [];
-    const firstMat = materials[0];
+    const usedIds = new Set(this._modalItems.map(it => String(it.material_id)).filter(Boolean));
+    if (materials.length > 0 && usedIds.size >= materials.length) {
+      app.showToast('All raw materials have already been added.', 'info');
+      return;
+    }
+
+    const freeMat = materials.find(m => !usedIds.has(String(m.id)));
+    if (!freeMat && materials.length > 0) {
+      app.showToast('All raw materials have already been added.', 'info');
+      return;
+    }
+
+    const chosenMat = freeMat || materials[0];
     this._modalItems.push({
-      material_id: firstMat ? firstMat.id : '',
+      material_id: chosenMat ? chosenMat.id : '',
       qty: 1,
-      unit_cost: firstMat ? (firstMat.cost_price || 0) : 0,
-      line_total: firstMat ? (firstMat.cost_price || 0) : 0
+      unit_cost: chosenMat ? (chosenMat.cost_price || 0) : 0,
+      line_total: chosenMat ? (chosenMat.cost_price || 0) : 0
     });
     this.renderModalItemRows();
     this.calcModalSummary();
@@ -1012,6 +1085,14 @@ window.Purchases = {
 
   onModalItemSelect(idx, matId) {
     if (!this._modalItems[idx]) return;
+    if (matId) {
+      const isDup = this._modalItems.some((it, i) => i !== idx && String(it.material_id) === String(matId));
+      if (isDup) {
+        app.showAlert({ title: 'Duplicate Material', message: 'This raw material is already added to the purchase bill.' });
+        this.renderModalItemRows();
+        return;
+      }
+    }
     this._modalItems[idx].material_id = matId ? Number(matId) : '';
     const mat = (this.materials || []).find(m => m.id === Number(matId));
     if (mat) {
@@ -1025,6 +1106,29 @@ window.Purchases = {
   onModalItemChange(idx, field, val) {
     if (!this._modalItems[idx]) return;
     this._modalItems[idx][field] = val !== '' ? Number(val) : '';
+
+    const it = this._modalItems[idx];
+    const qty = Number(it.qty) || 0;
+    const cost = Number(it.unit_cost) || 0;
+    const lineTotal = qty * cost;
+
+    // Instantly update row total in DOM
+    const lineEl = document.getElementById(`pmo-line-total-${idx}`);
+    if (lineEl) lineEl.textContent = `Rs. ${Math.round(lineTotal).toLocaleString()}`;
+
+    // Update quantity hint with equivalent subunits
+    const hintEl = document.getElementById(`pmo-qty-hint-${idx}`);
+    if (hintEl) {
+      const mat = (this.materials || []).find(m => m.id === Number(it.material_id));
+      const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+      if (spec && spec.isBulk) {
+        const totalSub = qty * spec.packSize;
+        hintEl.innerHTML = `<span class="text-emerald-700 font-black">${spec.packageUnit}</span> <span class="text-slate-400">(= ${totalSub.toLocaleString()} ${spec.contentUnit})</span>`;
+      } else if (mat) {
+        hintEl.innerHTML = `<span class="text-slate-500 font-bold">${mat.unit || 'Unit'}</span>`;
+      }
+    }
+
     this.calcModalSummary();
   },
 
@@ -1079,6 +1183,10 @@ window.Purchases = {
     });
 
     const paidInput = document.getElementById('pmo-paid');
+    if (paidInput && (!paidInput.value || Number(paidInput.value) === 0 || paidInput.dataset.autoFilled === 'true')) {
+      paidInput.value = grandTotal > 0 ? grandTotal : '';
+      paidInput.dataset.autoFilled = 'true';
+    }
     let paidAmount = paidInput && paidInput.value !== '' ? Number(paidInput.value) : grandTotal;
     if (paidAmount < 0) paidAmount = 0;
 
@@ -1149,6 +1257,7 @@ window.Purchases = {
 
     // Validate items
     const validItems = [];
+    const seenMatIds = new Set();
     for (let i = 0; i < this._modalItems.length; i++) {
       const it = this._modalItems[i];
       const matId = Number(it.material_id);
@@ -1158,6 +1267,10 @@ window.Purchases = {
       if (!matId) {
         return app.showAlert({ title: 'Select Material', message: `Please select a raw material for row #${i + 1}.` });
       }
+      if (seenMatIds.has(matId)) {
+        return app.showAlert({ title: 'Duplicate Material', message: 'Duplicate raw materials cannot be added to the purchase bill.' });
+      }
+      seenMatIds.add(matId);
       if (qty <= 0) {
         return app.showAlert({ title: 'Invalid Quantity', message: `Please enter a valid quantity greater than 0 for row #${i + 1}.` });
       }
@@ -1216,11 +1329,13 @@ window.Purchases = {
     const isEdit = Boolean(purchaseId);
     const materialsListHtml = validItems.map(it => {
       const mat = (this.materials || []).find(m => m.id === it.material_id);
+      const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+      const subHint = (spec && spec.isBulk) ? ` (= ${(it.qty * spec.packSize).toLocaleString()} ${spec.subUnit})` : '';
       return `
         <li class="flex justify-between items-center py-1.5 text-xs border-b border-slate-100 last:border-b-0">
           <div>
             <span class="font-black text-slate-800">${mat ? mat.name : 'Material'}</span>
-            <span class="text-[10px] text-slate-500 font-bold block">${it.qty} ${mat ? mat.unit : ''} × Rs. ${Math.round(it.unit_cost).toLocaleString()}</span>
+            <span class="text-[10px] text-slate-500 font-bold block">${it.qty} ${mat ? mat.unit : ''}${subHint} × Rs. ${Math.round(it.unit_cost).toLocaleString()}</span>
           </div>
           <span class="font-mono font-black text-slate-900">Rs. ${Math.round(it.total_cost).toLocaleString()}</span>
         </li>
@@ -1405,84 +1520,91 @@ window.Purchases = {
     const supplierCurrentBal = p.supplier_current_balance != null ? Number(p.supplier_current_balance) : null;
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.4;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
+          <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
           ${address ? `<p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>` : ''}
-          ${phone ? `<p style="font-size: 9px; color: #000; margin: 1px 0 0 0; font-weight: 500;">Tel: ${phone}</p>` : ''}
+          ${phone ? `<p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 500;">Tel: ${phone}</p>` : ''}
         </div>
 
-        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-          RAW MATERIAL INWARD / PURCHASE VOUCHER
+        <div style="text-align: center; margin: 4px 0 8px 0;">
+          <span style="display: inline-block; padding: 3px 14px; background: #fff; border: 1.5px solid #000; border-radius: 9999px; font-size: 10.5px; font-weight: 800; color: #000; letter-spacing: 0.8px; text-transform: uppercase;">
+            RAW MATERIAL INWARD / PURCHASE VOUCHER
+          </span>
         </div>
 
-        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 8px; background: #fff; border: 1px solid #000; color: #000;">
-          <div style="line-height: 1.45;">
-            <div><strong>Purchase Order / Inv #:</strong> #${p.invoice_no || `PUR-${p.id}`}</div>
-            <div><strong>Supplier:</strong> ${p.supplier_official_name || p.supplier_name || 'Walk-in / Cash'}</div>
-            ${p.supplier_phone ? `<div><strong>Contact:</strong> ${p.supplier_phone}</div>` : ''}
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; padding: 7px 11px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.55;">
+          <div>
+            <div><strong style="color: #000;">Purchase Order / Inv #:</strong> <span style="font-weight: 800; color: #000;">#${p.invoice_no || `PUR-${p.id}`}</span></div>
+            <div><strong style="color: #000;">Supplier:</strong> <span style="font-weight: 800; color: #000;">${p.supplier_official_name || p.supplier_name || 'Walk-in / Cash'}</span></div>
+            ${p.supplier_phone ? `<div><strong style="color: #000;">Contact:</strong> ${p.supplier_phone}</div>` : ''}
           </div>
-          <div style="text-align: right; line-height: 1.45;">
-            <div><strong>Date &amp; Time:</strong> ${app.formatDateTime(p.date, p.created_at)}</div>
-            <div><strong>Payment Mode:</strong> ${p.payment_method || 'Cash'}</div>
-            <div><strong>Status:</strong> ${remainingDue > 0 ? 'Khata Credit Due' : 'Fully Paid'}</div>
+          <div style="text-align: right; line-height: 1.55;">
+            <div><strong style="color: #000;">Date &amp; Time:</strong> ${app.formatDateTime(p.date, p.created_at)}</div>
+            <div><strong style="color: #000;">Payment Mode:</strong> <span style="font-weight: 800; color: #000;">${p.payment_method || 'Cash'}</span></div>
+            <div><strong style="color: #000;">Status:</strong> <span style="font-weight: 800; text-transform: uppercase; color: #000;">${remainingDue > 0 ? 'BALANCE DUE' : 'FULLY PAID'}</span></div>
           </div>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9.5px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 8px; background: #fff;">
           <thead>
             <tr style="background: #fff; border-bottom: 1.5px solid #000;">
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: center; width: 25px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">S#</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Raw Material Description</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 95px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Quantity</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 80px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Cost / Unit</th>
-              <th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 90px; font-weight: 900; font-size: 9px; text-transform: uppercase; color: #000; background: #fff;">Total (Rs.)</th>
+              <th style="border: 1px solid #000; padding: 5px 4px; text-align: center; width: 22px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">#</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Raw Material Description</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: right; width: 95px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Quantity</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: right; width: 85px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Cost / Unit</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: right; width: 95px; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Total</th>
             </tr>
           </thead>
           <tbody>
-            ${items.map((it, idx) => `
+            ${items.map((it, idx) => {
+              const mat = (this.materials || []).find(m => m.id === it.material_id);
+              const spec = (mat && window.RawMaterials && RawMaterials.getMaterialUnitSpecs) ? RawMaterials.getMaterialUnitSpecs(mat) : null;
+              const subHint = (spec && spec.isBulk) ? ` <span style="font-size: 7.5px; color: #555; font-weight: normal;">(= ${(it.qty * spec.packSize).toLocaleString()} ${spec.subUnit})</span>` : '';
+              return `
               <tr>
-                <td style="border: 1px solid #000; padding: 4px 5px; text-align: center; font-size: 9.5px; color: #000;">${idx + 1}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 800; font-size: 9.5px; color: #000;">${it.material_name}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9.5px; color: #000;">${it.qty} ${it.unit || ''}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Number(it.unit_cost).toLocaleString()}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 9.5px; color: #000;">Rs. ${Math.round(it.total_cost).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 4px; text-align: center; font-size: 8px; color: #000;">${idx + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: 700; font-size: 8.5px; color: #000;">${it.material_name}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 600; font-size: 8.5px; color: #000;">${it.qty} ${it.unit || ''}${subHint}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-size: 8.5px; color: #000;">Rs. ${Number(it.unit_cost).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 8.5px; color: #000;">Rs. ${Math.round(it.total_cost).toLocaleString()}</td>
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
           <tfoot>
-            <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; text-transform: uppercase; color: #000;">Grand Total Purchase Bill:</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(totalBill).toLocaleString()}</td>
+            <tr style="background: #fff; font-weight: 800; border-top: 2px solid #000; color: #000;">
+              <td colspan="4" style="border: 1px solid #000; padding: 5px 6px; text-align: right; text-transform: uppercase; font-size: 8.5px;">Grand Total Purchase Bill:</td>
+              <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-size: 9.5px; color: #000;">Rs. ${Math.round(totalBill).toLocaleString()}</td>
             </tr>
-            <tr>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; color: #000;">Amount Paid (${p.payment_method || 'Cash'}):</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(paidAmt).toLocaleString()}</td>
+            <tr style="background: #fff;">
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; color: #000; font-size: 8.5px;">Amount Paid (${p.payment_method || 'Cash'}):</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 800; font-size: 9px; color: #000;">Rs. ${Math.round(paidAmt).toLocaleString()}</td>
             </tr>
-            <tr>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; color: #000;">Remaining Balance Due (This Invoice):</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(remainingDue).toLocaleString()}</td>
+            <tr style="background: #fff;">
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 700; color: #000; font-size: 8.5px;">Remaining Balance Due (This Invoice):</td>
+              <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: 800; font-size: 10px; color: #000;">Rs. ${Math.round(remainingDue).toLocaleString()}</td>
             </tr>
             ${supplierCurrentBal !== null ? `
-              <tr style="border-top: 1.5px solid #000;">
-                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; text-transform: uppercase; color: #000;">Supplier Total Outstanding Balance:</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: 900; font-family: -apple-system, monospace; font-size: 10px; color: #000;">Rs. ${Math.round(supplierCurrentBal).toLocaleString()}</td>
+              <tr style="background: #fff;">
+                <td colspan="4" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: 800; text-transform: uppercase; color: #000; font-size: 9.5px;">Supplier Total Outstanding Balance:</td>
+                <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: 800; font-size: 10.5px; color: #000;">Rs. ${Math.round(supplierCurrentBal).toLocaleString()}</td>
               </tr>
             ` : ''}
           </tfoot>
         </table>
 
         ${p.notes ? `
-          <div style="margin-top: 6px; font-size: 9.5px; color: #000; padding: 5px 8px; background: #fff; border: 1px solid #000;">
-            <b>Notes / Remarks:</b> ${p.notes}
+          <div style="margin-top: 6px; font-size: 9.5px; color: #000; padding: 6px 10px; background: #fff; border: 1.5px solid #000;">
+            <b style="color: #000;">Notes / Remarks:</b> ${p.notes}
           </div>
         ` : ''}
 
-        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 9px;">
-          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+        <div style="margin-top: 32px; display: flex; justify-content: space-between; font-size: 9px;">
+          <div style="border-top: 1.5px solid #000; width: 38%; text-align: center; padding-top: 5px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
             Store Keeper Signature
           </div>
-          <div style="border-top: 1.5px solid #000; width: 35%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
+          <div style="border-top: 1.5px solid #000; width: 38%; text-align: center; padding-top: 5px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
             Supplier / Receiver Signature
           </div>
         </div>
@@ -1513,60 +1635,60 @@ window.Purchases = {
             : 'All Historical Purchases')));
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Inter', sans-serif; color: #000; background: #fff; box-sizing: border-box;">
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-          <h1 style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
-          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 700;">RAW MATERIAL PURCHASES REPORT</p>
-          <p style="font-size: 9px; color: #000; margin: 1px 0 0 0;">Period: ${periodDesc} | Printed: ${date}</p>
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.4;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
+          <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">RAW MATERIAL PURCHASES REPORT</p>
+          <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 500;">Period: ${periodDesc} | Printed: ${date}</p>
         </div>
 
-        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 9px; margin-top: 4px; margin-bottom: 6px; background: #fff;">
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px; margin-top: 4px; margin-bottom: 8px; background: #fff;">
           <thead>
             <tr style="background: #fff; border-bottom: 1.5px solid #000;">
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Date</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Invoice #</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Supplier</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: left; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Items</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Total Bill</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Paid</th>
-              <th style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 900; font-size: 8.5px; text-transform: uppercase; color: #000; background: #fff;">Pending</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Date</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Invoice</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Supplier</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: left; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Items</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: right; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Total Bill</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: right; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Paid</th>
+              <th style="border: 1px solid #000; padding: 5px 5px; text-align: right; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #000;">Balance Due</th>
             </tr>
           </thead>
           <tbody>
-            ${list.map(p => {
+            ${list.map((p, idx) => {
               const itemsCount = p.items && p.items.length > 0 ? p.items.length : 1;
               const summaryName = p.items && p.items.length > 0 ? `${p.items[0].material_name} (${itemsCount} items)` : (p.material_name || 'Raw Material');
               const paid = p.paid_amount != null ? Number(p.paid_amount) : Number(p.total_cost);
               const pending = Number(p.remaining_balance) || 0;
               return `
                 <tr>
-                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000;">${app.formatDateTime(p.date, p.created_at)}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-weight: 700; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">${p.invoice_no || `PUR-${p.id}`}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-size: 8.5px; color: #000;">${p.supplier_official_name || p.supplier_name || 'Walk-in'}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 5px; font-weight: 700; font-size: 8.5px; color: #000;">${summaryName}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${Math.round(p.total_cost).toLocaleString()}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${Math.round(paid).toLocaleString()}</td>
-                  <td style="border: 1px solid #000; padding: 3.5px 5px; text-align: right; font-weight: 800; font-family: -apple-system, monospace; font-size: 8.5px; color: #000;">Rs. ${Math.round(pending).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 4px 5px; font-size: 8px; color: #000; white-space: nowrap;">${app.formatDateTime(p.date, p.created_at)}</td>
+                  <td style="border: 1px solid #000; padding: 4px 5px; font-weight: 800; font-size: 8.5px; color: #000;">${p.invoice_no || `PUR-${p.id}`}</td>
+                  <td style="border: 1px solid #000; padding: 4px 5px; font-size: 8.5px; color: #000;">${p.supplier_official_name || p.supplier_name || 'Walk-in'}</td>
+                  <td style="border: 1px solid #000; padding: 4px 5px; font-weight: 600; font-size: 8.5px; color: #000;">${summaryName}</td>
+                  <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 700; font-size: 8.5px; color: #000;">Rs. ${Math.round(p.total_cost).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 700; font-size: 8.5px; color: #000;">Rs. ${Math.round(paid).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 4px 5px; text-align: right; font-weight: 800; font-size: 8.5px; color: #000;">Rs. ${Math.round(pending).toLocaleString()}</td>
                 </tr>
               `;
             }).join('')}
           </tbody>
           <tfoot>
-            <tr style="background: #fff; font-weight: 900; border-top: 1.5px solid #000; color: #000;">
-              <td colspan="4" style="border: 1px solid #000; padding: 4px; text-align: right; text-transform: uppercase; color: #000;">TOTAL (${list.length} ORDERS):</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalCost).toLocaleString()}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalPaid).toLocaleString()}</td>
-              <td style="border: 1px solid #000; padding: 4px; text-align: right; font-family: -apple-system, monospace; color: #000;">Rs. ${Math.round(totalPending).toLocaleString()}</td>
+            <tr style="background: #fff; font-weight: 800; border-top: 2px solid #000; color: #000;">
+              <td colspan="4" style="border: 1px solid #000; padding: 5px 5px; text-align: right; text-transform: uppercase; font-size: 8.5px;">TOTAL (${list.length} ORDERS):</td>
+              <td style="border: 1px solid #000; padding: 5px 5px; text-align: right; font-size: 9px; color: #000;">Rs. ${Math.round(totalCost).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 5px 5px; text-align: right; color: #000; font-size: 9px;">Rs. ${Math.round(totalPaid).toLocaleString()}</td>
+              <td style="border: 1px solid #000; padding: 5px 5px; text-align: right; color: #000; font-size: 9px;">Rs. ${Math.round(totalPending).toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
 
-        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 8.5px;">
-          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
-            Store Incharge Signature
+        <div style="margin-top: 32px; display: flex; justify-content: space-between; font-size: 9.5px;">
+          <div style="border-top: 1.5px solid #000; width: 38%; text-align: center; padding-top: 5px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Store Incharge
           </div>
-          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000;">
-            Factory Manager Signature
+          <div style="border-top: 1.5px solid #000; width: 38%; text-align: center; padding-top: 5px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
+            Factory Manager
           </div>
         </div>
       </div>

@@ -74,6 +74,11 @@ window.CartonPacking = {
             <p class="text-xs text-slate-300 font-medium">Produce and pack sellable cartons or shopers directly from raw materials.</p>
           </div>
           <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="CartonPacking.openScanCounterModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer" title="Daily Production Barcode Scanner & Temp List">
+              <i data-lucide="scan-line" class="w-4 h-4 text-indigo-200"></i>
+              <span>Daily Scan List</span>
+              <span class="pck-scan-badge px-2 py-0.5 text-[11px] rounded-full bg-indigo-800 text-white font-mono font-black border border-indigo-400/40">0</span>
+            </button>
             <button onclick="app.openBarcodeStickerModal(null, 'carton')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer" title="Print Barcode Stickers (Speed-X SP-650UL / 4Barcode)">
               <i data-lucide="barcode" class="w-4 h-4"></i> Barcode Stickers
             </button>
@@ -130,12 +135,18 @@ window.CartonPacking = {
             <button onclick="CartonPacking.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Carton &amp; Shoper Stock
             </button>
+            <button onclick="CartonPacking.switchTab('scans')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${this.activeTab === 'scans' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+              <i data-lucide="scan-line" class="w-3.5 h-3.5"></i>
+              <span>Daily Scanned List</span>
+              <span class="pck-scan-badge px-1.5 py-0.2 text-[10px] rounded-full font-mono font-black ${this.activeTab === 'scans' ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'}">0</span>
+            </button>
             <button onclick="CartonPacking.switchTab('batches')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'batches' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
               Packing History
             </button>
           </div>
 
           <!-- Controls: Search + Packaging Filter + Sort + Time Filters -->
+          ${this.activeTab !== 'scans' ? `
           <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-end">
             <!-- Search -->
             <div class="relative w-full sm:w-52">
@@ -253,6 +264,20 @@ window.CartonPacking = {
               ` : ''}
             </div>
           </div>
+          ` : `
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="CartonPacking.printDailyScansReport()"
+                    class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    title="Print Daily Production Sheet (A5)">
+              <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Sheet
+            </button>
+            <button type="button" onclick="CartonPacking.clearDailyScans()"
+                    class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    title="Reset list of scanned cartons for today">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset List
+            </button>
+          </div>
+          `}
         </div>
 
         <!-- Period Packing Stats Bar -->
@@ -272,9 +297,11 @@ window.CartonPacking = {
     `;
 
     if (window.lucide) lucide.createIcons({ root: this.container });
+    this.updateScanBadge();
   },
 
   renderStatsBar() {
+    if (this.activeTab === 'scans') return '';
     if (this.periodType === 'all') return '';
     const stats = this.getPeriodStats();
     const periodLabel = this.periodType === 'day' 
@@ -348,6 +375,8 @@ window.CartonPacking = {
         return so * (a.carton_name || '').localeCompare(b.carton_name || '');
       });
       return this.renderInventoryTable(filtered);
+    } else if (this.activeTab === 'scans') {
+      return this.renderDailyScansView();
     } else {
       return this.renderBatchesTable();
     }
@@ -551,7 +580,7 @@ window.CartonPacking = {
     if (tab === 'inventory') {
       this.sortField = 'name';
       this.sortOrder = 'asc';
-    } else {
+    } else if (tab === 'batches') {
       this.sortField = 'date';
       this.sortOrder = 'desc';
     }
@@ -883,17 +912,7 @@ window.CartonPacking = {
     `;
   },
 
-  switchTab(tab) {
-    this.activeTab = tab;
-    this.renderUI();
-  },
-
-  onSearch(q) {
-    this.searchQuery = q;
-    this.updateContentArea();
-  },
-
-  async openPackModal(defaultCartonId = null) {
+  async openPackModal(defaultCartonId = null, defaultQty = null) {
     const modalEl = document.getElementById('pck-modal-container');
     if (!modalEl) return;
 
@@ -1037,6 +1056,13 @@ window.CartonPacking = {
 
     if (defaultCartonId) {
       this.onCartonSelectChange(defaultCartonId);
+      if (defaultQty && Number(defaultQty) > 0) {
+        const qtyInp = document.getElementById('pk-cartons-qty');
+        if (qtyInp) {
+          qtyInp.value = Number(defaultQty);
+          this.calcPackingTotal();
+        }
+      }
     }
     // Add one default raw material deduction row for convenience if raw materials exist
     this.addMaterialDeductionRow();
@@ -2221,6 +2247,7 @@ window.CartonPacking = {
             this.closeModal();
             app.showToast(`Packed +${cartonsPacked} ${unitPlural} successfully!`, 'success');
             await this.loadData();
+            this.markScanAsPacked(cartonId, cartonsPacked);
             if (window.RawMaterials && RawMaterials.container) {
               RawMaterials.loadData();
             }
@@ -2359,6 +2386,7 @@ window.CartonPacking = {
           if (res && res.success) {
             app.showToast('Packing batch reversed', 'success');
             await this.loadData();
+            this.markScanAsPacked(cartonId, cartonsPacked);
             if (window.RawMaterials && RawMaterials.container) {
               RawMaterials.loadData();
             }
@@ -2696,5 +2724,609 @@ window.CartonPacking = {
       app.hideLoading();
       app.showAlert({ title: 'Error', message: err.message });
     }
+  },
+
+  // =========================================================================
+  // DAILY PRODUCTION SCAN COUNTER (STAGE 2 TEMP SCANNING BUFFER)
+  // =========================================================================
+
+  getDailyScans() {
+    try {
+      const raw = localStorage.getItem('icecream_daily_temp_scans');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  saveDailyScans(list) {
+    try {
+      localStorage.setItem('icecream_daily_temp_scans', JSON.stringify(list || []));
+    } catch (e) {}
+    this.updateScanBadge();
+  },
+
+  updateScanBadge() {
+    const list = this.getDailyScans();
+    const totalUnits = list.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+    const badges = document.querySelectorAll('.pck-scan-badge');
+    badges.forEach(b => {
+      b.textContent = totalUnits;
+    });
+  },
+
+  playScanBeep(isSuccess = true) {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      if (isSuccess) {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } else {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      }
+    } catch (e) {}
+  },
+
+  onScanInputSubmit(rawCode) {
+    if (!rawCode || !rawCode.trim()) return false;
+    const code = rawCode.trim().toLowerCase();
+
+    // Match by barcode, qr_code, id, or carton_name
+    const c = (this.cartons || []).find(x => 
+      (x.barcode && String(x.barcode).trim().toLowerCase() === code) ||
+      (x.qr_code && String(x.qr_code).trim().toLowerCase() === code) ||
+      String(x.id) === code ||
+      (x.carton_name && x.carton_name.trim().toLowerCase() === code)
+    );
+
+    if (!c) {
+      this.playScanBeep(false);
+      app.showToast(`Unrecognized barcode: "${rawCode.trim()}". Product not found.`, 'error');
+      return false;
+    }
+
+    this.addCartonToScans(c.id);
+    return true;
+  },
+
+  addCartonToScans(cartonId) {
+    const c = (this.cartons || []).find(x => x.id === Number(cartonId));
+    if (!c) return;
+
+    this.playScanBeep(true);
+    const list = this.getDailyScans();
+    let item = list.find(x => x.cartonId === c.id);
+
+    if (item) {
+      item.count = (Number(item.count) || 0) + 1;
+      item.lastScanned = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      item.cartonName = c.carton_name;
+      item.packageType = c.package_type || 'carton';
+      item.piecesPerCarton = c.pieces_per_carton || 20;
+      item.cartonSalePrice = c.carton_sale_price || 0;
+    } else {
+      item = {
+        cartonId: c.id,
+        cartonName: c.carton_name,
+        packageType: c.package_type || 'carton',
+        barcode: c.barcode || '',
+        piecesPerCarton: c.pieces_per_carton || 20,
+        cartonSalePrice: c.carton_sale_price || 0,
+        count: 1,
+        lastScanned: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isPacked: false
+      };
+      list.unshift(item);
+    }
+
+    this.saveDailyScans(list);
+    const isShoper = c.package_type === 'shoper';
+    app.showToast(`Scanned: ${c.carton_name} (+1, Total: ${item.count} ${isShoper ? 'shopers' : 'ctns'})`, 'success');
+    this.refreshScansUI();
+  },
+
+  changeScanCount(cartonId, delta) {
+    const list = this.getDailyScans();
+    const idx = list.findIndex(x => x.cartonId === Number(cartonId));
+    if (idx === -1) return;
+
+    const newCount = (Number(list[idx].count) || 0) + delta;
+    if (newCount <= 0) {
+      list.splice(idx, 1);
+    } else {
+      list[idx].count = newCount;
+      list[idx].lastScanned = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    this.saveDailyScans(list);
+    this.refreshScansUI();
+  },
+
+  removeScanItem(cartonId) {
+    const list = this.getDailyScans();
+    const updated = list.filter(x => x.cartonId !== Number(cartonId));
+    this.saveDailyScans(updated);
+    this.refreshScansUI();
+  },
+
+  clearDailyScans() {
+    const list = this.getDailyScans();
+    if (list.length === 0) {
+      app.showToast('Daily scan list is already empty.', 'info');
+      return;
+    }
+
+    app.showConfirm({
+      title: 'Reset Daily Scan List?',
+      message: `Are you sure you want to clear all <b>${list.length}</b> scanned product entries?<br><span class="text-xs text-rose-600 font-bold">This will wipe the temporary production counts for today.</span>`,
+      confirmText: 'Yes, Reset List',
+      confirmColor: 'red',
+      onConfirm: () => {
+        this.saveDailyScans([]);
+        app.showToast('Daily scan list cleared successfully.', 'info');
+        this.refreshScansUI();
+      }
+    });
+  },
+
+  packScannedItem(cartonId) {
+    const list = this.getDailyScans();
+    const item = list.find(x => x.cartonId === Number(cartonId));
+    if (!item) return;
+
+    // Close any open scan modal first
+    const modalEl = document.getElementById('pck-modal-container');
+    if (modalEl) modalEl.innerHTML = '';
+
+    // Switch to inventory tab if needed
+    if (this.activeTab !== 'inventory') {
+      this.switchTab('inventory');
+    }
+
+    // Open pack modal with this carton and exact count pre-filled
+    this.openPackModal(item.cartonId, item.count);
+  },
+
+  markScanAsPacked(cartonId, packedQty) {
+    const list = this.getDailyScans();
+    const item = list.find(x => x.cartonId === Number(cartonId));
+    if (item) {
+      item.isPacked = true;
+      item.packedQuantity = packedQty;
+      item.packedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      this.saveDailyScans(list);
+      this.refreshScansUI();
+    }
+  },
+
+  refreshScansUI() {
+    this.updateScanBadge();
+    const modalWrap = document.getElementById('modal-scan-content-wrap');
+    if (modalWrap) {
+      modalWrap.innerHTML = this.renderDailyScansView();
+      if (window.lucide) lucide.createIcons({ root: modalWrap });
+      const inp = modalWrap.querySelector('#daily-scan-input');
+      if (inp) inp.focus();
+      return;
+    }
+
+    if (this.activeTab === 'scans') {
+      this.updateContentArea();
+      const inp = document.getElementById('daily-scan-input');
+      if (inp) inp.focus();
+    }
+  },
+
+  renderDailyScansView() {
+    const list = this.getDailyScans();
+    const totalUnits = list.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+    const totalPcs = list.reduce((sum, item) => sum + ((Number(item.count) || 0) * (Number(item.piecesPerCarton) || 0)), 0);
+    const totalValue = list.reduce((sum, item) => sum + ((Number(item.count) || 0) * (Number(item.cartonSalePrice) || 0)), 0);
+    const packedCount = list.filter(item => item.isPacked).length;
+    const pendingCount = list.length - packedCount;
+
+    return `
+      <div class="flex flex-col h-full overflow-hidden">
+        <!-- Scan Bar Header -->
+        <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3 shrink-0">
+          <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-xl">
+            <div class="relative flex-1">
+              <i data-lucide="scan-line" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500 animate-pulse"></i>
+              <input type="text" id="daily-scan-input" autofocus
+                     placeholder="⚡ Point scanner here or type barcode / item name and press Enter..."
+                     onkeydown="if(event.key==='Enter'){ event.preventDefault(); CartonPacking.onScanInputSubmit(this.value); this.value=''; }"
+                     class="w-full pl-10 pr-20 py-2.5 bg-white border-2 border-indigo-500/60 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-xs transition-all">
+              <button type="button" onclick="const inp=document.getElementById('daily-scan-input'); if(inp){ CartonPacking.onScanInputSubmit(inp.value); inp.value=''; inp.focus(); }"
+                      class="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-black cursor-pointer active:scale-95 shadow-2xs">
+                Scan
+              </button>
+            </div>
+            
+            <!-- Manual Add Dropdown -->
+            <div class="relative shrink-0">
+              <select onchange="if(this.value){ CartonPacking.addCartonToScans(this.value); this.value=''; }"
+                      class="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:border-slate-300 cursor-pointer shadow-2xs">
+                <option value="">+ Add Manually...</option>
+                ${(this.cartons || []).map(c => `<option value="${c.id}">${c.carton_name} (${(c.package_type || 'Carton').toUpperCase()})</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="CartonPacking.printDailyScansReport()"
+                    class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    title="Print Daily Production Sheet (A5)">
+              <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Sheet
+            </button>
+            <button type="button" onclick="CartonPacking.clearDailyScans()"
+                    class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    title="Reset list of scanned cartons for today">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset List
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Mini Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-indigo-50/40 border-b border-indigo-100/60 shrink-0">
+          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[10px] font-black uppercase text-indigo-900 tracking-wider">Total Scanned</p>
+            <h4 class="text-lg font-black text-indigo-700 tabular-nums mt-0.5">${totalUnits.toLocaleString()} <span class="text-xs font-bold text-slate-400">Units</span></h4>
+          </div>
+          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[10px] font-black uppercase text-purple-900 tracking-wider">Produced Pieces</p>
+            <h4 class="text-lg font-black text-purple-700 tabular-nums mt-0.5">${totalPcs.toLocaleString()} <span class="text-xs font-bold text-slate-400">pcs</span></h4>
+          </div>
+          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[10px] font-black uppercase text-emerald-900 tracking-wider">Est. Sale Value</p>
+            <h4 class="text-lg font-black text-emerald-700 tabular-nums mt-0.5">Rs. ${Math.round(totalValue).toLocaleString()}</h4>
+          </div>
+          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[10px] font-black uppercase text-slate-600 tracking-wider">Packing Status</p>
+            <h4 class="text-xs font-black text-slate-800 tabular-nums mt-1">
+              <span class="text-emerald-700">${packedCount} Packed</span> • <span class="text-amber-700">${pendingCount} Pending</span>
+            </h4>
+          </div>
+        </div>
+
+        <!-- Scanned Items Table -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+          ${list.length === 0 ? `
+            <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center h-full">
+              <div class="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 mb-3 shadow-2xs">
+                <i data-lucide="scan-line" class="w-8 h-8"></i>
+              </div>
+              <h3 class="text-base font-black text-slate-700">No Cartons Scanned Today</h3>
+              <p class="text-xs text-slate-400 max-w-sm mt-1">
+                Point your barcode scanner at any carton or shoper sticker to start counting today's production. The count increments automatically on every scan!
+              </p>
+            </div>
+          ` : `
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
+                <tr>
+                  <th class="py-2.5 px-3 text-center w-10">#</th>
+                  <th class="py-2.5 px-3">Product / Flavor</th>
+                  <th class="py-2.5 px-3 text-center">Pack Size</th>
+                  <th class="py-2.5 px-3 text-center">Scanned Quantity</th>
+                  <th class="py-2.5 px-3 text-center">Total Pieces</th>
+                  <th class="py-2.5 px-3 text-right">Est. Value</th>
+                  <th class="py-2.5 px-3 text-center">Last Scan</th>
+                  <th class="py-2.5 px-3 text-center">Status</th>
+                  <th class="py-2.5 px-3 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
+                ${list.map((item, idx) => {
+                  const isShoper = item.packageType === 'shoper';
+                  const unitLabel = isShoper ? 'shoper' : 'ctn';
+                  const totalPcsLine = (Number(item.count) || 0) * (Number(item.piecesPerCarton) || 0);
+                  const totalValLine = (Number(item.count) || 0) * (Number(item.cartonSalePrice) || 0);
+
+                  return `
+                    <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                      <td class="py-3 px-3 text-center text-slate-400 font-bold">${idx + 1}</td>
+                      <td class="py-3 px-3">
+                        <div class="flex items-center gap-2">
+                          <span class="font-black text-slate-900 text-sm">${item.cartonName}</span>
+                          <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-purple-50 text-purple-800 border border-purple-200'}">
+                            ${isShoper ? 'Shoper' : 'Carton'}
+                          </span>
+                          ${item.barcode ? `<span class="font-mono text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">#${item.barcode}</span>` : ''}
+                        </div>
+                      </td>
+                      <td class="py-3 px-3 text-center text-slate-600 font-bold">
+                        ${item.piecesPerCarton} pcs/${unitLabel}
+                      </td>
+                      <td class="py-3 px-3 text-center">
+                        <div class="inline-flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+                          <button type="button" onclick="CartonPacking.changeScanCount(${item.cartonId}, -1)"
+                                  class="w-6 h-6 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-black flex items-center justify-center shadow-2xs transition-colors cursor-pointer active:scale-95" title="Decrease count">
+                            -
+                          </button>
+                          <span class="px-3 font-black text-indigo-700 text-sm tabular-nums">${item.count}</span>
+                          <button type="button" onclick="CartonPacking.changeScanCount(${item.cartonId}, 1)"
+                                  class="w-6 h-6 rounded-lg bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 font-black flex items-center justify-center shadow-2xs transition-colors cursor-pointer active:scale-95" title="Increase count">
+                            +
+                          </button>
+                        </div>
+                      </td>
+                      <td class="py-3 px-3 text-center font-bold text-purple-700 tabular-nums">
+                        ${totalPcsLine.toLocaleString()} pcs
+                      </td>
+                      <td class="py-3 px-3 text-right font-black text-slate-900 tabular-nums">
+                        Rs. ${Math.round(totalValLine).toLocaleString()}
+                      </td>
+                      <td class="py-3 px-3 text-center text-[11px] text-slate-500 font-mono">
+                        ${item.lastScanned || '—'}
+                      </td>
+                      <td class="py-3 px-3 text-center">
+                        ${item.isPacked ? `
+                          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Packed
+                          </span>
+                        ` : `
+                          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                            <i data-lucide="clock" class="w-3.5 h-3.5"></i> Pending
+                          </span>
+                        `}
+                      </td>
+                      <td class="py-3 px-3 text-center">
+                        <div class="flex items-center justify-center gap-1.5">
+                          <button type="button" onclick="CartonPacking.packScannedItem(${item.cartonId})"
+                                  class="px-3 py-1.5 ${item.isPacked ? 'bg-slate-100 hover:bg-purple-100 text-slate-700 hover:text-purple-800 border border-slate-300' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-xs'} rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                  title="Load into Pack Carton Modal with ${item.count} ${unitLabel}s">
+                            <i data-lucide="package-plus" class="w-3.5 h-3.5"></i>
+                            <span>${item.isPacked ? 'Pack Again' : 'Pack This'}</span>
+                          </button>
+                          <button type="button" onclick="CartonPacking.removeScanItem(${item.cartonId})"
+                                  class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                                  title="Remove from scan list">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+              <tfoot class="sticky bottom-0 bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 shadow-sm">
+                <tr>
+                  <td colspan="3" class="py-2.5 px-3 text-right uppercase tracking-wider text-[11px]">
+                    TOTAL (${list.length} Items):
+                  </td>
+                  <td class="py-2.5 px-3 text-center text-sm font-black text-indigo-700 tabular-nums">
+                    ${totalUnits} Units
+                  </td>
+                  <td class="py-2.5 px-3 text-center text-xs font-black text-purple-700 tabular-nums">
+                    ${totalPcs.toLocaleString()} pcs
+                  </td>
+                  <td class="py-2.5 px-3 text-right text-xs font-black text-slate-900 tabular-nums">
+                    Rs. ${Math.round(totalValue).toLocaleString()}
+                  </td>
+                  <td colspan="3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          `}
+        </div>
+      </div>
+    `;
+  },
+
+  openScanCounterModal() {
+    const modalEl = document.getElementById('pck-modal-container');
+    if (!modalEl) {
+      if (window.app && typeof app.navigate === 'function') {
+        app.navigate('carton-packing');
+        setTimeout(() => this.switchTab('scans'), 100);
+      }
+      return;
+    }
+
+    modalEl.innerHTML = `
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[88vh]">
+          <!-- Modal Header -->
+          <div class="px-6 py-4 bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-900 text-white border-b border-indigo-800/40 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center justify-center shrink-0 shadow-2xs font-black">
+                <i data-lucide="scan-line" class="w-5 h-5 text-indigo-300"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-white tracking-tight flex items-center gap-2">
+                  <span>Daily Production Scan Counter</span>
+                  <span class="pck-scan-badge px-2 py-0.5 text-[11px] rounded-full bg-indigo-600 text-white font-mono font-black">0</span>
+                </h3>
+                <p class="text-[11px] font-medium text-slate-300">Scan finished cartons / shopers throughout the day • Stored safely until you reset</p>
+              </div>
+            </div>
+            <button type="button" onclick="CartonPacking.closeModal()" class="modal-close-btn" title="Close (Esc)">
+              <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+            </button>
+          </div>
+
+          <!-- Modal Body containing the scans view -->
+          <div id="modal-scan-content-wrap" class="flex-1 overflow-hidden flex flex-col min-h-[380px]">
+            ${this.renderDailyScansView()}
+          </div>
+        </div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons({ root: modalEl });
+    this.updateScanBadge();
+
+    setTimeout(() => {
+      const inp = document.getElementById('daily-scan-input');
+      if (inp) inp.focus();
+    }, 100);
+  },
+
+  printDailyScansReport() {
+    const list = this.getDailyScans();
+    if (!list || list.length === 0) {
+      app.showAlert({ title: 'No Data', message: 'No cartons have been scanned yet today.' });
+      return;
+    }
+
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Delicious Superstar Foods';
+    const phone = settings.phone || '0315-6795995';
+    const address = settings.address || 'Hasan Abdal';
+
+    let totalUnits = 0;
+    let totalPcs = 0;
+    let totalValue = 0;
+
+    const rowsHtml = list.map((item, idx) => {
+      const ctns = Number(item.count) || 0;
+      const pcs = ctns * (Number(item.piecesPerCarton) || 0);
+      const val = ctns * (Number(item.cartonSalePrice) || 0);
+      totalUnits += ctns;
+      totalPcs += pcs;
+      totalValue += val;
+
+      const isShoper = item.packageType === 'shoper';
+      const pkg = isShoper ? 'SHOPER' : 'CARTON';
+
+      return `
+        <tr style="border-bottom: 1px solid #ccc; font-size: 9.5px;">
+          <td style="padding: 5px 3px; text-align: center;">${idx + 1}</td>
+          <td style="padding: 5px 4px; font-weight: bold;">${item.cartonName}</td>
+          <td style="padding: 5px 4px; text-align: center;">${pkg}</td>
+          <td style="padding: 5px 4px; text-align: center;">${item.piecesPerCarton} pcs</td>
+          <td style="padding: 5px 4px; text-align: center; font-weight: bold; font-size: 11px;">${ctns}</td>
+          <td style="padding: 5px 4px; text-align: center;">${pcs.toLocaleString()}</td>
+          <td style="padding: 5px 4px; text-align: right; font-weight: bold;">Rs. ${Math.round(val).toLocaleString()}</td>
+          <td style="padding: 5px 4px; text-align: center;">${item.isPacked ? '✓ Packed' : 'Pending'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+      <div style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; font-size: 10px;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 6px;">
+          <h2 style="font-size: 15px; font-weight: bold; margin: 0; text-transform: uppercase;">${company}</h2>
+          <p style="font-size: 9px; margin: 2px 0 0 0;">${address} • Phone: ${phone}</p>
+          <h3 style="font-size: 12px; font-weight: bold; margin: 5px 0 0 0; text-transform: uppercase; border: 1px solid #000; display: inline-block; padding: 2px 8px;">
+            DAILY PRODUCTION SCAN SHEET
+          </h3>
+        </div>
+
+        <div style="font-size: 9.5px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+          <span><strong>Date:</strong> ${new Date().toLocaleDateString('en-GB')}</span>
+          <span><strong>Time:</strong> ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8.5px;">
+          <thead>
+            <tr style="background: #f0f0f0; border-bottom: 1.5px solid #000;">
+              <th style="padding: 4px 2px; text-align: center; width: 20px;">#</th>
+              <th style="padding: 4px; text-align: left;">Product / Flavor</th>
+              <th style="padding: 4px; text-align: center;">Pack</th>
+              <th style="padding: 4px; text-align: center;">Spec</th>
+              <th style="padding: 4px; text-align: center;">Scanned Qty</th>
+              <th style="padding: 4px; text-align: center;">Total Pcs</th>
+              <th style="padding: 4px; text-align: right;">Est. Value</th>
+              <th style="padding: 4px; text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr style="background: #f0f0f0; border-top: 2px solid #000; font-weight: bold;">
+              <td colspan="4" style="padding: 5px 4px; text-align: right;">TOTAL (${list.length} Products):</td>
+              <td style="padding: 5px 4px; text-align: center; font-size: 11px;">${totalUnits}</td>
+              <td style="padding: 5px 4px; text-align: center;">${totalPcs.toLocaleString()}</td>
+              <td style="padding: 5px 4px; text-align: right;">Rs. ${Math.round(totalValue).toLocaleString()}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 35px; padding: 0 15px; font-size: 9.5px;">
+          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 3px;">
+            <b>Production Incharge</b>
+          </div>
+          <div style="border-top: 1.5px solid #000; width: 40%; text-align: center; padding-top: 3px;">
+            <b>Factory Manager</b>
+          </div>
+        </div>
+      </div>
+    `;
+
+    app.showModal({
+      title: 'Print Daily Production Scan Sheet',
+      content: `
+        <div class="space-y-4">
+          <div class="p-3 bg-white border border-slate-200 rounded-xl max-h-[70vh] overflow-y-auto">
+            ${html}
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="app.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
+            <button type="button" onclick="window.print();" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print A5
+            </button>
+          </div>
+        </div>
+      `,
+      maxWidth: 'max-w-2xl'
+    });
   }
 };
+
+// Global key listener for barcode scanners on CartonPacking page
+if (!window._cartonPackingScanListenerAttached) {
+  window._cartonPackingScanListenerAttached = true;
+  let _scanBuffer = '';
+  let _lastKeyTime = 0;
+  window.addEventListener('keydown', (e) => {
+    if (window.app && window.app.currentPage !== 'carton-packing') return;
+    const activeEl = document.activeElement;
+    const tag = activeEl ? (activeEl.tagName || '').toLowerCase() : '';
+    const id = activeEl ? (activeEl.id || '') : '';
+    
+    // If typing in another normal input field, ignore
+    if ((tag === 'input' || tag === 'textarea' || tag === 'select') && id !== 'daily-scan-input') {
+      return;
+    }
+    
+    // If inside daily-scan-input, its own onkeydown already handles it
+    if (id === 'daily-scan-input') return;
+
+    const now = Date.now();
+    if (e.key === 'Enter') {
+      if (_scanBuffer.trim().length >= 3) {
+        if (window.CartonPacking && typeof window.CartonPacking.onScanInputSubmit === 'function') {
+          window.CartonPacking.onScanInputSubmit(_scanBuffer.trim());
+        }
+        _scanBuffer = '';
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      if (now - _lastKeyTime > 250) {
+        _scanBuffer = '';
+      }
+      _scanBuffer += e.key;
+      _lastKeyTime = now;
+    }
+  });
+}

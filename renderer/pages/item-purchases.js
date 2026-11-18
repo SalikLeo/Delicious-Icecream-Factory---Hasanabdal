@@ -1043,7 +1043,7 @@ window.ItemPurchases = {
       `).join('');
 
       const html = `
-        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 4px 0 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
           <!-- Factory Header -->
           <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
             <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${companyName}</h1>

@@ -2154,7 +2154,7 @@ window.RawMaterials = {
     const totalVal = this.materials.reduce((sum, m) => sum + this.getMaterialStockValue(m), 0);
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 4px 0 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
           <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
           <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Total Raw Stock Value: Rs. ${Math.round(totalVal).toLocaleString()}</p>
@@ -2192,7 +2192,7 @@ window.RawMaterials = {
           <span>GRAND TOTAL VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 18px; display: flex; justify-content: space-between;">
+        <div class="a5-signatures" style="margin-top: 12px; display: flex; justify-content: space-between;">
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 40%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 600; text-transform: uppercase;">
             Store Incharge Signature
           </div>
@@ -3217,13 +3217,23 @@ window.RawMaterials = {
           ` : ''}
         </div>
 
-        <!-- Search Input -->
-        <div class="relative w-full sm:w-56">
-          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input type="text" value="${this._chocSearchQuery || ''}"
-                 oninput="RawMaterials.onChocSearch(this.value)"
-                 placeholder="Search ${type === 'batches' ? 'batches' : 'movements'}..."
-                 class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-600 shadow-2xs transition-all">
+        <div class="flex items-center gap-2">
+          <!-- Search Input -->
+          <div class="relative w-full sm:w-56">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" value="${this._chocSearchQuery || ''}"
+                   oninput="RawMaterials.onChocSearch(this.value)"
+                   placeholder="Search ${type === 'batches' ? 'batches' : 'movements'}..."
+                   class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-600 shadow-2xs transition-all">
+          </div>
+
+          <!-- Print Report Button -->
+          <button type="button" onclick="RawMaterials.printChocolateReport('${type}')"
+                  class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+                  title="Print ${type === 'batches' ? 'Batches' : 'Stock History'} Report (A5)">
+            <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Print</span>
+          </button>
         </div>
       </div>
     `;
@@ -3450,6 +3460,245 @@ window.RawMaterials = {
         </table>
       </div>
     `;
+  },
+
+  printChocolateReport(type = 'movements') {
+    const settings = app.settings || {};
+    const company = settings.company_name || 'Delicious Superstar Foods';
+    const address = settings.address || 'Hasan Abdal';
+    const phone = settings.phone || '0315-6795995';
+    const currentStockLiters = Number(this._chocStock?.stock || 0);
+
+    let periodLabel = 'ALL DATES';
+    if (this._chocPeriodType === 'day') {
+      periodLabel = `DAILY (${this._chocSelectedDate || 'Today'})`;
+    } else if (this._chocPeriodType === 'month') {
+      periodLabel = `MONTHLY (${this._chocSelectedDate ? this._chocSelectedDate.slice(0, 7) : 'Current'})`;
+    } else if (this._chocPeriodType === 'year') {
+      periodLabel = `ANNUAL (${this._chocSelectedDate ? this._chocSelectedDate.slice(0, 4) : 'Current'})`;
+    } else if (this._chocPeriodType === 'custom') {
+      periodLabel = `CUSTOM (${this._chocStartDate || ''} to ${this._chocEndDate || ''})`;
+    }
+
+    if (type === 'batches') {
+      let list = [...(this._chocBatches || [])];
+      if (this._chocPeriodType === 'day' && this._chocSelectedDate) {
+        list = list.filter(b => (b.date || '').slice(0, 10) === this._chocSelectedDate);
+      } else if (this._chocPeriodType === 'month' && this._chocSelectedDate) {
+        const ym = this._chocSelectedDate.slice(0, 7);
+        list = list.filter(b => (b.date || '').startsWith(ym));
+      } else if (this._chocPeriodType === 'year' && this._chocSelectedDate) {
+        const y = this._chocSelectedDate.slice(0, 4);
+        list = list.filter(b => (b.date || '').startsWith(y));
+      } else if (this._chocPeriodType === 'custom') {
+        if (this._chocStartDate) list = list.filter(b => (b.date || '').slice(0, 10) >= this._chocStartDate);
+        if (this._chocEndDate) list = list.filter(b => (b.date || '').slice(0, 10) <= this._chocEndDate);
+      }
+
+      if (this._chocSearchQuery) {
+        const q = this._chocSearchQuery.toLowerCase();
+        list = list.filter(b =>
+          (b.batch_number || '').toLowerCase().includes(q) ||
+          (b.notes || '').toLowerCase().includes(q) ||
+          (b.materials_summary || '').toLowerCase().includes(q)
+        );
+      }
+
+      if (list.length === 0) {
+        return app.showAlert({ title: 'No Data to Print', message: 'No chocolate batches match the selected filters.' });
+      }
+
+      const totalLiters = list.reduce((sum, b) => sum + (Number(b.liters_produced) || 0), 0);
+      const totalCost = list.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0);
+
+      const html = `
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 4px 0 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9px; line-height: 1.35;">
+          <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+            <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+            <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address} • Phone: ${phone}</p>
+          </div>
+
+          <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+            CHOCOLATE PRODUCTION BATCHES REPORT
+          </div>
+
+          <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 9px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.5;">
+            <div>
+              <div><strong>Filter Period:</strong> ${periodLabel}</div>
+              <div><strong>Total Batches:</strong> <b>${list.length}</b></div>
+            </div>
+            <div style="text-align: right;">
+              <div><strong>Generated:</strong> ${app.formatDateTime ? app.formatDateTime(new Date()) : new Date().toLocaleDateString('en-GB')}</div>
+              <div><strong>Current Stock:</strong> <b>${currentStockLiters.toLocaleString()} Liters</b></div>
+            </div>
+          </div>
+
+          <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8px; margin: 4px 0; background: #fff;">
+            <thead>
+              <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+                <th style="border: 1px solid #000; padding: 3px 4px; text-align: center; width: 22px; font-weight: 700; color: #000;">#</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 75px;">Date</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 85px;">Batch #</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 55px;">Liters</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000;">Materials Consumed</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 65px;">Total Cost</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 55px;">Cost / L</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map((b, idx) => `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 3px 4px; text-align: center; color: #000;">${idx + 1}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; color: #000; white-space: nowrap;">${app.formatDateTime ? app.formatDateTime(b.date, b.created_at) : b.date}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; font-weight: 700; color: #000;">${b.batch_number}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000;">+${Number(b.liters_produced).toLocaleString()} L</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; color: #000;">${b.materials_summary || '—'}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 600; color: #000;">Rs. ${Math.round(b.total_cost || 0).toLocaleString()}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; color: #000;">Rs. ${Math.round(b.cost_per_liter || 0).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="background: #fff; font-weight: 700; border-top: 1.5px solid #000; color: #000;">
+                <td colspan="3" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">TOTAL (${list.length} Batches):</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">+${totalLiters.toLocaleString()} L</td>
+                <td style="border: 1px solid #000; padding: 4px 5px;"></td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">Rs. ${Math.round(totalCost).toLocaleString()}</td>
+                <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">Rs. ${totalLiters > 0 ? Math.round(totalCost / totalLiters).toLocaleString() : 0}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div class="a5-signatures" style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 8.5px;">
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
+              Production Incharge
+            </div>
+            <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
+              Factory Manager
+            </div>
+          </div>
+        </div>
+      `;
+
+      app.showA5Preview(html, `Chocolate Batches Report (${periodLabel})`);
+      return;
+    }
+
+    // Otherwise: movements report (Stock History)
+    let list = [...(this._chocLogs || [])];
+    if (this._chocPeriodType === 'day' && this._chocSelectedDate) {
+      list = list.filter(l => (l.date || '').slice(0, 10) === this._chocSelectedDate);
+    } else if (this._chocPeriodType === 'month' && this._chocSelectedDate) {
+      const ym = this._chocSelectedDate.slice(0, 7);
+      list = list.filter(l => (l.date || '').startsWith(ym));
+    } else if (this._chocPeriodType === 'year' && this._chocSelectedDate) {
+      const y = this._chocSelectedDate.slice(0, 4);
+      list = list.filter(l => (l.date || '').startsWith(y));
+    } else if (this._chocPeriodType === 'custom') {
+      if (this._chocStartDate) list = list.filter(l => (l.date || '').slice(0, 10) >= this._chocStartDate);
+      if (this._chocEndDate) list = list.filter(l => (l.date || '').slice(0, 10) <= this._chocEndDate);
+    }
+
+    if (this._chocSearchQuery) {
+      const q = this._chocSearchQuery.toLowerCase();
+      list = list.filter(l =>
+        (l.action || '').toLowerCase().includes(q) ||
+        (l.reference_no || '').toLowerCase().includes(q) ||
+        (l.notes || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (list.length === 0) {
+      return app.showAlert({ title: 'No Data to Print', message: 'No chocolate stock history movements match the selected filters.' });
+    }
+
+    let totalInflow = 0;
+    let totalOutflow = 0;
+    list.forEach(l => {
+      const change = Number(l.liters_change) || 0;
+      if (change > 0) totalInflow += change;
+      else totalOutflow += Math.abs(change);
+    });
+    const netChange = totalInflow - totalOutflow;
+
+    const html = `
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 4px 0 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9px; line-height: 1.35;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
+          <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
+          <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address} • Phone: ${phone}</p>
+        </div>
+
+        <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
+          CHOCOLATE STOCK MOVEMENTS REPORT
+        </div>
+
+        <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 9px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.5;">
+          <div>
+            <div><strong>Filter Period:</strong> ${periodLabel}</div>
+            <div><strong>Total Records:</strong> <b>${list.length} Movements</b></div>
+          </div>
+          <div style="text-align: right;">
+            <div><strong>Generated:</strong> ${app.formatDateTime ? app.formatDateTime(new Date()) : new Date().toLocaleDateString('en-GB')}</div>
+            <div><strong>Current Stock:</strong> <b>${currentStockLiters.toLocaleString()} Liters</b></div>
+          </div>
+        </div>
+
+        <table class="a5-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 8px; margin: 4px 0; background: #fff;">
+          <thead>
+            <tr style="background: #fff; border-bottom: 1.5px solid #000;">
+              <th style="border: 1px solid #000; padding: 3px 4px; text-align: center; width: 22px; font-weight: 700; color: #000;">#</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 85px;">Date &amp; Time</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 75px;">Action</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 55px;">Quantity</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 45px;">Before</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 45px;">Current</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 85px;">Reference #</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000;">Details / Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map((l, idx) => {
+              const isAdd = (l.liters_change || 0) > 0;
+              const actionTxt = l.action === 'PRODUCTION' ? 'PRODUCTION' : (l.action === 'CARTON_PACKED' ? 'PACKED IN CTN' : l.action);
+              return `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 3px 4px; text-align: center; color: #000;">${idx + 1}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; color: #000; white-space: nowrap;">${app.formatDateTime ? app.formatDateTime(l.date, l.created_at) : l.date}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; font-weight: 600; color: #000;">${actionTxt}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; white-space: nowrap;">${isAdd ? '+' : ''}${Number(l.liters_change).toLocaleString()} L</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; color: #000;">${l.stock_before} L</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000;">${l.stock_after} L</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; font-weight: 600; color: #000;">${l.reference_no || '—'}</td>
+                  <td style="border: 1px solid #000; padding: 3px 5px; color: #000;">${l.notes || '—'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background: #fff; font-weight: 700; border-top: 1.5px solid #000; color: #000;">
+              <td colspan="3" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">
+                TOTALS: Produced: +${totalInflow.toLocaleString()} L | Used: -${totalOutflow.toLocaleString()} L
+              </td>
+              <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">${netChange >= 0 ? '+' : ''}${netChange.toLocaleString()} L</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">
+                CURRENT STOCK: ${currentStockLiters.toLocaleString()} LITERS
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="a5-signatures" style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 8.5px;">
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
+            Stock Incharge
+          </div>
+          <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
+            Factory Manager
+          </div>
+        </div>
+      </div>
+    `;
+
+    app.showA5Preview(html, `Chocolate Stock Movements (${periodLabel})`);
   },
 
   async printChocolateBatchSlip(batchId) {

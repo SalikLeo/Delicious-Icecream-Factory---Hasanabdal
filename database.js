@@ -1780,13 +1780,18 @@ function getMonthlyAttendance(month) {
       let absent = 0;
       let halfDay = 0;
       let overtime = 0;
+      let overtimeHours = 0;
       for (let d = 1; d <= daysInMonth; d++) {
         const dStr = `${month}-${String(d).padStart(2, '0')}`;
         const st = empAtt[dStr];
         if (st === 'P') present++;
         else if (st === 'A') absent++;
         else if (st === 'HD') halfDay++;
-        else if (st === 'OT') overtime++;
+        else if (st === 'OT' || (typeof st === 'string' && st.startsWith('OT'))) {
+          overtime++;
+          const m = String(st).match(/OT[-:]?(\d+)/i);
+          if (m) overtimeHours += parseInt(m[1], 10);
+        }
       }
       return {
         id: emp.id,
@@ -1799,8 +1804,10 @@ function getMonthlyAttendance(month) {
           absent,
           halfDay,
           overtime,
+          overtimeHours,
           hd: halfDay,
-          ot: overtime
+          ot: overtime,
+          otHours: overtimeHours
         }
       };
     })

@@ -834,7 +834,7 @@ const ReturnSales = {
     }).join('');
 
     const html = `
-      <div style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; font-size: 10px;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 4px 0 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; font-size: 10px;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 6px;">
           <h2 style="font-size: 15px; font-weight: bold; margin: 0; text-transform: uppercase;">${company}</h2>
           <p style="font-size: 9px; margin: 2px 0 0 0;">${address} • Phone: ${phone}</p>
@@ -876,23 +876,7 @@ const ReturnSales = {
       </div>
     `;
 
-    app.showModal({
-      title: 'Print Sales Return Report',
-      content: `
-        <div class="space-y-4">
-          <div class="p-3 bg-white border border-slate-200 rounded-xl max-h-[70vh] overflow-y-auto">
-            ${html}
-          </div>
-          <div class="flex justify-end gap-2">
-            <button type="button" onclick="app.closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
-            <button type="button" onclick="window.print();" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md">
-              <i data-lucide="printer" class="w-4 h-4"></i> Print A5
-            </button>
-          </div>
-        </div>
-      `,
-      maxWidth: 'max-w-2xl'
-    });
+    app.showA5Preview(html, 'Sales Return Report (A5)');
   }
 };
 

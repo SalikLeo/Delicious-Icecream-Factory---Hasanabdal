@@ -2269,7 +2269,7 @@ window.CarLoading = {
     const date = new Date().toLocaleDateString('en-GB');
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box; line-height: 1.4;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px 10px 0 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box; line-height: 1.4;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
           <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; color: #000; letter-spacing: 0.5px;">${company}</h1>
           <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Vehicle: ${car.car_number}</p>
@@ -2340,7 +2340,7 @@ window.CarLoading = {
           <span>ESTIMATED VALUE: Rs. ${Math.round(totalValue).toLocaleString()}</span>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 16px; display: flex; justify-content: space-between;">
+        <div class="a5-signatures" style="margin-top: 12px; display: flex; justify-content: space-between;">
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
             Driver / Salesman
           </div>
@@ -2375,7 +2375,7 @@ window.CarLoading = {
     }
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box; line-height: 1.4;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px 10px 0 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box; line-height: 1.4;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
           <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; color: #000; letter-spacing: 0.5px;">${company}</h1>
           <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Slip #: ${batch.dispatch_no} | Date &amp; Time: ${app.formatDateTime(batch.date, batch.created_at)}</p>
@@ -2434,7 +2434,7 @@ window.CarLoading = {
           <span>ESTIMATED VALUE: Rs. ${Math.round(totalVal).toLocaleString()}</span>
         </div>
 
-        <div class="a5-signatures" style="margin-top: 16px; display: flex; justify-content: space-between;">
+        <div class="a5-signatures" style="margin-top: 12px; display: flex; justify-content: space-between;">
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
             Driver / Receiver
           </div>

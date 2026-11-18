@@ -454,8 +454,8 @@ const Employees = {
                           <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs" title="Half Day: ${attSum.halfDay} days">
                             HD: ${attSum.halfDay}
                           </span>
-                          <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs" title="Overtime: ${attSum.overtime} days">
-                            OT: ${attSum.overtime}
+                          <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs" title="Overtime: ${attSum.overtime} days${attSum.overtimeHours ? ` (${attSum.overtimeHours} hrs)` : ''}">
+                            OT: ${attSum.overtime}${attSum.overtimeHours ? ` (${attSum.overtimeHours}h)` : ''}
                           </span>
                         </div>
                       </td>
@@ -694,7 +694,7 @@ const Employees = {
                           <span>&bull;</span>
                           <span class="text-amber-700" title="Half Days">HD:<b id="att-mini-hd-${emp.id}">${sum.halfDay || sum.hd || 0}</b></span>
                           <span>&bull;</span>
-                          <span class="text-blue-700" title="Overtime Days">OT:<b id="att-mini-ot-${emp.id}">${sum.overtime || sum.ot || 0}</b></span>
+                          <span class="text-blue-700" title="Overtime Days & Hours">OT:<b id="att-mini-ot-${emp.id}">${sum.overtime || sum.ot || 0}${sum.otHours ? ` (${sum.otHours}h)` : ''}</b></span>
                         </div>
                       </td>
 
@@ -712,9 +712,9 @@ const Employees = {
                               style="width: 34px; min-width: 34px; max-width: 34px;">
                             <button type="button" onclick="Employees.openAttendanceModal(${emp.id}, '${dateStr}')"
                                     id="att-cell-${emp.id}-${dateStr}"
-                                    title="${emp.full_name} on ${dateStr}: ${st ? st : 'Unmarked'}${isLockedCell ? ' (Locked - Click to authorize with 2nd password)' : ''}"
+                                    title="${emp.full_name} on ${dateStr}: ${this.getAttendanceTooltip(st)}${isLockedCell ? ' (Locked - Click to authorize with 2nd password)' : ''}"
                                     class="w-7 h-7 mx-auto rounded flex items-center justify-center font-black text-[11px] leading-none transition-all cursor-pointer active:scale-90 ${isLockedCell ? 'opacity-85 ' : ''}${this.getAttendanceCellClasses(st, isToday, isPast)}">
-                              ${st || '·'}
+                              ${this.getAttendanceCellContent(st)}
                             </button>
                           </td>
                         `;
@@ -724,7 +724,7 @@ const Employees = {
                       <td id="att-sum-p-${emp.id}" class="py-1.5 px-2 bg-emerald-50/50 text-emerald-800 font-black border-b border-l-2 border-emerald-200 tabular-nums text-center text-xs" style="width: 44px; min-width: 44px;">${sum.present || 0}</td>
                       <td id="att-sum-a-${emp.id}" class="py-1.5 px-2 bg-rose-50/50 text-rose-800 font-black border-b border-l border-rose-200 tabular-nums text-center text-xs" style="width: 44px; min-width: 44px;">${sum.absent || 0}</td>
                       <td id="att-sum-hd-${emp.id}" class="py-1.5 px-2 bg-amber-50/50 text-amber-800 font-black border-b border-l border-amber-200 tabular-nums text-center text-xs" style="width: 44px; min-width: 44px;">${sum.halfDay || sum.hd || 0}</td>
-                      <td id="att-sum-ot-${emp.id}" class="py-1.5 px-2 bg-blue-50/50 text-blue-800 font-black border-b border-l border-blue-200 tabular-nums text-center text-xs" style="width: 44px; min-width: 44px;">${sum.overtime || sum.ot || 0}</td>
+                      <td id="att-sum-ot-${emp.id}" class="py-1.5 px-2 bg-blue-50/50 text-blue-800 font-black border-b border-l border-blue-200 tabular-nums text-center text-xs" style="width: 50px; min-width: 50px;">${sum.overtime || sum.ot || 0}${sum.otHours ? `<div class="text-[9.5px] text-blue-600 font-bold leading-tight mt-0.5">${sum.otHours}h</div>` : ''}</td>
                     </tr>
                   `;
                 }).join('')}
@@ -746,50 +746,61 @@ const Employees = {
     `;
   },
 
-  getAttendanceCellClasses(status, isToday = false, isPast = false) {
-    if (isToday) {
-      switch (status) {
-        case 'P':
-          return 'bg-emerald-600 text-white font-black shadow-xs ring-2 ring-emerald-300 border border-emerald-700 scale-105';
-        case 'A':
-          return 'bg-rose-600 text-white font-black shadow-xs ring-2 ring-rose-300 border border-rose-700 scale-105';
-        case 'HD':
-          return 'bg-amber-500 text-white font-black shadow-xs ring-2 ring-amber-300 border border-amber-600 scale-105';
-        case 'OT':
-          return 'bg-blue-600 text-white font-black shadow-xs ring-2 ring-blue-300 border border-blue-700 scale-105';
-        default:
-          return 'bg-amber-100 text-amber-900 border-2 border-dashed border-amber-400 font-black hover:bg-amber-200';
+  getAttendanceCellContent(status) {
+    if (!status || status === '·') return '&middot;';
+    const s = String(status);
+    if (s.startsWith('OT')) {
+      const m = s.match(/OT[-:]?(\d+)/i);
+      if (m) {
+        return `<div class="flex flex-col items-center justify-center leading-none">
+          <span class="text-[9px] font-black">OT</span>
+          <span class="text-[8px] font-extrabold opacity-95 leading-tight tracking-tighter">${m[1]}h</span>
+        </div>`;
       }
+      return 'OT';
+    }
+    return status;
+  },
+
+  getAttendanceTooltip(status) {
+    if (!status || status === '·') return 'Unmarked';
+    const s = String(status);
+    if (s === 'P') return 'Present';
+    if (s === 'A') return 'Absent';
+    if (s === 'HD') return 'Half Day';
+    if (s.startsWith('OT')) {
+      const m = s.match(/OT[-:]?(\d+)/i);
+      return m ? `Overtime (${m[1]} hours)` : 'Overtime';
+    }
+    return status;
+  },
+
+  getAttendanceCellClasses(status, isToday = false, isPast = false) {
+    const s = String(status || '');
+    const isOT = s === 'OT' || s.startsWith('OT');
+
+    if (isToday) {
+      if (s === 'P') return 'bg-emerald-600 text-white font-black shadow-xs ring-2 ring-emerald-300 border border-emerald-700 scale-105';
+      if (s === 'A') return 'bg-rose-600 text-white font-black shadow-xs ring-2 ring-rose-300 border border-rose-700 scale-105';
+      if (s === 'HD') return 'bg-amber-500 text-white font-black shadow-xs ring-2 ring-amber-300 border border-amber-600 scale-105';
+      if (isOT) return 'bg-blue-600 text-white font-black shadow-xs ring-2 ring-blue-300 border border-blue-700 scale-105';
+      return 'bg-amber-100 text-amber-900 border-2 border-dashed border-amber-400 font-black hover:bg-amber-200';
     }
 
     if (isPast) {
-      switch (status) {
-        case 'P':
-          return 'bg-emerald-50 text-emerald-800 border border-emerald-300 font-black hover:bg-emerald-100 shadow-2xs';
-        case 'A':
-          return 'bg-rose-50 text-rose-800 border border-rose-300 font-black hover:bg-rose-100 shadow-2xs';
-        case 'HD':
-          return 'bg-amber-50 text-amber-800 border border-amber-300 font-black hover:bg-amber-100 shadow-2xs';
-        case 'OT':
-          return 'bg-blue-50 text-blue-800 border border-blue-300 font-black hover:bg-blue-100 shadow-2xs';
-        default:
-          return 'bg-transparent text-slate-400 hover:bg-slate-100 hover:text-slate-600 font-bold';
-      }
+      if (s === 'P') return 'bg-emerald-50 text-emerald-800 border border-emerald-300 font-black hover:bg-emerald-100 shadow-2xs';
+      if (s === 'A') return 'bg-rose-50 text-rose-800 border border-rose-300 font-black hover:bg-rose-100 shadow-2xs';
+      if (s === 'HD') return 'bg-amber-50 text-amber-800 border border-amber-300 font-black hover:bg-amber-100 shadow-2xs';
+      if (isOT) return 'bg-blue-50 text-blue-800 border border-blue-300 font-black hover:bg-blue-100 shadow-2xs';
+      return 'bg-transparent text-slate-400 hover:bg-slate-100 hover:text-slate-600 font-bold';
     }
 
     // Future / upcoming dates in month
-    switch (status) {
-      case 'P':
-        return 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold';
-      case 'A':
-        return 'bg-rose-100 text-rose-800 border border-rose-300 font-bold';
-      case 'HD':
-        return 'bg-amber-100 text-amber-800 border border-amber-300 font-bold';
-      case 'OT':
-        return 'bg-blue-100 text-blue-800 border border-blue-300 font-bold';
-      default:
-        return 'bg-transparent text-slate-300 hover:bg-slate-100 hover:text-slate-500 font-medium';
-    }
+    if (s === 'P') return 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold';
+    if (s === 'A') return 'bg-rose-100 text-rose-800 border border-rose-300 font-bold';
+    if (s === 'HD') return 'bg-amber-100 text-amber-800 border border-amber-300 font-bold';
+    if (isOT) return 'bg-blue-100 text-blue-800 border border-blue-300 font-bold';
+    return 'bg-transparent text-slate-300 hover:bg-slate-100 hover:text-slate-500 font-medium';
   },
 
   hasActionPassword() {
@@ -843,13 +854,21 @@ const Employees = {
     const empRole = emp?.role || 'Staff';
 
     const currentStatus = (emp?.attendance && emp.attendance[dateStr]) || '';
-    const initialSelection = currentStatus || 'P';
+    let currentOtHours = '';
+    let baseStatus = currentStatus;
+    if (currentStatus.startsWith('OT')) {
+      baseStatus = 'OT';
+      const m = currentStatus.match(/OT[-:]?(\d+)/i);
+      if (m) currentOtHours = m[1];
+    }
+    const initialSelection = baseStatus || 'P';
     this._attModalState = {
       employeeId,
       dateStr,
       empName,
       selectedStatus: initialSelection,
-      currentStatus
+      currentStatus,
+      otHours: currentOtHours
     };
 
     const [yr, mo, da] = dateStr.split('-').map(Number);
@@ -947,6 +966,28 @@ const Employees = {
                 </button>
               </div>
 
+              <!-- 4.1 Overtime Hours Input Section (Interactive) -->
+              <div id="att-ot-hours-section" class="${initialSelection === 'OT' ? '' : 'hidden'} mt-2.5 p-3 bg-blue-50/80 border border-blue-200 rounded-xl">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                      <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <div>
+                      <label for="att-ot-hours-input" class="text-xs font-black text-blue-950 block">Overtime Hours</label>
+                      <span class="text-[10px] text-blue-700/80 font-medium">Enter hours worked (e.g. 2, 4)</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="att-ot-hours-input" min="1" max="24" step="1"
+                           value="${currentOtHours || ''}" placeholder="Hours"
+                           oninput="Employees.onOtHoursChange(this.value)"
+                           class="w-20 px-2.5 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-black text-center text-blue-950 outline-none focus:ring-2 focus:ring-blue-500 font-mono shadow-2xs">
+                    <span class="text-xs font-black text-blue-800">hrs</span>
+                  </div>
+                </div>
+              </div>
+
               <!-- 5. Clear Option -->
               <button type="button" onclick="Employees.selectAttendanceStatus('')" id="att-btn-opt-CLEAR"
                       class="w-full mt-2.5 p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${initialSelection === '' ? 'border-slate-400 bg-slate-100 text-slate-900 ring-2 ring-slate-300' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}">
@@ -969,7 +1010,7 @@ const Employees = {
                 </button>
                 <button type="button" id="att-modal-confirm-btn" onclick="Employees.confirmAttendanceModal()" class="px-5 py-2 ${this.getAttendanceConfirmButtonClass(initialSelection)} active:scale-95 text-white font-black rounded-xl text-xs transition-all cursor-pointer shadow-2xs flex items-center gap-1.5">
                   <i data-lucide="check" class="w-4 h-4"></i>
-                  <span id="att-modal-confirm-label">${this.getAttendanceConfirmLabel(initialSelection)}</span>
+                  <span id="att-modal-confirm-label">${this.getAttendanceConfirmLabel(initialSelection, currentOtHours)}</span>
                 </button>
               </div>
             </div>
@@ -984,6 +1025,17 @@ const Employees = {
       document.removeEventListener('keydown', this._attKeydownHandler);
     }
     this._attKeydownHandler = (e) => {
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl.id === 'att-ot-hours-input') {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          Employees.confirmAttendanceModal();
+        } else if (e.key === 'Escape') {
+          Employees.closeModal();
+        }
+        return;
+      }
+
       if (e.key === 'Escape') {
         Employees.closeModal();
       } else if (e.key === 'Enter') {
@@ -1007,6 +1059,21 @@ const Employees = {
   selectAttendanceStatus(status) {
     if (!this._attModalState) return;
     this._attModalState.selectedStatus = status;
+
+    const otSection = document.getElementById('att-ot-hours-section');
+    if (otSection) {
+      const isOt = status === 'OT';
+      otSection.classList.toggle('hidden', !isOt);
+      if (isOt) {
+        setTimeout(() => {
+          const inp = document.getElementById('att-ot-hours-input');
+          if (inp) {
+            inp.focus();
+            if (inp.value) inp.select();
+          }
+        }, 50);
+      }
+    }
 
     const optKeys = [
       { key: 'P', borderClass: 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500/30 shadow-xs', defaultClass: 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50' },
@@ -1033,38 +1100,55 @@ const Employees = {
       if (check) check.classList.toggle('hidden', !isClear);
     }
 
+    const otHours = document.getElementById('att-ot-hours-input')?.value || this._attModalState.otHours || '';
     const confirmBtn = document.getElementById('att-modal-confirm-btn');
     const confirmLabel = document.getElementById('att-modal-confirm-label');
     if (confirmBtn) {
       confirmBtn.className = `px-5 py-2 ${this.getAttendanceConfirmButtonClass(status)} active:scale-95 text-white font-black rounded-xl text-xs transition-all cursor-pointer shadow-2xs flex items-center gap-1.5`;
     }
     if (confirmLabel) {
-      confirmLabel.textContent = this.getAttendanceConfirmLabel(status);
+      confirmLabel.textContent = this.getAttendanceConfirmLabel(status, otHours);
     }
     if (window.lucide) lucide.createIcons();
   },
 
-  getAttendanceStatusBadgeHtml(status) {
-    switch (status) {
-      case 'P':
-        return '<span class="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black border border-emerald-300 text-xs">P &bull; Present</span>';
-      case 'A':
-        return '<span class="px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black border border-rose-300 text-xs">A &bull; Absent</span>';
-      case 'HD':
-        return '<span class="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-black border border-amber-300 text-xs">HD &bull; Half Day</span>';
-      case 'OT':
-        return '<span class="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 font-black border border-blue-300 text-xs">OT &bull; Overtime</span>';
-      default:
-        return '<span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-500 font-bold border border-slate-200 text-xs">&middot; Unmarked</span>';
+  onOtHoursChange(val) {
+    if (!this._attModalState) return;
+    this._attModalState.otHours = val;
+    const confirmLabel = document.getElementById('att-modal-confirm-label');
+    if (confirmLabel && this._attModalState.selectedStatus === 'OT') {
+      confirmLabel.textContent = this.getAttendanceConfirmLabel('OT', val);
     }
   },
 
-  getAttendanceConfirmLabel(status) {
+  getAttendanceStatusBadgeHtml(status) {
+    if (!status || status === '·') {
+      return '<span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-500 font-bold border border-slate-200 text-xs">&middot; Unmarked</span>';
+    }
+    const s = String(status);
+    if (s === 'P') {
+      return '<span class="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black border border-emerald-300 text-xs">P &bull; Present</span>';
+    }
+    if (s === 'A') {
+      return '<span class="px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black border border-rose-300 text-xs">A &bull; Absent</span>';
+    }
+    if (s === 'HD') {
+      return '<span class="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-black border border-amber-300 text-xs">HD &bull; Half Day</span>';
+    }
+    if (s === 'OT' || s.startsWith('OT')) {
+      const m = s.match(/OT[-:]?(\d+)/i);
+      const hText = m ? ` (${m[1]} hrs)` : '';
+      return `<span class="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 font-black border border-blue-300 text-xs">OT &bull; Overtime${hText}</span>`;
+    }
+    return `<span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs">${status}</span>`;
+  },
+
+  getAttendanceConfirmLabel(status, otHours = '') {
     switch (status) {
       case 'P': return 'Confirm: Present (P)';
       case 'A': return 'Confirm: Absent (A)';
       case 'HD': return 'Confirm: Half Day (HD)';
-      case 'OT': return 'Confirm: Overtime (OT)';
+      case 'OT': return otHours ? `Confirm: Overtime (${otHours} hrs)` : 'Confirm: Overtime (OT)';
       default: return 'Confirm: Clear Attendance';
     }
   },
@@ -1082,8 +1166,18 @@ const Employees = {
   async confirmAttendanceModal() {
     if (!this._attModalState) return;
     const { employeeId, dateStr, selectedStatus } = this._attModalState;
+    let finalStatus = selectedStatus;
+    if (selectedStatus === 'OT') {
+      const hInput = document.getElementById('att-ot-hours-input');
+      const hVal = hInput ? parseInt(hInput.value, 10) : parseInt(this._attModalState.otHours, 10);
+      if (hVal && hVal > 0) {
+        finalStatus = `OT-${hVal}`;
+      } else {
+        finalStatus = 'OT';
+      }
+    }
     this.closeModal();
-    await this._doSaveAttendance(employeeId, dateStr, selectedStatus);
+    await this._doSaveAttendance(employeeId, dateStr, finalStatus);
   },
 
   async _doSaveAttendance(employeeId, dateStr, status) {
@@ -1095,8 +1189,9 @@ const Employees = {
 
     // Optimistically update cell DOM immediately
     if (cell) {
-      cell.textContent = status || '·';
+      cell.innerHTML = this.getAttendanceCellContent(status);
       cell.className = `w-7 h-7 mx-auto rounded flex items-center justify-center font-black text-[11px] leading-none transition-all cursor-pointer active:scale-90 ${this.getAttendanceCellClasses(status, isToday, isPast)}`;
+      cell.title = this.getAttendanceTooltip(status);
     }
 
     try {
@@ -1109,13 +1204,18 @@ const Employees = {
           if (status) emp.attendance[dateStr] = status;
           else delete emp.attendance[dateStr];
 
-          // Recalculate employee summary (P, A, HD, OT)
-          let p = 0, a = 0, hd = 0, ot = 0;
+          // Recalculate employee summary (P, A, HD, OT, OT-Hours)
+          let p = 0, a = 0, hd = 0, ot = 0, otHours = 0;
           Object.values(emp.attendance).forEach(val => {
-            if (val === 'P') p++;
-            else if (val === 'A') a++;
-            else if (val === 'HD') hd++;
-            else if (val === 'OT') ot++;
+            const v = String(val || '');
+            if (v === 'P') p++;
+            else if (v === 'A') a++;
+            else if (v === 'HD') hd++;
+            else if (v === 'OT' || v.startsWith('OT')) {
+              ot++;
+              const m = v.match(/OT[-:]?(\d+)/i);
+              if (m) otHours += parseInt(m[1], 10);
+            }
           });
 
           if (!emp.summary) emp.summary = {};
@@ -1123,8 +1223,10 @@ const Employees = {
           emp.summary.absent = a;
           emp.summary.halfDay = hd;
           emp.summary.overtime = ot;
+          emp.summary.overtimeHours = otHours;
           emp.summary.hd = hd;
           emp.summary.ot = ot;
+          emp.summary.otHours = otHours;
 
           // Update summary column cells
           const sumP = document.getElementById(`att-sum-p-${employeeId}`);
@@ -1134,7 +1236,9 @@ const Employees = {
           const sumHD = document.getElementById(`att-sum-hd-${employeeId}`);
           if (sumHD) sumHD.textContent = hd;
           const sumOT = document.getElementById(`att-sum-ot-${employeeId}`);
-          if (sumOT) sumOT.textContent = ot;
+          if (sumOT) {
+            sumOT.innerHTML = `${ot}${otHours > 0 ? `<div class="text-[9.5px] text-blue-600 font-bold leading-tight mt-0.5">${otHours}h</div>` : ''}`;
+          }
 
           // Update mini summary in employee sticky cell
           const miniP = document.getElementById(`att-mini-p-${employeeId}`);
@@ -1144,10 +1248,12 @@ const Employees = {
           const miniHD = document.getElementById(`att-mini-hd-${employeeId}`);
           if (miniHD) miniHD.textContent = hd;
           const miniOT = document.getElementById(`att-mini-ot-${employeeId}`);
-          if (miniOT) miniOT.textContent = ot;
+          if (miniOT) {
+            miniOT.textContent = `${ot}${otHours > 0 ? ` (${otHours}h)` : ''}`;
+          }
         }
       }
-      const stLabel = status === 'P' ? 'Present' : status === 'A' ? 'Absent' : status === 'HD' ? 'Half Day' : status === 'OT' ? 'Overtime' : 'Cleared';
+      const stLabel = status === 'P' ? 'Present' : status === 'A' ? 'Absent' : status === 'HD' ? 'Half Day' : status.startsWith('OT') ? this.getAttendanceTooltip(status) : 'Cleared';
       app.showToast(`Updated attendance: ${stLabel} (${dateStr})`, 'success');
     } catch (err) {
       console.error('Error updating attendance:', err);
@@ -2192,7 +2298,7 @@ const Employees = {
                 <td style="border: 1px solid #000; padding: 3px; text-align: center;">${idx + 1}</td>
                 <td style="border: 1px solid #000; padding: 3px; font-weight: 700;">${e.full_name}</td>
                 <td style="border: 1px solid #000; padding: 3px; text-align: center; font-size: 8px; font-weight: bold;">
-                  P:${attSum.present} A:${attSum.absent} HD:${attSum.halfDay} OT:${attSum.overtime}
+                  P:${attSum.present} A:${attSum.absent} HD:${attSum.halfDay} OT:${attSum.overtime}${attSum.overtimeHours ? ` (${attSum.overtimeHours}h)` : ''}
                 </td>
                 <td style="border: 1px solid #000; padding: 3px; text-align: right; font-weight: 600;">Rs. ${Math.round(e.salary || 0).toLocaleString()}</td>
                 <td style="border: 1px solid #000; padding: 3px; text-align: right; color: #059669; font-weight: 700;">Rs. ${Math.round(e.paid_amount || 0).toLocaleString()}</td>
@@ -2259,7 +2365,8 @@ const Employees = {
                   ${Array.from({ length: daysInMonth }, (_, i) => {
                     const dStr = `${this.selectedMonth}-${String(i + 1).padStart(2, '0')}`;
                     const st = empAtt[dStr] || '';
-                    const col = st === 'P' ? '#059669' : st === 'A' ? '#dc2626' : st === 'HD' ? '#d97706' : st === 'OT' ? '#2563eb' : '#cbd5e1';
+                    const isOT = st === 'OT' || (typeof st === 'string' && st.startsWith('OT'));
+                    const col = st === 'P' ? '#059669' : st === 'A' ? '#dc2626' : st === 'HD' ? '#d97706' : isOT ? '#2563eb' : '#cbd5e1';
                     return `
                       <td style="border: 1px solid #000; padding: 1px; font-weight: 700; color: ${col};">
                         ${st || '&middot;'}
@@ -2269,7 +2376,7 @@ const Employees = {
                   <td style="border: 1px solid #000; padding: 2px; font-weight: 700; background: #f0fdf4;">${sum.present || 0}</td>
                   <td style="border: 1px solid #000; padding: 2px; font-weight: 700; background: #fef2f2;">${sum.absent || 0}</td>
                   <td style="border: 1px solid #000; padding: 2px; font-weight: 700; background: #fffbeb;">${sum.halfDay || sum.hd || 0}</td>
-                  <td style="border: 1px solid #000; padding: 2px; font-weight: 700; background: #eff6ff;">${sum.overtime || sum.ot || 0}</td>
+                  <td style="border: 1px solid #000; padding: 2px; font-weight: 700; background: #eff6ff;">${sum.overtime || sum.ot || 0}${sum.otHours ? `<div style="font-size: 6.5px; color: #2563eb; line-height: 1;">${sum.otHours}h</div>` : ''}</td>
                 </tr>
               `;
             }).join('')}

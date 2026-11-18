@@ -6,7 +6,7 @@
 @media print {
   @page {
     size: A5 portrait; /* Standard A5 Portrait (148mm x 210mm) */
-    margin: 4mm 6mm; /* Safe 6mm side margins guarantee no text is clipped on any laser or inkjet printer */
+    margin: 3mm 5mm 0mm 5mm; /* Zero bottom margin eliminates trailing blank page triggers */
   }
   
   *, *::before, *::after {
@@ -24,8 +24,8 @@
     color: #000000 !important;
     width: 100% !important;
     max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
     overflow: hidden !important; /* Prevents trailing blank pages caused by sub-pixel margin collapse */
     display: block !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
@@ -65,27 +65,41 @@
   /* Show only the active print container that has content AND active-print-target class */
   #receipt-print.active-print-target:not(:empty), 
   #db-print-container.active-print-target:not(:empty), 
-  #voucher-print.active-print-target:not(:empty), 
-  #report-print-container.active-print-target:not(:empty) {
+  #voucher-print.active-print-target:not(:empty) {
     display: block !important;
     position: relative !important;
     width: 100% !important;
-    max-width: 136mm !important;
+    max-width: 138mm !important;
+    max-height: 202mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
     background: #ffffff !important;
+    overflow: hidden !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
+  #report-print-container.active-print-target:not(:empty) {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 138mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
   /* A5 Document Layout Container - Pure Black & White Printout */
   .receipt-a5, .invoice-a5, .receipt-80mm, .a5-container {
     width: 100% !important;
-    max-width: 136mm !important;
+    max-width: 138mm !important;
+    max-height: 202mm !important;
     margin: 0 auto !important;
     padding: 0 1.5mm !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
     box-sizing: border-box !important;
     color: #000000 !important;
     background: #ffffff !important;
@@ -97,6 +111,16 @@
     break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    overflow: hidden !important;
+  }
+
+  .receipt-a5 > :last-child,
+  .invoice-a5 > :last-child,
+  .a5-container > :last-child,
+  #receipt-print > :last-child,
+  #receipt-print > div > :last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
   }
 
   .receipt-a5 *, .a5-container *, .invoice-a5 * {

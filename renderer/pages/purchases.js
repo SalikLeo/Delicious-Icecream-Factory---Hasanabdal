@@ -1520,7 +1520,7 @@ window.Purchases = {
     const supplierCurrentBal = p.supplier_current_balance != null ? Number(p.supplier_current_balance) : null;
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.4;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px 10px 0 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.4;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
           <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
           ${address ? `<p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>` : ''}
@@ -1635,7 +1635,7 @@ window.Purchases = {
             : 'All Historical Purchases')));
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 8px 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.4;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px 10px 0 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.4;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
           <h1 style="font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
           <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">RAW MATERIAL PURCHASES REPORT</p>

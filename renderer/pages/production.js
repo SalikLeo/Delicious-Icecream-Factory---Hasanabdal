@@ -1800,7 +1800,7 @@ window.Production = {
     const date = new Date().toLocaleDateString('en-GB');
 
     const html = `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 4px 0 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
           <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; color: #000;">${company}</h1>
           <p style="font-size: 9px; color: #000; margin: 2px 0 0 0; font-weight: 600;">Date: ${app.formatDateTime(new Date())} | Loose Pieces In Factory Floor</p>
@@ -1866,7 +1866,7 @@ window.Production = {
       const materials = batch.materials || [];
 
       const html = `
-        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
+        <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 4px 0 4px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; font-size: 9.5px; line-height: 1.35;">
           <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
             <h1 style="font-size: 16px; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; color: #000;">${company}</h1>
             <p style="font-size: 9.5px; color: #000; margin: 2px 0 0 0; font-weight: 600;">${address}</p>

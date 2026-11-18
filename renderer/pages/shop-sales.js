@@ -2664,7 +2664,7 @@ window.ShopSales = {
     const totalReturned = items.reduce((sum, it) => sum + (Number(it.returned_cartons) || 0), 0);
 
     return `
-      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 6px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
+      <div class="receipt-a5" style="width: 100%; max-width: 148mm; margin: 0 auto; padding: 4px 6px 0 6px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000; background: #fff; box-sizing: border-box; line-height: 1.35; font-size: 9.5px;">
         
         <!-- Factory Header -->
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px;">
@@ -2822,7 +2822,7 @@ window.ShopSales = {
         </div>
 
         <!-- Authorized Signatures -->
-        <div class="a5-signatures" style="margin-top: 16px; display: flex; justify-content: space-between;">
+        <div class="a5-signatures" style="margin-top: 12px; display: flex; justify-content: space-between;">
           <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 38%; text-align: center; font-size: 9px; padding-top: 4px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px;">
             Shopkeeper / Receiver
           </div>
@@ -2832,7 +2832,7 @@ window.ShopSales = {
         </div>
 
         <!-- Footer -->
-        <div style="text-align: center; margin-top: 8px; font-size: 8.5px; color: #000; border-top: 1px dotted #000; padding-top: 3px; font-weight: 600;">
+        <div style="text-align: center; margin-top: 5px; margin-bottom: 0; padding-bottom: 0; font-size: 8.5px; color: #000; border-top: 1px dotted #000; padding-top: 3px; font-weight: 600;">
           Computer Generated A5 Invoice • Software by PrimeSoft (0309-5369472)
         </div>
       </div>

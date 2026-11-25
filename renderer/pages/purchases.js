@@ -117,17 +117,17 @@ window.Purchases = {
 
           <!-- Time Period Tabs & Picker -->
           <div class="flex items-center gap-2 flex-wrap">
-            <div class="flex bg-slate-100 p-1 rounded-xl">
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shadow-inner">
               <button type="button" id="pur-tab-day" onclick="Purchases.setPeriod('day')" 
-                      class="px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'day' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'}">Daily</button>
+                      class="px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">Daily</button>
               <button type="button" id="pur-tab-month" onclick="Purchases.setPeriod('month')" 
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType === 'month' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-900'}">Monthly</button>
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80 font-black' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">Monthly</button>
               <button type="button" id="pur-tab-year" onclick="Purchases.setPeriod('year')" 
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType === 'year' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-900'}">Annual</button>
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80 font-black' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">Annual</button>
               <button type="button" id="pur-tab-custom" onclick="Purchases.setPeriod('custom')" 
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-900'}">Custom Range</button>
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80 font-black' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">Custom Range</button>
               <button type="button" id="pur-tab-all" onclick="Purchases.setPeriod('all')" 
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-900'}">All</button>
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80 font-black' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">All</button>
             </div>
 
             <div id="pur-date-picker-wrap">
@@ -152,7 +152,7 @@ window.Purchases = {
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
               <thead id="pur-table-head" class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
-                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
                   <th onclick="Purchases.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-between gap-1">
                       <span>Date</span>
@@ -249,12 +249,12 @@ window.Purchases = {
     if (this.periodType === 'custom') {
       return `
         <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
-          <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+          <span class="text-[10px] font-black uppercase text-slate-600">From</span>
           <input type="date" id="pur-start-date" value="${this.startDate || this.selectedDate}" 
                  onchange="Purchases.onCustomDateChange('start', this.value)"
                  oninput="Purchases.onCustomDateChange('start', this.value)"
                  class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer font-mono">
-          <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+          <span class="text-[10px] font-black uppercase text-slate-600">To</span>
           <input type="date" id="pur-end-date" value="${this.endDate || this.selectedDate}" 
                  onchange="Purchases.onCustomDateChange('end', this.value)"
                  oninput="Purchases.onCustomDateChange('end', this.value)"
@@ -474,7 +474,7 @@ window.Purchases = {
 
       return `
         <tr class="hover:bg-slate-50/80 transition-colors">
-          <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+          <td class="py-2.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
           <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600 whitespace-nowrap border-r border-slate-200">${app.formatDateTime(p.date, p.created_at)}</td>
           <td class="py-2.5 px-3 font-mono font-black text-slate-900 whitespace-nowrap border-r border-slate-200">${p.invoice_no || `PUR-${p.id}`}</td>
           <td class="py-2.5 px-3 border-r border-slate-200 min-w-[200px]">
@@ -607,9 +607,9 @@ window.Purchases = {
       const btn = document.getElementById(`pur-tab-${t}`);
       if (!btn) return;
       if (t === type) {
-        btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer bg-white text-slate-900 shadow-2xs';
+        btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer bg-white text-slate-950 shadow-xs border border-slate-200/80';
       } else {
-        btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900';
+        btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-700 hover:text-slate-950 hover:bg-white/60';
       }
     });
 
@@ -787,7 +787,7 @@ window.Purchases = {
             <!-- Meta Bar: Invoice #, Date, Payment Method -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
               <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Invoice / PO #</label>
+                <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Invoice / PO #</label>
                 <div class="font-mono font-black text-xs text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-1.5 shadow-2xs">
                   <i data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-600"></i>
                   <span id="pmo-invoice-display">${invoiceNo}</span>
@@ -795,13 +795,13 @@ window.Purchases = {
               </div>
 
               <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Purchase Date *</label>
+                <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Purchase Date *</label>
                 <input type="date" id="pmo-date" required value="${p ? (p.date || '').slice(0, 10) : new Date().toISOString().split('T')[0]}"
                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 font-mono shadow-2xs">
               </div>
 
               <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Payment Method</label>
+                <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Payment Method</label>
                 <select id="pmo-payment-method" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 shadow-2xs">
                   <option value="Cash" ${p && p.payment_method === 'Cash' ? 'selected' : ''}>💵 Cash</option>
                   <option value="Online" ${p && (p.payment_method === 'Online' || p.payment_method === 'Bank') ? 'selected' : ''}>💳 Online</option>
@@ -877,9 +877,9 @@ window.Purchases = {
                 
                 <!-- Grand Total -->
                 <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-                  <span class="text-[10px] font-black uppercase text-slate-400 block">Grand Total Bill</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 block">Grand Total Bill</span>
                   <span id="pmo-total-display" class="text-xl font-black text-slate-900 font-mono block mt-0.5">Rs. 0</span>
-                  <span class="text-[10px] text-slate-400 font-bold">Sum of all purchased items</span>
+                  <span class="text-[10px] text-slate-500 font-bold">Sum of all purchased items</span>
                 </div>
 
                 <!-- Amount Paid -->

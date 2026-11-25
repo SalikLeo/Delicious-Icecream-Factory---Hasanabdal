@@ -6,6 +6,21 @@ const app = {
   saleMode: 'retail',
 
   async init() {
+    // 1. Immediately apply terminal role and UI restrictions first
+    try {
+      await this.initTerminalRole();
+    } catch (err) {
+      console.warn("Failed to init terminal role:", err);
+    }
+
+    // 2. System License & Hosting Validity Check
+    try {
+      await this.checkLicenseStatus();
+      this.startLicenseWatchdog();
+    } catch (licErr) {
+      console.warn("License check error:", licErr);
+    }
+
     // Rehydrate localStorage from SQLite app_kv_store on startup
     try {
       if (window.api && window.api.getAllKv) {
@@ -23,8 +38,16 @@ const app = {
     this.saleMode = window.storage.get('sale_mode') || 'retail';
     this.bindEvents();
     this.initCalculator();
-    await this.loadSettings();
-    await this.initZoom();
+    try {
+      await this.loadSettings();
+    } catch (e) {
+      console.warn("Could not load settings:", e);
+    }
+    try {
+      await this.initZoom();
+    } catch (e) {
+      console.warn("Could not init zoom:", e);
+    }
     this.updateSaleModeUI();
     if (window.lucide) lucide.createIcons();
 
@@ -34,7 +57,18 @@ const app = {
       });
     }
 
-    this.navigate('dashboard');
+    const initialPage = (this.lanConfig && this.lanConfig.role === 'packing') 
+      ? 'carton-packing' 
+      : ((this.lanConfig && this.lanConfig.role === 'sales') ? 'shop-sales' : 'dashboard');
+    this.navigate(initialPage);
+
+    if (this.lanConfig && this.lanConfig.role === 'packing') {
+      setTimeout(() => {
+        if (window.CartonPacking && typeof CartonPacking.openScanCounterModal === 'function') {
+          CartonPacking.openScanCounterModal();
+        }
+      }, 400);
+    }
   },
 
   setSaleMode(mode) {
@@ -159,6 +193,24 @@ const app = {
 
     // Global Key Listener: Enter = Confirm/Save/Complete, Escape = Cancel/Back/Close
     window.addEventListener('keydown', (e) => {
+      // If Hosting Expired Overlay is active, block all shortcuts and Escape keys
+      const licOverlay = document.getElementById('license-expired-overlay');
+      if (licOverlay && !licOverlay.classList.contains('hidden')) {
+        if (e.key === 'Enter') {
+          const passInput = document.getElementById('expired-renew-password');
+          if (document.activeElement === passInput) {
+            e.preventDefault();
+            this.submitRenewLicenseFromLock();
+            return;
+          }
+        }
+        if (e.key === 'Escape' || e.key.startsWith('F')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      }
+
       // 0. Quick Price Checker Modal (#price-checker-modal) - Shortcut: F6, F8
       const isPriceKey = e.key === 'F6' || e.code === 'F6' || e.key === 'F8' || e.code === 'F8';
       if (isPriceKey) {
@@ -242,7 +294,7 @@ const app = {
       }
 
       // 4. Any other open modal across pages
-      const visibleModals = Array.from(document.querySelectorAll('.fixed.inset-0:not(.hidden):not(#loading-overlay)'))
+      const visibleModals = Array.from(document.querySelectorAll('.fixed.inset-0:not(.hidden):not(#loading-overlay):not(#license-expired-overlay)'))
         .filter(m => {
           const style = window.getComputedStyle(m);
           return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
@@ -307,6 +359,26 @@ const app = {
   },
 
   navigate(page, args) {
+    // Role restriction check for dedicated terminals
+    if (this.lanConfig) {
+      if (this.lanConfig.role === 'packing' && page !== 'carton-packing') {
+        this.showAlert({
+          title: 'Restricted Terminal',
+          message: 'This PC is configured as a dedicated Packing Station. To access other tabs, switch role using the button in the top bar.',
+          buttonText: 'OK'
+        });
+        return;
+      }
+      if (this.lanConfig.role === 'sales' && page !== 'shop-sales') {
+        this.showAlert({
+          title: 'Restricted Terminal',
+          message: 'This PC is configured as a dedicated Sales Counter. To access other tabs, switch role using the button in the top bar.',
+          buttonText: 'OK'
+        });
+        return;
+      }
+    }
+
     // Support legacy stock_password configuration
     const stockPassword = window.storage.get('stock_password');
     const lockedTabs = window.storage.get('locked_tabs');
@@ -371,7 +443,8 @@ const app = {
 
     panel.classList.remove('hidden');
 
-    const isBlank = !panel.firstElementChild || panel.innerHTML.trim() === '';
+    const hasErrorState = panel.innerHTML.includes('Error Loading Tab');
+    const isBlank = !panel.firstElementChild || panel.innerHTML.trim() === '' || hasErrorState;
     const hasSpecificArgs = Boolean(args && (args.id || args.reset || args.force || Object.keys(args).length > 0));
 
     // If user was editing a sale in proposal-form and now clicks "New Sale" without an edit ID, reset to new sale
@@ -1115,8 +1188,9 @@ const app = {
     return parseInt(boxes) || 0;
   },
 
-  getTodayDate() {
-    const d = new Date();
+  getTodayDate(inputDate) {
+    const d = inputDate ? new Date(inputDate) : new Date();
+    if (isNaN(d.getTime())) return '';
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -3614,6 +3688,792 @@ const app = {
     this._zoomTimer = setTimeout(() => {
       if (notif) notif.style.opacity = '0';
     }, 1600);
+  },
+
+  // ==========================================
+  // Local LAN Multi-PC Synchronization & Roles
+  // ==========================================
+  lanConfig: { role: 'main', serverHost: '', port: 4321, localIp: '127.0.0.1' },
+  lanEventSource: null,
+
+  async initTerminalRole() {
+    try {
+      if (window.api && window.api.lanGetConfig) {
+        this.lanConfig = await window.api.lanGetConfig() || { role: 'main' };
+      }
+    } catch (e) {
+      console.warn('[app.initTerminalRole] Config error:', e);
+    }
+    this.updateTerminalUI();
+    this.applyRoleRestrictions();
+    this.initLanEventListener();
+  },
+
+  updateTerminalUI() {
+    const role = (this.lanConfig && this.lanConfig.role) || 'main';
+    const host = (this.lanConfig && this.lanConfig.serverHost) || '';
+    const localIp = (this.lanConfig && this.lanConfig.localIp) || '127.0.0.1';
+    const roleText = document.getElementById('terminal-role-text');
+    const roleBadge = document.getElementById('terminal-role-badge');
+    const lanText = document.getElementById('lan-connection-text');
+
+    if (role === 'packing') {
+      if (roleText) roleText.textContent = '📦 PC 2: Packing Station';
+      if (roleBadge) {
+        roleBadge.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs';
+        const dot = roleBadge.querySelector('span');
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-purple-600 animate-pulse';
+      }
+      if (lanText) lanText.textContent = host ? (host.includes('127.0.0.1') || host.includes('localhost') ? 'Local Mode (127.0.0.1)' : `Host: ${host}`) : 'PC 1 Not Set';
+    } else if (role === 'sales') {
+      if (roleText) roleText.textContent = '🧾 PC 3: Sales Counter';
+      if (roleBadge) {
+        roleBadge.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs';
+        const dot = roleBadge.querySelector('span');
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-600 animate-pulse';
+      }
+      if (lanText) lanText.textContent = host ? (host.includes('127.0.0.1') || host.includes('localhost') ? 'Local Mode (127.0.0.1)' : `Host: ${host}`) : 'PC 1 Not Set';
+    } else {
+      if (roleText) roleText.textContent = '👑 PC 1: Main Server';
+      if (roleBadge) {
+        roleBadge.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs';
+        const dot = roleBadge.querySelector('span');
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-600 animate-pulse';
+      }
+      if (lanText) lanText.textContent = `Host Server Port 4321 (${localIp})`;
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  applyRoleRestrictions() {
+    const role = (this.lanConfig && this.lanConfig.role) || 'main';
+    const aside = document.querySelector('aside');
+    if (!aside) return;
+
+    const allNavButtons = aside.querySelectorAll('.nav-btn');
+    const sectionHeaders = aside.querySelectorAll('.uppercase.tracking-wider');
+
+    if (role === 'packing') {
+      allNavButtons.forEach(btn => {
+        if (btn.id === 'nav-carton-packing') {
+          btn.classList.remove('hidden');
+        } else {
+          btn.classList.add('hidden');
+        }
+      });
+      sectionHeaders.forEach(h => h.classList.add('hidden'));
+    } else if (role === 'sales') {
+      allNavButtons.forEach(btn => {
+        if (btn.id === 'nav-shop-sales') {
+          btn.classList.remove('hidden');
+        } else {
+          btn.classList.add('hidden');
+        }
+      });
+      sectionHeaders.forEach(h => h.classList.add('hidden'));
+    } else {
+      allNavButtons.forEach(btn => btn.classList.remove('hidden'));
+      sectionHeaders.forEach(h => h.classList.remove('hidden'));
+    }
+  },
+
+  initLanEventListener() {
+    const role = (this.lanConfig && this.lanConfig.role) || 'main';
+
+    if (role === 'main') {
+      if (window.api && window.api.onLanDataChanged) {
+        window.api.onLanDataChanged((data) => {
+          this.handleLanDataChanged(data);
+        });
+      }
+    } else {
+      // Connect to SSE stream on Host PC
+      if (this.lanEventSource) {
+        try { this.lanEventSource.close(); } catch (e) {}
+        this.lanEventSource = null;
+      }
+      let host = (this.lanConfig.serverHost || '').trim().replace(/\/$/, '');
+      if (host) {
+        if (!host.startsWith('http://') && !host.startsWith('https://')) {
+          host = 'http://' + host;
+        }
+        try {
+          const es = new EventSource(`${host}/api/events`);
+          this.lanEventSource = es;
+          es.onopen = () => {
+            const lanText = document.getElementById('lan-connection-text');
+            const lanIndicator = document.getElementById('lan-connection-indicator');
+            if (lanText) lanText.textContent = `Connected to PC 1 (${this.lanConfig.serverHost})`;
+            if (lanIndicator) {
+              const icon = lanIndicator.querySelector('i, svg');
+              if (icon) icon.className = 'w-3.5 h-3.5 text-emerald-600';
+            }
+            // Auto-refresh active tab with latest data upon connection or reconnection
+            this.handleLanDataChanged({ type: 'reconnected' });
+          };
+          es.onerror = () => {
+            const lanText = document.getElementById('lan-connection-text');
+            const lanIndicator = document.getElementById('lan-connection-indicator');
+            if (lanText) lanText.textContent = `Reconnecting to PC 1 (${this.lanConfig.serverHost})...`;
+            if (lanIndicator) {
+              const icon = lanIndicator.querySelector('i, svg');
+              if (icon) icon.className = 'w-3.5 h-3.5 text-amber-500 animate-pulse';
+            }
+          };
+          es.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              this.handleLanDataChanged(data);
+            } catch (err) {}
+          };
+        } catch (err) {
+          console.warn('[LAN SSE] Failed to initialize SSE stream:', err);
+        }
+      }
+    }
+  },
+
+  lanSyncDebounceTimer: null,
+
+  handleLanDataChanged(data) {
+    if (data && data.method && ['setKv', 'saveAllKv', 'getKv', 'getAllKv'].includes(data.method)) {
+      return;
+    }
+
+    if (this.lanSyncDebounceTimer) {
+      clearTimeout(this.lanSyncDebounceTimer);
+    }
+
+    this.lanSyncDebounceTimer = setTimeout(() => {
+      this.lanSyncDebounceTimer = null;
+
+      try {
+        if (this.currentPage === 'settings' && window.Settings && typeof Settings.updateLicenseDisplay === 'function') {
+          Settings.updateLicenseDisplay();
+        }
+      } catch (e) {}
+
+      try {
+        const p = this.currentPage;
+        if (p === 'carton-packing' && window.CartonPacking && typeof CartonPacking.loadData === 'function') {
+          CartonPacking.loadData();
+        } else if (p === 'shop-sales' && window.ShopSales && typeof ShopSales.loadData === 'function') {
+          ShopSales.loadData();
+        } else if (p === 'proposals' && window.Proposals && typeof Proposals.loadData === 'function') {
+          Proposals.loadData();
+        } else if (p === 'dashboard' && window.Dashboard && typeof Dashboard.loadStats === 'function') {
+          Dashboard.loadStats();
+        } else if (p === 'customers' && window.Customers && typeof Customers.loadData === 'function') {
+          Customers.loadData();
+          if (Customers.selectedShopId && typeof Customers.selectShop === 'function') {
+            Customers.selectShop(Customers.selectedShopId);
+          }
+        } else if (p === 'car-loading' && window.CarLoading && typeof CarLoading.loadData === 'function') {
+          CarLoading.loadData();
+        } else if (p === 'raw-materials' && window.RawMaterials && typeof RawMaterials.loadData === 'function') {
+          RawMaterials.loadData();
+        } else if (p === 'production' && window.Production && typeof Production.loadData === 'function') {
+          Production.loadData();
+        } else if (p === 'suppliers' && window.Suppliers && typeof Suppliers.loadData === 'function') {
+          Suppliers.loadData();
+        } else if (p === 'reports' && window.Reports && typeof Reports.loadData === 'function') {
+          Reports.loadData();
+        } else if (p === 'expenses' && window.Expenses && typeof Expenses.loadData === 'function') {
+          Expenses.loadData();
+        } else if (p === 'proposal-form' && window.SalesForm) {
+          if (typeof SalesForm.refreshStockIndicators === 'function') SalesForm.refreshStockIndicators();
+          if (typeof SalesForm.refreshCustomers === 'function') SalesForm.refreshCustomers();
+        }
+      } catch (err) {
+        console.warn('[LAN Sync] Error during auto-refresh:', err);
+      }
+
+      // Show instant notification on Main PC when data is received from remote terminal
+      if (data && data.method && this.lanConfig && this.lanConfig.role === 'main') {
+        const m = data.method;
+        if (/^(saveShopDelivery|saveProposal|addSale)/i.test(m)) {
+          this.showToast?.('🧾 New sale recorded from Sales Counter terminal! Synced.', 'success');
+        } else if (/^(addPackedCarton|recordDailyBarcodeScan|bulkSetPackedCartonsStock)/i.test(m)) {
+          this.showToast?.('📦 New stock recorded from Packing Station! Synced.', 'info');
+        }
+      }
+    }, 150);
+  },
+
+  promptRoleLogout() {
+    const role = (this.lanConfig && this.lanConfig.role) || 'main';
+    if (role !== 'main') {
+      this.verifyPassword({
+        title: 'Switch Role / Terminal Logout',
+        message: 'Enter Admin / Supervisor password to exit terminal role and switch PC:',
+        onVerified: () => {
+          this.openRoleModal();
+        }
+      });
+    } else {
+      this.openRoleModal();
+    }
+  },
+
+  async openRoleModal() {
+    try {
+      if (window.api && window.api.lanGetConfig) {
+        this.lanConfig = await window.api.lanGetConfig() || { role: 'main' };
+      }
+    } catch (e) {}
+
+    const curRole = (this.lanConfig && this.lanConfig.role) || 'main';
+    const localIp = (this.lanConfig && this.lanConfig.localIp) || '127.0.0.1';
+    let host = (this.lanConfig && this.lanConfig.serverHost) || '';
+
+    // If host was previously set to loopback on a client terminal, clear it
+    if (curRole !== 'main' && (host.includes('127.0.0.1') || host.toLowerCase().includes('localhost'))) {
+      host = '';
+    }
+
+    const ipDisplay = document.getElementById('modal-local-ip');
+    if (ipDisplay) ipDisplay.textContent = localIp;
+
+    const hostInput = document.getElementById('modal-server-host');
+    if (hostInput) hostInput.value = host;
+
+    const pingResult = document.getElementById('modal-ping-result');
+    if (pingResult) {
+      pingResult.classList.add('hidden');
+      pingResult.textContent = '';
+    }
+
+    this.onTerminalRoleSelect(curRole);
+
+    const modal = document.getElementById('terminal-role-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  closeRoleModal() {
+    const modal = document.getElementById('terminal-role-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  },
+
+  onTerminalRoleSelect(role) {
+    ['main', 'packing', 'sales'].forEach(r => {
+      const card = document.getElementById(`role-option-${r}`);
+      const radio = document.querySelector(`input[name="terminal-role-choice"][value="${r}"]`);
+      if (radio) radio.checked = (r === role);
+      if (card) {
+        if (r === role) {
+          card.classList.add('border-amber-400', 'bg-amber-50/40', 'ring-2', 'ring-amber-400/30');
+          card.classList.remove('border-slate-200');
+        } else {
+          card.classList.remove('border-amber-400', 'bg-amber-50/40', 'ring-2', 'ring-amber-400/30');
+          card.classList.add('border-slate-200');
+        }
+      }
+    });
+
+    const clientConfig = document.getElementById('modal-client-config');
+    if (clientConfig) {
+      if (role === 'main') {
+        clientConfig.classList.add('hidden');
+      } else {
+        clientConfig.classList.remove('hidden');
+      }
+    }
+  },
+
+  async autoDetectServer() {
+    const btn = document.getElementById('btn-modal-autodetect');
+    const resultDiv = document.getElementById('modal-ping-result');
+    const input = document.getElementById('modal-server-host');
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> Scanning...';
+    }
+    if (resultDiv) {
+      resultDiv.classList.remove('hidden');
+      resultDiv.className = 'text-xs font-bold text-indigo-700 bg-indigo-50 p-2 rounded-lg border border-indigo-200';
+      resultDiv.textContent = 'Scanning factory Wi-Fi for PC 1 (Main Server)...';
+    }
+
+    try {
+      const found = await window.api.lanDiscoverServer();
+      if (found) {
+        if (input) input.value = found;
+        if (resultDiv) {
+          resultDiv.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200';
+          resultDiv.textContent = `✅ Found PC 1 (Main Server) at ${found}!`;
+        }
+      } else {
+        if (resultDiv) {
+          resultDiv.className = 'text-xs font-bold text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200';
+          resultDiv.textContent = '⚠️ Could not find PC 1 automatically. Please ensure PC 1 is on, the app is open on PC 1, and both PCs are on the same Wi-Fi, or enter the IP manually.';
+        }
+      }
+    } catch (e) {
+      if (resultDiv) {
+        resultDiv.className = 'text-xs font-bold text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200';
+        resultDiv.textContent = `❌ Scan error: ${e.message}`;
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="scan" class="w-3.5 h-3.5"></i> <span>Auto-Detect</span>';
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+  },
+
+  async testTerminalPing() {
+    const hostInput = document.getElementById('modal-server-host');
+    const resultDiv = document.getElementById('modal-ping-result');
+    const btn = document.getElementById('btn-modal-test-ping');
+    if (!hostInput || !resultDiv) return;
+
+    const host = hostInput.value.trim();
+    if (!host) {
+      resultDiv.className = 'text-xs font-bold text-red-600';
+      resultDiv.textContent = '❌ Please enter the IP address of PC 1 (e.g. 192.168.1.50:4321)';
+      resultDiv.classList.remove('hidden');
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> Testing...';
+    }
+
+    try {
+      const res = await window.api.lanPingHost(host);
+      resultDiv.classList.remove('hidden');
+      if (res && res.ok) {
+        resultDiv.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200';
+        resultDiv.textContent = `✅ Successfully connected to PC 1 (${res.data?.appName || 'Host Server'})!`;
+      } else {
+        resultDiv.className = 'text-xs font-bold text-red-700 bg-red-50 p-2 rounded-lg border border-red-200';
+        resultDiv.textContent = `❌ Connection failed: ${res?.error || 'Host unreachable'}. Verify PC 1 IP and Wi-Fi.`;
+      }
+    } catch (err) {
+      resultDiv.classList.remove('hidden');
+      resultDiv.className = 'text-xs font-bold text-red-700 bg-red-50 p-2 rounded-lg border border-red-200';
+      resultDiv.textContent = `❌ Ping error: ${err.message}`;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="activity" class="w-3.5 h-3.5"></i> <span>Test Connection</span>';
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+  },
+
+  async saveTerminalRole() {
+    const radio = document.querySelector('input[name="terminal-role-choice"]:checked');
+    const selectedRole = radio ? radio.value : 'main';
+    const hostInput = document.getElementById('modal-server-host');
+    const host = hostInput ? hostInput.value.trim() : '';
+
+    if (selectedRole !== 'main') {
+      if (!host) {
+        this.showAlert({
+          title: 'Server IP Required',
+          message: 'Please enter the IP address of PC 1 (Main Server) to connect this terminal.<br><br>Or click <b>"Auto-Detect"</b> to scan Wi-Fi automatically.',
+          buttonText: 'OK'
+        });
+        return;
+      }
+
+      const cleanHost = host.toLowerCase().replace(/^https?:\/\//, '').split(':')[0].trim();
+      const localIp = (this.lanConfig && this.lanConfig.localIp) || '';
+      if (cleanHost === '127.0.0.1' || cleanHost === 'localhost' || cleanHost === '::1' || (localIp && cleanHost === localIp)) {
+        this.showAlert({
+          title: 'Cannot Connect to Self (127.0.0.1)',
+          message: `The address <b>"${host}"</b> points to this laptop itself, not PC 1.<br><br>Please check the IP shown on <b>PC 1 (Main Server)</b> at the top bar (e.g. <code>192.168.1.2:4321</code>) and enter it, or click <b>"Auto-Detect"</b>.`,
+          buttonText: 'OK'
+        });
+        return;
+      }
+    }
+
+    this.showLoading();
+    try {
+      const savedConfig = await window.api.lanSetConfig({
+        role: selectedRole,
+        serverHost: host
+      });
+
+      this.lanConfig = savedConfig || { role: selectedRole, serverHost: host };
+      this.closeRoleModal();
+
+      // Automatically refresh the application immediately so the proper role and right page load
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } catch (err) {
+      this.hideLoading();
+      this.showAlert({
+        title: 'Save Failed',
+        message: 'Could not save terminal configuration: ' + err.message,
+        buttonText: 'OK'
+      });
+    }
+  },
+
+  // ==========================================
+  // System License & Hosting Validity System
+  // ==========================================
+  licenseTimer: null,
+  MASTER_LICENSE_PASS: 'Salik.leo1212',
+
+  async getLicenseInfo() {
+    try {
+      let expiresAt = null;
+      let lastSeen = null;
+
+      if (window.api && typeof window.api.getKv === 'function') {
+        try {
+          const rawExp = await window.api.getKv('license_expires_at');
+          if (rawExp && !isNaN(Number(rawExp)) && Number(rawExp) > 0) {
+            expiresAt = Number(rawExp);
+          }
+        } catch (e) {
+          console.warn('[License] Failed to read license_expires_at from DB:', e);
+        }
+
+        try {
+          const rawSeen = await window.api.getKv('license_last_seen');
+          if (rawSeen && !isNaN(Number(rawSeen)) && Number(rawSeen) > 0) {
+            lastSeen = Number(rawSeen);
+          }
+        } catch (e) {}
+      }
+
+      // Secondary persistence fallback to localStorage
+      if (!expiresAt || isNaN(expiresAt)) {
+        try {
+          const localExp = localStorage.getItem('license_expires_at');
+          if (localExp && !isNaN(Number(localExp)) && Number(localExp) > 0) {
+            expiresAt = Number(localExp);
+          }
+        } catch (e) {}
+      }
+      if (!lastSeen || isNaN(lastSeen)) {
+        try {
+          const localSeen = localStorage.getItem('license_last_seen');
+          if (localSeen && !isNaN(Number(localSeen)) && Number(localSeen) > 0) {
+            lastSeen = Number(localSeen);
+          }
+        } catch (e) {}
+      }
+
+      const now = Date.now();
+
+      // Fresh installation: default to 1 year (365 days)
+      if (!expiresAt || isNaN(expiresAt)) {
+        expiresAt = now + (365 * 24 * 60 * 60 * 1000);
+        if (window.api && window.api.setKv) {
+          try { await window.api.setKv('license_expires_at', String(expiresAt)); } catch (e) {}
+          try { await window.api.setKv('license_last_seen', String(now)); } catch (e) {}
+        }
+        try {
+          localStorage.setItem('license_expires_at', String(expiresAt));
+          localStorage.setItem('license_last_seen', String(now));
+        } catch (e) {}
+      } else {
+        // Guarantee both DB and localStorage have the saved expiration date
+        try { localStorage.setItem('license_expires_at', String(expiresAt)); } catch (e) {}
+        if (window.api && window.api.setKv) {
+          try { window.api.setKv('license_expires_at', String(expiresAt)); } catch (e) {}
+        }
+      }
+
+      // Detect system clock manipulation (clock wound back more than 1 hour)
+      let isTampered = false;
+      if (lastSeen && (now < (lastSeen - 3600000))) {
+        console.warn('[License] System clock tampering detected (clock wound back).');
+        isTampered = true;
+      } else if ((!lastSeen || (now - lastSeen > 15 * 60 * 1000))) {
+        // Only update heartbeat timestamp once every 15 minutes, never on every check
+        if (window.api && window.api.setKv) {
+          try { window.api.setKv('license_last_seen', String(now)); } catch (e) {}
+        }
+        try { localStorage.setItem('license_last_seen', String(now)); } catch (e) {}
+      }
+
+      const remainingMs = expiresAt - now;
+      const isExpired = isTampered || (remainingMs <= 0);
+
+      // Format remaining time nicely
+      let remainingFormatted = '';
+      if (isExpired) {
+        remainingFormatted = 'Expired';
+      } else {
+        const totalSec = Math.floor(remainingMs / 1000);
+        const days = Math.floor(totalSec / (24 * 3600));
+        const hours = Math.floor((totalSec % (24 * 3600)) / 3600);
+        const mins = Math.floor((totalSec % 3600) / 60);
+        const secs = totalSec % 60;
+
+        if (days > 0) {
+          remainingFormatted = `${days}d ${hours}h ${mins}m ${secs}s`;
+        } else if (hours > 0) {
+          remainingFormatted = `${hours}h ${mins}m ${secs}s`;
+        } else {
+          remainingFormatted = `${mins}m ${secs}s`;
+        }
+      }
+
+      return {
+        isExpired,
+        isTampered,
+        expiresAt,
+        remainingMs,
+        remainingFormatted
+      };
+    } catch (err) {
+      console.warn('[License] Error getting license info:', err);
+      return { isExpired: false, remainingFormatted: 'Active' };
+    }
+  },
+
+  async checkLicenseStatus() {
+    const info = await this.getLicenseInfo();
+    const overlay = document.getElementById('license-expired-overlay');
+
+    if (info && info.isExpired) {
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        if (window.lucide) lucide.createIcons({ root: overlay });
+      }
+    } else {
+      if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+      }
+    }
+
+    if (this.currentPage === 'settings' && window.Settings && typeof Settings.updateLicenseDisplay === 'function') {
+      Settings.updateLicenseDisplay();
+    }
+
+    return info;
+  },
+
+  startLicenseWatchdog() {
+    if (this.licenseTimer) clearInterval(this.licenseTimer);
+    this.licenseTimer = setInterval(() => {
+      this.checkLicenseStatus();
+    }, 20000); // Check every 20 seconds
+  },
+
+  async applyLicenseDuration(months = 0, days = 0, mins = 0) {
+    const m = Math.max(0, parseInt(months) || 0);
+    const d = Math.max(0, parseInt(days) || 0);
+    const min = Math.max(0, parseInt(mins) || 0);
+
+    const addMs = (m * 30 * 24 * 3600 * 1000) + (d * 24 * 3600 * 1000) + (min * 60 * 1000);
+    if (addMs <= 0) return { success: false, error: 'Duration must be greater than zero.' };
+
+    const newExpiry = Date.now() + addMs;
+
+    if (window.api && window.api.setKv) {
+      await window.api.setKv('license_expires_at', String(newExpiry));
+      await window.api.setKv('license_last_seen', String(Date.now()));
+    }
+    try {
+      localStorage.setItem('license_expires_at', String(newExpiry));
+      localStorage.setItem('license_last_seen', String(Date.now()));
+    } catch (e) {}
+
+    await this.checkLicenseStatus();
+    return { success: true, newExpiry };
+  },
+
+  toggleLicenseUnlockPanel() {
+    const panel = document.getElementById('license-unlock-panel');
+    const chevron = document.getElementById('license-unlock-chevron');
+    if (!panel) return;
+
+    if (panel.classList.contains('hidden')) {
+      panel.classList.remove('hidden');
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      const passInput = document.getElementById('expired-renew-password');
+      if (passInput) passInput.focus();
+    } else {
+      panel.classList.add('hidden');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    }
+  },
+
+  async submitRenewLicenseFromLock() {
+    const passInput = document.getElementById('expired-renew-password');
+    const errDiv = document.getElementById('expired-renew-error');
+    const pass = passInput ? passInput.value.trim() : '';
+
+    if (!pass) {
+      if (errDiv) {
+        errDiv.classList.remove('hidden');
+        errDiv.textContent = 'Please enter master password.';
+      }
+      return;
+    }
+
+    if (pass !== this.MASTER_LICENSE_PASS) {
+      if (errDiv) {
+        errDiv.classList.remove('hidden');
+        errDiv.textContent = 'Incorrect master password. Access denied.';
+      }
+      if (passInput) {
+        passInput.value = '';
+        passInput.focus();
+      }
+      return;
+    }
+
+    const months = parseInt(document.getElementById('expired-renew-months')?.value) || 0;
+    const days = parseInt(document.getElementById('expired-renew-days')?.value) || 0;
+    const mins = parseInt(document.getElementById('expired-renew-mins')?.value) || 0;
+
+    const res = await this.applyLicenseDuration(months, days, mins);
+    if (res.success) {
+      if (errDiv) errDiv.classList.add('hidden');
+      if (passInput) passInput.value = '';
+      this.toggleLicenseUnlockPanel();
+
+      this.showAlert({
+        title: 'Hosting & Service Renewed',
+        message: `System successfully unlocked and extended for ${months}m ${days}d ${mins}min! Application is refreshing...`,
+        buttonText: 'OK',
+        onConfirm: () => {
+          window.location.reload();
+        }
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } else {
+      if (errDiv) {
+        errDiv.classList.remove('hidden');
+        errDiv.textContent = res.error || 'Failed to update license.';
+      }
+    }
+  },
+
+  openHostingDurationModal() {
+    const modal = document.getElementById('hosting-duration-modal');
+    if (!modal) return;
+    
+    const monthsInput = document.getElementById('hosting-modal-months');
+    const daysInput = document.getElementById('hosting-modal-days');
+    const minsInput = document.getElementById('hosting-modal-mins');
+    if (monthsInput) monthsInput.value = '0';
+    if (daysInput) daysInput.value = '365';
+    if (minsInput) minsInput.value = '0';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.lucide) lucide.createIcons({ root: modal });
+    this.updateHostingPreview();
+  },
+
+  closeHostingDurationModal() {
+    const modal = document.getElementById('hosting-duration-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  },
+
+  setHostingDurationPreset(m, d, min) {
+    const monthsInput = document.getElementById('hosting-modal-months');
+    const daysInput = document.getElementById('hosting-modal-days');
+    const minsInput = document.getElementById('hosting-modal-mins');
+    if (monthsInput) monthsInput.value = m;
+    if (daysInput) daysInput.value = d;
+    if (minsInput) minsInput.value = min;
+    this.updateHostingPreview();
+  },
+
+  updateHostingPreview() {
+    const months = parseInt(document.getElementById('hosting-modal-months')?.value) || 0;
+    const days = parseInt(document.getElementById('hosting-modal-days')?.value) || 0;
+    const mins = parseInt(document.getElementById('hosting-modal-mins')?.value) || 0;
+    const previewEl = document.getElementById('hosting-modal-preview-text');
+    if (!previewEl) return;
+
+    const addMs = (months * 30 * 24 * 3600 * 1000) + (days * 24 * 3600 * 1000) + (mins * 60 * 1000);
+    if (addMs <= 0) {
+      previewEl.textContent = 'Please enter a duration greater than 0';
+      previewEl.className = 'font-bold text-xs text-rose-600 mt-0.5';
+      return;
+    }
+
+    const futureDate = new Date(Date.now() + addMs);
+    const dateStr = futureDate.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+    const timeStr = futureDate.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    const parts = [];
+    if (months > 0) parts.push(`${months}m`);
+    if (days > 0) parts.push(`${days}d`);
+    if (mins > 0) parts.push(`${mins}min`);
+
+    previewEl.className = 'font-black text-sm text-emerald-950 mt-0.5';
+    previewEl.textContent = `${dateStr} at ${timeStr} (${parts.join(' ') || '0m'})`;
+  },
+
+  async confirmApplyHostingDuration() {
+    const months = parseInt(document.getElementById('hosting-modal-months')?.value) || 0;
+    const days = parseInt(document.getElementById('hosting-modal-days')?.value) || 0;
+    const mins = parseInt(document.getElementById('hosting-modal-mins')?.value) || 0;
+
+    const addMs = (months * 30 * 24 * 3600 * 1000) + (days * 24 * 3600 * 1000) + (mins * 60 * 1000);
+    if (addMs <= 0) {
+      this.showAlert({
+        title: 'Invalid Duration',
+        message: 'Please specify at least 1 minute or 1 day of hosting duration.',
+        buttonText: 'OK'
+      });
+      return;
+    }
+
+    this.showLoading();
+    try {
+      const res = await this.applyLicenseDuration(months, days, mins);
+      this.hideLoading();
+      this.closeHostingDurationModal();
+
+      if (res.success) {
+        this.showAlert({
+          title: 'Hosting Updated',
+          message: `Cloud hosting timer successfully extended for ${months}m ${days}d ${mins}min! Application is refreshing...`,
+          buttonText: 'OK',
+          onConfirm: () => {
+            window.location.reload();
+          }
+        });
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } else {
+        this.showAlert('Failed to update hosting: ' + (res.error || 'Unknown error'));
+      }
+    } catch (err) {
+      this.hideLoading();
+      this.showAlert('Error updating hosting: ' + err.message);
+    }
   }
 };
 

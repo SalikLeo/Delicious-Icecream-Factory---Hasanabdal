@@ -185,7 +185,7 @@ window.CarLoading = {
           <div onclick="CarLoading.openCarsListModal()" class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between cursor-pointer hover:border-blue-300 hover:shadow-xs transition-all group" title="Click to View & Edit Cars List">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider group-hover:text-blue-600 transition-colors">Registered Delivery Cars</p>
-              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalCars} <span class="text-xs font-bold text-slate-400">vehicles</span></h3>
+              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalCars} <span class="text-xs font-bold text-slate-600">vehicles</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all">
               <i data-lucide="truck" class="w-5 h-5"></i>
@@ -196,7 +196,7 @@ window.CarLoading = {
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Loaded in Cars</p>
               <h3 class="text-2xl font-black text-blue-700 mt-1 tabular-nums">
-                <span class="text-xl">${totalCtnsLoaded.toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">ctns</span> <span class="text-slate-300 font-normal text-sm">•</span> <span class="text-xl text-sky-600">${totalShopersLoaded.toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">shopers</span>
+                <span class="text-xl">${totalCtnsLoaded.toLocaleString()}</span> <span class="text-xs font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded-md">ctns</span> <span class="text-blue-300 font-bold text-sm">•</span> <span class="text-xl text-sky-600">${totalShopersLoaded.toLocaleString()}</span> <span class="text-xs font-black text-sky-900 bg-sky-100 px-1.5 py-0.5 rounded-md">shopers</span>
               </h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
@@ -208,7 +208,7 @@ window.CarLoading = {
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Available in Factory Stock</p>
               <h3 class="text-2xl font-black text-purple-700 mt-1 tabular-nums">
-                <span class="text-xl">${factoryCtns.toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">ctns</span> <span class="text-slate-300 font-normal text-sm">•</span> <span class="text-xl text-purple-600">${factoryShopers.toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">shopers</span>
+                <span class="text-xl">${factoryCtns.toLocaleString()}</span> <span class="text-xs font-black text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded-md">ctns</span> <span class="text-purple-300 font-bold text-sm">•</span> <span class="text-xl text-purple-600">${factoryShopers.toLocaleString()}</span> <span class="text-xs font-black text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded-md">shopers</span>
               </h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-black">
@@ -219,14 +219,14 @@ window.CarLoading = {
 
         <!-- Navigation Tabs & Search & Sort -->
         <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
-            <button onclick="CarLoading.switchTab('cars')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'cars' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+          <div class="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300/70 w-full lg:w-auto shrink-0 shadow-inner">
+            <button onclick="CarLoading.switchTab('cars')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'cars' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Delivery Cars &amp; Stock
             </button>
-            <button onclick="CarLoading.switchTab('dispatch')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'dispatch' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+            <button onclick="CarLoading.switchTab('dispatch')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'dispatch' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               + Load Car
             </button>
-            <button onclick="CarLoading.switchTab('history')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'history' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+            <button onclick="CarLoading.switchTab('history')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'history' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Loading Slips
             </button>
           </div>
@@ -458,7 +458,7 @@ window.CarLoading = {
         <table class="w-full text-left text-xs border-collapse">
           <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10 shadow-2xs">
             <tr>
-              <th class="py-2.5 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+              <th class="py-2.5 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th onclick="CarLoading.toggleCarSort('car_number')" class="py-2.5 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Vehicle #</span>
@@ -513,7 +513,7 @@ window.CarLoading = {
 
                 return `
                   <tr class="${isExpanded ? 'bg-blue-50/40' : 'hover:bg-slate-50/60'} transition-colors">
-                    <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                    <td class="py-2 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                     <td class="py-2 px-3 border-r border-slate-200">
                       <div class="flex items-center gap-2">
                         <div class="w-7 h-7 rounded-lg ${loaded > 0 ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-500 border border-slate-200'} flex items-center justify-center font-black shrink-0">
@@ -526,7 +526,7 @@ window.CarLoading = {
                     </td>
                     <td class="py-2 px-3 border-r border-slate-200">
                       <div class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                        <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${c.driver_name}
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i> ${c.driver_name}
                       </div>
                     </td>
                     <td class="py-2 px-3 border-r border-slate-200 font-mono text-xs font-bold text-slate-600">
@@ -550,11 +550,11 @@ window.CarLoading = {
                         <span class="text-sm font-black text-blue-700 tabular-nums">${carCtns}</span>
                         <span class="text-xs font-black text-slate-700 ml-1 inline-block">ctns</span>
                       ` : `
-                        <span class="text-sm font-black text-slate-400 tabular-nums">0</span>
-                        <span class="text-xs font-bold text-slate-400 ml-1 inline-block">units</span>
+                        <span class="text-sm font-black text-slate-500 tabular-nums">0</span>
+                        <span class="text-xs font-bold text-slate-500 ml-1 inline-block">units</span>
                       `))}
                     </td>
-                    <td class="py-2 px-3 text-right border-r border-slate-200 font-mono font-black ${loadedValue > 0 ? 'text-emerald-700' : 'text-slate-400'} tabular-nums">
+                    <td class="py-2 px-3 text-right border-r border-slate-200 font-mono font-black ${loadedValue > 0 ? 'text-emerald-700' : 'text-slate-500'} tabular-nums">
                       Rs. ${Math.round(loadedValue).toLocaleString()}
                     </td>
                     <td class="py-2 px-3 text-right">
@@ -602,7 +602,7 @@ window.CarLoading = {
                             <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
                               <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
                                 <tr>
-                                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+                                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
                                   <th class="py-2 px-3 border-r border-slate-200">Item</th>
                                   <th class="py-2 px-3 text-center border-r border-slate-200">Pack Size</th>
                                   <th class="py-2 px-3 text-right border-r border-slate-200">Loaded</th>
@@ -618,11 +618,11 @@ window.CarLoading = {
                                   const unitsAbbr = isShoper ? 'shopers' : 'ctns';
                                   return `
                                   <tr class="hover:bg-slate-50">
-                                    <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${itIdx + 1}</td>
+                                    <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${itIdx + 1}</td>
                                     <td class="py-1.5 px-3 border-r border-slate-200 font-bold text-slate-900">
                                       <div class="flex items-center gap-1.5">
                                         <span>${it.carton_name}</span>
-                                        <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
+                                        <span class="px-1.5 py-0.5 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
                                       </div>
                                     </td>
                                     <td class="py-1.5 px-3 text-center border-r border-slate-200">
@@ -651,15 +651,15 @@ window.CarLoading = {
                               </tbody>
                               <tfoot class="bg-slate-100 font-black text-xs text-slate-900 border-t border-slate-200">
                                 <tr>
-                                  <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200">-</td>
+                                  <td class="py-2 px-2 text-center text-slate-500 font-bold border-r border-slate-200">-</td>
                                   <td class="py-2 px-3 border-r border-slate-200 text-slate-800 uppercase">Subtotal Inside Car</td>
-                                  <td class="py-2 px-3 text-center border-r border-slate-200 text-slate-400 font-bold">-</td>
+                                  <td class="py-2 px-3 text-center border-r border-slate-200 text-slate-500 font-bold">-</td>
                                   <td class="py-2 px-3 text-right border-r border-slate-200 text-blue-700 font-black tabular-nums">
                                     ${carCtns > 0 && carShopers > 0 ? `${totalUnits} units <span class="text-[10px] font-bold text-slate-500">(${carCtns} ctns, ${carShopers} shopers)</span>` : (carShopers > 0 ? `${carShopers} shopers` : `${carCtns} ctns`)}
                                   </td>
-                                  <td class="py-2 px-3 text-right border-r border-slate-200 text-slate-400 font-bold">-</td>
+                                  <td class="py-2 px-3 text-right border-r border-slate-200 text-slate-500 font-bold">-</td>
                                   <td class="py-2 px-3 text-right border-r border-slate-200 text-emerald-700 tabular-nums">Rs. ${Math.round(loadedValue).toLocaleString()}</td>
-                                  <td class="py-2 px-2 text-center text-slate-400 font-bold">-</td>
+                                  <td class="py-2 px-2 text-center text-slate-500 font-bold">-</td>
                                 </tr>
                               </tfoot>
                             </table>
@@ -674,15 +674,15 @@ window.CarLoading = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
+              <td class="py-2.5 px-2 text-center text-slate-500 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="w-2 h-2 rounded-full bg-blue-600"></span>
                   TOTAL: ${filteredCars.length} VEHICLES
                 </div>
               </td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-500 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-500 font-bold">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-center font-black text-slate-900 tabular-nums">
                 ${totalDeliveriesAll.toLocaleString()} deliveries
               </td>
@@ -692,7 +692,7 @@ window.CarLoading = {
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums">
                 Rs. ${Math.round(grandTotalValue).toLocaleString()}
               </td>
-              <td class="py-2.5 px-3 text-right text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 text-right text-slate-500 font-bold">-</td>
             </tr>
           </tfoot>
         </table>
@@ -892,7 +892,7 @@ window.CarLoading = {
                   <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">
                     <div class="flex items-center gap-1.5">
                       <span>${it.carton_name}</span>
-                      <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider ${isShoper ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-purple-100 text-purple-800 border border-purple-200'}">
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${isShoper ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-purple-100 text-purple-800 border border-purple-200'}">
                         ${isShoper ? 'Shoper' : 'Carton'}
                       </span>
                     </div>
@@ -1106,7 +1106,7 @@ window.CarLoading = {
           <td class="py-1.5 px-3 border-r border-slate-200">
             <div class="flex items-center gap-1.5">
               <span class="font-black text-slate-900 text-xs">${c.carton_name}</span>
-              <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
+              <span class="px-1.5 py-0.5 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
             </div>
             <div class="text-[10px] text-slate-400 leading-tight">Rate: Rs. ${c.carton_sale_price}</div>
           </td>

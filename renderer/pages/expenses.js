@@ -67,7 +67,7 @@ const Expenses = {
         <div class="flex gap-4 items-center pl-4 border-l border-slate-200 flex-wrap">
           <!-- Category Filter -->
           <div class="flex gap-2 items-center">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Category</label>
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-widest">Category</label>
             <select id="exp-filter-cat" onchange="Expenses.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-white transition-all text-slate-700 outline-none cursor-pointer">
               <option value="All">All Categories</option>
             </select>
@@ -75,7 +75,7 @@ const Expenses = {
 
           <!-- Sort Filter -->
           <div class="flex gap-2 items-center">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Sort</label>
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-widest">Sort</label>
             <select id="exp-sort" onchange="Expenses.applyFilters()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-white transition-all text-slate-700 outline-none cursor-pointer">
               <option value="date_desc">Newest First</option>
               <option value="date_asc">Oldest First</option>
@@ -86,13 +86,13 @@ const Expenses = {
 
           <!-- Period controls -->
           <div class="flex gap-2 items-center flex-wrap">
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Period</label>
-            <div class="flex bg-slate-100 p-1 rounded-lg">
-               <button id="exp-period-day-tab" onclick="Expenses.setPeriodType('day')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">Daily</button>
-               <button id="exp-period-month-tab" onclick="Expenses.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Monthly</button>
-               <button id="exp-period-year-tab" onclick="Expenses.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Annual</button>
-               <button id="exp-period-custom-tab" onclick="Expenses.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">Custom Range</button>
-               <button id="exp-period-all-tab" onclick="Expenses.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer">All</button>
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-widest">Period</label>
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shadow-inner">
+               <button id="exp-period-day-tab" onclick="Expenses.setPeriodType('day')" class="px-2.5 py-1 text-xs font-black rounded-lg transition-all bg-white shadow-xs border border-slate-200/80 text-slate-950 cursor-pointer">Daily</button>
+               <button id="exp-period-month-tab" onclick="Expenses.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Monthly</button>
+               <button id="exp-period-year-tab" onclick="Expenses.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Annual</button>
+               <button id="exp-period-custom-tab" onclick="Expenses.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Custom Range</button>
+               <button id="exp-period-all-tab" onclick="Expenses.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">All</button>
             </div>
 
             <!-- Daily navigation controls (Prev Day, Calendar Picker, Next Day) -->
@@ -140,9 +140,9 @@ const Expenses = {
 
             <!-- Custom Range controls -->
             <div id="exp-custom-controls" class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl hidden">
-              <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+              <span class="text-[10px] font-black uppercase text-slate-600">From</span>
               <input type="date" id="exp-start-date" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
-              <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+              <span class="text-[10px] font-black uppercase text-slate-600">To</span>
               <input type="date" id="exp-end-date" onchange="Expenses.applyFilters()" oninput="Expenses.applyFilters()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
             </div>
 
@@ -159,7 +159,7 @@ const Expenses = {
           <table class="w-full text-sm text-left border-collapse border-b border-slate-200">
             <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase text-[11px] font-black tracking-wider sticky top-0 z-10 shadow-sm">
               <tr class="border-b border-slate-200">
-                <th class="px-2 py-2 border-r border-slate-200 text-center w-10 bg-slate-50 text-slate-400 font-black text-[13px]">#</th>
+                <th class="px-2 py-2 border-r border-slate-200 text-center w-10 bg-slate-50 text-slate-600 font-black text-[13px]">#</th>
                 <th class="px-4 py-2 border-r border-slate-200 bg-amber-50 text-amber-700 font-black text-[11px] uppercase tracking-wider">Date</th>
                 <th class="px-4 py-2 border-r border-slate-200 bg-indigo-50 text-indigo-700 font-black text-[11px] uppercase tracking-wider">Category</th>
                 <th class="px-4 py-2 border-r border-slate-200 bg-purple-50 text-purple-700 font-black text-[11px] uppercase tracking-wider">Description</th>
@@ -656,9 +656,9 @@ const Expenses = {
       const btn = document.getElementById(`exp-period-${t}-tab`);
       if (btn) {
         if (t === type) {
-          btn.className = 'px-2.5 py-1 text-xs font-bold rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer';
+          btn.className = 'px-2.5 py-1 text-xs font-black rounded-lg transition-all bg-white shadow-xs border border-slate-200/80 text-slate-950 cursor-pointer';
         } else {
-          btn.className = 'px-2.5 py-1 text-xs font-bold rounded-md transition-all text-slate-400 hover:text-slate-700 cursor-pointer';
+          btn.className = 'px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer';
         }
       }
     });
@@ -949,14 +949,14 @@ const Expenses = {
 
     tbody.innerHTML = paginated.map((e, index) => `
       <tr class="hover:bg-slate-50 border-b border-slate-200 group transition-colors">
-        <td class="px-2 py-1 border-r border-slate-200 text-center font-bold text-slate-400 tabular-nums text-xs">${startIdx + index + 1}</td>
+        <td class="px-2 py-1 border-r border-slate-200 text-center font-bold text-slate-600 tabular-nums text-xs">${startIdx + index + 1}</td>
         <td class="px-4 py-1 border-r border-slate-200 font-bold text-slate-800 text-xs whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
         <td class="px-4 py-1 border-r border-slate-200">
           <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wider">${e.category}</span>
         </td>
         <td class="px-4 py-1 border-r border-slate-200">
           <div class="text-slate-800 font-bold text-xs truncate max-w-[200px]">${e.description || '-'}</div>
-          ${e.paid_by ? `<div class="text-[9px] text-slate-400 font-black uppercase tracking-tighter">Paid by: ${e.paid_by}</div>` : ''}
+          ${e.paid_by ? `<div class="text-[9px] text-slate-600 font-black uppercase tracking-tighter">Paid by: ${e.paid_by}</div>` : ''}
         </td>
         <td class="px-4 py-1 text-right font-bold tabular-nums text-slate-800 border-r border-slate-200 text-xs">${app.formatCurrency(e.amount)}</td>
         <td class="px-4 py-1 text-right font-medium no-print">

@@ -188,7 +188,7 @@ var Proposals = window.Proposals = {
             <table class="w-full text-left text-xs border-collapse border border-slate-200">
               <thead id="prop-table-head" class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
-                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+                  <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
                   <th onclick="Proposals.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
                     <div class="flex items-center justify-between gap-1">
                       <span>Date</span>
@@ -344,7 +344,7 @@ var Proposals = window.Proposals = {
     if (!thead) return;
     thead.innerHTML = `
       <tr>
-        <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+        <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
         <th onclick="Proposals.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap cursor-pointer hover:bg-slate-200/70 select-none transition-colors">
           <div class="flex items-center justify-between gap-1">
             <span>Date</span>
@@ -506,12 +506,12 @@ var Proposals = window.Proposals = {
       } else if (period === 'custom') {
         wrap.innerHTML = `
           <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
-            <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+            <span class="text-[10px] font-black uppercase text-slate-600">From</span>
             <input type="date" id="prop-start-date" value="${this.startDate || this.selectedDate}" 
                    onchange="Proposals.onCustomDateChange('start', this.value)"
                    oninput="Proposals.onCustomDateChange('start', this.value)"
                    class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
-            <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+            <span class="text-[10px] font-black uppercase text-slate-600">To</span>
             <input type="date" id="prop-end-date" value="${this.endDate || this.selectedDate}" 
                    onchange="Proposals.onCustomDateChange('end', this.value)"
                    oninput="Proposals.onCustomDateChange('end', this.value)"
@@ -631,11 +631,11 @@ var Proposals = window.Proposals = {
     if (ctEl) {
       const retBadge = totalReturned > 0 ? ` <span class="text-rose-600 text-xs font-bold font-mono">(-${totalReturned})</span>` : '';
       if (totalShopers > 0 && totalCtns > 0) {
-        ctEl.innerHTML = `${totalCtns} <span class="text-xs font-bold text-slate-400">Ctns</span> • <span class="text-sky-600">${totalShopers}</span> <span class="text-xs font-bold text-slate-400">Shopers</span>${retBadge}`;
+        ctEl.innerHTML = `${totalCtns} <span class="text-xs font-black text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Ctns</span> • <span class="text-sky-600 font-black">${totalShopers}</span> <span class="text-xs font-black text-sky-900 bg-sky-100 px-1 py-0.5 rounded">Shopers</span>${retBadge}`;
       } else if (totalShopers > 0) {
-        ctEl.innerHTML = `<span class="text-sky-600">${totalShopers}</span> <span class="text-xs font-bold text-slate-400">Shopers</span>${retBadge}`;
+        ctEl.innerHTML = `<span class="text-sky-600 font-black">${totalShopers}</span> <span class="text-xs font-black text-sky-900 bg-sky-100 px-1 py-0.5 rounded">Shopers</span>${retBadge}`;
       } else {
-        ctEl.innerHTML = `${totalCtns}${retBadge} <span class="text-xs font-bold text-slate-400">Ctns</span>`;
+        ctEl.innerHTML = `${totalCtns}${retBadge} <span class="text-xs font-black text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Ctns</span>`;
       }
     }
     if (tEl) tEl.textContent = `Rs. ${Math.round(totalSales).toLocaleString()}`;
@@ -704,29 +704,29 @@ var Proposals = window.Proposals = {
 
       return `
         <tr class="hover:bg-slate-50/70 transition-colors">
-          <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+          <td class="py-2 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
           <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
           <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
           <td class="py-1.5 px-3 border-r border-slate-200">
             <div class="font-bold text-slate-800 text-xs">${d.car_number}</div>
-            <div class="text-[10px] text-slate-400 font-medium leading-tight">${d.driver_name || ''}</div>
+            <div class="text-[10px] text-slate-500 font-semibold leading-tight">${d.driver_name || ''}</div>
           </td>
           <td class="py-1.5 px-3 border-r border-slate-200">
             <div class="font-black text-slate-900 text-xs">${d.shop_name}</div>
-            <div class="text-[10px] text-slate-400 leading-tight">${d.shop_phone || d.shop_address || ''}</div>
+            <div class="text-[10px] text-slate-500 font-semibold leading-tight">${d.shop_phone || d.shop_address || ''}</div>
           </td>
           <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/30 border-r border-slate-200">
             <div>
               ${(netCtns > 0 && netShopers > 0)
-                ? `<span class="text-blue-700 font-black">${netCtns} <span class="text-[10px] text-slate-400 font-normal">ctns</span></span> <span class="text-slate-300 font-normal">•</span> <span class="text-sky-600 font-black">${netShopers} <span class="text-[10px] text-slate-400 font-normal">shp</span></span>`
+                ? `<span class="text-blue-700 font-black">${netCtns} <span class="text-[10px] font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded-md">ctns</span></span> <span class="text-slate-300 font-bold mx-0.5">•</span> <span class="text-sky-600 font-black">${netShopers} <span class="text-[10px] font-black text-sky-900 bg-sky-100 px-1.5 py-0.5 rounded-md">shp</span></span>`
                 : (netShopers > 0
-                  ? `<span class="text-sky-600 font-black">${netShopers} <span class="text-[10px] text-slate-400 font-normal">shopers</span></span>`
-                  : `<span class="text-blue-700 font-black">${netCtns} <span class="text-[10px] text-slate-400 font-normal">ctns</span></span>`
+                  ? `<span class="text-sky-600 font-black">${netShopers} <span class="text-[10px] font-black text-sky-900 bg-sky-100 px-1.5 py-0.5 rounded-md">shopers</span></span>`
+                  : `<span class="text-blue-700 font-black">${netCtns} <span class="text-[10px] font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded-md">ctns</span></span>`
                 )
               }
             </div>
             ${retTotal > 0 ? `
-              <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${retTotal} returned (${retCtns} ctns, ${retShopers} shopers)">
+              <span class="inline-block px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5" title="${retTotal} returned (${retCtns} ctns, ${retShopers} shopers)">
                 -${retTotal} ret
               </span>
             ` : ''}

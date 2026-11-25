@@ -476,7 +476,7 @@
           </span>
         </button>
 
-        <div class="px-2 pt-2 pb-0.5 text-[10px] font-black uppercase tracking-wider text-slate-400/90">Factory Stages</div>
+        <div class="px-2 pt-2 pb-0.5 text-[10px] font-black uppercase tracking-wider text-slate-300/90">Factory Stages</div>
 
         <button onclick="app.navigate('raw-materials')" id="nav-raw-materials" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
           <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-emerald-400 shadow-2xs group-hover:border-slate-500 transition-all">
@@ -514,7 +514,7 @@
           </span>
         </button>
 
-        <div class="px-2 pt-2 pb-0.5 text-[10px] font-black uppercase tracking-wider text-slate-400/90">Records &amp; Accounts</div>
+        <div class="px-2 pt-2 pb-0.5 text-[10px] font-black uppercase tracking-wider text-slate-300/90">Records &amp; Accounts</div>
 
         <button onclick="app.navigate('proposals')" id="nav-proposals" class="nav-btn group w-full flex items-center gap-2 p-1 rounded-xl text-left transition-all">
           <span class="nav-icon w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-2xs group-hover:border-slate-500 transition-all">
@@ -591,8 +591,8 @@
     </div>
 
     <!-- Zoom Controls for Laptop / PC Screens -->
-    <div class="px-3 py-2 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-slate-400 select-none">
-      <span class="text-[10px] font-bold tracking-wider uppercase text-slate-400 flex items-center gap-1.5" title="Laptop / Screen Scale (Ctrl + / Ctrl -)">
+    <div class="px-3 py-2 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-slate-300 select-none">
+      <span class="text-[10px] font-bold tracking-wider uppercase text-slate-300 flex items-center gap-1.5" title="Laptop / Screen Scale (Ctrl + / Ctrl -)">
         <i data-lucide="laptop" class="w-3.5 h-3.5 text-blue-400"></i> Scale
       </span>
       <div class="flex items-center gap-1">
@@ -604,8 +604,8 @@
 
     <!-- Bottom Sidebar Section (Credits & Contact) -->
     <div class="p-3.5 border-t border-slate-800/80 bg-slate-950/60 shrink-0 text-center select-none">
-      <p class="text-sm font-bold text-slate-300 tracking-tight leading-tight">Software by <span class="text-amber-400 font-black">PrimeSoft</span></p>
-      <p class="text-[13px] font-medium text-slate-400 mt-1.5">Contact: <span class="text-white font-semibold text-[13px] tracking-wide tabular-nums">0309-5369472</span></p>
+      <p class="text-sm font-bold text-slate-200 tracking-tight leading-tight">Software by <span class="text-amber-400 font-black">PrimeSoft</span></p>
+      <p class="text-[13px] font-medium text-slate-300 mt-1.5">Contact: <span class="text-white font-semibold text-[13px] tracking-wide tabular-nums">0309-5369472</span></p>
     </div>
   </aside>
   <script>
@@ -617,6 +617,27 @@
 
   <!-- Main Content -->
   <main class="flex-1 relative flex flex-col overflow-y-auto print-full-width">
+    <!-- Terminal Role & LAN Sync Status Top Bar -->
+    <header id="top-terminal-bar" class="w-full bg-white border-b border-slate-200/90 px-4 py-2 flex items-center justify-between shadow-2xs no-print shrink-0 select-none">
+      <div class="flex items-center gap-3">
+        <div id="terminal-role-badge" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="terminal-role-text">👑 Main Server</span>
+        </div>
+        <div id="lan-connection-indicator" class="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+          <i data-lucide="wifi" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span id="lan-connection-text">Port 4321</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="app.promptRoleLogout()" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95" title="Switch Terminal Role / Logout">
+          <i data-lucide="log-out" class="w-3.5 h-3.5 text-slate-600"></i>
+          <span id="terminal-logout-btn-text">Switch Role / Logout</span>
+        </button>
+      </div>
+    </header>
+
     <div id="app-content" class="p-3 md:p-3.5 flex-1 flex flex-col min-h-0 w-full overflow-hidden">
       <!-- Dynamic content injected here -->
     </div>
@@ -1217,6 +1238,191 @@
     </div>
   </div>
 
+  <!-- Terminal Role Switcher / Multi-PC Modal -->
+  <div id="terminal-role-modal" onclick="if(event.target === this) app.closeRoleModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[5000] no-print p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full flex flex-col overflow-hidden border border-slate-200" id="terminal-role-card">
+      <!-- Header -->
+      <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center font-black shadow-2xs shrink-0">
+            <i data-lucide="network" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Terminal Role &amp; Multi-PC Sync</h3>
+            <p class="text-[11px] font-semibold text-slate-500 leading-none mt-0.5">Select this PC's role in the factory LAN network</p>
+          </div>
+        </div>
+        <button type="button" onclick="app.closeRoleModal()" class="modal-close-btn" title="Close (Esc)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
+        <!-- Role Selection Cards -->
+        <div class="space-y-3">
+          <!-- Option 1: Main Server -->
+          <label class="relative flex items-start gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all role-option border-slate-200 hover:border-slate-300" id="role-option-main">
+            <input type="radio" name="terminal-role-choice" value="main" class="mt-1" onchange="app.onTerminalRoleSelect('main')">
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-black text-sm text-slate-900">👑 PC 1: Main Server (Full System)</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">Master DB &amp; Host</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">Holds the master SQLite database, performs cloud sync, and serves LAN terminals. Has full access to all factory tabs.</p>
+              <div class="mt-2 text-[11px] font-mono text-slate-600 bg-slate-100 px-2 py-1 rounded inline-block">
+                This PC IP: <span id="modal-local-ip" class="font-bold text-slate-900">Loading...</span> (Port 4321)
+              </div>
+            </div>
+          </label>
+
+          <!-- Option 2: Packing Station -->
+          <label class="relative flex items-start gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all role-option border-slate-200 hover:border-slate-300" id="role-option-packing">
+            <input type="radio" name="terminal-role-choice" value="packing" class="mt-1" onchange="app.onTerminalRoleSelect('packing')">
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-black text-sm text-slate-900">📦 PC 2: Stock Addition &amp; Packing Terminal</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-800">Packing &amp; Scanner Only</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">Dedicated terminal for Carton Packing and the Daily Barcode Scan Counter. All other tabs are locked.</p>
+            </div>
+          </label>
+
+          <!-- Option 3: Sales Counter -->
+          <label class="relative flex items-start gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all role-option border-slate-200 hover:border-slate-300" id="role-option-sales">
+            <input type="radio" name="terminal-role-choice" value="sales" class="mt-1" onchange="app.onTerminalRoleSelect('sales')">
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-black text-sm text-slate-900">🧾 PC 3: Sales Counter Terminal</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-800">New Sale POS Only</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">Dedicated billing terminal for New Sale POS invoicing. Automatically reflects packed stock from PC 2.</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Client Host IP Configuration (shown only when packing or sales selected) -->
+        <div id="modal-client-config" class="hidden p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+            Main Server PC 1 IP Address &amp; Port *
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="modal-server-host" placeholder="e.g. 192.168.1.50:4321" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-mono font-bold text-slate-900 focus:ring-2 focus:ring-accent outline-none">
+            <button type="button" onclick="app.autoDetectServer()" id="btn-modal-autodetect" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95" title="Scan factory Wi-Fi to find PC 1 automatically">
+              <i data-lucide="scan" class="w-3.5 h-3.5"></i>
+              <span>Auto-Detect</span>
+            </button>
+            <button type="button" onclick="app.testTerminalPing()" id="btn-modal-test-ping" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95">
+              <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+              <span>Test</span>
+            </button>
+          </div>
+          <div id="modal-ping-result" class="text-xs font-bold hidden"></div>
+          <p class="text-[11px] text-slate-500 font-medium">Look at the top bar or Settings of <b>PC 1 (Main Server)</b> to copy its IP (e.g. <code class="font-bold text-slate-800">192.168.1.2:4321</code>), or click <b>Auto-Detect</b>.</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-3.5 bg-slate-50/90 border-t border-slate-200/80 flex items-center justify-between gap-3 shrink-0">
+        <button type="button" onclick="app.closeRoleModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-all">
+          Cancel
+        </button>
+        <button type="button" onclick="app.saveTerminalRole()" id="btn-modal-save-role" class="px-6 py-2.5 bg-accent hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95 border border-amber-400/60">
+          <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
+          <span>Save &amp; Apply Terminal Role</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cloud Hosting / Server Timer Modal -->
+  <div id="hosting-duration-modal" onclick="if(event.target === this) app.closeHostingDurationModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-[5000] no-print p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden border border-slate-200" id="hosting-duration-card">
+      <!-- Header -->
+      <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-black shadow-2xs shrink-0">
+            <i data-lucide="cloud-cog" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900 tracking-tight leading-snug">Update Hosting Duration</h3>
+            <p class="text-[11px] font-semibold text-slate-500 leading-none mt-0.5">Set cloud server subscription timer</p>
+          </div>
+        </div>
+        <button type="button" onclick="app.closeHostingDurationModal()" class="modal-close-btn" title="Close (Esc)">
+          <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 space-y-4">
+        <!-- Quick Preset Pills -->
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Quick Presets</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="app.setHostingDurationPreset(0, 365, 0)" class="px-3 py-2 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all text-center cursor-pointer">
+              1 Year (365d)
+            </button>
+            <button type="button" onclick="app.setHostingDurationPreset(6, 0, 0)" class="px-3 py-2 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all text-center cursor-pointer">
+              6 Months
+            </button>
+            <button type="button" onclick="app.setHostingDurationPreset(1, 0, 0)" class="px-3 py-2 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all text-center cursor-pointer">
+              1 Month
+            </button>
+            <button type="button" onclick="app.setHostingDurationPreset(0, 7, 0)" class="px-3 py-2 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all text-center cursor-pointer">
+              7 Days
+            </button>
+            <button type="button" onclick="app.setHostingDurationPreset(0, 1, 0)" class="px-3 py-2 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all text-center cursor-pointer">
+              1 Day
+            </button>
+            <button type="button" onclick="app.setHostingDurationPreset(0, 0, 5)" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 hover:text-amber-800 border border-amber-200 rounded-xl text-xs font-bold text-amber-700 transition-all text-center cursor-pointer">
+              5 Mins (Test)
+            </button>
+          </div>
+        </div>
+
+        <!-- Duration Inputs -->
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Custom Duration</label>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 block mb-1">Months</label>
+              <input type="number" id="hosting-modal-months" value="0" min="0" max="60" oninput="app.updateHostingPreview()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center font-bold text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 block mb-1">Days</label>
+              <input type="number" id="hosting-modal-days" value="365" min="0" max="1000" oninput="app.updateHostingPreview()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center font-bold text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 block mb-1">Minutes</label>
+              <input type="number" id="hosting-modal-mins" value="0" min="0" max="1440" oninput="app.updateHostingPreview()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center font-bold text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Expiry Preview Box -->
+        <div class="bg-emerald-50/70 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-900 flex items-start gap-2.5">
+          <i data-lucide="calendar" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+          <div>
+            <div class="font-bold text-[11px] text-emerald-700 uppercase tracking-wider">New Expiration Date</div>
+            <div id="hosting-modal-preview-text" class="font-black text-sm text-emerald-950 mt-0.5">Calculating...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-end gap-3">
+        <button type="button" onclick="app.closeHostingDurationModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 rounded-xl cursor-pointer">
+          Cancel
+        </button>
+        <button type="button" onclick="app.confirmApplyHostingDuration()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Save &amp; Apply Hosting</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Sale Return Modal Container -->
   <div id="sale-return-modal-container"></div>
 
@@ -1226,6 +1432,83 @@
   <div id="voucher-print" class="hidden bg-white"></div>
   <div id="report-print-container" class="hidden bg-white"></div>
   <div id="barcode-sticker-print" class="hidden bg-white"></div>
+
+  <!-- Full-screen Hosting Expired / System Offline Lock Overlay -->
+  <div id="license-expired-overlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[999999] hidden flex-col items-center justify-center p-4 text-center select-none overflow-y-auto">
+    <div class="max-w-md w-full bg-slate-900 border border-red-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col items-center my-auto">
+      <!-- Icon -->
+      <div class="w-18 h-18 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mb-4 shadow-inner">
+        <i data-lucide="cloud-off" class="w-9 h-9"></i>
+      </div>
+
+      <!-- Badge -->
+      <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 mb-2">
+        Hosting Expired • System Offline
+      </span>
+
+      <!-- Title & Message -->
+      <h2 class="text-xl font-black text-white tracking-tight mb-2">Hosting Expired</h2>
+      <p class="text-xs text-slate-300 leading-relaxed mb-5">
+        Your annual cloud hosting service period has expired. System operations and online synchronization are currently paused. Please contact administrator to renew your hosting.
+      </p>
+
+      <!-- Provider / Contact Info -->
+      <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 mb-5 text-left space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-400 font-semibold">Hosting Provider</span>
+          <span class="text-white font-bold">PrimeSoft Cloud</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-400 font-semibold">Support / Renewal</span>
+          <span class="text-amber-400 font-black font-mono tracking-wider">0309-5369472</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-400 font-semibold">Hosting Status</span>
+          <span class="text-red-400 font-bold">Renewal Overdue (Paused)</span>
+        </div>
+      </div>
+
+      <!-- Vendor / Admin Unlock Panel -->
+      <div class="w-full pt-3 border-t border-slate-800">
+        <button type="button" onclick="app.toggleLicenseUnlockPanel()" class="text-xs text-slate-400 hover:text-slate-200 font-semibold flex items-center justify-center gap-1.5 mx-auto cursor-pointer transition-colors">
+          <i data-lucide="key-round" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Administrator / Cloud Renewal</span>
+          <i data-lucide="chevron-down" id="license-unlock-chevron" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <div id="license-unlock-panel" class="hidden mt-3 pt-3 border-t border-slate-800/80 text-left space-y-3">
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Master Password</label>
+            <input type="password" id="expired-renew-password" placeholder="Enter master password..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono">
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Duration</label>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1 flex-1">
+                <input type="number" id="expired-renew-months" value="0" min="0" max="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-center text-white font-bold outline-none focus:border-emerald-500">
+                <span class="text-xs text-slate-400 font-semibold">m</span>
+              </div>
+              <div class="flex items-center gap-1 flex-1">
+                <input type="number" id="expired-renew-days" value="365" min="0" max="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-center text-white font-bold outline-none focus:border-emerald-500">
+                <span class="text-xs text-slate-400 font-semibold">d</span>
+              </div>
+              <div class="flex items-center gap-1 flex-1">
+                <input type="number" id="expired-renew-mins" value="0" min="0" max="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-center text-white font-bold outline-none focus:border-emerald-500">
+                <span class="text-xs text-slate-400 font-semibold">min</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" onclick="app.submitRenewLicenseFromLock()" class="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-950 cursor-pointer active:scale-98">
+            <i data-lucide="cloud" class="w-4 h-4"></i>
+            <span>Unlock &amp; Renew Hosting</span>
+          </button>
+          <div id="expired-renew-error" class="text-xs font-bold text-rose-400 text-center hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script src="pages/dashboard.js"></script>

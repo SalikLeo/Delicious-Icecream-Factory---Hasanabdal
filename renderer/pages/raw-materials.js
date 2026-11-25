@@ -160,7 +160,7 @@ window.RawMaterials = {
     }
 
     if (packs > 0) {
-      return `${packPart} <span class="text-[10px] font-bold text-slate-400">(${sign}${absVal.toLocaleString()} ${spec.subUnit})</span>`;
+      return `${packPart} <span class="text-[10px] font-semibold text-slate-600">(${sign}${absVal.toLocaleString()} ${spec.subUnit})</span>`;
     }
     return packPart;
   },
@@ -243,7 +243,7 @@ window.RawMaterials = {
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Total Raw Materials</p>
-              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalMaterials} <span class="text-xs font-bold text-slate-400">items</span></h3>
+              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalMaterials} <span class="text-xs font-bold text-slate-600">items</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">
               <i data-lucide="boxes" class="w-5 h-5"></i>
@@ -264,7 +264,7 @@ window.RawMaterials = {
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Low Stock Warning</p>
               <h3 class="text-2xl font-black ${lowStockCount > 0 ? 'text-rose-600' : 'text-slate-900'} mt-1 tabular-nums">
-                ${lowStockCount} <span class="text-xs font-bold text-slate-400">items need refill</span>
+                ${lowStockCount} <span class="text-xs font-bold text-slate-600">items need refill</span>
               </h3>
             </div>
             <div class="w-11 h-11 rounded-xl ${lowStockCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-400'} flex items-center justify-center font-black">
@@ -275,11 +275,11 @@ window.RawMaterials = {
 
         <!-- Navigation Tabs & Search & Date Filters -->
         <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
-            <button onclick="RawMaterials.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+          <div class="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300/70 w-full lg:w-auto shrink-0 shadow-inner">
+            <button onclick="RawMaterials.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Current Stock
             </button>
-            <button onclick="RawMaterials.switchTab('logs')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'logs' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+            <button onclick="RawMaterials.switchTab('logs')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'logs' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Stock History
             </button>
           </div>
@@ -334,25 +334,25 @@ window.RawMaterials = {
             </div>
 
             <!-- Period Switcher: Daily | Monthly | Annual | Custom Range | All -->
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shrink-0 shadow-inner">
               <button type="button" onclick="RawMaterials.setPeriod('day')" id="rm-tab-day"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="RawMaterials.setPeriod('month')" id="rm-tab-month"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="RawMaterials.setPeriod('year')" id="rm-tab-year"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="RawMaterials.setPeriod('custom')" id="rm-tab-custom"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="RawMaterials.setPeriod('all')" id="rm-tab-all"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All
               </button>
             </div>
@@ -362,12 +362,12 @@ window.RawMaterials = {
               <div id="rm-date-picker-wrap" class="shrink-0">
                 ${this.periodType === 'custom' ? `
                   <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
-                    <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                    <span class="text-[10px] font-black uppercase text-slate-600">From</span>
                     <input type="date" id="rm-start-date" value="${this.startDate || this.selectedDate}" 
                            onchange="RawMaterials.onCustomDateChange('start', this.value)"
                            oninput="RawMaterials.onCustomDateChange('start', this.value)"
                            class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
-                    <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                    <span class="text-[10px] font-black uppercase text-slate-600">To</span>
                     <input type="date" id="rm-end-date" value="${this.endDate || this.selectedDate}" 
                            onchange="RawMaterials.onCustomDateChange('end', this.value)"
                            oninput="RawMaterials.onCustomDateChange('end', this.value)"
@@ -599,6 +599,18 @@ window.RawMaterials = {
         if (!isNaN(y)) years.add(y);
       }
     });
+    (this._chocBatches || []).forEach(b => {
+      if (b.date) {
+        const y = parseInt(b.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    (this._chocLogs || []).forEach(l => {
+      if (l.date) {
+        const y = parseInt(l.date.slice(0, 4));
+        if (!isNaN(y)) years.add(y);
+      }
+    });
     return Array.from(years).sort((a, b) => b - a);
   },
 
@@ -775,8 +787,8 @@ window.RawMaterials = {
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
-            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th onclick="RawMaterials.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Material</span>
@@ -826,12 +838,12 @@ window.RawMaterials = {
 
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                  <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="flex items-center gap-1.5 flex-wrap">
                       <span class="font-black text-slate-900 text-xs">${m.name}</span>
                       ${hasBulk ? `
-                        <span class="px-1.5 py-0.2 rounded bg-purple-50 text-purple-800 border border-purple-200 font-mono text-[9px] font-black" title="Bulk Spec: ${spec.specText}">
+                        <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 font-mono text-[9px] font-black" title="Bulk Spec: ${spec.specText}">
                           ${spec.specBadge}
                         </span>
                       ` : ''}
@@ -845,7 +857,7 @@ window.RawMaterials = {
                       ${stockDisplay}
                     </div>
                     ${hasBulk ? `
-                      <div class="text-[10px] font-bold text-slate-400 tabular-nums">
+                      <div class="text-[10px] font-semibold text-slate-600 tabular-nums">
                         ${Number(m.current_stock).toLocaleString()} ${spec.contentUnit} total
                       </div>
                     ` : ''}
@@ -882,16 +894,16 @@ window.RawMaterials = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
+              <td class="py-2.5 px-2 text-center text-slate-500 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-emerald-700 font-black">TOTAL:</span>
                   <span>${totalMaterials} ${totalMaterials === 1 ? 'Material' : 'Materials'}</span>
                 </div>
               </td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-slate-400 font-bold text-center">-</td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-500 text-xs">-</td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-slate-500 font-bold text-center">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-600 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-500 text-xs">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums bg-emerald-50/80">
                 Rs. ${Math.round(totalStockValue).toLocaleString()}
               </td>
@@ -901,7 +913,7 @@ window.RawMaterials = {
                   : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] border border-emerald-200">All In Stock</span>`
                 }
               </td>
-              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+              <td class="py-2.5 px-3 text-right text-slate-500 font-bold text-xs">-</td>
             </tr>
           </tfoot>
         </table>
@@ -928,8 +940,8 @@ window.RawMaterials = {
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
-            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th onclick="RawMaterials.toggleSort('date')" class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px] cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Date</span>
@@ -2397,6 +2409,12 @@ window.RawMaterials = {
   // --- CHOCOLATE PRODUCTION (PROCESSED MATERIAL) ---
   _chocActiveTab: 'produce',
 
+  getNowDateTimeLocalString() {
+    const n = new Date();
+    n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+    return n.toISOString().slice(0, 16);
+  },
+
   async openChocolateModal(activeTab = 'produce') {
     this._chocActiveTab = activeTab;
     const modalEl = document.getElementById('rm-modal-container');
@@ -2415,7 +2433,8 @@ window.RawMaterials = {
     }
     app.hideLoading?.();
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const nowDateTimeStr = this.getNowDateTimeLocalString();
+    const todayStr = nowDateTimeStr.slice(0, 10);
 
     if (!this._chocPeriodType) this._chocPeriodType = 'day';
     if (!this._chocSelectedDate) this._chocSelectedDate = todayStr;
@@ -2475,7 +2494,7 @@ window.RawMaterials = {
               </button>
               <button type="button" onclick="RawMaterials.switchChocTab('batches')" 
                       class="px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this._chocActiveTab === 'batches' ? 'bg-amber-900 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-200/60'}">
-                Batches (${batches.length})
+                Production History (${batches.length})
               </button>
               <button type="button" onclick="RawMaterials.switchChocTab('movements')" 
                       class="px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${this._chocActiveTab === 'movements' ? 'bg-amber-900 text-white shadow-xs' : 'text-amber-900 hover:bg-amber-200/60'}">
@@ -2486,7 +2505,7 @@ window.RawMaterials = {
 
           <!-- TAB CONTENT AREA -->
           <div id="choc-tab-content-area" class="flex-1 overflow-y-auto p-6 custom-scrollbar">
-            ${this._chocActiveTab === 'produce' ? this.renderChocolateProduceTab(todayStr) : ''}
+            ${this._chocActiveTab === 'produce' ? this.renderChocolateProduceTab(nowDateTimeStr) : ''}
             ${this._chocActiveTab === 'batches' ? this.renderChocolateBatchesTab() : ''}
             ${this._chocActiveTab === 'movements' ? this.renderChocolateMovementsTab() : ''}
           </div>
@@ -2499,10 +2518,16 @@ window.RawMaterials = {
 
     if (this._chocActiveTab === 'produce') {
       this.addChocolateMatRow();
+      const dateEl = document.getElementById('choc-date');
+      if (dateEl) dateEl.value = nowDateTimeStr;
     }
   },
 
-  renderChocolateProduceTab(todayStr) {
+  renderChocolateProduceTab(nowDateTimeStr) {
+    let val = nowDateTimeStr;
+    if (!val || typeof val !== 'string' || !val.includes('T')) {
+      val = this.getNowDateTimeLocalString();
+    }
     return `
       <form onsubmit="RawMaterials.handleChocolateSubmit(event)" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2520,10 +2545,10 @@ window.RawMaterials = {
             <p class="text-[11px] font-medium text-slate-500 mt-1">This amount will be added to Chocolate inventory.</p>
           </div>
 
-          <!-- Date -->
+          <!-- Date & Time -->
           <div>
-            <label class="block text-[11px] font-black uppercase text-slate-600 tracking-wider mb-1">Production Date *</label>
-            <input type="date" id="choc-date" required value="${todayStr}"
+            <label class="block text-[11px] font-black uppercase text-slate-600 tracking-wider mb-1">Production Date &amp; Time *</label>
+            <input type="datetime-local" id="choc-date" required value="${val}"
                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-600 font-mono">
           </div>
         </div>
@@ -2556,13 +2581,6 @@ window.RawMaterials = {
               <span id="choc-per-liter" class="text-[11px] font-bold text-amber-800">(= Rs. 0 / Liter)</span>
             </div>
           </div>
-        </div>
-
-        <!-- Notes -->
-        <div>
-          <label class="block text-[11px] font-black uppercase text-slate-600 tracking-wider mb-1">Notes / Remarks</label>
-          <input type="text" id="choc-notes" placeholder="Batch formula, temperature, operator, notes..."
-                 class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-600">
         </div>
 
         <!-- Footer Buttons -->
@@ -2979,8 +2997,13 @@ window.RawMaterials = {
       return app.showAlert({ title: 'Invalid Quantity', message: 'Please enter a valid quantity of chocolate in Liters.' });
     }
 
-    const date = document.getElementById('choc-date')?.value || new Date().toISOString().split('T')[0];
-    const notes = document.getElementById('choc-notes')?.value || '';
+    const rawDate = document.getElementById('choc-date')?.value || (() => {
+      const n = new Date();
+      n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+      return n.toISOString().slice(0, 16);
+    })();
+    const date = rawDate.includes('T') ? rawDate.replace('T', ' ') : rawDate;
+    const notes = '';
 
     const rows = document.querySelectorAll('#choc-mat-list > div');
     const materials = [];
@@ -3027,8 +3050,8 @@ window.RawMaterials = {
               <span class="font-mono font-black text-amber-950 text-base">${liters} Liters</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-slate-600 font-bold">Date:</span>
-              <span class="font-mono font-bold text-slate-800">${date}</span>
+              <span class="text-slate-600 font-bold">Production Date &amp; Time:</span>
+              <span class="font-mono font-bold text-slate-800">${app.formatDateTime ? app.formatDateTime(date) : date}</span>
             </div>
             <div class="border-t border-amber-200 pt-1.5 mt-1.5">
               <span class="text-[11px] font-black uppercase text-amber-900 tracking-wider">Raw Materials To Deduct:</span>
@@ -3053,16 +3076,16 @@ window.RawMaterials = {
           app.hideLoading?.();
 
           if (res && res.success) {
-            app.showToast(`Batch ${res.batchNumber} created! Chocolate stock is now ${res.newStock} Liters.`, 'success');
+            app.showToast(`Chocolate production of ${liters} Liters recorded! Stock is now ${res.newStock} Liters.`, 'success');
             await this.loadData();
             this.openChocolateModal('batches');
           } else {
-            app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to create chocolate batch.' });
+            app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to create chocolate production.' });
           }
         } catch (err) {
           app.hideLoading?.();
           console.error('Error creating chocolate batch:', err);
-          app.showAlert({ title: 'Error', message: err.message || 'Failed to create chocolate batch.' });
+          app.showAlert({ title: 'Error', message: err.message || 'Failed to create chocolate production.' });
         }
       }
     });
@@ -3086,10 +3109,12 @@ window.RawMaterials = {
       }
     });
 
-    const todayStr = new Date().toISOString().split('T')[0];
     if (tab === 'produce') {
-      content.innerHTML = this.renderChocolateProduceTab(todayStr);
+      const nowDateTimeStr = this.getNowDateTimeLocalString();
+      content.innerHTML = this.renderChocolateProduceTab(nowDateTimeStr);
       this.addChocolateMatRow();
+      const dateEl = document.getElementById('choc-date');
+      if (dateEl) dateEl.value = nowDateTimeStr;
     } else if (tab === 'batches') {
       content.innerHTML = this.renderChocolateBatchesTab();
     } else if (tab === 'movements') {
@@ -3155,28 +3180,28 @@ window.RawMaterials = {
     const isFilteredFromToday = this._chocPeriodType !== 'day' || this._chocSelectedDate !== today || Boolean(this._chocSearchQuery);
 
     return `
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mb-3 bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60 shrink-0">
+      <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2.5 mb-3 shrink-0">
         <div class="flex items-center gap-2 flex-wrap">
-          <!-- Period Pills -->
-          <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
-            <button type="button" onclick="RawMaterials.setChocPeriod('day')"
-                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'day' ? 'font-black bg-amber-900 text-white shadow-2xs' : 'font-bold text-slate-600 hover:text-slate-900'}">
+          <!-- Period Switcher: Daily | Monthly | Annual | Custom Range | All -->
+          <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shrink-0 shadow-inner">
+            <button type="button" onclick="RawMaterials.setChocPeriod('day')" id="choc-tab-day"
+                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'day' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
               Daily
             </button>
-            <button type="button" onclick="RawMaterials.setChocPeriod('month')"
-                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'month' ? 'font-black bg-amber-900 text-white shadow-2xs' : 'font-bold text-slate-600 hover:text-slate-900'}">
+            <button type="button" onclick="RawMaterials.setChocPeriod('month')" id="choc-tab-month"
+                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'month' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
               Monthly
             </button>
-            <button type="button" onclick="RawMaterials.setChocPeriod('year')"
-                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'year' ? 'font-black bg-amber-900 text-white shadow-2xs' : 'font-bold text-slate-600 hover:text-slate-900'}">
+            <button type="button" onclick="RawMaterials.setChocPeriod('year')" id="choc-tab-year"
+                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'year' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
               Annual
             </button>
-            <button type="button" onclick="RawMaterials.setChocPeriod('custom')"
-                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'custom' ? 'font-black bg-amber-900 text-white shadow-2xs' : 'font-bold text-slate-600 hover:text-slate-900'}">
+            <button type="button" onclick="RawMaterials.setChocPeriod('custom')" id="choc-tab-custom"
+                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'custom' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
               Custom Range
             </button>
-            <button type="button" onclick="RawMaterials.setChocPeriod('all')"
-                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'all' ? 'font-black bg-amber-900 text-white shadow-2xs' : 'font-bold text-slate-600 hover:text-slate-900'}">
+            <button type="button" onclick="RawMaterials.setChocPeriod('all')" id="choc-tab-all"
+                    class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this._chocPeriodType === 'all' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
               All
             </button>
           </div>
@@ -3185,24 +3210,31 @@ window.RawMaterials = {
           ${this._chocPeriodType !== 'all' ? `
             <div class="shrink-0">
               ${this._chocPeriodType === 'custom' ? `
-                <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-xl shadow-2xs">
-                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
-                  <input type="date" value="${this._chocStartDate}"
+                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+                  <span class="text-[10px] font-black uppercase text-slate-600">From</span>
+                  <input type="date" value="${this._chocStartDate || today}"
                          onchange="RawMaterials.onChocCustomDateChange('start', this.value)"
-                         class="bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer">
-                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
-                  <input type="date" value="${this._chocEndDate}"
+                         oninput="RawMaterials.onChocCustomDateChange('start', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
+                  <span class="text-[10px] font-black uppercase text-slate-600">To</span>
+                  <input type="date" value="${this._chocEndDate || today}"
                          onchange="RawMaterials.onChocCustomDateChange('end', this.value)"
-                         class="bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer">
+                         oninput="RawMaterials.onChocCustomDateChange('end', this.value)"
+                         class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
                 </div>
+              ` : this._chocPeriodType === 'year' ? `
+                <select onchange="RawMaterials.onChocDateChange(this.value)"
+                        class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-600 cursor-pointer">
+                  ${this.getAvailableYears().map(y => `
+                    <option value="${y}" ${String(this._chocSelectedDate || today).startsWith(String(y)) ? 'selected' : ''}>${y}</option>
+                  `).join('')}
+                </select>
               ` : `
-                <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-xl shadow-2xs">
-                  <input type="${this._chocPeriodType === 'month' ? 'month' : this._chocPeriodType === 'year' ? 'number' : 'date'}"
-                         value="${this._chocPeriodType === 'year' ? (this._chocSelectedDate || today).slice(0, 4) : this._chocPeriodType === 'month' ? (this._chocSelectedDate || today).slice(0, 7) : (this._chocSelectedDate || today)}"
-                         onchange="RawMaterials.onChocDateChange(this.value)"
-                         ${this._chocPeriodType === 'year' ? 'min="2020" max="2099" step="1"' : ''}
-                         class="bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer">
-                </div>
+                <input type="${this._chocPeriodType === 'month' ? 'month' : 'date'}"
+                       value="${this._chocPeriodType === 'month' ? (this._chocSelectedDate || today).slice(0, 7) : (this._chocSelectedDate || today)}"
+                       onchange="RawMaterials.onChocDateChange(this.value)"
+                       oninput="RawMaterials.onChocDateChange(this.value)"
+                       class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-600 cursor-pointer">
               `}
             </div>
           ` : ''}
@@ -3210,8 +3242,8 @@ window.RawMaterials = {
           <!-- Reset Filter Button -->
           ${isFilteredFromToday ? `
             <button type="button" onclick="RawMaterials.resetChocToCurrent()"
-                    class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0"
-                    title="Reset to Today">
+                    class="w-7 h-7 rounded-xl flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 hover:border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95 shrink-0"
+                    title="Go back to current (Today)">
               <i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
           ` : ''}
@@ -3223,15 +3255,15 @@ window.RawMaterials = {
             <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
             <input type="text" value="${this._chocSearchQuery || ''}"
                    oninput="RawMaterials.onChocSearch(this.value)"
-                   placeholder="Search ${type === 'batches' ? 'batches' : 'movements'}..."
-                   class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-600 shadow-2xs transition-all">
+                   placeholder="Search ${type === 'batches' ? 'production records' : 'movements'}..."
+                   class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-600 shadow-2xs transition-all">
           </div>
 
           <!-- Print Report Button -->
           <button type="button" onclick="RawMaterials.printChocolateReport('${type}')"
-                  class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
-                  title="Print ${type === 'batches' ? 'Batches' : 'Stock History'} Report (A5)">
-            <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i>
+                  class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+                  title="Print ${type === 'batches' ? 'Production History' : 'Stock History'} Report (A5)">
+            <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-300"></i>
             <span>Print</span>
           </button>
         </div>
@@ -3259,8 +3291,6 @@ window.RawMaterials = {
     if (this._chocSearchQuery) {
       const q = this._chocSearchQuery.toLowerCase();
       list = list.filter(b =>
-        (b.batch_number || '').toLowerCase().includes(q) ||
-        (b.notes || '').toLowerCase().includes(q) ||
         (b.materials_summary || '').toLowerCase().includes(q)
       );
     }
@@ -3286,8 +3316,8 @@ window.RawMaterials = {
         ${toolbar}
         <div class="p-12 text-center text-slate-400 flex flex-col items-center justify-center bg-white rounded-xl border border-slate-200">
           <div class="w-12 h-12 mb-3 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center text-2xl">🍫</div>
-          <h4 class="text-sm font-black text-slate-700">No Chocolate Batches Found</h4>
-          <p class="text-xs text-slate-400 mt-1">No batches match the selected date period or search query.</p>
+          <h4 class="text-sm font-black text-slate-700">No Chocolate Production Records Found</h4>
+          <p class="text-xs text-slate-400 mt-1">No production records match the selected date period or search query.</p>
         </div>
       `;
     }
@@ -3302,12 +3332,6 @@ window.RawMaterials = {
               <th onclick="RawMaterials.sortChocBatches('date')" class="py-2.5 px-3 border-r border-slate-200 cursor-pointer hover:bg-amber-100/60 transition-colors">
                 <div class="flex items-center gap-1">
                   <span>Date</span>
-                  <i data-lucide="arrow-up-down" class="w-3 h-3 text-amber-800/60"></i>
-                </div>
-              </th>
-              <th onclick="RawMaterials.sortChocBatches('batch_number')" class="py-2.5 px-3 border-r border-slate-200 cursor-pointer hover:bg-amber-100/60 transition-colors">
-                <div class="flex items-center gap-1">
-                  <span>Batch #</span>
                   <i data-lucide="arrow-up-down" class="w-3 h-3 text-amber-800/60"></i>
                 </div>
               </th>
@@ -3330,7 +3354,6 @@ window.RawMaterials = {
                   <i data-lucide="arrow-up-down" class="w-3 h-3 text-amber-800/60"></i>
                 </div>
               </th>
-              <th class="py-2.5 px-3 border-r border-slate-200">Notes</th>
               <th class="py-2.5 px-3 text-center">Actions</th>
             </tr>
           </thead>
@@ -3341,7 +3364,6 @@ window.RawMaterials = {
                 <td class="py-2.5 px-3 font-mono text-xs text-slate-800 whitespace-nowrap border-r border-slate-200 font-bold">
                   ${app.formatDateTime ? app.formatDateTime(b.date, b.created_at) : b.date}
                 </td>
-                <td class="py-2.5 px-3 font-black text-amber-950 font-mono text-xs border-r border-slate-200">${b.batch_number}</td>
                 <td class="py-2.5 px-3 text-right font-black font-mono text-emerald-800 text-xs border-r border-slate-200 tabular-nums">
                   +${Number(b.liters_produced).toLocaleString()} Liters
                 </td>
@@ -3354,16 +3376,15 @@ window.RawMaterials = {
                 <td class="py-2.5 px-3 text-right font-mono font-bold text-amber-900 border-r border-slate-200 tabular-nums">
                   Rs. ${Math.round(b.cost_per_liter || 0).toLocaleString()}
                 </td>
-                <td class="py-2.5 px-3 text-[11px] text-slate-500 border-r border-slate-200">${b.notes || '—'}</td>
                 <td class="py-2.5 px-3 text-center whitespace-nowrap">
                   <div class="flex items-center justify-center gap-1.5">
                     <button type="button" onclick="RawMaterials.printChocolateBatchSlip(${b.id})"
                             class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs"
-                            title="View &amp; Print Batch Slip (A5)">
+                            title="View &amp; Print Slip (A5)">
                       <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                     </button>
-                    <button type="button" onclick="RawMaterials.deleteChocolateBatch(${b.id}, '${b.batch_number}')"
-                            class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-colors cursor-pointer" title="Delete &amp; Revert Batch">
+                    <button type="button" onclick="RawMaterials.deleteChocolateBatch(${b.id})"
+                            class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-colors cursor-pointer" title="Delete &amp; Revert Production">
                       <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
                   </div>
@@ -3396,7 +3417,6 @@ window.RawMaterials = {
       const q = this._chocSearchQuery.toLowerCase();
       list = list.filter(l =>
         (l.action || '').toLowerCase().includes(q) ||
-        (l.reference_no || '').toLowerCase().includes(q) ||
         (l.notes || '').toLowerCase().includes(q)
       );
     }
@@ -3426,8 +3446,7 @@ window.RawMaterials = {
               <th class="py-2.5 px-3 text-right border-r border-slate-200">Quantity (Liters)</th>
               <th class="py-2.5 px-3 text-right border-r border-slate-200">Before</th>
               <th class="py-2.5 px-3 text-right border-r border-slate-200">Current</th>
-              <th class="py-2.5 px-3 border-r border-slate-200">Reference #</th>
-              <th class="py-2.5 px-3">Details / Notes</th>
+              <th class="py-2.5 px-3">Details</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -3451,8 +3470,7 @@ window.RawMaterials = {
                   </td>
                   <td class="py-2 px-3 text-right font-mono text-slate-500 border-r border-slate-200 tabular-nums">${l.stock_before} L</td>
                   <td class="py-2 px-3 text-right font-mono font-black text-slate-900 border-r border-slate-200 tabular-nums">${l.stock_after} L</td>
-                  <td class="py-2 px-3 font-mono text-[11px] text-amber-900 font-black border-r border-slate-200">${l.reference_no || '—'}</td>
-                  <td class="py-2 px-3 text-slate-500 text-[11px]">${l.notes || '—'}</td>
+                  <td class="py-2 px-3 text-slate-600 text-[11px] font-medium">${l.notes || '—'}</td>
                 </tr>
               `;
             }).join('')}
@@ -3498,8 +3516,6 @@ window.RawMaterials = {
       if (this._chocSearchQuery) {
         const q = this._chocSearchQuery.toLowerCase();
         list = list.filter(b =>
-          (b.batch_number || '').toLowerCase().includes(q) ||
-          (b.notes || '').toLowerCase().includes(q) ||
           (b.materials_summary || '').toLowerCase().includes(q)
         );
       }
@@ -3519,13 +3535,13 @@ window.RawMaterials = {
           </div>
 
           <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-            CHOCOLATE PRODUCTION BATCHES REPORT
+            CHOCOLATE PRODUCTION REPORT
           </div>
 
           <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 9.5px; margin-bottom: 6px; padding: 5px 9px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.5;">
             <div>
               <div><strong>Filter Period:</strong> ${periodLabel}</div>
-              <div><strong>Total Batches:</strong> <b>${list.length}</b></div>
+              <div><strong>Total Productions:</strong> <b>${list.length}</b></div>
             </div>
             <div style="text-align: right;">
               <div><strong>Generated:</strong> ${app.formatDateTime ? app.formatDateTime(new Date()) : new Date().toLocaleDateString('en-GB')}</div>
@@ -3537,12 +3553,11 @@ window.RawMaterials = {
             <thead>
               <tr style="background: #fff; border-bottom: 1.5px solid #000;">
                 <th style="border: 1px solid #000; padding: 3px 4px; text-align: center; width: 22px; font-weight: 700; color: #000;">#</th>
-                <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 75px;">Date</th>
-                <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 85px;">Batch #</th>
-                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 55px;">Liters</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 85px;">Date</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 60px;">Liters</th>
                 <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000;">Materials Consumed</th>
-                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 65px;">Total Cost</th>
-                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 55px;">Cost / L</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 70px;">Total Cost</th>
+                <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 60px;">Cost / L</th>
               </tr>
             </thead>
             <tbody>
@@ -3550,7 +3565,6 @@ window.RawMaterials = {
                 <tr>
                   <td style="border: 1px solid #000; padding: 3px 4px; text-align: center; color: #000;">${idx + 1}</td>
                   <td style="border: 1px solid #000; padding: 3px 5px; color: #000; white-space: nowrap;">${app.formatDateTime ? app.formatDateTime(b.date, b.created_at) : b.date}</td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; font-weight: 700; color: #000;">${b.batch_number}</td>
                   <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000;">+${Number(b.liters_produced).toLocaleString()} L</td>
                   <td style="border: 1px solid #000; padding: 3px 5px; color: #000;">${b.materials_summary || '—'}</td>
                   <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 600; color: #000;">Rs. ${Math.round(b.total_cost || 0).toLocaleString()}</td>
@@ -3560,7 +3574,7 @@ window.RawMaterials = {
             </tbody>
             <tfoot>
               <tr style="background: #fff; font-weight: 700; border-top: 1.5px solid #000; color: #000;">
-                <td colspan="3" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">TOTAL (${list.length} Batches):</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">TOTAL (${list.length} Productions):</td>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">+${totalLiters.toLocaleString()} L</td>
                 <td style="border: 1px solid #000; padding: 4px 5px;"></td>
                 <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">Rs. ${Math.round(totalCost).toLocaleString()}</td>
@@ -3580,7 +3594,7 @@ window.RawMaterials = {
         </div>
       `;
 
-      app.showA5Preview(html, `Chocolate Batches Report (${periodLabel})`);
+      app.showA5Preview(html, `Chocolate Production Report (${periodLabel})`);
       return;
     }
 
@@ -3603,7 +3617,6 @@ window.RawMaterials = {
       const q = this._chocSearchQuery.toLowerCase();
       list = list.filter(l =>
         (l.action || '').toLowerCase().includes(q) ||
-        (l.reference_no || '').toLowerCase().includes(q) ||
         (l.notes || '').toLowerCase().includes(q)
       );
     }
@@ -3652,8 +3665,7 @@ window.RawMaterials = {
               <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 55px;">Quantity</th>
               <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 45px;">Before</th>
               <th style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; width: 45px;">Current</th>
-              <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000; width: 85px;">Reference #</th>
-              <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000;">Details / Notes</th>
+              <th style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 700; color: #000;">Details</th>
             </tr>
           </thead>
           <tbody>
@@ -3668,7 +3680,6 @@ window.RawMaterials = {
                   <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000; white-space: nowrap;">${isAdd ? '+' : ''}${Number(l.liters_change).toLocaleString()} L</td>
                   <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; color: #000;">${l.stock_before} L</td>
                   <td style="border: 1px solid #000; padding: 3px 5px; text-align: right; font-weight: 700; color: #000;">${l.stock_after} L</td>
-                  <td style="border: 1px solid #000; padding: 3px 5px; font-weight: 600; color: #000;">${l.reference_no || '—'}</td>
                   <td style="border: 1px solid #000; padding: 3px 5px; color: #000;">${l.notes || '—'}</td>
                 </tr>
               `;
@@ -3680,7 +3691,7 @@ window.RawMaterials = {
                 TOTALS: Produced: +${totalInflow.toLocaleString()} L | Used: -${totalOutflow.toLocaleString()} L
               </td>
               <td style="border: 1px solid #000; padding: 4px 5px; text-align: right;">${netChange >= 0 ? '+' : ''}${netChange.toLocaleString()} L</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">
+              <td colspan="3" style="border: 1px solid #000; padding: 4px 5px; text-align: right; text-transform: uppercase;">
                 CURRENT STOCK: ${currentStockLiters.toLocaleString()} LITERS
               </td>
             </tr>
@@ -3732,12 +3743,11 @@ window.RawMaterials = {
           </div>
 
           <div style="border: 1.5px solid #000; color: #000; background: #fff; text-align: center; padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 4px 0 6px 0;">
-            CHOCOLATE PRODUCTION BATCH SLIP
+            CHOCOLATE PRODUCTION VOUCHER
           </div>
 
           <div class="a5-meta-box" style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 8px; padding: 7px 11px; background: #fff; border: 1.5px solid #000; color: #000; line-height: 1.55;">
             <div>
-              <div><strong>Batch #:</strong> ${batch.batch_number}</div>
               <div><strong>Item Produced:</strong> <strong>Prepared Chocolate</strong></div>
               <div><strong>Liters Produced:</strong> <strong>+${Number(batch.liters_produced).toLocaleString()} Liters</strong></div>
             </div>
@@ -3781,12 +3791,6 @@ window.RawMaterials = {
             </tfoot>
           </table>
 
-          ${batch.notes ? `
-            <div style="border: 1px solid #000; padding: 4px 8px; font-size: 9px; margin-top: 4px; background: #fff; color: #000;">
-              <strong>Remarks:</strong> ${batch.notes}
-            </div>
-          ` : ''}
-
           <div class="a5-signatures" style="margin-top: 35px; display: flex; justify-content: space-between; font-size: 9px;">
             <div class="a5-sig-line" style="border-top: 1.5px solid #000; width: 42%; text-align: center; padding-top: 4px; font-weight: 600; text-transform: uppercase; color: #000;">
               Chocolate Preparation Incharge
@@ -3798,19 +3802,19 @@ window.RawMaterials = {
         </div>
       `;
 
-      app.showA5Preview(html, `Chocolate Production Voucher (${batch.batch_number})`);
+      app.showA5Preview(html, `Chocolate Production Voucher (${batch.date})`);
     } catch (err) {
       app.hideLoading?.();
       console.error('Error generating chocolate batch slip:', err);
-      app.showAlert({ title: 'Error', message: err.message || 'Failed to print chocolate batch slip.' });
+      app.showAlert({ title: 'Error', message: err.message || 'Failed to print chocolate production voucher.' });
     }
   },
 
-  deleteChocolateBatch(id, batchNumber) {
+  deleteChocolateBatch(id) {
     app.authorizeAction(() => {
       app.showConfirm({
-        title: 'Delete & Revert Chocolate Batch?',
-        message: `Are you sure you want to delete batch <b>${batchNumber}</b>?<br><br>• Deducted raw materials will be restored back to stock.<br>• Produced liters will be removed from Chocolate stock.`,
+        title: 'Delete & Revert Chocolate Production?',
+        message: `Are you sure you want to delete this chocolate production record?<br><br>• Deducted raw materials will be restored back to stock.<br>• Produced liters will be removed from Chocolate stock.`,
         confirmText: 'Yes, Delete & Revert',
         confirmColor: 'bg-rose-600 hover:bg-rose-700 text-white',
         onConfirm: async () => {
@@ -3819,11 +3823,11 @@ window.RawMaterials = {
             const res = await window.api.deleteChocolateBatch(id);
             app.hideLoading?.();
             if (res && res.success) {
-              app.showToast(`Batch ${batchNumber} deleted and stock reverted successfully!`, 'success');
+              app.showToast('Chocolate production record deleted and stock reverted successfully!', 'success');
               await this.loadData();
               this.openChocolateModal('batches');
             } else {
-              app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to delete batch.' });
+              app.showAlert({ title: 'Error', message: (res && res.error) || 'Failed to delete production record.' });
             }
           } catch (err) {
             app.hideLoading?.();
@@ -3832,6 +3836,6 @@ window.RawMaterials = {
           }
         }
       });
-    }, 'delete chocolate batch');
+    }, 'delete chocolate production');
   }
 };

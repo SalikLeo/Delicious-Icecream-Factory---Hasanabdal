@@ -14,11 +14,16 @@ window.Dashboard = {
 
   async loadStats() {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = (window.app && typeof app.getTodayDate === 'function') 
+        ? app.getTodayDate() 
+        : (() => {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          })();
       const [summary, cars, recentDeliveries, recentExpenses] = await Promise.all([
-        window.api.getIcecreamFactorySummary(),
+        window.api.getIcecreamFactorySummary(today),
         window.api.getCars(),
-        window.api.getShopDeliveries({ fromDate: today }),
+        window.api.getShopDeliveries({ fromDate: today, toDate: today }),
         window.api.getExpenses({ limit: 5 })
       ]);
       this.summary = summary || {};
@@ -84,7 +89,7 @@ window.Dashboard = {
             <h3 class="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-2">
               <i data-lucide="git-commit" class="w-4 h-4 text-amber-500"></i> The 4 Factory Stages Workflow
             </h3>
-            <span class="text-[11px] font-bold text-slate-400">Click any stage to open</span>
+            <span class="text-[11px] font-bold text-slate-500">Click any stage to open</span>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -120,13 +125,13 @@ window.Dashboard = {
                 </div>
                 <div class="mt-3">
                   <h4 class="font-black text-sm text-slate-800 group-hover:text-purple-700 transition-colors">Carton Packing</h4>
-                  <div class="text-2xl font-black text-purple-700 tabular-nums mt-1">
-                    <span class="text-xl">${(cartons.total_warehouse_cartons || 0).toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">ctns</span> <span class="text-slate-300 font-normal text-sm">•</span> <span class="text-xl text-purple-600">${(cartons.total_warehouse_shopers || 0).toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">shopers</span>
+                  <div class="text-2xl font-black text-purple-700 tabular-nums mt-1 flex items-baseline gap-1.5 flex-wrap">
+                    <span class="text-2xl">${(cartons.total_warehouse_cartons || 0).toLocaleString()}</span> <span class="text-xs font-black text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded-md">ctns</span> <span class="text-purple-300 font-bold text-sm">•</span> <span class="text-2xl text-purple-700">${(cartons.total_warehouse_shopers || 0).toLocaleString()}</span> <span class="text-xs font-black text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded-md">shopers</span>
                   </div>
                 </div>
               </div>
               <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="font-bold text-slate-500">Val: Rs. ${Math.round(cartons.total_warehouse_sale_value || 0).toLocaleString()}</span>
+                <span class="font-bold text-slate-700">Val: <span class="font-black text-slate-900">Rs. ${Math.round(cartons.total_warehouse_sale_value || 0).toLocaleString()}</span></span>
                 <span class="font-black text-purple-600 group-hover:translate-x-1 transition-transform">➔</span>
               </div>
             </div>
@@ -142,13 +147,13 @@ window.Dashboard = {
                 </div>
                 <div class="mt-3">
                   <h4 class="font-black text-sm text-slate-800 group-hover:text-blue-700 transition-colors">Car Loading</h4>
-                  <div class="text-2xl font-black text-blue-700 tabular-nums mt-1">
-                    <span class="text-xl">${(carStats.total_ctns_in_cars !== undefined ? carStats.total_ctns_in_cars : (carStats.total_cartons_in_cars || 0)).toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">ctns</span> <span class="text-slate-300 font-normal text-sm">•</span> <span class="text-xl text-sky-600">${(carStats.total_shopers_in_cars || 0).toLocaleString()}</span> <span class="text-xs font-bold text-slate-400">shopers</span>
+                  <div class="text-2xl font-black text-blue-700 tabular-nums mt-1 flex items-baseline gap-1.5 flex-wrap">
+                    <span class="text-2xl">${(carStats.total_ctns_in_cars !== undefined ? carStats.total_ctns_in_cars : (carStats.total_cartons_in_cars || 0)).toLocaleString()}</span> <span class="text-xs font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded-md">ctns</span> <span class="text-blue-300 font-bold text-sm">•</span> <span class="text-2xl text-sky-700">${(carStats.total_shopers_in_cars || 0).toLocaleString()}</span> <span class="text-xs font-black text-sky-900 bg-sky-100 px-1.5 py-0.5 rounded-md">shopers</span>
                   </div>
                 </div>
               </div>
               <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="font-bold text-slate-500">${carStats.total_cars || 0} delivery vehicles</span>
+                <span class="font-bold text-slate-700"><span class="font-black text-slate-900">${carStats.total_cars || 0}</span> delivery vehicles</span>
                 <span class="font-black text-blue-600 group-hover:translate-x-1 transition-transform">➔</span>
               </div>
             </div>
@@ -168,12 +173,12 @@ window.Dashboard = {
                 </div>
               </div>
               <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="font-bold text-slate-500">
+                <span class="font-bold text-slate-700">
                   ${(today.shopers_sold > 0 && today.ctns_sold > 0)
-                    ? `${today.ctns_sold} ctns, ${today.shopers_sold} shopers sold today`
+                    ? `<span class="font-black text-slate-900">${today.ctns_sold}</span> <span class="text-[10px] font-black uppercase text-amber-950 bg-amber-100 px-1.5 py-0.5 rounded">ctns</span>, <span class="font-black text-slate-900">${today.shopers_sold}</span> <span class="text-[10px] font-black uppercase text-amber-950 bg-amber-100 px-1.5 py-0.5 rounded">shopers</span> sold today`
                     : (today.shopers_sold > 0
-                      ? `${today.shopers_sold} shopers sold today`
-                      : `${today.ctns_sold !== undefined ? today.ctns_sold : (today.cartons_sold || 0)} ctns sold today`
+                      ? `<span class="font-black text-slate-900">${today.shopers_sold}</span> <span class="text-[10px] font-black uppercase text-amber-950 bg-amber-100 px-1.5 py-0.5 rounded">shopers</span> sold today`
+                      : `<span class="font-black text-slate-900">${today.ctns_sold !== undefined ? today.ctns_sold : (today.cartons_sold || 0)}</span> <span class="text-[10px] font-black uppercase text-amber-950 bg-amber-100 px-1.5 py-0.5 rounded">ctns</span> sold today`
                     )
                   }
                 </span>
@@ -198,9 +203,9 @@ window.Dashboard = {
           </div>
 
           ${this.recentDeliveries.length === 0 ? `
-            <div class="p-8 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
-              <p class="font-bold text-xs text-slate-500">No sales recorded yet today.</p>
-              <p class="text-[11px] text-slate-400 mt-0.5">Click "+ New Sale" to record your first sale for today.</p>
+            <div class="p-8 text-center text-slate-500 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+              <p class="font-bold text-xs text-slate-600">No sales recorded yet today.</p>
+              <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Click "+ New Sale" to record your first sale for today.</p>
             </div>
           ` : `
             <div class="overflow-x-auto">
@@ -220,21 +225,21 @@ window.Dashboard = {
                     <tr class="hover:bg-slate-50">
                       <td class="py-1.5 px-3 border-r border-slate-200">
                         <div class="font-mono font-bold text-slate-900 text-xs">${d.invoice_no}</div>
-                        <div class="text-[10px] text-slate-400 font-bold whitespace-nowrap leading-tight">${app.formatDateTime(d.date, d.created_at)}</div>
+                        <div class="text-[10px] text-slate-500 font-bold whitespace-nowrap leading-tight">${app.formatDateTime(d.date, d.created_at)}</div>
                       </td>
                       <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${d.shop_name}</td>
-                      <td class="py-1.5 px-3 text-slate-500 text-[11px] border-r border-slate-200">${d.car_number || 'Direct'}</td>
+                      <td class="py-1.5 px-3 text-slate-700 font-bold text-[11px] border-r border-slate-200">${d.car_number || 'Direct'}</td>
                       <td class="py-1.5 px-3 text-right font-black text-xs tabular-nums border-r border-slate-200">
                         ${(() => {
                           const netCtns = Math.max(0, (Number(d.delivered_ctns) || 0) - (Number(d.returned_ctns) || 0));
                           const netShopers = Math.max(0, (Number(d.delivered_shopers) || 0) - (Number(d.returned_shopers) || 0));
                           if (netCtns > 0 && netShopers > 0) {
-                            return `<span class="text-blue-700">${netCtns} <span class="text-[10px] text-slate-400 font-normal">ctns</span></span> <span class="text-slate-300 font-normal">•</span> <span class="text-sky-600">${netShopers} <span class="text-[10px] text-slate-400 font-normal">shopers</span></span>`;
+                            return `<span class="font-black text-blue-700 text-xs">${netCtns} <span class="text-[10px] font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded-md">ctns</span></span> <span class="text-slate-300 font-bold mx-0.5">•</span> <span class="font-black text-sky-700 text-xs">${netShopers} <span class="text-[10px] font-black text-sky-900 bg-sky-100 px-1.5 py-0.5 rounded-md">shopers</span></span>`;
                           } else if (netShopers > 0) {
-                            return `<span class="text-sky-600">${netShopers} <span class="text-[10px] text-slate-400 font-normal">shopers</span></span>`;
+                            return `<span class="font-black text-sky-700 text-xs">${netShopers} <span class="text-[10px] font-black text-sky-900 bg-sky-100 px-1.5 py-0.5 rounded-md">shopers</span></span>`;
                           } else {
                             const fallback = Math.max(0, (Number(d.total_cartons_delivered) || 0) - (Number(d.total_cartons_returned) || 0));
-                            return `<span class="text-blue-700">${netCtns || fallback || 0} <span class="text-[10px] text-slate-400 font-normal">ctns</span></span>`;
+                            return `<span class="font-black text-blue-700 text-xs">${netCtns || fallback || 0} <span class="text-[10px] font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded-md">ctns</span></span>`;
                           }
                         })()}
                       </td>
@@ -278,7 +283,7 @@ window.Dashboard = {
                 <div onclick="app.navigate('car-loading')" class="p-3 bg-slate-50 hover:bg-blue-50/60 rounded-2xl border border-slate-200/80 transition-all cursor-pointer flex items-center justify-between">
                   <div>
                     <h4 class="font-black text-xs text-slate-900">${c.car_number}</h4>
-                    <p class="text-[11px] text-slate-500 font-medium">${c.driver_name} ${c.phone ? `• ${c.phone}` : ''}</p>
+                    <p class="text-[11px] text-slate-700 font-semibold">${c.driver_name} ${c.phone ? `• ${c.phone}` : ''}</p>
                   </div>
                   <div class="text-right">
                     ${(ctns > 0 && shopers > 0) ? `
@@ -303,7 +308,7 @@ window.Dashboard = {
                         0 loaded
                       </span>
                     `))}
-                    <span class="text-[10px] font-bold text-slate-400 mt-0.5 block">loaded now</span>
+                    <span class="text-[10px] font-black uppercase text-slate-600 tracking-wider mt-0.5 block">loaded now</span>
                   </div>
                 </div>
               `}).join('')}
@@ -324,15 +329,15 @@ window.Dashboard = {
             </div>
 
             ${this.recentExpenses.length === 0 ? `
-              <div class="p-8 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
-                <p class="font-bold text-xs text-slate-500">No factory expenses recorded yet.</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">Click "View All Expenses" to record factory utility, fuel, or operational expenses.</p>
+              <div class="p-8 text-center text-slate-500 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+                <p class="font-bold text-xs text-slate-600">No factory expenses recorded yet.</p>
+                <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Click "View All Expenses" to record factory utility, fuel, or operational expenses.</p>
               </div>
             ` : `
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse border border-slate-200">
                   <thead>
-                    <tr class="text-[10px] font-black uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
+                    <tr class="text-[10px] font-black uppercase text-slate-600 bg-slate-50 border-b border-slate-200">
                       <th class="py-2 px-2.5 border-r border-slate-200 w-10 text-center">#</th>
                       <th class="py-2 px-2.5 border-r border-slate-200">Date</th>
                       <th class="py-2 px-2.5 border-r border-slate-200">Category</th>
@@ -344,7 +349,7 @@ window.Dashboard = {
                   <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
                     ${this.recentExpenses.slice(0, 5).map((exp, idx) => `
                       <tr class="hover:bg-slate-50">
-                        <td class="py-1.5 px-2.5 border-r border-slate-200 text-center font-bold text-slate-400 tabular-nums text-xs">${idx + 1}</td>
+                        <td class="py-1.5 px-2.5 border-r border-slate-200 text-center font-bold text-slate-600 tabular-nums text-xs">${idx + 1}</td>
                         <td class="py-1.5 px-2.5 border-r border-slate-200 font-bold text-slate-800 text-xs whitespace-nowrap">
                           ${app.formatDateTime(exp.date, exp.created_at)}
                         </td>
@@ -355,7 +360,7 @@ window.Dashboard = {
                         </td>
                         <td class="py-1.5 px-2.5 border-r border-slate-200">
                           <div class="font-bold text-slate-900 text-xs truncate max-w-[130px] lg:max-w-[170px]" title="${exp.description || ''}">${exp.description || '—'}</div>
-                          ${exp.paid_by ? `<span class="text-[10px] text-slate-400 font-bold block truncate max-w-[130px]">Paid by: ${exp.paid_by}</span>` : ''}
+                          ${exp.paid_by ? `<span class="text-[10px] text-slate-600 font-bold block truncate max-w-[130px]">Paid by: ${exp.paid_by}</span>` : ''}
                         </td>
                         <td class="py-1.5 px-2.5 text-right font-black text-rose-600 text-xs tabular-nums border-r border-slate-200 whitespace-nowrap">
                           Rs. ${Math.round(exp.amount || 0).toLocaleString()}

@@ -74,7 +74,7 @@ window.Production = {
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Ice Cream Items</p>
-              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalItems} <span class="text-xs font-bold text-slate-400">types</span></h3>
+              <h3 class="text-2xl font-black text-slate-900 mt-1 tabular-nums">${totalItems} <span class="text-xs font-bold text-slate-600">types</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-black">
               <i data-lucide="layers" class="w-5 h-5"></i>
@@ -84,7 +84,7 @@ window.Production = {
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Total Loose Pieces in Stock</p>
-              <h3 class="text-2xl font-black text-cyan-700 mt-1 tabular-nums">${totalSinglePieces.toLocaleString()} <span class="text-xs font-bold text-slate-400">pieces ready to pack</span></h3>
+              <h3 class="text-2xl font-black text-cyan-700 mt-1 tabular-nums">${totalSinglePieces.toLocaleString()} <span class="text-xs font-bold text-slate-600">pieces ready to pack</span></h3>
             </div>
             <div class="w-11 h-11 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-black">
               <i data-lucide="check-circle" class="w-5 h-5"></i>
@@ -104,11 +104,11 @@ window.Production = {
 
         <!-- Navigation Tabs & Search & Date Filters -->
         <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
-            <button onclick="Production.switchTab('catalog')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'catalog' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+          <div class="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300/70 w-full lg:w-auto shrink-0 shadow-inner">
+            <button onclick="Production.switchTab('catalog')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'catalog' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Single Pieces Stock
             </button>
-            <button onclick="Production.switchTab('batches')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'batches' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+            <button onclick="Production.switchTab('batches')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'batches' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Production History
             </button>
           </div>
@@ -152,25 +152,25 @@ window.Production = {
             </div>
 
             <!-- Period Switcher: Daily | Monthly | Annual | Custom Range | All -->
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shrink-0 shadow-inner">
               <button type="button" onclick="Production.setPeriod('day')" id="prd-tab-day"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="Production.setPeriod('month')" id="prd-tab-month"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="Production.setPeriod('year')" id="prd-tab-year"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="Production.setPeriod('custom')" id="prd-tab-custom"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="Production.setPeriod('all')" id="prd-tab-all"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All
               </button>
             </div>
@@ -180,12 +180,12 @@ window.Production = {
               <div id="prd-date-picker-wrap" class="shrink-0">
                 ${this.periodType === 'custom' ? `
                   <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
-                    <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                    <span class="text-[10px] font-black uppercase text-slate-600">From</span>
                     <input type="date" id="prd-start-date" value="${this.startDate || this.selectedDate}" 
                            onchange="Production.onCustomDateChange('start', this.value)"
                            oninput="Production.onCustomDateChange('start', this.value)"
                            class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
-                    <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                    <span class="text-[10px] font-black uppercase text-slate-600">To</span>
                     <input type="date" id="prd-end-date" value="${this.endDate || this.selectedDate}" 
                            onchange="Production.onCustomDateChange('end', this.value)"
                            oninput="Production.onCustomDateChange('end', this.value)"
@@ -533,8 +533,8 @@ window.Production = {
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
-            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th onclick="Production.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Item</span>
@@ -589,7 +589,7 @@ window.Production = {
 
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                  <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="font-black text-slate-900 text-xs">${it.name}</div>
                   </td>
@@ -643,19 +643,19 @@ window.Production = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
+              <td class="py-2.5 px-2 text-center text-slate-500 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-cyan-700 font-black">TOTAL:</span>
                   <span>${totalItems} ${totalItems === 1 ? 'Item' : 'Items'}</span>
                 </div>
               </td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-500 font-bold">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-cyan-800 text-sm tabular-nums">
                 ${totalPieces.toLocaleString()} <span class="text-xs font-black text-slate-700 ml-1 inline-block">pcs</span>
               </td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-500 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-500 text-xs">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-slate-900 text-sm tabular-nums bg-cyan-50/70">
                 Rs. ${Math.round(totalPoolCost).toLocaleString()}
               </td>
@@ -665,7 +665,7 @@ window.Production = {
                   : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-bold text-[10px]">Empty</span>`
                 }
               </td>
-              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+              <td class="py-2.5 px-3 text-right text-slate-500 font-bold text-xs">-</td>
             </tr>
           </tfoot>
         </table>
@@ -693,8 +693,8 @@ window.Production = {
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
-            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th onclick="Production.toggleSort('batch_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Batch #</span>
@@ -738,12 +738,12 @@ window.Production = {
           <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
             ${batches.map((b, idx) => `
               <tr class="hover:bg-slate-50/60 transition-colors">
-                <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                 <td class="py-1.5 px-3 font-mono font-bold text-cyan-800 text-xs border-r border-slate-200">${b.batch_number}</td>
                 <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] whitespace-nowrap border-r border-slate-200">${app.formatDateTime(b.date, b.created_at)}</td>
                 <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${b.item_name}</td>
                 <td class="py-1.5 px-3 text-right font-black text-cyan-700 text-xs tabular-nums border-r border-slate-200">
-                  +${b.produced_pieces.toLocaleString()} <span class="text-[10px] font-normal text-slate-400">pcs</span>
+                  +${b.produced_pieces.toLocaleString()} <span class="text-[10px] font-semibold text-slate-500">pcs</span>
                 </td>
                 <td class="py-1.5 px-3 text-right font-mono text-slate-700 tabular-nums border-r border-slate-200">Rs. ${b.unit_cost}</td>
                 <td class="py-1.5 px-3 text-right font-black text-slate-900 tabular-nums border-r border-slate-200">Rs. ${Math.round(b.total_cost).toLocaleString()}</td>

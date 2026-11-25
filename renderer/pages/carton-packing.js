@@ -99,8 +99,8 @@ window.CartonPacking = {
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Warehouse Stock</p>
-              <h3 class="text-2xl font-black text-purple-700 mt-1 tabular-nums">${totalWarehouseUnits.toLocaleString()} <span class="text-xs font-bold text-slate-400">units</span></h3>
-              <p class="text-[10.5px] font-bold text-purple-600/90 mt-0.5">${whCtns.toLocaleString()} ctns • ${whShopers.toLocaleString()} shopers</p>
+              <h3 class="text-2xl font-black text-purple-700 mt-1 tabular-nums">${totalWarehouseUnits.toLocaleString()} <span class="text-xs font-black text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded-md">units</span></h3>
+              <p class="text-[11px] font-black text-purple-950 mt-0.5">${whCtns.toLocaleString()} <span class="text-purple-700 font-bold">ctns</span> • ${whShopers.toLocaleString()} <span class="text-purple-700 font-bold">shopers</span></p>
             </div>
             <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-black">
               <i data-lucide="warehouse" class="w-5 h-5"></i>
@@ -110,8 +110,8 @@ window.CartonPacking = {
           <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <p class="text-[11px] font-black uppercase text-slate-600 tracking-wider">Loaded in Cars</p>
-              <h3 class="text-2xl font-black text-blue-600 mt-1 tabular-nums">${totalInCars.toLocaleString()} <span class="text-xs font-bold text-slate-400">units</span></h3>
-              <p class="text-[10.5px] font-bold text-blue-600/90 mt-0.5">${carCtns.toLocaleString()} ctns • ${carShopers.toLocaleString()} shopers</p>
+              <h3 class="text-2xl font-black text-blue-600 mt-1 tabular-nums">${totalInCars.toLocaleString()} <span class="text-xs font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded-md">units</span></h3>
+              <p class="text-[11px] font-black text-blue-950 mt-0.5">${carCtns.toLocaleString()} <span class="text-blue-700 font-bold">ctns</span> • ${carShopers.toLocaleString()} <span class="text-sky-700 font-bold">shopers</span></p>
             </div>
             <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
               <i data-lucide="truck" class="w-5 h-5"></i>
@@ -131,16 +131,11 @@ window.CartonPacking = {
 
         <!-- Navigation Tabs & Search & Date Filters -->
         <div class="bg-white p-2.5 px-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row justify-between items-center gap-3">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-full lg:w-auto shrink-0">
-            <button onclick="CartonPacking.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+          <div class="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300/70 w-full lg:w-auto shrink-0 shadow-inner">
+            <button onclick="CartonPacking.switchTab('inventory')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'inventory' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Carton &amp; Shoper Stock
             </button>
-            <button onclick="CartonPacking.switchTab('scans')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${this.activeTab === 'scans' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
-              <i data-lucide="scan-line" class="w-3.5 h-3.5"></i>
-              <span>Daily Scanned List</span>
-              <span class="pck-scan-badge px-1.5 py-0.2 text-[10px] rounded-full font-mono font-black ${this.activeTab === 'scans' ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'}">0</span>
-            </button>
-            <button onclick="CartonPacking.switchTab('batches')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'batches' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+            <button onclick="CartonPacking.switchTab('batches')" class="px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${this.activeTab === 'batches' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/90' : 'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
               Packing History
             </button>
           </div>
@@ -197,25 +192,25 @@ window.CartonPacking = {
             </div>
 
             <!-- Period Switcher: Daily | Monthly | Annual | Custom Range | All -->
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shrink-0 shadow-inner">
               <button type="button" onclick="CartonPacking.setPeriod('day')" id="pck-tab-day"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'day' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="CartonPacking.setPeriod('month')" id="pck-tab-month"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'month' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="CartonPacking.setPeriod('year')" id="pck-tab-year"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'year' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="CartonPacking.setPeriod('custom')" id="pck-tab-custom"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="CartonPacking.setPeriod('all')" id="pck-tab-all"
-                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-900 shadow-2xs' : 'font-bold text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'font-black bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All
               </button>
             </div>
@@ -225,12 +220,12 @@ window.CartonPacking = {
               <div id="pck-date-picker-wrap" class="shrink-0">
                 ${this.periodType === 'custom' ? `
                   <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
-                    <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                    <span class="text-[10px] font-black uppercase text-slate-600">From</span>
                     <input type="date" id="pck-start-date" value="${this.startDate || this.selectedDate}" 
                            onchange="CartonPacking.onCustomDateChange('start', this.value)"
                            oninput="CartonPacking.onCustomDateChange('start', this.value)"
                            class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer">
-                    <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                    <span class="text-[10px] font-black uppercase text-slate-600">To</span>
                     <input type="date" id="pck-end-date" value="${this.endDate || this.selectedDate}" 
                            onchange="CartonPacking.onCustomDateChange('end', this.value)"
                            oninput="CartonPacking.onCustomDateChange('end', this.value)"
@@ -576,6 +571,10 @@ window.CartonPacking = {
   },
 
   switchTab(tab) {
+    if (tab === 'scans') {
+      this.openScanCounterModal();
+      return;
+    }
     this.activeTab = tab;
     if (tab === 'inventory') {
       this.sortField = 'name';
@@ -614,8 +613,8 @@ window.CartonPacking = {
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
-            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th onclick="CartonPacking.toggleSort('name')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Item</span>
@@ -672,16 +671,16 @@ window.CartonPacking = {
 
               return `
                 <tr class="hover:bg-slate-50/60 transition-colors">
-                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                  <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
                     <div class="flex items-center gap-1.5 flex-wrap">
                       <span class="font-black text-slate-900 text-xs">${c.carton_name}</span>
-                      <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-300' : 'bg-purple-50 text-purple-800 border border-purple-200'} text-[9px] font-black uppercase tracking-tight">
+                      <span class="px-1.5 py-0.5 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-300' : 'bg-purple-50 text-purple-800 border border-purple-200'} text-[9px] font-black uppercase tracking-tight">
                         ${isShoper ? 'Shoper' : 'Carton'}
                       </span>
                     </div>
                     <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      ${c.barcode ? `<span class="px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300 font-mono text-[9px] font-black" title="Barcode: ${c.barcode}">#${c.barcode}</span>` : '<span class="text-[9px] text-slate-400 italic">No barcode</span>'}
+                      ${c.barcode ? `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300 font-mono text-[9px] font-black" title="Barcode: ${c.barcode}">#${c.barcode}</span>` : '<span class="text-[9px] text-slate-500 font-medium italic">No barcode</span>'}
                     </div>
                   </td>
                   <td class="py-1.5 px-3 text-center border-r border-slate-200">
@@ -690,13 +689,13 @@ window.CartonPacking = {
                     </span>
                   </td>
                   <td class="py-1.5 px-3 text-right border-r border-slate-200">
-                    <span class="text-sm font-black ${stock > 0 ? (isShoper ? 'text-sky-700' : 'text-purple-700') : 'text-slate-400'} tabular-nums">
+                    <span class="text-sm font-black ${stock > 0 ? (isShoper ? 'text-sky-700' : 'text-purple-700') : 'text-slate-500'} tabular-nums">
                       ${stock.toLocaleString()}
                     </span>
                     <span class="text-xs font-black text-slate-700 ml-1 inline-block">${unitsAbbr}</span>
                   </td>
                   <td class="py-1.5 px-3 text-right border-r border-slate-200">
-                    <span class="text-xs font-black ${loaded > 0 ? 'text-blue-600' : 'text-slate-400'} tabular-nums">
+                    <span class="text-xs font-black ${loaded > 0 ? 'text-blue-600' : 'text-slate-500'} tabular-nums">
                       ${loaded.toLocaleString()}
                     </span>
                     <span class="text-xs font-black text-slate-700 ml-1 inline-block">${unitsAbbr}</span>
@@ -732,14 +731,14 @@ window.CartonPacking = {
           </tbody>
           <tfoot class="bg-slate-100/95 border-t-2 border-slate-300 font-black text-xs text-slate-900 sticky bottom-0 z-10 shadow-sm">
             <tr class="bg-slate-100 border-t-2 border-slate-300">
-              <td class="py-2.5 px-2 text-center text-slate-400 font-bold border-r border-slate-300">-</td>
+              <td class="py-2.5 px-2 text-center text-slate-500 font-bold border-r border-slate-300">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-left">
                 <div class="flex items-center gap-1.5 font-black text-slate-900 text-xs uppercase tracking-wider">
                   <span class="text-purple-700 font-black">TOTAL:</span>
                   <span>${totalCartonsCount} ${totalCartonsCount === 1 ? 'Product' : 'Products'}</span>
                 </div>
               </td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-center text-slate-500 font-bold">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-purple-800 text-sm tabular-nums">
                 ${totalWarehouseUnits.toLocaleString()} <span class="text-xs font-black text-slate-700 ml-1 inline-block">units</span>
                 <div class="text-[9.5px] font-bold text-slate-500">${totalWhCtns} ctns • ${totalWhShopers} shopers</div>
@@ -748,12 +747,12 @@ window.CartonPacking = {
                 ${totalLoadedUnits.toLocaleString()} <span class="text-xs font-black text-slate-700 ml-1 inline-block">units</span>
                 <div class="text-[9.5px] font-bold text-slate-500">${totalCarCtns} ctns • ${totalCarShopers} shopers</div>
               </td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
-              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-400 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-500 text-xs">-</td>
+              <td class="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-bold text-slate-500 text-xs">-</td>
               <td class="py-2.5 px-3 border-r border-slate-300 text-right font-black text-emerald-800 text-sm tabular-nums bg-purple-50/70">
                 Rs. ${Math.round(totalWarehouseValue).toLocaleString()}
               </td>
-              <td class="py-2.5 px-3 text-right text-slate-400 font-bold text-xs">-</td>
+              <td class="py-2.5 px-3 text-right text-slate-500 font-bold text-xs">-</td>
             </tr>
           </tfoot>
         </table>
@@ -785,8 +784,8 @@ window.CartonPacking = {
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead>
-            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th onclick="CartonPacking.toggleSort('packing_number')" class="py-2 px-3 border-r border-slate-200 cursor-pointer hover:bg-slate-100 select-none transition-colors">
                 <div class="flex items-center justify-between gap-1">
                   <span>Batch #</span>
@@ -847,13 +846,13 @@ window.CartonPacking = {
 
               return `
               <tr class="hover:bg-slate-50/60 transition-colors">
-                <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                 <td class="py-1.5 px-3 font-mono font-bold text-purple-800 border-r border-slate-200">${b.packing_number}</td>
                 <td class="py-1.5 px-3 font-mono text-slate-600 text-[11px] whitespace-nowrap border-r border-slate-200">${app.formatDateTime(b.date, b.created_at)}</td>
                 <td class="py-1.5 px-3 font-black text-slate-900 border-r border-slate-200">
                   <div class="flex items-center gap-1.5">
                     <span>${b.item_name}</span>
-                    <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-300' : 'bg-purple-50 text-purple-800 border border-purple-200'} text-[9px] font-black uppercase">
+                    <span class="px-1.5 py-0.5 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-300' : 'bg-purple-50 text-purple-800 border border-purple-200'} text-[9px] font-black uppercase">
                       ${isShoper ? 'Shoper' : 'Carton'}
                     </span>
                   </div>
@@ -1150,7 +1149,7 @@ window.CartonPacking = {
           <div>
             <div class="flex items-center gap-1.5">
               <span class="text-xs font-black text-slate-900">${c.carton_name}</span>
-              <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-300' : 'bg-purple-50 text-purple-800 border border-purple-200'} text-[9px] font-black uppercase">
+              <span class="px-1.5 py-0.5 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-300' : 'bg-purple-50 text-purple-800 border border-purple-200'} text-[9px] font-black uppercase">
                 ${isShoper ? 'Shoper' : 'Carton'}
               </span>
             </div>
@@ -2089,6 +2088,9 @@ window.CartonPacking = {
   closeModal() {
     const modalEl = document.getElementById('pck-modal-container');
     if (modalEl) modalEl.innerHTML = '';
+    if (window._resetCartonScanBuffer) {
+      window._resetCartonScanBuffer();
+    }
   },
 
   async handlePackingSubmit(e) {
@@ -2386,7 +2388,6 @@ window.CartonPacking = {
           if (res && res.success) {
             app.showToast('Packing batch reversed', 'success');
             await this.loadData();
-            this.markScanAsPacked(cartonId, cartonsPacked);
             if (window.RawMaterials && RawMaterials.container) {
               RawMaterials.loadData();
             }
@@ -2730,10 +2731,38 @@ window.CartonPacking = {
   // DAILY PRODUCTION SCAN COUNTER (STAGE 2 TEMP SCANNING BUFFER)
   // =========================================================================
 
+  isScanWindowOpen() {
+    // Returns true ONLY when the Daily Production Scan Counter window is actually open
+    const modalEl = document.getElementById('daily-scan-counter-modal');
+    const modalWrap = document.getElementById('modal-scan-content-wrap');
+    if (modalEl || modalWrap) return true;
+
+    // Or if currently on the scans tab with active scan input
+    if (this.activeTab === 'scans' && document.getElementById('daily-scan-input')) {
+      return true;
+    }
+    return false;
+  },
+
+  onScanModalClick(event) {
+    const target = event.target;
+    if (!target) return;
+    const tag = (target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'button' || tag === 'select' || tag === 'textarea' || target.closest('button, select, a, input, textarea')) {
+      return;
+    }
+    const inp = document.getElementById('daily-scan-input');
+    if (inp) {
+      inp.focus();
+    }
+  },
+
   getDailyScans() {
     try {
       const raw = localStorage.getItem('icecream_daily_temp_scans');
-      return raw ? JSON.parse(raw) : [];
+      const list = raw ? JSON.parse(raw) : [];
+      // Clean up any previously stored items marked as packed
+      return list.filter(item => !item.isPacked);
     } catch (e) {
       return [];
     }
@@ -2783,6 +2812,11 @@ window.CartonPacking = {
   },
 
   onScanInputSubmit(rawCode) {
+    // STRICT GUARD: Only accept barcode scans when the Daily Production Scan Counter window is actually open!
+    // Never accept scans in background!
+    if (!this.isScanWindowOpen()) {
+      return false;
+    }
     if (!rawCode || !rawCode.trim()) return false;
     const code = rawCode.trim().toLowerCase();
 
@@ -2903,12 +2937,16 @@ window.CartonPacking = {
   },
 
   markScanAsPacked(cartonId, packedQty) {
-    const list = this.getDailyScans();
-    const item = list.find(x => x.cartonId === Number(cartonId));
-    if (item) {
-      item.isPacked = true;
-      item.packedQuantity = packedQty;
-      item.packedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let list = this.getDailyScans();
+    const idx = list.findIndex(x => x.cartonId === Number(cartonId));
+    if (idx !== -1) {
+      const item = list[idx];
+      const packed = Number(packedQty) || 0;
+      if (packed > 0 && item.count > packed) {
+        item.count -= packed;
+      } else {
+        list.splice(idx, 1);
+      }
       this.saveDailyScans(list);
       this.refreshScansUI();
     }
@@ -2937,22 +2975,20 @@ window.CartonPacking = {
     const totalUnits = list.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
     const totalPcs = list.reduce((sum, item) => sum + ((Number(item.count) || 0) * (Number(item.piecesPerCarton) || 0)), 0);
     const totalValue = list.reduce((sum, item) => sum + ((Number(item.count) || 0) * (Number(item.cartonSalePrice) || 0)), 0);
-    const packedCount = list.filter(item => item.isPacked).length;
-    const pendingCount = list.length - packedCount;
 
     return `
       <div class="flex flex-col h-full overflow-hidden">
         <!-- Scan Bar Header -->
-        <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3 shrink-0">
+        <div class="p-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-2.5 shrink-0">
           <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-xl">
             <div class="relative flex-1">
-              <i data-lucide="scan-line" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500 animate-pulse"></i>
+              <i data-lucide="scan-line" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 animate-pulse"></i>
               <input type="text" id="daily-scan-input" autofocus
                      placeholder="⚡ Point scanner here or type barcode / item name and press Enter..."
                      onkeydown="if(event.key==='Enter'){ event.preventDefault(); CartonPacking.onScanInputSubmit(this.value); this.value=''; }"
-                     class="w-full pl-10 pr-20 py-2.5 bg-white border-2 border-indigo-500/60 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-xs transition-all">
+                     class="w-full pl-9 pr-16 py-1.5 bg-white border-2 border-indigo-500/60 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-xs transition-all">
               <button type="button" onclick="const inp=document.getElementById('daily-scan-input'); if(inp){ CartonPacking.onScanInputSubmit(inp.value); inp.value=''; inp.focus(); }"
-                      class="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-black cursor-pointer active:scale-95 shadow-2xs">
+                      class="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10.5px] font-black cursor-pointer active:scale-95 shadow-2xs">
                 Scan
               </button>
             </div>
@@ -2960,7 +2996,7 @@ window.CartonPacking = {
             <!-- Manual Add Dropdown -->
             <div class="relative shrink-0">
               <select onchange="if(this.value){ CartonPacking.addCartonToScans(this.value); this.value=''; }"
-                      class="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:border-slate-300 cursor-pointer shadow-2xs">
+                      class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none hover:border-slate-300 cursor-pointer shadow-2xs">
                 <option value="">+ Add Manually...</option>
                 ${(this.cartons || []).map(c => `<option value="${c.id}">${c.carton_name} (${(c.package_type || 'Carton').toUpperCase()})</option>`).join('')}
               </select>
@@ -2969,12 +3005,12 @@ window.CartonPacking = {
 
           <div class="flex items-center gap-2 shrink-0">
             <button type="button" onclick="CartonPacking.printDailyScansReport()"
-                    class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                     title="Print Daily Production Sheet (A5)">
               <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-400"></i> Print Sheet
             </button>
             <button type="button" onclick="CartonPacking.clearDailyScans()"
-                    class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                     title="Reset list of scanned cartons for today">
               <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset List
             </button>
@@ -2982,23 +3018,23 @@ window.CartonPacking = {
         </div>
 
         <!-- KPI Mini Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-indigo-50/40 border-b border-indigo-100/60 shrink-0">
-          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-indigo-900 tracking-wider">Total Scanned</p>
-            <h4 class="text-lg font-black text-indigo-700 tabular-nums mt-0.5">${totalUnits.toLocaleString()} <span class="text-xs font-bold text-slate-400">Units</span></h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-2 px-4 bg-indigo-50/40 border-b border-indigo-100/60 shrink-0">
+          <div class="bg-white p-2 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[9.5px] font-black uppercase text-indigo-900 tracking-wider">Total Scanned</p>
+            <h4 class="text-base font-black text-indigo-700 tabular-nums mt-0.5">${totalUnits.toLocaleString()} <span class="text-[11px] font-black text-indigo-900 bg-indigo-100 px-1.5 py-0.5 rounded">Units</span></h4>
           </div>
-          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-purple-900 tracking-wider">Produced Pieces</p>
-            <h4 class="text-lg font-black text-purple-700 tabular-nums mt-0.5">${totalPcs.toLocaleString()} <span class="text-xs font-bold text-slate-400">pcs</span></h4>
+          <div class="bg-white p-2 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[9.5px] font-black uppercase text-purple-900 tracking-wider">Produced Pieces</p>
+            <h4 class="text-base font-black text-purple-700 tabular-nums mt-0.5">${totalPcs.toLocaleString()} <span class="text-[11px] font-black text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded">pcs</span></h4>
           </div>
-          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-emerald-900 tracking-wider">Est. Sale Value</p>
-            <h4 class="text-lg font-black text-emerald-700 tabular-nums mt-0.5">Rs. ${Math.round(totalValue).toLocaleString()}</h4>
+          <div class="bg-white p-2 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[9.5px] font-black uppercase text-emerald-900 tracking-wider">Est. Sale Value</p>
+            <h4 class="text-base font-black text-emerald-700 tabular-nums mt-0.5">Rs. ${Math.round(totalValue).toLocaleString()}</h4>
           </div>
-          <div class="bg-white p-2.5 px-3 rounded-xl border border-indigo-100 shadow-2xs">
-            <p class="text-[10px] font-black uppercase text-slate-600 tracking-wider">Packing Status</p>
-            <h4 class="text-xs font-black text-slate-800 tabular-nums mt-1">
-              <span class="text-emerald-700">${packedCount} Packed</span> • <span class="text-amber-700">${pendingCount} Pending</span>
+          <div class="bg-white p-2 px-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <p class="text-[9.5px] font-black uppercase text-slate-600 tracking-wider">Queue Status</p>
+            <h4 class="text-xs font-black text-amber-700 tabular-nums mt-1">
+              ${list.length} Items Pending Pack
             </h4>
           </div>
         </div>
@@ -3017,17 +3053,17 @@ window.CartonPacking = {
             </div>
           ` : `
             <table class="w-full text-left text-xs border-collapse">
-              <thead class="bg-slate-100/90 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
+              <thead class="bg-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-600 border-b border-slate-200 sticky top-0 z-10 select-none">
                 <tr>
-                  <th class="py-2.5 px-3 text-center w-10">#</th>
-                  <th class="py-2.5 px-3">Product / Flavor</th>
-                  <th class="py-2.5 px-3 text-center">Pack Size</th>
-                  <th class="py-2.5 px-3 text-center">Scanned Quantity</th>
-                  <th class="py-2.5 px-3 text-center">Total Pieces</th>
-                  <th class="py-2.5 px-3 text-right">Est. Value</th>
-                  <th class="py-2.5 px-3 text-center">Last Scan</th>
-                  <th class="py-2.5 px-3 text-center">Status</th>
-                  <th class="py-2.5 px-3 text-center">Actions</th>
+                  <th class="py-2 px-2.5 text-center w-10 border-r border-slate-200">#</th>
+                  <th class="py-2 px-3 border-r border-slate-200">Product / Flavor</th>
+                  <th class="py-2 px-2.5 text-center border-r border-slate-200">Pack Size</th>
+                  <th class="py-2 px-2.5 text-center border-r border-slate-200">Scanned Qty</th>
+                  <th class="py-2 px-2.5 text-center border-r border-slate-200">Total Pieces</th>
+                  <th class="py-2 px-2.5 text-right border-r border-slate-200">Est. Value</th>
+                  <th class="py-2 px-2.5 text-center border-r border-slate-200">Last Scan</th>
+                  <th class="py-2 px-2.5 text-center border-r border-slate-200">Status</th>
+                  <th class="py-2 px-2.5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -3038,65 +3074,59 @@ window.CartonPacking = {
                   const totalValLine = (Number(item.count) || 0) * (Number(item.cartonSalePrice) || 0);
 
                   return `
-                    <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
-                      <td class="py-3 px-3 text-center text-slate-400 font-bold">${idx + 1}</td>
-                      <td class="py-3 px-3">
-                        <div class="flex items-center gap-2">
-                          <span class="font-black text-slate-900 text-sm">${item.cartonName}</span>
-                          <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-purple-50 text-purple-800 border border-purple-200'}">
+                    <tr class="hover:bg-indigo-50/30 transition-colors border-b border-slate-100">
+                      <td class="py-1.5 px-2.5 text-center text-slate-600 font-bold border-r border-slate-200">${idx + 1}</td>
+                      <td class="py-1.5 px-3 border-r border-slate-200">
+                        <div class="flex items-center gap-1.5">
+                          <span class="font-black text-slate-900 text-xs">${item.cartonName}</span>
+                          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-black uppercase ${isShoper ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-purple-50 text-purple-800 border border-purple-200'}">
                             ${isShoper ? 'Shoper' : 'Carton'}
                           </span>
-                          ${item.barcode ? `<span class="font-mono text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">#${item.barcode}</span>` : ''}
+                          ${item.barcode ? `<span class="font-mono text-[9px] text-slate-600 font-bold bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">#${item.barcode}</span>` : ''}
                         </div>
                       </td>
-                      <td class="py-3 px-3 text-center text-slate-600 font-bold">
+                      <td class="py-1.5 px-2.5 text-center text-slate-700 font-bold text-xs border-r border-slate-200">
                         ${item.piecesPerCarton} pcs/${unitLabel}
                       </td>
-                      <td class="py-3 px-3 text-center">
-                        <div class="inline-flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+                      <td class="py-1.5 px-2.5 text-center border-r border-slate-200">
+                        <div class="inline-flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 shadow-2xs">
                           <button type="button" onclick="CartonPacking.changeScanCount(${item.cartonId}, -1)"
-                                  class="w-6 h-6 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-black flex items-center justify-center shadow-2xs transition-colors cursor-pointer active:scale-95" title="Decrease count">
+                                  class="w-5 h-5 rounded-md bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-black flex items-center justify-center shadow-2xs transition-colors cursor-pointer active:scale-95 text-xs" title="Decrease count">
                             -
                           </button>
-                          <span class="px-3 font-black text-indigo-700 text-sm tabular-nums">${item.count}</span>
+                          <span class="px-2 font-black text-indigo-700 text-xs tabular-nums">${item.count}</span>
                           <button type="button" onclick="CartonPacking.changeScanCount(${item.cartonId}, 1)"
-                                  class="w-6 h-6 rounded-lg bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 font-black flex items-center justify-center shadow-2xs transition-colors cursor-pointer active:scale-95" title="Increase count">
+                                  class="w-5 h-5 rounded-md bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 font-black flex items-center justify-center shadow-2xs transition-colors cursor-pointer active:scale-95 text-xs" title="Increase count">
                             +
                           </button>
                         </div>
                       </td>
-                      <td class="py-3 px-3 text-center font-bold text-purple-700 tabular-nums">
+                      <td class="py-1.5 px-2.5 text-center font-bold text-purple-700 text-xs tabular-nums border-r border-slate-200">
                         ${totalPcsLine.toLocaleString()} pcs
                       </td>
-                      <td class="py-3 px-3 text-right font-black text-slate-900 tabular-nums">
+                      <td class="py-1.5 px-2.5 text-right font-black text-slate-900 text-xs tabular-nums border-r border-slate-200">
                         Rs. ${Math.round(totalValLine).toLocaleString()}
                       </td>
-                      <td class="py-3 px-3 text-center text-[11px] text-slate-500 font-mono">
+                      <td class="py-1.5 px-2.5 text-center text-[10.5px] text-slate-700 font-semibold font-mono border-r border-slate-200">
                         ${item.lastScanned || '—'}
                       </td>
-                      <td class="py-3 px-3 text-center">
-                        ${item.isPacked ? `
-                          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Packed
-                          </span>
-                        ` : `
-                          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-black bg-amber-100 text-amber-800 border border-amber-300">
-                            <i data-lucide="clock" class="w-3.5 h-3.5"></i> Pending
-                          </span>
-                        `}
+                      <td class="py-1.5 px-2.5 text-center border-r border-slate-200">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                          <i data-lucide="clock" class="w-3 h-3"></i> Pending
+                        </span>
                       </td>
-                      <td class="py-3 px-3 text-center">
+                      <td class="py-1.5 px-2.5 text-center">
                         <div class="flex items-center justify-center gap-1.5">
                           <button type="button" onclick="CartonPacking.packScannedItem(${item.cartonId})"
-                                  class="px-3 py-1.5 ${item.isPacked ? 'bg-slate-100 hover:bg-purple-100 text-slate-700 hover:text-purple-800 border border-slate-300' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-xs'} rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                  class="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[11px] font-black transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
                                   title="Load into Pack Carton Modal with ${item.count} ${unitLabel}s">
                             <i data-lucide="package-plus" class="w-3.5 h-3.5"></i>
-                            <span>${item.isPacked ? 'Pack Again' : 'Pack This'}</span>
+                            <span>Pack This</span>
                           </button>
                           <button type="button" onclick="CartonPacking.removeScanItem(${item.cartonId})"
-                                  class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                                  class="w-6 h-6 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs"
                                   title="Remove from scan list">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
                           </button>
                         </div>
                       </td>
@@ -3104,21 +3134,21 @@ window.CartonPacking = {
                   `;
                 }).join('')}
               </tbody>
-              <tfoot class="sticky bottom-0 bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 shadow-sm">
+              <tfoot class="sticky bottom-0 bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 shadow-sm text-xs">
                 <tr>
-                  <td colspan="3" class="py-2.5 px-3 text-right uppercase tracking-wider text-[11px]">
+                  <td colspan="3" class="py-2 px-3 text-right uppercase tracking-wider text-[10.5px] border-r border-slate-200">
                     TOTAL (${list.length} Items):
                   </td>
-                  <td class="py-2.5 px-3 text-center text-sm font-black text-indigo-700 tabular-nums">
+                  <td class="py-2 px-2.5 text-center text-xs font-black text-indigo-700 tabular-nums border-r border-slate-200">
                     ${totalUnits} Units
                   </td>
-                  <td class="py-2.5 px-3 text-center text-xs font-black text-purple-700 tabular-nums">
+                  <td class="py-2 px-2.5 text-center text-xs font-black text-purple-700 tabular-nums border-r border-slate-200">
                     ${totalPcs.toLocaleString()} pcs
                   </td>
-                  <td class="py-2.5 px-3 text-right text-xs font-black text-slate-900 tabular-nums">
+                  <td class="py-2 px-2.5 text-right text-xs font-black text-slate-900 tabular-nums border-r border-slate-200">
                     Rs. ${Math.round(totalValue).toLocaleString()}
                   </td>
-                  <td colspan="3"></td>
+                  <td colspan="3" class="py-2 px-2.5"></td>
                 </tr>
               </tfoot>
             </table>
@@ -3133,14 +3163,18 @@ window.CartonPacking = {
     if (!modalEl) {
       if (window.app && typeof app.navigate === 'function') {
         app.navigate('carton-packing');
-        setTimeout(() => this.switchTab('scans'), 100);
+        setTimeout(() => this.openScanCounterModal(), 100);
       }
       return;
     }
 
+    if (window._resetCartonScanBuffer) {
+      window._resetCartonScanBuffer();
+    }
+
     modalEl.innerHTML = `
-      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[88vh]">
+      <div id="daily-scan-counter-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1200] p-4" onclick="if(event.target===this) CartonPacking.closeModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[88vh]" onclick="CartonPacking.onScanModalClick(event)">
           <!-- Modal Header -->
           <div class="px-6 py-4 bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-900 text-white border-b border-indigo-800/40 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
@@ -3172,8 +3206,11 @@ window.CartonPacking = {
 
     setTimeout(() => {
       const inp = document.getElementById('daily-scan-input');
-      if (inp) inp.focus();
-    }, 100);
+      if (inp) {
+        inp.focus();
+        inp.select?.();
+      }
+    }, 80);
   },
 
   printDailyScansReport() {
@@ -3279,29 +3316,49 @@ if (!window._cartonPackingScanListenerAttached) {
   window._cartonPackingScanListenerAttached = true;
   let _scanBuffer = '';
   let _lastKeyTime = 0;
+  window._resetCartonScanBuffer = () => { _scanBuffer = ''; };
+
   window.addEventListener('keydown', (e) => {
-    if (window.app && window.app.currentPage !== 'carton-packing') return;
+    // Only process when currently on carton-packing page
+    if (!window.app || window.app.currentPage !== 'carton-packing') {
+      _scanBuffer = '';
+      return;
+    }
+
+    // STRICT CHECK: Only accept barcode scanner input when the Daily Production Scan Counter window is actually OPEN!
+    // Never accept scans in background!
+    if (!window.CartonPacking || typeof window.CartonPacking.isScanWindowOpen !== 'function' || !window.CartonPacking.isScanWindowOpen()) {
+      _scanBuffer = '';
+      return;
+    }
+
     const activeEl = document.activeElement;
     const tag = activeEl ? (activeEl.tagName || '').toLowerCase() : '';
     const id = activeEl ? (activeEl.id || '') : '';
     
     // If typing in another normal input field, ignore
     if ((tag === 'input' || tag === 'textarea' || tag === 'select') && id !== 'daily-scan-input') {
+      _scanBuffer = '';
       return;
     }
     
     // If inside daily-scan-input, its own onkeydown already handles it
-    if (id === 'daily-scan-input') return;
+    if (id === 'daily-scan-input') {
+      _scanBuffer = '';
+      return;
+    }
 
     const now = Date.now();
     if (e.key === 'Enter') {
       if (_scanBuffer.trim().length >= 3) {
-        if (window.CartonPacking && typeof window.CartonPacking.onScanInputSubmit === 'function') {
-          window.CartonPacking.onScanInputSubmit(_scanBuffer.trim());
-        }
+        const scannedCode = _scanBuffer.trim();
         _scanBuffer = '';
+        if (window.CartonPacking && typeof window.CartonPacking.onScanInputSubmit === 'function') {
+          window.CartonPacking.onScanInputSubmit(scannedCode);
+        }
         e.preventDefault();
       }
+      _scanBuffer = '';
       return;
     }
 

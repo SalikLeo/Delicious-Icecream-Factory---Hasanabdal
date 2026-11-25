@@ -15,7 +15,11 @@ if (!gotSingleInstanceLock) {
 app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 
-const db = require('./database');
+const rawDb = require('./database');
+const lanService = require('./lan-service');
+const db = lanService.init(rawDb);
+const cloudSync = require('./cloud-sync');
+cloudSync.setDb(rawDb);
 
 let mainWindow;
 let isQuitting = false;
@@ -153,7 +157,32 @@ function createWindow() {
         }
       }
 
-      await performAutoBackup();
+      // Only PC 1 (Main Server) performs local file backups and cloud sync on close
+      const isMainRole = lanService.loadConfig().role === 'main';
+
+      if (isMainRole) {
+        await performAutoBackup();
+
+        // Auto-cloud sync on close if enabled
+        try {
+          let autoSync = false;
+          if (db.getKv) {
+            autoSync = db.getKv('auto_cloud_sync') === 'true';
+          } else if (db.getAllKv) {
+            const kvList = db.getAllKv();
+            if (Array.isArray(kvList)) {
+              const item = kvList.find(x => x.key === 'auto_cloud_sync');
+              autoSync = item && item.value === 'true';
+            }
+          }
+          if (autoSync) {
+            console.log('[AutoCloudSync] Syncing to Supabase cloud before close...');
+            await cloudSync.uploadToCloud();
+          }
+        } catch (cloudErr) {
+          console.warn('[AutoCloudSync] Warning during close sync:', cloudErr.message);
+        }
+      }
     } catch (err) {
       console.error('Failed to perform auto backup on window close:', err);
     } finally {
@@ -358,7 +387,7 @@ ipcMain.handle('update-shop-payment', (event, id, data) => db.updateShopPayment(
 ipcMain.handle('get-shop-ledger', (event, shopId) => db.getShopLedger(shopId));
 ipcMain.handle('delete-shop-payment', (event, id) => db.deleteShopPayment(id));
 ipcMain.handle('get-car-sales-report', (event, carId, fromDate, toDate) => db.getCarSalesReport(carId, fromDate, toDate));
-ipcMain.handle('get-icecream-factory-summary', () => db.getIcecreamFactorySummary());
+ipcMain.handle('get-icecream-factory-summary', (event, targetDate) => db.getIcecreamFactorySummary(targetDate));
 
 // Dashboard Stats IPC
 ipcMain.handle('get-dashboard-stats', (event, period) => db.getDashboardStats(period));
@@ -486,15 +515,27 @@ ipcMain.handle('open-backup-directory', async () => {
 
 // Backup/Restore IPC
 ipcMain.handle('backup-data', async () => {
+  if (lanService.loadConfig().role !== 'main') {
+    return { success: false, error: 'Database backups must be created on PC 1 (Main Server).' };
+  }
   const settings = db.getSettings ? db.getSettings() : {};
   const cleanName = (settings.company_name || 'DeliciousSuperstarFoods').replace(/[^a-zA-Z0-9_-]/g, '');
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   const datetimeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   
+  const defaultDir = (settings.auto_backup_dir && fs.existsSync(settings.auto_backup_dir))
+    ? settings.auto_backup_dir
+    : path.join(app.getPath('documents'), `${cleanName || 'Delicious Superstar Foods'} Backups`);
+  if (!fs.existsSync(defaultDir)) {
+    try { fs.mkdirSync(defaultDir, { recursive: true }); } catch (e) {}
+  }
+  const defaultFileName = `${cleanName || 'DeliciousSuperstarFoods'}-Backup-${datetimeStr}.db`;
+  const defaultPath = path.join(defaultDir, defaultFileName);
+
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Backup Factory Database',
-    defaultPath: `${cleanName || 'DeliciousSuperstarFoods'}-Backup-${datetimeStr}.db`,
+    defaultPath: defaultPath,
     filters: [
       { name: 'SQLite Database (*.db)', extensions: ['db'] },
       { name: 'All Files (*.*)', extensions: ['*'] }
@@ -513,6 +554,9 @@ ipcMain.handle('backup-data', async () => {
 });
 
 ipcMain.handle('restore-data', async () => {
+  if (lanService.loadConfig().role !== 'main') {
+    return { success: false, error: 'Database restore can only be performed on PC 1 (Main Server).' };
+  }
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Restore Factory Database',
     properties: ['openFile'],
@@ -566,9 +610,11 @@ ipcMain.handle('restore-data', async () => {
         console.warn('Restored DB init check warning:', migrateErr);
       }
 
-      // 5. Relaunch app cleanly
-      app.relaunch();
-      app.exit(0);
+      // 5. Relaunch app cleanly after responding to the renderer
+      setTimeout(() => {
+        app.relaunch();
+        app.exit(0);
+      }, 500);
       return { success: true };
     } catch (err) {
       console.error('Restore error:', err);
@@ -579,6 +625,9 @@ ipcMain.handle('restore-data', async () => {
 });
 
 ipcMain.handle('clear-app-data', async () => {
+  if (lanService.loadConfig().role !== 'main') {
+    return { success: false, error: 'Clear data is only permitted on PC 1 (Main Server).' };
+  }
   try {
     if (db && typeof db.clearAllData === 'function') {
       const res = db.clearAllData();
@@ -591,17 +640,98 @@ ipcMain.handle('clear-app-data', async () => {
   }
 });
 
+// Cloud Sync IPC Handlers (Supabase)
+ipcMain.handle('cloud-sync-upload', async () => {
+  if (lanService.loadConfig().role !== 'main') {
+    return { success: false, error: 'Cloud Sync is only managed by PC 1 (Main Server).' };
+  }
+  try {
+    return await cloudSync.uploadToCloud();
+  } catch (err) {
+    console.error('[CloudSync Upload Error]:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('cloud-sync-restore', async () => {
+  if (lanService.loadConfig().role !== 'main') {
+    return { success: false, error: 'Cloud Restore can only be performed on PC 1 (Main Server).' };
+  }
+  try {
+    return await cloudSync.restoreFromCloud();
+  } catch (err) {
+    console.error('[CloudSync Restore Error]:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('cloud-sync-get-status', async () => {
+  try {
+    return await cloudSync.getCloudStatus();
+  } catch (err) {
+    console.error('[CloudSync Status Error]:', err);
+    return { connected: false, error: err.message };
+  }
+});
+
+ipcMain.handle('cloud-sync-set-credentials', async (event, url, key) => {
+  try {
+    return cloudSync.setCredentials(url, key);
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// LAN Multi-PC Sync IPC Handlers
+ipcMain.handle('lan-get-config', () => {
+  const cfg = lanService.loadConfig();
+  return {
+    ...cfg,
+    localIp: lanService.getLocalIp()
+  };
+});
+
+ipcMain.handle('lan-set-config', (event, newCfg) => {
+  const updated = lanService.saveConfig(newCfg);
+  if (updated.role === 'main') {
+    lanService.startServer(rawDb, updated.port || 4321);
+  } else {
+    lanService.stopServer();
+  }
+  return {
+    ...updated,
+    localIp: lanService.getLocalIp()
+  };
+});
+
+ipcMain.handle('lan-ping-host', async (event, host) => {
+  return await lanService.pingServer(host);
+});
+
+ipcMain.handle('lan-discover-server', async () => {
+  return await lanService.discoverServer();
+});
+
+ipcMain.handle('lan-get-local-ip', () => {
+  return lanService.getLocalIp();
+});
+
 ipcMain.handle('relaunch-app', () => {
   try {
-    app.relaunch();
-    app.exit(0);
+    setTimeout(() => {
+      app.relaunch();
+      app.exit(0);
+    }, 400);
+    return { success: true };
   } catch (err) {
     console.error('Relaunch app error:', err);
+    return { success: false, error: err.message };
   }
 });
 
 // KV Store IPC
 ipcMain.handle('get-all-kv', () => db.getAllKv());
+ipcMain.handle('get-kv', (event, key) => db.getKv(key));
 ipcMain.handle('set-kv', (event, key, value) => db.setKv(key, value));
 ipcMain.handle('save-all-kv', (event, data) => db.saveAllKv(data));
 ipcMain.handle('generate-pdf', async (event, filename) => {

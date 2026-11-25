@@ -80,7 +80,7 @@ const Employees = {
           <div class="flex flex-wrap items-center gap-2">
             <!-- Month Selector -->
             <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-              <span class="text-[10px] font-black uppercase text-slate-400 pl-1.5 select-none">Month</span>
+              <span class="text-[10px] font-black uppercase text-slate-600 pl-1.5 select-none">Month</span>
               <select id="emp-month-select" onchange="Employees.onMonthChange(this.value)" class="bg-white border border-slate-200 shadow-2xs rounded-lg px-2.5 py-1 text-xs font-black text-slate-900 outline-none cursor-pointer">
                 ${this.renderMonthOptions()}
               </select>
@@ -98,19 +98,19 @@ const Employees = {
             </div>
 
             <!-- View Sub-Tabs -->
-            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <div class="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl border border-slate-300/70 shadow-inner">
               <button type="button" onclick="Employees.switchSubTab('salaries')" id="emp-tab-salaries"
-                      class="px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${this.activeSubTab === 'salaries' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'}">
+                      class="px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${this.activeSubTab === 'salaries' ? 'bg-white shadow-xs border border-slate-200/80 text-slate-950' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
                 <span>Salaries</span>
               </button>
               <button type="button" onclick="Employees.switchSubTab('attendance')" id="emp-tab-attendance"
-                      class="px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${this.activeSubTab === 'attendance' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'}">
+                      class="px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${this.activeSubTab === 'attendance' ? 'bg-white shadow-xs border border-slate-200/80 text-slate-950' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 <i data-lucide="calendar-check" class="w-3.5 h-3.5"></i>
                 <span>Attendance Sheet</span>
               </button>
               <button type="button" onclick="Employees.switchSubTab('history')" id="emp-tab-history"
-                      class="px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${this.activeSubTab === 'history' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-500 hover:text-slate-800'}">
+                      class="px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${this.activeSubTab === 'history' ? 'bg-white shadow-xs border border-slate-200/80 text-slate-950' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 <i data-lucide="history" class="w-3.5 h-3.5"></i>
                 <span>Payments</span>
               </button>
@@ -224,9 +224,9 @@ const Employees = {
       const btn = document.getElementById(`emp-tab-${t}`);
       if (btn) {
         if (t === tab) {
-          btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 bg-white shadow-2xs text-slate-900';
+          btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 bg-white shadow-xs border border-slate-200/80 text-slate-950';
         } else {
-          btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-slate-500 hover:text-slate-800';
+          btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-slate-700 hover:text-slate-950 hover:bg-white/60';
         }
       }
     });
@@ -293,7 +293,7 @@ const Employees = {
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
         <div>
           <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Total Employees</p>
-          <h3 class="text-2xl font-black text-slate-900 mt-0.5 tabular-nums">${activeCount} <span class="text-xs font-bold text-slate-400">Active</span></h3>
+          <h3 class="text-2xl font-black text-slate-900 mt-0.5 tabular-nums">${activeCount} <span class="text-xs font-bold text-slate-600">Active</span></h3>
           <p class="text-[10.5px] font-bold text-slate-500 mt-0.5">${totalStaff} total staff registered</p>
         </div>
         <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
@@ -326,8 +326,8 @@ const Employees = {
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
         <div>
           <p class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Remaining Salary (${monthShort})</p>
-          <h3 class="text-2xl font-black ${totalRemaining > 0 ? 'text-amber-600' : 'text-slate-400'} mt-0.5 tabular-nums">Rs. ${Math.round(totalRemaining).toLocaleString()}</h3>
-          <p class="text-[10.5px] font-bold ${totalRemaining > 0 ? 'text-amber-700/80' : 'text-slate-400'} mt-0.5">${totalRemaining > 0 ? 'Left to pay this month' : 'All salaries paid'}</p>
+          <h3 class="text-2xl font-black ${totalRemaining > 0 ? 'text-amber-600' : 'text-slate-500'} mt-0.5 tabular-nums">Rs. ${Math.round(totalRemaining).toLocaleString()}</h3>
+          <p class="text-[10.5px] font-bold ${totalRemaining > 0 ? 'text-amber-700/80' : 'text-slate-500'} mt-0.5">${totalRemaining > 0 ? 'Left to pay this month' : 'All salaries paid'}</p>
         </div>
         <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">
           <i data-lucide="clock" class="w-5 h-5"></i>
@@ -435,13 +435,13 @@ const Employees = {
 
                   return `
                     <tr class="hover:bg-slate-50/70 transition-colors">
-                      <td class="py-3 px-3.5 text-center text-slate-400 font-bold border-r border-slate-200">${idx + 1}</td>
+                      <td class="py-3 px-3.5 text-center text-slate-600 font-bold border-r border-slate-200">${idx + 1}</td>
                       <td class="py-3 px-3.5 border-r border-slate-200">
                         <div class="font-black text-slate-900">${e.full_name}</div>
                       </td>
                       <td class="py-3 px-3.5 border-r border-slate-200">
                         <div class="font-bold text-slate-700">${e.phone || '<span class="text-slate-300 italic">No phone</span>'}</div>
-                        <div class="text-[10px] text-slate-400 font-medium">Joined: ${e.date_joined ? app.formatDate(e.date_joined) : 'N/A'}</div>
+                        <div class="text-[10px] text-slate-500 font-semibold">Joined: ${e.date_joined ? app.formatDate(e.date_joined) : 'N/A'}</div>
                       </td>
                       <td class="py-3 px-3.5 text-center border-r border-slate-200">
                         <div class="inline-flex items-center justify-center gap-1 text-[11px] font-black tabular-nums select-none flex-wrap" title="Attendance stats for ${monthLabel}">
@@ -461,10 +461,10 @@ const Employees = {
                       </td>
                       <td class="py-3 px-3.5 text-right font-black text-slate-800 tabular-nums border-r border-slate-200">
                         Rs. ${Math.round(salary).toLocaleString()}
-                        <div class="text-[10px] font-normal text-slate-400">per month</div>
+                        <div class="text-[10px] font-semibold text-slate-500">per month</div>
                       </td>
                       <td class="py-3 px-3.5 text-right tabular-nums border-r border-slate-200">
-                        <div class="font-black ${paid > 0 ? 'text-emerald-600' : 'text-slate-400'}">
+                        <div class="font-black ${paid > 0 ? 'text-emerald-600' : 'text-slate-500'}">
                           Rs. ${Math.round(paid).toLocaleString()}
                         </div>
                         ${paymentsCount > 0 ? `
@@ -589,7 +589,7 @@ const Employees = {
 
           <!-- Status Legend -->
           <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold select-none">
-            <span class="text-[10.5px] font-black uppercase text-slate-400 mr-1">Legend:</span>
+            <span class="text-[10.5px] font-black uppercase text-slate-600 mr-1">Legend:</span>
             <span class="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 font-black">P = Present</span>
             <span class="px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 font-black">A = Absent</span>
             <span class="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 font-black">HD = Half Day</span>
@@ -679,7 +679,7 @@ const Employees = {
                   return `
                     <tr class="hover:bg-slate-50/80 transition-colors">
                       <!-- Sticky index -->
-                      <td class="py-1.5 px-1 text-center sticky left-0 z-10 bg-white border-b border-r border-slate-200 text-slate-400 font-bold text-xs select-none"
+                      <td class="py-1.5 px-1 text-center sticky left-0 z-10 bg-white border-b border-r border-slate-200 text-slate-600 font-bold text-xs select-none"
                           style="width: 38px; min-width: 38px; max-width: 38px;">
                         ${idx + 1}
                       </td>
@@ -1371,7 +1371,7 @@ const Employees = {
 
     return filteredPayments.map((p, idx) => `
       <tr class="hover:bg-slate-50/70 transition-colors">
-        <td class="py-3 px-3.5 text-center text-slate-400 font-bold border-r border-slate-200">${idx + 1}</td>
+        <td class="py-3 px-3.5 text-center text-slate-600 font-bold border-r border-slate-200">${idx + 1}</td>
         <td class="py-3 px-3.5 font-bold text-slate-800 border-r border-slate-200 whitespace-nowrap">${p.payment_date ? app.formatDateTime(p.payment_date, p.created_at) : 'N/A'}</td>
         <td class="py-3 px-3.5 border-r border-slate-200">
           <div class="font-black text-slate-900">${p.employee_name || 'Staff'}</div>
@@ -1523,13 +1523,13 @@ const Employees = {
             </div>
 
             <!-- Scope Toggle: Month vs All History -->
-            <div class="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-bold border border-slate-200">
+            <div class="flex items-center bg-slate-200/70 p-0.5 rounded-xl text-xs font-bold border border-slate-300/70 shadow-inner">
               <button type="button" onclick="Employees.setPaymentScope('month')"
-                      class="px-2.5 py-1 rounded-lg transition-all cursor-pointer ${this.paymentScope !== 'all' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-800'}">
+                      class="px-2.5 py-1 rounded-lg transition-all cursor-pointer ${this.paymentScope !== 'all' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80 font-black' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 ${monthLabel}
               </button>
               <button type="button" onclick="Employees.setPaymentScope('all')"
-                      class="px-2.5 py-1 rounded-lg transition-all cursor-pointer ${this.paymentScope === 'all' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-800'}">
+                      class="px-2.5 py-1 rounded-lg transition-all cursor-pointer ${this.paymentScope === 'all' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80 font-black' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All History
               </button>
             </div>

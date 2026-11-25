@@ -79,17 +79,17 @@ window.Customers = {
               </div>
 
               <!-- Filter tabs -->
-              <div class="flex bg-slate-200/80 p-0.5 rounded-xl text-[11px] font-black">
+              <div class="flex bg-slate-200/80 p-0.5 rounded-xl text-[11px] font-black border border-slate-300/70 shadow-inner">
                 <button type="button" onclick="Customers.setFilter('all')" id="shop-filter-all"
-                        class="flex-1 py-1 rounded-lg transition-all cursor-pointer bg-white text-slate-900 shadow-2xs text-center">
+                        class="flex-1 py-1 rounded-lg transition-all cursor-pointer bg-white text-slate-950 shadow-xs border border-slate-200/80 text-center font-black">
                   All Salesmen
                 </button>
                 <button type="button" onclick="Customers.setFilter('due')" id="shop-filter-due"
-                        class="flex-1 py-1 rounded-lg transition-all cursor-pointer text-slate-500 hover:text-slate-900 text-center">
+                        class="flex-1 py-1 rounded-lg transition-all cursor-pointer text-slate-700 hover:text-slate-950 hover:bg-white/60 text-center font-bold">
                   Due Balances
                 </button>
                 <button type="button" onclick="Customers.setFilter('zero')" id="shop-filter-zero"
-                        class="flex-1 py-1 rounded-lg transition-all cursor-pointer text-slate-500 hover:text-slate-900 text-center">
+                        class="flex-1 py-1 rounded-lg transition-all cursor-pointer text-slate-700 hover:text-slate-950 hover:bg-white/60 text-center font-bold">
                   Zero Balance
                 </button>
               </div>
@@ -290,9 +290,9 @@ window.Customers = {
       const btn = document.getElementById(`shop-filter-${f}`);
       if (!btn) return;
       if (f === filter) {
-        btn.className = 'flex-1 py-1 rounded-lg transition-all cursor-pointer bg-white text-slate-900 shadow-2xs text-center font-black';
+        btn.className = 'flex-1 py-1 rounded-lg transition-all cursor-pointer bg-white text-slate-950 shadow-xs border border-slate-200/80 text-center font-black';
       } else {
-        btn.className = 'flex-1 py-1 rounded-lg transition-all cursor-pointer text-slate-500 hover:text-slate-900 text-center font-semibold';
+        btn.className = 'flex-1 py-1 rounded-lg transition-all cursor-pointer text-slate-700 hover:text-slate-950 hover:bg-white/60 text-center font-bold';
       }
     });
     this.applyFilters();
@@ -399,7 +399,7 @@ window.Customers = {
           </div>
 
           <div class="text-right shrink-0">
-            <span class="text-[10px] font-black uppercase text-slate-400 block">Balance</span>
+            <span class="text-[10px] font-black uppercase text-slate-600 block">Balance</span>
             <span class="font-black text-xs tabular-nums ${bal > 0 ? 'text-rose-600' : 'text-emerald-700'}">
               Rs. ${Math.round(bal).toLocaleString()}
             </span>
@@ -411,11 +411,11 @@ window.Customers = {
     if (footer) {
       footer.innerHTML = `
         <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-black uppercase text-slate-400">Total:</span>
+          <span class="text-[10px] font-black uppercase text-slate-600">Total:</span>
           <span class="font-mono font-black text-xs text-slate-800 px-2 py-0.5 rounded-md bg-slate-200/80 border border-slate-300/60">${this.filteredShops.length} Salesmen</span>
         </div>
         <div class="text-right">
-          <span class="text-[10px] font-black uppercase text-slate-400 block leading-tight">Total Balance</span>
+          <span class="text-[10px] font-black uppercase text-slate-600 block leading-tight">Total Balance</span>
           <span class="font-black text-xs font-mono tabular-nums ${totalAmount > 0 ? 'text-rose-600' : 'text-emerald-700'}">
             Rs. ${Math.round(totalAmount).toLocaleString()}
           </span>
@@ -533,7 +533,7 @@ window.Customers = {
         <table class="w-full text-left text-xs border-collapse border border-slate-200">
           <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 sticky top-0 z-10">
             <tr>
-              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+              <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
               <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[95px]">Date</th>
               <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
               <th class="py-2 px-3 border-r border-slate-200">Description</th>
@@ -549,7 +549,7 @@ window.Customers = {
               const isOpening = e.record_type === 'opening_balance';
               return `
                 <tr class="hover:bg-slate-50/70 transition-colors ${isOpening ? 'bg-amber-50/40' : ''}">
-                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                  <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
                   <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${e.invoice_no}</td>
                   <td class="py-1.5 px-3 border-r border-slate-200">
@@ -566,10 +566,10 @@ window.Customers = {
                   <td class="py-1.5 px-2 text-center font-bold text-blue-700 border-r border-slate-200 text-xs">
                     ${isDelivery ? (e.cartons_count || 0) : '-'}
                   </td>
-                  <td class="py-1.5 px-3 text-right font-black ${isDelivery || isOpening ? 'text-slate-900' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-black ${isDelivery || isOpening ? 'text-slate-900' : 'text-slate-500'} text-xs tabular-nums border-r border-slate-200">
                     ${(isDelivery || isOpening) ? `Rs. ${Math.round(e.total_amount).toLocaleString()}` : '-'}
                   </td>
-                  <td class="py-1.5 px-3 text-right font-black ${!isDelivery && !isOpening || e.received_amount > 0 ? 'text-emerald-700' : 'text-slate-400'} text-xs tabular-nums border-r border-slate-200">
+                  <td class="py-1.5 px-3 text-right font-black ${!isDelivery && !isOpening || e.received_amount > 0 ? 'text-emerald-700' : 'text-slate-500'} text-xs tabular-nums border-r border-slate-200">
                     ${isOpening ? '-' : `Rs. ${Math.round(e.received_amount).toLocaleString()}`}
                   </td>
                   <td class="py-1.5 px-3 text-center">

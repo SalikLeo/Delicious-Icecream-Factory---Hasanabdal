@@ -98,6 +98,22 @@ contextBridge.exposeInMainWorld('api', {
   selectBackupDirectory: () => ipcRenderer.invoke('select-backup-directory'),
   openBackupDirectory: () => ipcRenderer.invoke('open-backup-directory'),
 
+  // Cloud Sync (Supabase)
+  cloudSyncUpload: () => ipcRenderer.invoke('cloud-sync-upload'),
+  cloudSyncRestore: () => ipcRenderer.invoke('cloud-sync-restore'),
+  cloudSyncGetStatus: () => ipcRenderer.invoke('cloud-sync-get-status'),
+  cloudSyncSetCredentials: (url, key) => ipcRenderer.invoke('cloud-sync-set-credentials', url, key),
+
+  // LAN Multi-PC Sync & Roles
+  lanGetConfig: () => ipcRenderer.invoke('lan-get-config'),
+  lanSetConfig: (cfg) => ipcRenderer.invoke('lan-set-config', cfg),
+  lanPingHost: (host) => ipcRenderer.invoke('lan-ping-host', host),
+  lanDiscoverServer: () => ipcRenderer.invoke('lan-discover-server'),
+  lanGetLocalIp: () => ipcRenderer.invoke('lan-get-local-ip'),
+  onLanDataChanged: (callback) => {
+    ipcRenderer.on('lan-data-changed', (event, data) => callback(data));
+  },
+
   // Ice Cream Factory 5-Stage System
   // Stage 1: Raw Materials
   getRawMaterials: () => ipcRenderer.invoke('get-raw-materials'),
@@ -188,10 +204,11 @@ contextBridge.exposeInMainWorld('api', {
   getShopLedger: (shopId) => ipcRenderer.invoke('get-shop-ledger', shopId),
   deleteShopPayment: (id) => ipcRenderer.invoke('delete-shop-payment', id),
   getCarSalesReport: (carId, fromDate, toDate) => ipcRenderer.invoke('get-car-sales-report', carId, fromDate, toDate),
-  getIcecreamFactorySummary: () => ipcRenderer.invoke('get-icecream-factory-summary'),
+  getIcecreamFactorySummary: (targetDate) => ipcRenderer.invoke('get-icecream-factory-summary', targetDate),
 
   // Storage Sync
   getAllKv: () => ipcRenderer.invoke('get-all-kv'),
+  getKv: (key) => ipcRenderer.invoke('get-kv', key),
   setKv: (key, value) => ipcRenderer.invoke('set-kv', key, value),
   saveAllKv: (data) => ipcRenderer.invoke('save-all-kv', data),
 

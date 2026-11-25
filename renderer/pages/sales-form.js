@@ -418,7 +418,7 @@ window.SalesForm = {
                 <div class="flex items-center gap-1.5 bg-amber-50/70 border border-amber-300/80 rounded-lg px-2.5 py-1">
                   <span class="text-xs font-black text-amber-900 flex items-center gap-1">
                     Received (Rs.):
-                    <kbd class="px-1 py-0.2 rounded bg-amber-200/90 text-amber-950 font-mono text-[9px] font-black border border-amber-300">F3</kbd>
+                    <kbd class="px-1 py-0.5 rounded bg-amber-200/90 text-amber-950 font-mono text-[9px] font-black border border-amber-300">F3</kbd>
                   </span>
                   <input type="number" 
                          id="sf-received-amount" 
@@ -434,7 +434,7 @@ window.SalesForm = {
                 <div class="flex items-center gap-1.5 bg-sky-50/80 border border-sky-300/90 rounded-lg px-2 py-1 shadow-2xs">
                   <span class="text-xs font-black text-sky-950 flex items-center gap-1">
                     Cash Rec.:
-                    <kbd class="px-1 py-0.2 rounded bg-sky-200/90 text-sky-950 font-mono text-[9px] font-black border border-sky-300">F4</kbd>
+                    <kbd class="px-1 py-0.5 rounded bg-sky-200/90 text-sky-950 font-mono text-[9px] font-black border border-sky-300">F4</kbd>
                   </span>
                   <input type="number" 
                          id="sf-cash-tendered" 
@@ -445,7 +445,7 @@ window.SalesForm = {
                          step="any" 
                          class="w-24 bg-white border border-sky-300 rounded-md px-2 py-0.5 text-xs text-right font-black text-slate-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none font-display"
                          title="Enter total cash given by customer to quickly calculate return change (Press F4)">
-                  <span id="sf-return-change-badge" class="hidden text-xs font-black px-1.5 py-0.2 rounded-md bg-emerald-600 text-white font-display shadow-2xs tabular-nums"></span>
+                  <span id="sf-return-change-badge" class="hidden text-xs font-black px-1.5 py-0.5 rounded-md bg-emerald-600 text-white font-display shadow-2xs tabular-nums"></span>
                 </div>
 
                 <!-- Subtotal, Discounts and Tax text -->
@@ -1164,7 +1164,7 @@ window.SalesForm = {
           <div class="flex items-center gap-2 min-w-0 flex-1">
             <span class="w-5.5 h-5.5 rounded ${isHighlighted ? 'bg-white/25 text-white border border-white/30' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-black shrink-0 font-mono">${idx + 1}</span>
             <span class="text-sm font-black truncate ${isHighlighted ? 'text-white' : 'text-slate-900'}">${item.item_name}</span>
-            ${item.barcode ? `<span class="text-[10px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60' : 'text-slate-600 bg-slate-100'} px-1.5 py-0.2 rounded border ${isHighlighted ? 'border-amber-400/40' : 'border-slate-300'}">#${item.barcode}</span>` : ''}
+            ${item.barcode ? `<span class="text-[10px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60' : 'text-slate-600 bg-slate-100'} px-1.5 py-0.5 rounded border ${isHighlighted ? 'border-amber-400/40' : 'border-slate-300'}">#${item.barcode}</span>` : ''}
             ${categoryName ? `<span class="text-xs ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0 uppercase tracking-tight">(${categoryName})</span>` : ''}
           </div>
 
@@ -1690,9 +1690,9 @@ window.SalesForm = {
           <td class="py-1 px-3 border-r border-slate-200">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="font-black text-slate-900 text-xs truncate max-w-[280px]">${item.item_name}</span>
-              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
+              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.5 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
               ${categoryLabel ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${categoryLabel})</span>` : ''}
-              <span class="text-[9px] font-bold ${maxStock > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-1.5 py-0.2 rounded border tabular-nums ml-auto sm:ml-0">${app.formatQty(maxStock)} in stock</span>
+              <span class="text-[9px] font-bold ${maxStock > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-1.5 py-0.5 rounded border tabular-nums ml-auto sm:ml-0">${app.formatQty(maxStock)} in stock</span>
             </div>
           </td>
 
@@ -1731,8 +1731,8 @@ window.SalesForm = {
           <td class="py-1 px-2 border-r border-slate-200">
             <div class="flex items-center gap-1 justify-center">
               <div class="flex p-0.5 shrink-0 gap-0.5">
-                <button type="button" onclick="SalesForm.toggleItemDiscountType(${idx}, 'flat')" class="px-1 py-0.2 text-[9px] font-black rounded ${item.discountType === 'flat' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">RS.</button>
-                <button type="button" onclick="SalesForm.toggleItemDiscountType(${idx}, 'percent')" class="px-1 py-0.2 text-[9px] font-black rounded ${item.discountType === 'percent' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">%</button>
+                <button type="button" onclick="SalesForm.toggleItemDiscountType(${idx}, 'flat')" class="px-1 py-0.5 text-[9px] font-black rounded ${item.discountType === 'flat' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">RS.</button>
+                <button type="button" onclick="SalesForm.toggleItemDiscountType(${idx}, 'percent')" class="px-1 py-0.5 text-[9px] font-black rounded ${item.discountType === 'percent' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">%</button>
               </div>
               <input type="number" 
                      id="cart-discount-input-${idx}"

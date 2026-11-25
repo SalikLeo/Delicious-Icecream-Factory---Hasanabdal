@@ -166,25 +166,25 @@ const ReturnSales = {
             </div>
 
             <!-- Period Switcher: Daily | Monthly | Annual | Custom Range | All -->
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shadow-inner">
               <button type="button" onclick="ReturnSales.setPeriod('day')" id="ret-tab-day"
-                      class="px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer ${this.periodType==='day'?'bg-white text-slate-900 shadow-2xs':'text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType==='day'?'bg-white text-slate-950 shadow-xs border border-slate-200/80':'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="ReturnSales.setPeriod('month')" id="ret-tab-month"
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType==='month'?'bg-white text-slate-900 shadow-2xs':'text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType==='month'?'bg-white text-slate-950 shadow-xs border border-slate-200/80':'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="ReturnSales.setPeriod('year')" id="ret-tab-year"
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType==='year'?'bg-white text-slate-900 shadow-2xs':'text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType==='year'?'bg-white text-slate-950 shadow-xs border border-slate-200/80':'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="ReturnSales.setPeriod('custom')" id="ret-tab-custom"
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType==='custom'?'bg-white text-slate-900 shadow-2xs':'text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType==='custom'?'bg-white text-slate-950 shadow-xs border border-slate-200/80':'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="ReturnSales.setPeriod('all')" id="ret-tab-all"
-                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${this.periodType==='all'?'bg-white text-slate-900 shadow-2xs':'text-slate-500 hover:text-slate-900'}">
+                      class="px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all ${this.periodType==='all'?'bg-white text-slate-950 shadow-xs border border-slate-200/80':'text-slate-700 font-bold hover:text-slate-950 hover:bg-white/60'}">
                 All
               </button>
             </div>
@@ -375,9 +375,9 @@ const ReturnSales = {
       const btn = document.getElementById(`ret-tab-${t}`);
       if (btn) {
         if (t === type) {
-          btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer bg-white text-slate-900 shadow-2xs';
+          btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg cursor-pointer bg-white text-slate-950 shadow-xs border border-slate-200/80';
         } else {
-          btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-500 hover:text-slate-900';
+          btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer text-slate-700 hover:text-slate-950 hover:bg-white/60';
         }
       }
     });
@@ -650,7 +650,7 @@ const ReturnSales = {
         return `
           <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] leading-tight font-medium text-slate-800 shadow-2xs mr-1 mb-1">
             <span class="font-black text-slate-900">${it.carton_name}</span>
-            <span class="text-[9.5px] font-bold uppercase text-slate-400 bg-slate-200/60 px-1 py-0.2 rounded">${pkg}</span>
+            <span class="text-[9.5px] font-bold uppercase text-slate-400 bg-slate-200/60 px-1 py-0.5 rounded">${pkg}</span>
             <span class="font-black text-rose-600">&times; ${qty}</span>
             <span class="text-slate-400">@ Rs. ${price}</span>
             <span class="font-black text-slate-700">= Rs. ${Math.round(lineRef).toLocaleString()}</span>

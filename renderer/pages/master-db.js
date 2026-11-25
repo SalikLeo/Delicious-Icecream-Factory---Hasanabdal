@@ -347,12 +347,12 @@ const MasterDB = {
               <p class="text-slate-500 text-sm mt-1" id="sales-category-name">Category: Electronics</p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
-                <div class="bg-slate-100 p-1 rounded-lg flex gap-1">
-                   <button onclick="MasterDB.switchSalesPeriod('daily')" id="btn-sales-daily" class="period-btn px-3 py-1.5 rounded-md text-xs font-black bg-white shadow-sm text-slate-900 transition-all cursor-pointer">Daily</button>
-                   <button onclick="MasterDB.switchSalesPeriod('monthly')" id="btn-sales-monthly" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">Monthly</button>
-                   <button onclick="MasterDB.switchSalesPeriod('annual')" id="btn-sales-annual" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">Annual</button>
-                   <button onclick="MasterDB.switchSalesPeriod('custom')" id="btn-sales-custom" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">Custom Range</button>
-                   <button onclick="MasterDB.switchSalesPeriod('all')" id="btn-sales-all" class="period-btn px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all cursor-pointer">All Time</button>
+                <div class="bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shadow-inner flex gap-1">
+                   <button onclick="MasterDB.switchSalesPeriod('daily')" id="btn-sales-daily" class="period-btn px-3 py-1.5 rounded-lg text-xs font-black bg-white shadow-xs border border-slate-200/80 text-slate-950 transition-all cursor-pointer">Daily</button>
+                   <button onclick="MasterDB.switchSalesPeriod('monthly')" id="btn-sales-monthly" class="period-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60 transition-all cursor-pointer">Monthly</button>
+                   <button onclick="MasterDB.switchSalesPeriod('annual')" id="btn-sales-annual" class="period-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60 transition-all cursor-pointer">Annual</button>
+                   <button onclick="MasterDB.switchSalesPeriod('custom')" id="btn-sales-custom" class="period-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60 transition-all cursor-pointer">Custom Range</button>
+                   <button onclick="MasterDB.switchSalesPeriod('all')" id="btn-sales-all" class="period-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60 transition-all cursor-pointer">All Time</button>
                 </div>
 
                 <div id="sales-stat-date-wrap" class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
@@ -1002,8 +1002,8 @@ const MasterDB = {
                 <div class="flex flex-col">
                   <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="font-bold">${val}</span>
-                    ${p.barcode ? `<span class="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.2 rounded shadow-2xs" title="Barcode: ${p.barcode}"><svg class="w-2.5 h-2.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/></svg>${p.barcode}</span>` : ''}
-                    ${isAll ? `<span class="text-[9px] font-black text-amber-800 bg-amber-100/90 border border-amber-200 px-1.5 py-0.2 rounded uppercase">${catLabel}</span>` : ''}
+                    ${p.barcode ? `<span class="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded shadow-2xs" title="Barcode: ${p.barcode}"><svg class="w-2.5 h-2.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/></svg>${p.barcode}</span>` : ''}
+                    ${isAll ? `<span class="text-[9px] font-black text-amber-800 bg-amber-100/90 border border-amber-200 px-1.5 py-0.5 rounded uppercase">${catLabel}</span>` : ''}
                   </div>
                   ${p.company_name ? `<span class="text-[9px] font-black text-blue-500 uppercase mt-0.5 tracking-widest">${p.company_name}</span>` : ''}
                 </div>
@@ -2146,9 +2146,9 @@ const MasterDB = {
     // Update button styles
     document.querySelectorAll('.period-btn').forEach(btn => {
       if (btn.id === `btn-sales-${this.currentSalesPeriod}`) {
-        btn.className = 'period-btn px-4 py-1.5 rounded-md text-xs font-black bg-white shadow-sm text-slate-900 transition-all';
+        btn.className = 'period-btn px-4 py-1.5 rounded-lg text-xs font-black bg-white shadow-xs border border-slate-200/80 text-slate-950 transition-all';
       } else {
-        btn.className = 'period-btn px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 transition-all';
+        btn.className = 'period-btn px-4 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-white/60 transition-all';
       }
     });
 
@@ -2324,7 +2324,7 @@ const MasterDB = {
           <td class="px-4 py-1 font-medium text-slate-800 border-r border-slate-200">
             <div class="flex items-center gap-2">
               <span class="text-slate-800 font-bold text-xs">${s.description}</span>
-              ${this.isAllSalesView ? `<span class="text-[9px] text-accent font-bold uppercase tracking-wider px-1.5 py-0.2 bg-amber-50 rounded border border-amber-200/60 leading-none">${catLabel}</span>` : ''}
+              ${this.isAllSalesView ? `<span class="text-[9px] text-accent font-bold uppercase tracking-wider px-1.5 py-0.5 bg-amber-50 rounded border border-amber-200/60 leading-none">${catLabel}</span>` : ''}
             </div>
           </td>
           <td class="px-4 py-1 text-center font-bold text-slate-700 border-r border-slate-200 text-xs font-outfit tabular-nums">${s.total_qty}</td>

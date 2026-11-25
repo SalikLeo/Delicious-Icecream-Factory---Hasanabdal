@@ -215,8 +215,8 @@ const RateList = {
           <td class="py-2.5 px-3 border-r border-slate-200">
             <div class="font-bold text-slate-800 truncate max-w-[180px]">${item.item_name}</div>
             <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
-              <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-100 text-slate-500">${item.category_label}</span>
+              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1 py-0.5 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
+              <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${item.category_label}</span>
               ${item.unit ? `<span class="text-[9px] font-bold text-slate-400">${item.unit}</span>` : ''}
             </div>
           </td>
@@ -432,7 +432,7 @@ const RateList = {
             <div class="flex items-center justify-end gap-1 font-bold">
               <span class="text-slate-400 line-through text-[10px]">Rs. ${oldCost.toLocaleString()}</span>
               <i data-lucide="arrow-right" class="w-3 h-3 text-amber-500"></i>
-              <span class="font-black ${costChanged ? 'text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200' : 'text-slate-800'}">Rs. ${newCost.toLocaleString()}</span>
+              <span class="font-black ${costChanged ? 'text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200' : 'text-slate-800'}">Rs. ${newCost.toLocaleString()}</span>
             </div>
           </td>
           <td class="py-2.5 px-2.5 text-right font-bold text-slate-800 whitespace-nowrap border-r border-slate-200">

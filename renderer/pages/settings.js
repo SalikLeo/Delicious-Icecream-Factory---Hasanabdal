@@ -42,311 +42,451 @@ const Settings = {
 
       <!-- General Settings -->
       <div id="settings-view-general" class="overflow-y-auto pr-2 custom-scrollbar" style="max-height: calc(100vh - 180px);">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start pb-8">
-          <!-- Left Column: Company Profile & Screen Scaling -->
-          <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 items-start pb-6">
+          <!-- Left Column: Company Profile, Display Scale & LAN Multi-Terminal -->
+          <div class="space-y-4">
             <!-- Company Profile -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50">
-              <h3 class="font-bold text-lg text-slate-700">Company Profile</h3>
-            </div>
-            
-            <form id="settings-form" class="p-4 space-y-3" onsubmit="Settings.saveSettings(event)">
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+              <div class="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-700">Company Profile</h3>
+              </div>
               
-              <!-- Logo Section -->
-              <div class="flex items-start gap-4 pb-2 border-b border-slate-100">
-                <div class="shrink-0">
-                  <div class="w-32 h-32 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
-                    <img id="settings-logo-preview" src="" class="w-full h-full object-cover object-center hidden rounded-xl">
-                    <div id="settings-logo-placeholder" class="text-slate-400 flex flex-col items-center">
-                      <i data-lucide="image" class="w-8 h-8 mb-2"></i>
-                      <span class="text-[10px] font-medium">No Logo</span>
+              <form id="settings-form" class="p-4 space-y-3" onsubmit="Settings.saveSettings(event)">
+                <!-- Logo Section -->
+                <div class="flex items-start gap-4 pb-2 border-b border-slate-100">
+                  <div class="shrink-0">
+                    <div class="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden relative group">
+                      <img id="settings-logo-preview" src="" class="w-full h-full object-cover object-center hidden rounded-lg">
+                      <div id="settings-logo-placeholder" class="text-slate-400 flex flex-col items-center">
+                        <i data-lucide="image" class="w-6 h-6 mb-1"></i>
+                        <span class="text-[9px] font-medium">No Logo</span>
+                      </div>
+                      <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer" onclick="Settings.selectLogo()">
+                        <span class="text-white text-[9px] font-bold"><i data-lucide="upload" class="w-3.5 h-3.5 mb-0.5 mx-auto"></i> Change</span>
+                      </div>
                     </div>
-                    <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer" onclick="Settings.selectLogo()">
-                      <span class="text-white text-[10px] font-bold"><i data-lucide="upload" class="w-4 h-4 mb-1 mx-auto"></i> Change</span>
+                    <input type="hidden" id="set-logo-path">
+                  </div>
+                  <div class="flex-1 pt-1">
+                    <h4 class="font-bold text-xs text-slate-700 mb-1.5">Company Logo</h4>
+                    <div class="flex gap-2">
+                      <button type="button" onclick="Settings.selectLogo()" class="px-2.5 py-1 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">Choose</button>
+                      <button type="button" onclick="Settings.removeLogo()" class="px-2.5 py-1 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-lg cursor-pointer">Remove</button>
                     </div>
                   </div>
-                  <input type="hidden" id="set-logo-path">
                 </div>
-                <div class="flex-1 pt-2">
-                  <h4 class="font-medium text-slate-700 mb-2">Company UI Logo</h4>
-                  <div class="flex gap-2">
-                    <button type="button" onclick="Settings.selectLogo()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50">Choose</button>
-                    <button type="button" onclick="Settings.removeLogo()" class="px-3 py-1.5 text-red-600 hover:bg-red-50 text-xs font-medium rounded-lg">Remove</button>
-                  </div>
-                </div>
-              </div>
 
-              <!-- Fields -->
-              <div class="grid grid-cols-1 gap-4">
-                <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <label class="block text-xs font-bold text-slate-400 uppercase">Factory / Company Name *</label>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
-                      <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> Locked
-                    </span>
-                  </div>
-                  <input type="text" id="set-name" disabled readonly class="w-full bg-slate-100/90 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-600 cursor-not-allowed select-none outline-none">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
+                <!-- Fields -->
+                <div class="grid grid-cols-1 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Contact Phone Numbers</label>
-                    <input type="text" id="set-phone" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-bold text-slate-900 focus:ring-1 focus:ring-accent outline-none" placeholder="0300-1234567">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Website / Tagline</label>
-                    <input type="text" id="set-web" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Delicious Superstar Foods">
+                    <div class="flex items-center justify-between mb-1">
+                      <label class="block text-[10px] font-black text-slate-600 uppercase">Factory / Company Name *</label>
+                      <span class="inline-flex items-center gap-1 text-[9px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
+                        <i data-lucide="lock" class="w-2.5 h-2.5 text-slate-500"></i> Locked
+                      </span>
+                    </div>
+                    <input type="text" id="set-name" disabled readonly class="w-full bg-slate-100/90 border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-600 cursor-not-allowed select-none outline-none">
                   </div>
                 </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Factory Address</label>
-                  <textarea id="set-address" rows="2" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-accent outline-none" placeholder="Hasan Abdal"></textarea>
-                </div>
-              </div>
-            </form>
-          </div>
+              </form>
+            </div>
 
             <!-- Screen Scale & Display Size -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <i data-lucide="laptop" class="w-5 h-5 text-blue-600"></i>
-                <div>
-                  <h3 class="font-bold text-base text-slate-800">Screen Scale & Display Size</h3>
-                  <p class="text-[11px] text-slate-400">Scale the app UI to comfortably fit laptop or desktop screens</p>
-                </div>
-              </div>
-              <span id="settings-zoom-display" class="px-2.5 py-1 bg-blue-50 text-blue-700 font-mono font-black text-xs rounded-lg border border-blue-200">
-                ${curPct}%
-              </span>
-            </div>
-            <div class="p-4 space-y-4">
-              <p class="text-xs text-slate-600 leading-relaxed">
-                Reduces the overall interface size by <b>15% to 20%</b> so that factory tables, production stages, and delivery loading fit without vertical scrolling on smaller laptop displays.
-              </p>
-
-              <!-- Quick Presets -->
-              <div>
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Display Scale Presets</label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <button type="button" onclick="app.setZoom(0.80)" data-zoom="0.80" class="${getBtnClass(80)}">
-                    80% <span class="block text-[9.5px] font-normal opacity-80">(Compact Laptop)</span>
-                  </button>
-                  <button type="button" onclick="app.setZoom(0.82)" data-zoom="0.82" class="${getBtnClass(82)}">
-                    82% <span class="block text-[9.5px] font-normal opacity-80">(Laptop Ideal)</span>
-                  </button>
-                  <button type="button" onclick="app.setZoom(0.85)" data-zoom="0.85" class="${getBtnClass(85)}">
-                    85% <span class="block text-[9.5px] font-normal opacity-80">(15% Smaller)</span>
-                  </button>
-                  <button type="button" onclick="app.setZoom(0.90)" data-zoom="0.90" class="${getBtnClass(90)}">
-                    90% <span class="block text-[9.5px] font-normal opacity-80">(Medium)</span>
-                  </button>
-                  <button type="button" onclick="app.setZoom(1.00)" data-zoom="1.00" class="${getBtnClass(100)} sm:col-span-2">
-                    100% <span class="block text-[9.5px] font-normal opacity-80">(Full Size Desktop Monitor)</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Fine Tuning Stepper -->
-              <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span class="text-xs text-slate-500 font-medium">Fine adjust (- / +):</span>
-                <div class="flex items-center gap-1.5">
-                  <button type="button" onclick="app.adjustZoom(-0.05)" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-lg text-sm cursor-pointer transition-colors">-</button>
-                  <button type="button" onclick="app.adjustZoom(0.05)" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-lg text-sm cursor-pointer transition-colors">+</button>
-                </div>
-              </div>
-
-              <!-- Safe Receipts Notice -->
-              <div class="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-emerald-800 text-xs">
-                <i data-lucide="printer" class="w-4 h-4 shrink-0 text-emerald-600"></i>
-                <span><b>Receipts & Invoices Protected:</b> Thermal receipts and PDF exports always print at 100% normal physical size.</span>
-              </div>
-            </div>
-          </div>
-          </div>
-
-          <!-- Right Column: Security (1st & 2nd Password) & Backup -->
-          <div class="space-y-6">
-            <!-- Tab Access Security -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 relative z-30">
-            <div class="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl">
-              <h3 class="font-bold text-lg text-slate-700">Tab Access Security</h3>
-            </div>
-            <div class="p-4 space-y-4">
-              <div class="flex items-start gap-4">
-                 <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-                    <i data-lucide="lock" class="w-5 h-5"></i>
-                 </div>
-                 <div class="flex-1">
-                    <h4 class="font-bold text-slate-800 text-sm">Security Password</h4>
-                    <p class="text-xs text-slate-500 mb-3">Set a password to restrict access to selected tabs. Leave blank to disable protection.</p>
-                    
-                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                       <div>
-                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">New Password</label>
-                         <div class="relative">
-                           <input type="password" id="set-stock-password" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-2 pr-9 text-sm focus:ring-1 focus:ring-accent outline-none">
-                           <button type="button" onclick="Settings.togglePasswordVisibility('set-stock-password', this)" class="password-visibility-toggle absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1">
-                             <i data-lucide="eye" class="w-4 h-4"></i>
-                           </button>
-                         </div>
-                       </div>
-                       <div>
-                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Confirm Password</label>
-                         <div class="relative">
-                           <input type="password" id="set-stock-password-confirm" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-2 pr-9 text-sm focus:ring-1 focus:ring-accent outline-none">
-                           <button type="button" onclick="Settings.togglePasswordVisibility('set-stock-password-confirm', this)" class="password-visibility-toggle absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1">
-                             <i data-lucide="eye" class="w-4 h-4"></i>
-                           </button>
-                         </div>
-                       </div>
-                     </div>
-                     <button type="button" id="btn-remove-stock-pass" onclick="Settings.removeStockPassword()" class="hidden text-[10px] font-bold text-rose-500 hover:text-rose-700 uppercase tracking-widest flex items-center gap-1.5 transition-colors mb-3">
-                        <i data-lucide="unlock" class="w-3 h-3"></i> Remove Current Password
-                     </button>
-
-                     <!-- Dropdown of Lockable Tabs with Checkmarks -->
-                     <div class="pt-3 border-t border-slate-100">
-                       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Locked Tabs Selection</label>
-                       <div class="relative">
-                         <button type="button" onclick="Settings.toggleTabDropdown(event)" id="locked-tabs-btn" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold hover:bg-white transition-all flex items-center justify-between cursor-pointer">
-                            <span id="locked-tabs-text">No Tabs Locked</span>
-                            <i data-lucide="chevron-down" id="locked-tabs-chevron" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
-                         </button>
-                         <div id="locked-tabs-menu" class="absolute top-full left-0 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1.5 hidden max-h-72 overflow-y-auto custom-scrollbar divide-y divide-slate-50">
-                            <!-- Injected dynamically -->
-                         </div>
-                       </div>
-                     </div>
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+              <div class="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="laptop" class="w-4 h-4 text-blue-600"></i>
+                  <div>
+                    <h3 class="font-bold text-sm text-slate-800">Screen Scale &amp; Display Size</h3>
                   </div>
+                </div>
+                <span id="settings-zoom-display" class="px-2 py-0.5 bg-blue-50 text-blue-700 font-mono font-black text-xs rounded border border-blue-200">
+                  ${curPct}%
+                </span>
               </div>
-            </div>
-          </div>
+              <div class="p-3.5 space-y-3">
+                <p class="text-xs text-slate-500">
+                  Adjust UI scale to fit laptop or desktop screens without vertical scrolling.
+                </p>
 
-            <!-- 2nd Password: Action / Edit & Delete Security -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl flex items-center justify-between">
-              <div>
-                <h3 class="font-bold text-lg text-slate-700">2nd Password (Edit &amp; Delete Security)</h3>
-                <p class="text-xs text-slate-500">Protect edit and delete actions across all stages and modules.</p>
-              </div>
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Action Protection
-              </span>
-            </div>
-            <div class="p-4 space-y-4">
-              <div class="flex items-start gap-4">
-                 <div class="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-                    <i data-lucide="key" class="w-5 h-5"></i>
-                 </div>
-                 <div class="flex-1">
-                    <h4 class="font-bold text-slate-800 text-sm">Action Security Password</h4>
-                    <p class="text-xs text-slate-500 mb-3">Require a dedicated 2nd password before editing or deleting records (raw materials, production items/batches, carton packing, vehicles, shops, invoices, expenses). Leave blank to disable protection.</p>
-                    
-                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                       <div>
-                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">New 2nd Password</label>
-                         <div class="relative">
-                           <input type="password" id="set-action-password" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-2 pr-9 text-sm focus:ring-1 focus:ring-accent outline-none">
-                           <button type="button" onclick="Settings.togglePasswordVisibility('set-action-password', this)" class="password-visibility-toggle absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1">
-                             <i data-lucide="eye" class="w-4 h-4"></i>
-                           </button>
-                         </div>
-                       </div>
-                       <div>
-                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Confirm 2nd Password</label>
-                         <div class="relative">
-                           <input type="password" id="set-action-password-confirm" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-2 pr-9 text-sm focus:ring-1 focus:ring-accent outline-none">
-                           <button type="button" onclick="Settings.togglePasswordVisibility('set-action-password-confirm', this)" class="password-visibility-toggle absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1">
-                             <i data-lucide="eye" class="w-4 h-4"></i>
-                           </button>
-                         </div>
-                       </div>
-                     </div>
-                     <button type="button" id="btn-remove-action-pass" onclick="Settings.removeActionPassword()" class="hidden text-[10px] font-bold text-rose-500 hover:text-rose-700 uppercase tracking-widest flex items-center gap-1.5 transition-colors mb-1">
-                        <i data-lucide="unlock" class="w-3 h-3"></i> Remove Current 2nd Password
-                     </button>
-                 </div>
-              </div>
-            </div>
-          </div>
+                <!-- Quick Presets -->
+                <div>
+                  <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                    <button type="button" onclick="app.setZoom(0.80)" data-zoom="0.80" class="${getBtnClass(80)}">
+                      80%
+                    </button>
+                    <button type="button" onclick="app.setZoom(0.82)" data-zoom="0.82" class="${getBtnClass(82)}">
+                      82%
+                    </button>
+                    <button type="button" onclick="app.setZoom(0.85)" data-zoom="0.85" class="${getBtnClass(85)}">
+                      85%
+                    </button>
+                    <button type="button" onclick="app.setZoom(0.90)" data-zoom="0.90" class="${getBtnClass(90)}">
+                      90%
+                    </button>
+                    <button type="button" onclick="app.setZoom(1.00)" data-zoom="1.00" class="${getBtnClass(100)}">
+                      100%
+                    </button>
+                  </div>
+                </div>
 
-            <!-- Backup & Restore -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <h3 class="font-bold text-lg text-slate-700">Backup & Data</h3>
-              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Auto Backup Active
-              </span>
+                <!-- Fine Tuning Stepper -->
+                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                  <span class="text-xs text-slate-500 font-medium">Fine adjust (- / +):</span>
+                  <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="app.adjustZoom(-0.05)" class="px-2.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded text-xs cursor-pointer">-</button>
+                    <button type="button" onclick="app.adjustZoom(0.05)" class="px-2.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded text-xs cursor-pointer">+</button>
+                  </div>
+                </div>
+
+                <!-- Safe Receipts Notice -->
+                <div class="p-2 bg-emerald-50/80 border border-emerald-200 rounded-lg flex items-center gap-2 text-emerald-800 text-[11px]">
+                  <i data-lucide="printer" class="w-3.5 h-3.5 shrink-0 text-emerald-600"></i>
+                  <span><b>Protected:</b> Receipts and invoices always print at 100% normal physical size.</span>
+                </div>
+              </div>
             </div>
-            <div class="p-4 space-y-4">
-              <!-- Automatic Backup on Exit (Directory Selection) -->
-              <div class="flex items-start gap-4">
-                 <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                    <i data-lucide="shield-check" class="w-5 h-5"></i>
-                 </div>
-                 <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-slate-800 text-sm">Automatic Backup on Exit</h4>
-                    <p class="text-xs text-slate-500 mb-2.5">Your latest data is automatically backed up to this folder every time you close the app.</p>
-                    
-                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                      <div class="flex-1 min-w-[200px] flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-700 truncate shadow-2xs">
-                        <i data-lucide="folder" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                        <span id="auto-backup-dir-display" class="truncate" title="Backup folder">Loading...</span>
-                      </div>
-                      <button type="button" onclick="Settings.selectBackupDirectory()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5 shrink-0 shadow-2xs cursor-pointer">
-                        <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>
-                        Select Directory
+
+            <!-- Local LAN Multi-Terminal Configuration Card (3 PCs Sync) -->
+            <div class="bg-white rounded-xl shadow-xs border border-emerald-200/80 overflow-hidden">
+              <div class="px-4 py-2.5 border-b border-emerald-100 bg-gradient-to-r from-emerald-50/80 to-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center">
+                    <i data-lucide="network" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-sm text-slate-800">Local LAN Sync (3 PCs)</h3>
+                  </div>
+                </div>
+                <span id="set-lan-role-badge" class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> PC 1: Main Server
+                </span>
+              </div>
+
+              <div class="p-3.5 space-y-3">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                    <i data-lucide="wifi" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between flex-wrap gap-1 mb-1">
+                      <h4 class="font-bold text-slate-800 text-xs" id="set-lan-title">Main PC Address</h4>
+                      <span id="set-lan-ip-display" class="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">Loading...</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-2.5" id="set-lan-desc">
+                      Packing (PC 2) and Sales (PC 3) connect to this address over factory Wi-Fi for live sync.
+                    </p>
+
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <button type="button" onclick="Settings.copyLanIp()" id="btn-copy-lan-ip" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95">
+                        <i data-lucide="copy" class="w-3 h-3"></i>
+                        <span id="btn-copy-lan-text">Copy Address</span>
                       </button>
-                      <button type="button" onclick="Settings.openBackupDirectory()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5 shrink-0 shadow-2xs cursor-pointer" title="Open folder in File Explorer">
-                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                        Open Folder
+                      <button type="button" onclick="app.promptRoleLogout()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95">
+                        <i data-lucide="log-out" class="w-3 h-3 text-slate-600"></i>
+                        <span>Switch Role / Logout</span>
                       </button>
                     </div>
-                 </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cloud Hosting & Server Status Card -->
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-100 bg-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                    <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-sm text-slate-800">Cloud Hosting &amp; Server Status</h3>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Production Server
+                </span>
               </div>
 
-              <!-- Manual Backup -->
-              <div class="pt-3 border-t border-slate-100 flex items-start gap-4">
-                 <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                    <i data-lucide="download" class="w-5 h-5"></i>
-                 </div>
-                 <div>
-                    <h4 class="font-bold text-slate-800 text-sm">Backup Factory Data Locally</h4>
-                    <p class="text-xs text-slate-500 mb-3">Create a complete, secure backup file of all raw materials, chocolate production, single item production, packed cartons, delivery vehicles, shop sales & returns, employee attendance & payroll, customer & supplier khata, and expenses.</p>
-                    <button onclick="Settings.backupData()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
-                      <i data-lucide="download" class="w-3.5 h-3.5"></i> Backup App Data
-                    </button>
-                 </div>
-              </div>
+              <div class="p-4 space-y-3">
+                <!-- Status Row -->
+                <div class="text-xs font-bold text-slate-700 flex items-center justify-between flex-wrap gap-2">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-slate-600 font-bold">Hosting Status:</span>
+                    <span id="license-status-badge" class="font-extrabold text-emerald-600 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active
+                    </span>
+                    <span id="license-remaining-countdown" class="text-slate-500 font-mono text-[11px] font-bold ml-1">
+                      Calculating remaining hosting time...
+                    </span>
+                  </div>
 
-              <div class="pt-2 border-t border-slate-100 flex items-start gap-4">
-                 <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
-                 </div>
-                 <div>
-                    <h4 class="font-bold text-slate-800 text-sm">Restore from Backup</h4>
-                    <p class="text-xs text-slate-500 mb-3">Restore your entire factory database from a previous backup file. <span class="text-rose-600 font-bold">This replaces all current factory data, chocolate stocks, employees, and records, then restarts the application automatically.</span></p>
-                    <button onclick="Settings.restoreData()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
-                      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-amber-600"></i> Restore Data
-                    </button>
-                 </div>
-              </div>
-
-              <div class="pt-2 border-t border-slate-100 flex items-start gap-4">
-                 <div class="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-                    <i data-lucide="trash-2" class="w-5 h-5"></i>
-                 </div>
-                 <div>
-                    <h4 class="font-bold text-slate-800 text-sm">Clear All App Data</h4>
-                    <p class="text-xs text-slate-500 mb-3">Permanently wipe all operational data across all factory modules (raw materials, chocolate batches, production runs, carton stocks, cars, shop sales & returns, employees, attendance, salary payments, customer & supplier khata) and reset the app to a completely clean slate. <span class="text-rose-600 font-bold underline">This action cannot be undone.</span></p>
-                    <button onclick="Settings.clearAppData()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
-                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear All Data
-                    </button>
-                 </div>
+                  <button type="button" onclick="Settings.promptUpdateHosting()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0">
+                    <i data-lucide="cloud-cog" class="w-4 h-4"></i>
+                    <span>Update Hosting</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Right Column: Passwords, Online Cloud Backup & Local Backup -->
+          <div class="space-y-4">
+            <!-- Tab Access Security -->
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 relative z-30 overflow-hidden">
+              <div class="px-4 py-2.5 border-b border-slate-100 bg-slate-50">
+                <h3 class="font-bold text-sm text-slate-700">Tab Access Security</h3>
+              </div>
+              <div class="p-3.5 space-y-3">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-bold text-slate-800 text-xs">Security Password</h4>
+                    <p class="text-xs text-slate-500 mb-2">Set password to restrict access to selected tabs.</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <label class="block text-[9px] font-black text-slate-600 uppercase mb-0.5">New Password</label>
+                        <div class="relative">
+                          <input type="password" id="set-stock-password" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-1.5 pr-8 text-xs focus:ring-1 focus:ring-accent outline-none">
+                          <button type="button" onclick="Settings.togglePasswordVisibility('set-stock-password', this)" class="password-visibility-toggle absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 p-0.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="block text-[9px] font-black text-slate-600 uppercase mb-0.5">Confirm Password</label>
+                        <div class="relative">
+                          <input type="password" id="set-stock-password-confirm" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-1.5 pr-8 text-xs focus:ring-1 focus:ring-accent outline-none">
+                          <button type="button" onclick="Settings.togglePasswordVisibility('set-stock-password-confirm', this)" class="password-visibility-toggle absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 p-0.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" id="btn-remove-stock-pass" onclick="Settings.removeStockPassword()" class="hidden text-[9px] font-bold text-rose-500 hover:text-rose-700 uppercase tracking-widest flex items-center gap-1 mb-2">
+                      <i data-lucide="unlock" class="w-2.5 h-2.5"></i> Remove Password
+                    </button>
+
+                    <!-- Dropdown of Lockable Tabs with Checkmarks -->
+                    <div class="pt-2 border-t border-slate-100">
+                      <label class="block text-[9px] font-black text-slate-600 uppercase mb-1">Locked Tabs</label>
+                      <div class="relative">
+                        <button type="button" onclick="Settings.toggleTabDropdown(event)" id="locked-tabs-btn" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold hover:bg-white transition-all flex items-center justify-between cursor-pointer">
+                          <span id="locked-tabs-text">No Tabs Locked</span>
+                          <i data-lucide="chevron-down" id="locked-tabs-chevron" class="w-3.5 h-3.5 text-slate-500"></i>
+                        </button>
+                        <div id="locked-tabs-menu" class="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1 hidden max-h-60 overflow-y-auto custom-scrollbar divide-y divide-slate-50"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2nd Password: Action / Edit & Delete Security -->
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+              <div class="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-sm text-slate-700">2nd Password (Edit &amp; Delete)</h3>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <i data-lucide="shield-check" class="w-3 h-3"></i> Action Security
+                </span>
+              </div>
+              <div class="p-3.5 space-y-3">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0 mt-0.5">
+                    <i data-lucide="key" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-bold text-slate-800 text-xs">Action Security Password</h4>
+                    <p class="text-xs text-slate-500 mb-2">Requires password before editing or deleting records. Leave blank to disable.</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <label class="block text-[9px] font-black text-slate-600 uppercase mb-0.5">New 2nd Password</label>
+                        <div class="relative">
+                          <input type="password" id="set-action-password" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-1.5 pr-8 text-xs focus:ring-1 focus:ring-accent outline-none">
+                          <button type="button" onclick="Settings.togglePasswordVisibility('set-action-password', this)" class="password-visibility-toggle absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 p-0.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="block text-[9px] font-black text-slate-600 uppercase mb-0.5">Confirm 2nd Password</label>
+                        <div class="relative">
+                          <input type="password" id="set-action-password-confirm" placeholder="••••••••" class="w-full border border-slate-200 rounded-lg p-1.5 pr-8 text-xs focus:ring-1 focus:ring-accent outline-none">
+                          <button type="button" onclick="Settings.togglePasswordVisibility('set-action-password-confirm', this)" class="password-visibility-toggle absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 p-0.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" id="btn-remove-action-pass" onclick="Settings.removeActionPassword()" class="hidden text-[9px] font-bold text-rose-500 hover:text-rose-700 uppercase tracking-widest flex items-center gap-1 mb-1">
+                      <i data-lucide="unlock" class="w-2.5 h-2.5"></i> Remove 2nd Password
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Online Cloud Backup & Multi-Device Restore Card (Supabase) -->
+            <div class="bg-white rounded-xl shadow-xs border border-indigo-100 overflow-hidden">
+              <div class="px-4 py-2.5 border-b border-indigo-50 bg-gradient-to-r from-indigo-50/80 to-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center">
+                    <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-sm text-slate-800">Online Cloud Backup (Supabase)</h3>
+                  </div>
+                </div>
+                <span id="cloud-sync-status-badge" class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Checking...
+                </span>
+              </div>
+
+              <div class="p-3.5 space-y-3">
+                <!-- Sync / Restore Action Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <!-- Backup / Upload to Cloud -->
+                  <div class="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-col justify-between space-y-2">
+                    <div>
+                      <div class="flex items-center gap-1.5 mb-1">
+                        <i data-lucide="cloud-upload" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <h4 class="font-bold text-slate-800 text-xs">Upload to Cloud</h4>
+                      </div>
+                      <p class="text-[10.5px] text-slate-500">
+                        Upload factory database to Supabase cloud.
+                      </p>
+                    </div>
+                    <div class="pt-1">
+                      <button type="button" id="btn-cloud-upload" onclick="Settings.executeCloudUpload()" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                        <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+                        <span>Sync to Cloud Now</span>
+                      </button>
+                      <span id="cloud-last-upload-label" class="text-[9.5px] text-slate-400 text-center block mt-1">Never synced</span>
+                    </div>
+                  </div>
+
+                  <!-- Restore from Cloud -->
+                  <div class="p-2.5 rounded-xl border border-emerald-200/80 bg-emerald-50/30 flex flex-col justify-between space-y-2">
+                    <div>
+                      <div class="flex items-center gap-1.5 mb-1">
+                        <i data-lucide="cloud-download" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <h4 class="font-bold text-slate-800 text-xs">Restore from Cloud</h4>
+                      </div>
+                      <p class="text-[10.5px] text-slate-500">
+                        Download latest backup onto this device.
+                      </p>
+                    </div>
+                    <div class="pt-1">
+                      <button type="button" id="btn-cloud-restore" onclick="Settings.executeCloudRestore()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                        <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i>
+                        <span>Restore from Cloud</span>
+                      </button>
+                      <span id="cloud-last-backup-found" class="text-[9.5px] text-slate-500 text-center block mt-1">Checking...</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Options -->
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                  <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-600 font-medium">
+                    <input type="checkbox" id="chk-auto-cloud-sync" onchange="Settings.toggleAutoCloudSync(this.checked)" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer">
+                    <span>Auto-sync to cloud when closing app</span>
+                  </label>
+                  <div class="flex items-center gap-2.5">
+                    <button type="button" onclick="Settings.toggleCredentialsModal()" class="text-indigo-600 hover:text-indigo-800 text-xs flex items-center gap-1 font-semibold cursor-pointer">
+                      <i data-lucide="key" class="w-3 h-3"></i> Config
+                    </button>
+                    <button type="button" onclick="Settings.refreshCloudStatus()" class="text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1 cursor-pointer">
+                      <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Backup & Data -->
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+              <div class="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <h3 class="font-bold text-sm text-slate-700">Backup &amp; Data</h3>
+                <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Auto Backup Active
+                </span>
+              </div>
+              <div class="p-3.5 space-y-3">
+                <!-- Automatic Backup on Exit (Directory Selection) -->
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-slate-800 text-xs">Automatic Backup on Exit</h4>
+                    <p class="text-xs text-slate-500 mb-2">Saved here automatically whenever closing the app.</p>
+                    
+                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      <div class="flex-1 min-w-[160px] flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-mono text-slate-700 truncate">
+                        <i data-lucide="folder" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                        <span id="auto-backup-dir-display" class="truncate" title="Backup folder">Loading...</span>
+                      </div>
+                      <button type="button" onclick="Settings.selectBackupDirectory()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition-colors flex items-center gap-1 shrink-0 cursor-pointer">
+                        <i data-lucide="folder-open" class="w-3 h-3"></i> Select
+                      </button>
+                      <button type="button" onclick="Settings.openBackupDirectory()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors flex items-center gap-1 shrink-0 cursor-pointer" title="Open folder">
+                        <i data-lucide="external-link" class="w-3 h-3"></i> Open
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Manual Backup -->
+                <div class="pt-2.5 border-t border-slate-100 flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-bold text-slate-800 text-xs">Local Database Backup</h4>
+                    <p class="text-xs text-slate-500 mb-2">Save a complete local backup file of all factory data.</p>
+                    <button onclick="Settings.backupData()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95">
+                      <i data-lucide="download" class="w-3 h-3"></i> Backup App Data
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Restore from Backup -->
+                <div class="pt-2 border-t border-slate-100 flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-bold text-slate-800 text-xs">Restore from Backup</h4>
+                    <p class="text-xs text-slate-500 mb-2">Restore factory database from a previous backup file.</p>
+                    <button onclick="Settings.restoreData()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95">
+                      <i data-lucide="rotate-ccw" class="w-3 h-3 text-amber-600"></i> Restore Data
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Clear Data -->
+                <div class="pt-2 border-t border-slate-100 flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0 mt-0.5">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-bold text-slate-800 text-xs">Clear All App Data</h4>
+                    <p class="text-xs text-slate-500 mb-2">Permanently wipe operational data and reset app. <span class="text-rose-600 font-bold">Cannot be undone.</span></p>
+                    <button onclick="Settings.clearAppData()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear All Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -557,6 +697,184 @@ const Settings = {
         console.error('Error loading backup directory:', e);
       }
     }
+
+    try {
+      await this.refreshCloudStatus();
+    } catch (e) {
+      console.warn('Error refreshing cloud status in reloadSettings:', e);
+    }
+
+    try {
+      await this.reloadLanStatus();
+    } catch (e) {
+      console.warn('Error reloading LAN status in reloadSettings:', e);
+    }
+
+    try {
+      await this.updateLicenseDisplay();
+    } catch (e) {
+      console.warn('Error updating license display in reloadSettings:', e);
+    }
+  },
+
+  async reloadLanStatus() {
+    try {
+      const cfg = (window.api && window.api.lanGetConfig) ? await window.api.lanGetConfig() : { role: 'main' };
+      const role = cfg.role || 'main';
+      const localIp = cfg.localIp || '127.0.0.1';
+      const host = cfg.serverHost || '';
+
+      const badge = document.getElementById('set-lan-role-badge');
+      const ipDisplay = document.getElementById('set-lan-ip-display');
+      const title = document.getElementById('set-lan-title');
+      const desc = document.getElementById('set-lan-desc');
+
+      if (role === 'packing') {
+        if (badge) {
+          badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 flex items-center gap-1.5 shadow-2xs';
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> PC 2: Packing Station';
+        }
+        if (title) title.textContent = 'Connected Main Server Address';
+        if (ipDisplay) ipDisplay.textContent = host || 'Not Configured';
+        if (desc) desc.textContent = 'This terminal is restricted to Carton Packing and the Daily Barcode Scan Counter. Scans are saved directly to PC 1.';
+      } else if (role === 'sales') {
+        if (badge) {
+          badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1.5 shadow-2xs';
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> PC 3: Sales Counter';
+        }
+        if (title) title.textContent = 'Connected Main Server Address';
+        if (ipDisplay) ipDisplay.textContent = host || 'Not Configured';
+        if (desc) desc.textContent = 'This terminal is restricted to POS New Sale billing. Products, prices, and stock are synced live from PC 1.';
+      } else {
+        if (badge) {
+          badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1.5 shadow-2xs';
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> PC 1: Main Server';
+        }
+        if (title) title.textContent = 'Main PC Connection Address';
+        if (ipDisplay) ipDisplay.textContent = `${localIp}:4321`;
+        if (desc) desc.textContent = 'Packing Station (PC 2) and Sales Counter (PC 3) connect to this address over factory Wi-Fi. Real-time updates sync instantly.';
+      }
+    } catch (e) {
+      console.warn('Error loading LAN status in settings:', e);
+    }
+  },
+
+  copyLanIp() {
+    const ipDisplay = document.getElementById('set-lan-ip-display');
+    const text = ipDisplay ? ipDisplay.textContent.trim() : '';
+    if (!text || text.includes('Loading')) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+      const btnText = document.getElementById('btn-copy-lan-text');
+      if (btnText) {
+        btnText.textContent = 'Copied to Clipboard!';
+        setTimeout(() => {
+          if (btnText) btnText.textContent = 'Copy Connection Address';
+        }, 2000);
+      }
+    }).catch(err => {
+      console.warn('Clipboard write failed:', err);
+    });
+  },
+
+  licenseTicker: null,
+  cachedExpiresAt: null,
+
+  startLiveCountdown() {
+    if (this.licenseTicker) {
+      clearInterval(this.licenseTicker);
+      this.licenseTicker = null;
+    }
+
+    const tick = () => {
+      const countdownEl = document.getElementById('license-remaining-countdown');
+      const statusBadge = document.getElementById('license-status-badge');
+      if (!countdownEl || !statusBadge) {
+        if (this.licenseTicker) {
+          clearInterval(this.licenseTicker);
+          this.licenseTicker = null;
+        }
+        return;
+      }
+
+      if (!this.cachedExpiresAt) return;
+
+      const now = Date.now();
+      const remainingMs = this.cachedExpiresAt - now;
+
+      if (remainingMs <= 0) {
+        statusBadge.className = 'font-extrabold text-red-600 flex items-center gap-1.5';
+        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Expired';
+        countdownEl.className = 'text-red-500 font-mono text-[11px] font-bold ml-1';
+        countdownEl.textContent = '(Hosting Expired)';
+        if (window.app && typeof app.checkLicenseStatus === 'function') {
+          app.checkLicenseStatus();
+        }
+        return;
+      }
+
+      const totalSec = Math.floor(remainingMs / 1000);
+      const days = Math.floor(totalSec / (24 * 3600));
+      const hours = Math.floor((totalSec % (24 * 3600)) / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      let formatted = '';
+      if (days > 0) {
+        formatted = `${days}d ${hours}h ${mins}m ${secs}s`;
+      } else if (hours > 0) {
+        formatted = `${hours}h ${mins}m ${secs}s`;
+      } else {
+        formatted = `${mins}m ${secs}s`;
+      }
+
+      statusBadge.className = 'font-extrabold text-emerald-600 flex items-center gap-1.5';
+      statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active';
+      countdownEl.className = 'text-slate-600 font-mono text-[11.5px] font-bold ml-1 tabular-nums';
+      countdownEl.textContent = `(${formatted} remaining)`;
+    };
+
+    tick();
+    this.licenseTicker = setInterval(tick, 1000);
+  },
+
+  async updateLicenseDisplay() {
+    try {
+      const info = await app.getLicenseInfo();
+      if (!info) return;
+
+      this.cachedExpiresAt = info.expiresAt;
+      this.startLiveCountdown();
+    } catch (e) {
+      console.warn('License info error:', e);
+    }
+  },
+
+  promptUpdateHosting() {
+    app.showPrompt({
+      title: 'Cloud Administrator Verification',
+      message: 'Enter cloud administrator master password to update hosting service:',
+      type: 'password',
+      confirmText: 'Verify Password',
+      onConfirm: (pass) => {
+        if (!pass) return;
+        if (pass.trim() !== app.MASTER_LICENSE_PASS) {
+          app.showAlert({
+            title: 'Access Denied',
+            message: 'Incorrect master password. Cloud hosting could not be modified.',
+            buttonText: 'Try Again'
+          });
+          return;
+        }
+
+        // Master password verified! Open duration modal to configure timer
+        app.openHostingDurationModal();
+      }
+    });
+  },
+
+  promptApplyLicense() {
+    return this.promptUpdateHosting();
   },
 
   async removeActionPassword() {
@@ -750,6 +1068,14 @@ const Settings = {
   },
 
   async handleBackup() {
+    try {
+      const lanCfg = window.api && window.api.lanGetConfig ? await window.api.lanGetConfig() : { role: 'main' };
+      if (lanCfg && lanCfg.role && lanCfg.role !== 'main') {
+        app.showAlert('Database backups must be created directly on PC 1 (Main Server).');
+        return;
+      }
+    } catch (e) {}
+
     app.showLoading();
     try {
       // 1. Sync all current localStorage items into SQLite
@@ -784,6 +1110,14 @@ const Settings = {
   },
 
   async handleRestore() {
+    try {
+      const lanCfg = window.api && window.api.lanGetConfig ? await window.api.lanGetConfig() : { role: 'main' };
+      if (lanCfg && lanCfg.role && lanCfg.role !== 'main') {
+        app.showAlert('Database restore can only be performed directly on PC 1 (Main Server).');
+        return;
+      }
+    } catch (e) {}
+
     app.authorizeAction(() => {
       app.showConfirm({
         title: 'Restore Factory Database',
@@ -795,9 +1129,30 @@ const Settings = {
           try {
             const res = await window.api.restoreData();
             if (res && res.success) {
+              // Preserve vital system configuration keys
+              const preservedKeys = [
+                'license_expires_at',
+                'license_last_seen',
+                'app_zoom',
+                'lan_node_role',
+                'lan_host_ip',
+                'auto_cloud_sync',
+                'supabase_url',
+                'supabase_key'
+              ];
+              const savedValues = {};
+              preservedKeys.forEach(k => {
+                const v = localStorage.getItem(k);
+                if (v !== null) savedValues[k] = v;
+              });
+
               // Clear local and session storage so restored DB rehydrates cleanly
               localStorage.clear();
               sessionStorage.clear();
+
+              Object.entries(savedValues).forEach(([k, v]) => {
+                localStorage.setItem(k, v);
+              });
             } else if (res && !res.success && res.error !== 'Cancelled') {
               app.showAlert('Restore failed: ' + res.error);
             }
@@ -813,6 +1168,14 @@ const Settings = {
   },
 
   async clearAppData() {
+    try {
+      const lanCfg = window.api && window.api.lanGetConfig ? await window.api.lanGetConfig() : { role: 'main' };
+      if (lanCfg && lanCfg.role && lanCfg.role !== 'main') {
+        app.showAlert('Clearing factory data is only permitted directly on PC 1 (Main Server).');
+        return;
+      }
+    } catch (e) {}
+
     app.authorizeAction(() => {
       app.showConfirm({
         title: 'Clear All Factory & App Data',
@@ -824,8 +1187,30 @@ const Settings = {
           try {
             const res = await window.api.clearAppData();
             if (res && res.success) {
+              // Preserve vital system configuration keys (hosting countdown timer, zoom, lan config, cloud sync)
+              const preservedKeys = [
+                'license_expires_at',
+                'license_last_seen',
+                'app_zoom',
+                'lan_node_role',
+                'lan_host_ip',
+                'auto_cloud_sync',
+                'supabase_url',
+                'supabase_key'
+              ];
+              const savedValues = {};
+              preservedKeys.forEach(k => {
+                const v = localStorage.getItem(k);
+                if (v !== null) savedValues[k] = v;
+              });
+
               localStorage.clear();
               sessionStorage.clear();
+
+              Object.entries(savedValues).forEach(([k, v]) => {
+                localStorage.setItem(k, v);
+              });
+
               app.hideLoading();
               app.showAlert({
                 title: 'All Factory Data Cleared',
@@ -969,5 +1354,286 @@ const Settings = {
         }
       }
     });
+  },
+
+  // =========================================================================
+  // SUPABASE CLOUD BACKUP & RESTORE
+  // =========================================================================
+
+  async refreshCloudStatus() {
+    const badge = document.getElementById('cloud-sync-status-badge');
+    const uploadLabel = document.getElementById('cloud-last-upload-label');
+    const backupFoundLabel = document.getElementById('cloud-last-backup-found');
+    const chkAuto = document.getElementById('chk-auto-cloud-sync');
+
+    if (chkAuto) {
+      const autoSync = window.localStorage.getItem('auto_cloud_sync') === 'true';
+      chkAuto.checked = autoSync;
+    }
+
+    if (!window.api || !window.api.cloudSyncGetStatus) return;
+
+    try {
+      const status = await window.api.cloudSyncGetStatus();
+      if (badge) {
+        if (status.connected) {
+          badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1.5 shadow-2xs';
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Connected to Cloud';
+        } else {
+          badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1.5 shadow-2xs';
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Offline (No Internet)';
+        }
+      }
+
+      if (uploadLabel) {
+        const syncTime = status.localSyncTime || window.localStorage.getItem('last_cloud_sync_time');
+        if (syncTime) {
+          const d = new Date(syncTime);
+          uploadLabel.textContent = 'Last upload: ' + d.toLocaleDateString() + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (status.cloudMeta && status.cloudMeta.timestamp) {
+          const d = new Date(status.cloudMeta.timestamp);
+          uploadLabel.textContent = 'Last upload: ' + d.toLocaleDateString() + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else {
+          uploadLabel.textContent = 'Last upload: Never from this PC';
+        }
+      }
+
+      if (backupFoundLabel) {
+        if (status.cloudMeta && status.cloudMeta.timestamp) {
+          const d = new Date(status.cloudMeta.timestamp);
+          const dev = status.cloudMeta.device ? ' (' + status.cloudMeta.device + ')' : '';
+          const c = status.cloudMeta.counts || {};
+          const ctnCount = c.packed_cartons || 0;
+          const matCount = c.raw_materials || 0;
+          const shopCount = c.shops || 0;
+          const delCount = c.shop_deliveries || 0;
+          backupFoundLabel.innerHTML = '<span class="text-emerald-700 font-semibold">Latest Cloud Backup:</span> ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + dev + '<br><span class="text-[10px] text-slate-600 font-mono">' + ctnCount + ' cartons • ' + matCount + ' materials • ' + shopCount + ' shops • ' + delCount + ' deliveries</span>';
+        } else {
+          backupFoundLabel.textContent = 'No cloud backup found on Supabase yet. Click "Sync to Cloud Now" to create one.';
+        }
+      }
+    } catch (err) {
+      console.warn('Error checking cloud status:', err);
+      if (badge) {
+        badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 flex items-center gap-1.5';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Check failed';
+      }
+    }
+  },
+
+  async toggleAutoCloudSync(enabled) {
+    window.localStorage.setItem('auto_cloud_sync', enabled ? 'true' : 'false');
+    if (window.api && window.api.setKv) {
+      await window.api.setKv('auto_cloud_sync', enabled ? 'true' : 'false');
+    }
+    app.showToast?.(
+      enabled ? 'Auto Cloud Sync Enabled: database will backup on exit.' : 'Auto Cloud Sync Disabled.',
+      'info'
+    );
+  },
+
+  async executeCloudUpload() {
+    if (!window.api || !window.api.cloudSyncUpload) {
+      return app.showAlert({
+        title: 'Feature Unavailable',
+        message: 'Cloud Sync is only available in Desktop Electron mode.'
+      });
+    }
+
+    const btn = document.getElementById('btn-cloud-upload');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-wait');
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Uploading to Cloud...';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    try {
+      // 1. Sync any localStorage into SQLite store
+      const allKv = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) allKv[key] = localStorage.getItem(key);
+      }
+      if (window.api && window.api.saveAllKv) {
+        await window.api.saveAllKv(allKv);
+      }
+
+      const res = await window.api.cloudSyncUpload();
+      if (!res.success) throw new Error(res.error || 'Failed to upload snapshot');
+
+      if (res.timestamp) {
+        window.localStorage.setItem('last_cloud_sync_time', res.timestamp);
+      }
+
+      await this.refreshCloudStatus();
+
+      const c = res.counts || {};
+      const msg = [
+        'Your complete factory database has been securely backed up to Supabase cloud!\n',
+        '• Packed Cartons: ' + (c.packed_cartons || 0),
+        '• Raw Materials: ' + (c.raw_materials || 0),
+        '• Registered Shops: ' + (c.shops || 0),
+        '• Delivery Records: ' + (c.shop_deliveries || 0),
+        '• Cars / Vehicles: ' + (c.cars || 0),
+        '• Staff Members: ' + (c.employees || 0),
+        '• Raw Material Suppliers: ' + (c.suppliers || 0),
+        '\nYou can now open any other laptop and click "Restore from Cloud" to sync this exact data!'
+      ].join('\n');
+
+      app.showAlert({
+        title: 'Cloud Sync Complete!',
+        message: msg,
+        buttonText: 'Awesome'
+      });
+    } catch (err) {
+      console.error('Cloud upload failed:', err);
+      app.showAlert({
+        title: 'Cloud Sync Failed',
+        message: 'Could not upload backup to Supabase:\n' + err.message + '\n\nPlease check your internet connection.',
+        buttonText: 'OK'
+      });
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-wait');
+        btn.innerHTML = origHtml;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+  },
+
+  async executeCloudRestore() {
+    if (!window.api || !window.api.cloudSyncRestore) {
+      return app.showAlert({
+        title: 'Feature Unavailable',
+        message: 'Cloud Restore is only available in Desktop Electron mode.'
+      });
+    }
+
+    app.showConfirm({
+      title: 'Restore Database from Cloud?',
+      message: 'This will replace the current local factory database with the latest snapshot from Supabase cloud.<br><br>(A local safety backup of this device will be automatically created on disk before restoring).<br><br>Do you want to proceed?',
+      confirmText: 'Yes, Restore Now',
+      cancelText: 'Cancel',
+      isDanger: true,
+      onConfirm: async () => {
+        const btn = document.getElementById('btn-cloud-restore');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.add('opacity-70', 'cursor-wait');
+          btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Restoring Data...';
+          if (window.lucide) lucide.createIcons();
+        }
+
+        try {
+          const res = await window.api.cloudSyncRestore();
+          if (!res.success) throw new Error(res.error || 'Failed to restore snapshot');
+
+          await this.refreshCloudStatus();
+
+          const c = res.counts || {};
+          const msg = [
+            'All factory data was successfully downloaded from Supabase and applied!\n',
+            '• Restored Cartons: ' + (c.packed_cartons || 0),
+            '• Restored Raw Materials: ' + (c.raw_materials || 0),
+            '• Restored Shops: ' + (c.shops || 0),
+            '• Restored Deliveries: ' + (c.shop_deliveries || 0),
+            '\nThe application will now refresh to display the restored data.'
+          ].join('\n');
+
+          app.showAlert({
+            title: 'Cloud Restore Successful!',
+            message: msg,
+            buttonText: 'Refresh App',
+            onConfirm: () => {
+              window.location.reload();
+            }
+          });
+        } catch (err) {
+          console.error('Cloud restore failed:', err);
+          app.showAlert({
+            title: 'Cloud Restore Failed',
+            message: 'Could not download cloud backup from Supabase:\n' + err.message,
+            buttonText: 'OK'
+          });
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-70', 'cursor-wait');
+            btn.innerHTML = origHtml;
+            if (window.lucide) lucide.createIcons();
+          }
+        }
+      }
+    });
+  },
+
+  async toggleCredentialsModal() {
+    const existing = document.getElementById('modal-supabase-credentials');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    let curUrl = '';
+    try {
+      const status = await window.api.cloudSyncGetStatus();
+      curUrl = status.supabaseUrl || '';
+    } catch (e) {}
+
+    const modal = document.createElement('div');
+    modal.id = 'modal-supabase-credentials';
+    modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1300] p-4';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+              <i data-lucide="key" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-800">Supabase Cloud Credentials</h3>
+              <p class="text-[10px] text-slate-500">Configure custom cloud storage endpoint</p>
+            </div>
+          </div>
+          <button type="button" onclick="document.getElementById('modal-supabase-credentials').remove()" class="text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div class="p-5 space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Supabase Project URL</label>
+            <input type="text" id="cfg-supabase-url" value="${curUrl}" placeholder="https://xyz.supabase.co" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">API Key (Anon or Service Key)</label>
+            <input type="password" id="cfg-supabase-key" placeholder="Leave empty to keep existing key" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono outline-none focus:border-indigo-500">
+          </div>
+          <p class="text-[10px] text-slate-400">By default, the app is pre-configured with the active cloud sync server from the Al-Baari project.</p>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="document.getElementById('modal-supabase-credentials').remove()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold cursor-pointer">Cancel</button>
+            <button type="button" onclick="Settings.saveSupabaseCredentials()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer">Save Credentials</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    if (window.lucide) lucide.createIcons({ root: modal });
+  },
+
+  async saveSupabaseCredentials() {
+    const url = document.getElementById('cfg-supabase-url')?.value.trim();
+    const key = document.getElementById('cfg-supabase-key')?.value.trim();
+
+    if (window.api && window.api.cloudSyncSetCredentials) {
+      await window.api.cloudSyncSetCredentials(url, key);
+    }
+    document.getElementById('modal-supabase-credentials')?.remove();
+    app.showToast?.('Supabase credentials saved successfully.', 'success');
+    await this.refreshCloudStatus();
   }
 };

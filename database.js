@@ -12,6 +12,15 @@ const fs = require('fs');
 const { app } = require('electron');
 
 let db;
+
+function getLocalDateString(inputDate) {
+  const d = inputDate ? new Date(inputDate) : new Date();
+  if (isNaN(d.getTime())) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 function getDbPath() {
   const newFilename = 'delicious_superstar_foods.db';
   let targetDir;
@@ -61,8 +70,10 @@ function getDbPathForBranch() {
 
 function init(customPath = null) {
   const dbPath = customPath || getDbPath();
-  db = new Database(dbPath);
+  db = new Database(dbPath, { timeout: 10000 });
   db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 10000');
+  db.pragma('wal_autocheckpoint = 1000');
   db.pragma('synchronous = NORMAL');
   db.pragma('temp_store = MEMORY');
   db.pragma('cache_size = -64000');
@@ -592,7 +603,7 @@ function clearAllData() {
       const allTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
       
       // Keep only system configuration and standard lookup categories/units
-      const preservedTables = ['settings', 'product_units', 'expense_categories', 'raw_material_categories', 'category_labels'];
+      const preservedTables = ['settings', 'product_units', 'expense_categories', 'raw_material_categories', 'category_labels', 'app_kv_store'];
 
       allTables.forEach(row => {
         if (!preservedTables.includes(row.name)) {
@@ -644,8 +655,9 @@ function clearAllData() {
         try { rawCatStmt.run(c); } catch (e) {}
       });
 
-      // Reset chocolate stock to 0 Liters in KV store
+      // Clear operational / temporary records from app_kv_store while preserving configuration (license, hosting timer, cloud credentials, zoom)
       try {
+        db.prepare("DELETE FROM app_kv_store WHERE key LIKE 'icecream_daily_temp_scans%'").run();
         db.prepare("INSERT OR REPLACE INTO app_kv_store (key, value) VALUES ('chocolate_stock_liters', '0')").run();
       } catch (e) {}
     });
@@ -1584,7 +1596,7 @@ function saveEmployee(data) {
     const role = (data.role || '').trim();
     const phone = (data.phone || '').trim();
     const email = (data.email || '').trim();
-    const dateJoined = data.date_joined || new Date().toISOString().split('T')[0];
+    const dateJoined = data.date_joined || getLocalDateString();
     const status = data.status || 'active';
     const notes = data.notes || '';
     const cnic = (data.cnic || '').trim();
@@ -1639,7 +1651,7 @@ function recordSalaryPayment(data) {
     if (amount <= 0) return { success: false, error: 'Payment amount must be greater than 0.' };
 
     const month = data.month || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-    const paymentDate = data.payment_date || new Date().toISOString().split('T')[0];
+    const paymentDate = data.payment_date || getLocalDateString();
     const paymentMethod = data.payment_method || 'Cash';
     const notes = data.notes || '';
 
@@ -1714,6 +1726,7 @@ function deleteSalaryPayment(id) {
 }
 
 function getSalaryPayments(filters = {}) {
+  if (!filters) filters = {};
   let query = `
     SELECT esp.*, e.full_name as employee_name, e.role as employee_role
     FROM employee_salary_payments esp
@@ -2421,32 +2434,171 @@ function close() {
 }
 
 
+// ------ CLOUD SYNC EXPORT & IMPORT ------
+function exportAllData() {
+  if (!db) throw new Error('Database not initialized');
+  const allTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+  const tables = {};
+  const counts = {};
+  let totalRows = 0;
+
+  for (const t of allTables) {
+    const tableName = t.name;
+    try {
+      const rows = db.prepare(`SELECT * FROM "${tableName}"`).all();
+      tables[tableName] = rows;
+      counts[tableName] = rows.length;
+      totalRows += rows.length;
+    } catch (err) {
+      console.warn(`[ExportAllData] Error reading table ${tableName}:`, err.message);
+    }
+  }
+
+  return {
+    version: 1,
+    appName: 'Delicious Superstar Foods',
+    exportedAt: new Date().toISOString(),
+    totalRows,
+    counts,
+    tables
+  };
+}
+
+function importAllData(dump) {
+  if (!db) throw new Error('Database not initialized');
+  if (!dump || !dump.tables) throw new Error('Invalid dump data structure');
+
+  const tables = dump.tables;
+  const restoredCounts = {};
+
+  db.pragma('foreign_keys = OFF');
+  const transaction = db.transaction(() => {
+    // 1. Clear existing rows in all tables
+    const allExistingTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+    for (const t of allExistingTables) {
+      try {
+        db.exec(`DELETE FROM "${t.name}"`);
+      } catch (e) {
+        console.warn(`[ImportAllData] Error clearing table ${t.name}:`, e.message);
+      }
+    }
+    try {
+      db.exec(`DELETE FROM sqlite_sequence`);
+    } catch (e) {}
+
+    // 2. Helper to insert rows with PRAGMA column sanitization
+    function insertRows(tableName, rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return 0;
+      const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(tableName);
+      if (!tableExists) {
+        console.warn(`[ImportAllData] Table ${tableName} does not exist in schema, skipping`);
+        return 0;
+      }
+
+      const tableInfo = db.prepare(`PRAGMA table_info("${tableName}")`).all();
+      const validCols = tableInfo.map(c => c.name);
+
+      let count = 0;
+      for (const row of rows) {
+        const cleanRow = {};
+        for (const [k, v] of Object.entries(row)) {
+          if (validCols.includes(k)) cleanRow[k] = v;
+        }
+        const keys = Object.keys(cleanRow);
+        if (keys.length === 0) continue;
+
+        const placeholders = keys.map(() => '?').join(', ');
+        const colNames = keys.map(k => `"${k}"`).join(', ');
+        const values = keys.map(k => cleanRow[k]);
+
+        try {
+          db.prepare(`INSERT OR REPLACE INTO "${tableName}" (${colNames}) VALUES (${placeholders})`).run(...values);
+          count++;
+        } catch (err) {
+          console.warn(`[ImportAllData] Failed to insert row into ${tableName}:`, err.message);
+        }
+      }
+      return count;
+    }
+
+    // 3. Insert each table's rows
+    for (const [tableName, rows] of Object.entries(tables)) {
+      if (Array.isArray(rows)) {
+        restoredCounts[tableName] = insertRows(tableName, rows);
+      }
+    }
+  });
+
+  transaction();
+  db.pragma('foreign_keys = ON');
+
+  return {
+    success: true,
+    counts: restoredCounts
+  };
+}
+
+function getKv(key) {
+  try {
+    const row = db.prepare('SELECT value FROM app_kv_store WHERE key = ?').get(key);
+    return row ? row.value : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function backupDatabase(destinationPath) {
   if (!db) throw new Error('Database not initialized');
+  
+  // Ensure destination directory exists
+  const targetDir = path.dirname(destinationPath);
+  if (!fs.existsSync(targetDir)) {
+    try {
+      fs.mkdirSync(targetDir, { recursive: true });
+    } catch (dirErr) {
+      console.error('Failed to create backup target directory:', dirErr);
+    }
+  }
+
   try {
     db.pragma('wal_checkpoint(TRUNCATE)');
   } catch (e) {
     console.error('WAL checkpoint error during backup:', e);
   }
+
+  // Method 1: native db.backup if available
   try {
     if (typeof db.backup === 'function') {
       await db.backup(destinationPath);
-      return { success: true, path: destinationPath };
+      if (fs.existsSync(destinationPath) && fs.statSync(destinationPath).size > 0) {
+        return { success: true, path: destinationPath };
+      }
     }
   } catch (e) {
     console.warn('db.backup failed, falling back to VACUUM INTO / copy:', e);
   }
+
+  // Method 2: VACUUM INTO
   try {
     if (fs.existsSync(destinationPath)) {
-      fs.unlinkSync(destinationPath);
+      try { fs.unlinkSync(destinationPath); } catch (e) {}
     }
     db.prepare('VACUUM INTO ?').run(destinationPath);
-    return { success: true, path: destinationPath };
+    if (fs.existsSync(destinationPath) && fs.statSync(destinationPath).size > 0) {
+      return { success: true, path: destinationPath };
+    }
   } catch (e) {
-    const dbPath = getDbPath();
-    fs.copyFileSync(dbPath, destinationPath);
+    console.warn('VACUUM INTO failed, falling back to copyFileSync:', e);
+  }
+
+  // Method 3: direct copyFileSync with checkpoint
+  const dbPath = getDbPath();
+  fs.copyFileSync(dbPath, destinationPath);
+  if (fs.existsSync(destinationPath) && fs.statSync(destinationPath).size > 0) {
     return { success: true, path: destinationPath };
   }
+
+  throw new Error('Backup failed: output file could not be created or is empty');
 }
 
 // Rate History & Stock Management Functions
@@ -2918,7 +3070,7 @@ function createIcecreamFactoryTables() {
 
     CREATE TABLE IF NOT EXISTS chocolate_batches (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      batch_number TEXT UNIQUE,
+      batch_number TEXT,
       date TEXT NOT NULL,
       liters_produced REAL NOT NULL,
       materials_summary TEXT DEFAULT '',
@@ -3478,7 +3630,8 @@ function addRawMaterialPurchase(data) {
       });
     }
 
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const paymentMethod = data.payment_method || 'Cash';
     const notes = data.notes || '';
 
@@ -3620,6 +3773,7 @@ function addRawMaterialPurchase(data) {
 }
 
 function getRawMaterialPurchases(filters = {}) {
+  if (!filters) filters = {};
   let query = `
     SELECT p.*, 
            s.phone as supplier_phone,
@@ -4101,7 +4255,8 @@ function paySupplier(data) {
     // Supports paying more than current balance as Advance Payment for future purchases
     const newBalance = currentBalance - amount;
 
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const receiptNo = getNextSupplierPaymentReceiptNo();
 
     let paymentId;
@@ -4304,6 +4459,7 @@ function getRawMaterialSuppliers() {
 }
 
 function getRawMaterialLogs(filters = {}) {
+  if (!filters) filters = {};
   let query = 'SELECT * FROM raw_material_logs WHERE 1=1';
   const params = [];
 
@@ -4373,7 +4529,7 @@ function ensureChocolateTables() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS chocolate_batches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        batch_number TEXT UNIQUE,
+        batch_number TEXT,
         date TEXT NOT NULL,
         liters_produced REAL NOT NULL,
         materials_summary TEXT DEFAULT '',
@@ -4438,7 +4594,8 @@ function createChocolateBatch(data) {
     if (litersProduced <= 0) {
       return { success: false, error: 'Chocolate quantity must be greater than 0 Liters.' };
     }
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const notes = data.notes || '';
     const materials = Array.isArray(data.materials) ? data.materials : [];
 
@@ -4461,15 +4618,6 @@ function createChocolateBatch(data) {
       }
     }
 
-    // Generate batch number
-    const todayStr = date.replace(/-/g, '');
-    let countToday = db.prepare('SELECT COUNT(*) as c FROM chocolate_batches WHERE date = ?').get(date).c + 1;
-    let batchNumber = `CHOC-${todayStr}-${String(countToday).padStart(3, '0')}`;
-    while (db.prepare('SELECT id FROM chocolate_batches WHERE batch_number = ?').get(batchNumber)) {
-      countToday++;
-      batchNumber = `CHOC-${todayStr}-${String(countToday).padStart(3, '0')}`;
-    }
-
     let batchId;
     let newStock = 0;
     const materialsSummaryList = [];
@@ -4477,7 +4625,7 @@ function createChocolateBatch(data) {
     let totalCost = 0;
 
     const tx = db.transaction(() => {
-      // Deduct raw materials
+      // Calculate costs and usage
       for (const m of materials) {
         const mat = db.prepare('SELECT * FROM raw_materials WHERE id = ?').get(m.material_id);
         const qtyUsed = Number(m.qty_used);
@@ -4509,33 +4657,20 @@ function createChocolateBatch(data) {
           qty_used: qtyUsed,
           unit: subUnit,
           display_qty: usageLabel,
-          line_cost: lineCost
+          line_cost: lineCost,
+          stock_before: stockBefore,
+          stock_after: stockAfter
         });
-
-        // Insert into raw_material_logs
-        db.prepare(`
-          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, date, notes)
-          VALUES (?, ?, 'CHOCOLATE_PRODUCTION', ?, ?, ?, ?, ?)
-        `).run(
-          mat.id,
-          mat.name,
-          -qtyUsed,
-          stockBefore,
-          stockAfter,
-          date,
-          `Used in Chocolate Production ${batchNumber} (${litersProduced} Liters)`
-        );
       }
 
       const summaryText = materialsSummaryList.join(', ');
       const costPerLiter = litersProduced > 0 ? (totalCost / litersProduced) : 0;
 
-      // Insert batch record
+      // Insert chocolate production record (no batch number)
       const res = db.prepare(`
         INSERT INTO chocolate_batches (batch_number, date, liters_produced, materials_summary, materials_json, total_cost, cost_per_liter, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        batchNumber,
         date,
         litersProduced,
         summaryText,
@@ -4546,6 +4681,23 @@ function createChocolateBatch(data) {
       );
       batchId = res.lastInsertRowid;
 
+      // Insert raw material deduction logs linked by reference_id
+      for (const m of materialsJsonList) {
+        db.prepare(`
+          INSERT INTO raw_material_logs (material_id, material_name, action, qty_change, stock_before, stock_after, reference_id, date, notes)
+          VALUES (?, ?, 'CHOCOLATE_PRODUCTION', ?, ?, ?, ?, ?, ?)
+        `).run(
+          m.material_id,
+          m.material_name,
+          -m.qty_used,
+          m.stock_before,
+          m.stock_after,
+          batchId,
+          date,
+          `Used in Chocolate Production (${litersProduced} Liters)`
+        );
+      }
+
       // Update chocolate stock
       const stockRow = db.prepare("SELECT value FROM app_kv_store WHERE key = 'chocolate_stock_liters'").get();
       const currentChocStock = stockRow ? Number(stockRow.value) || 0 : 0;
@@ -4555,14 +4707,13 @@ function createChocolateBatch(data) {
       // Log chocolate movement
       db.prepare(`
         INSERT INTO chocolate_logs (date, action, liters_change, stock_before, stock_after, reference_id, reference_no, notes)
-        VALUES (?, 'PRODUCTION', ?, ?, ?, ?, ?, ?)
+        VALUES (?, 'PRODUCTION', ?, ?, ?, ?, NULL, ?)
       `).run(
         date,
         litersProduced,
         currentChocStock,
         newStock,
         batchId,
-        batchNumber,
         `Produced ${litersProduced} Liters (${summaryText})`
       );
     });
@@ -4572,7 +4723,6 @@ function createChocolateBatch(data) {
     return {
       success: true,
       batchId,
-      batchNumber,
       litersProduced,
       newStock
     };
@@ -4613,13 +4763,17 @@ function deleteChocolateBatch(id) {
             curStock,
             newStock,
             batch.id,
-            `Restored from deleted Chocolate Batch ${batch.batch_number} (+${m.qty_used} ${mat ? mat.unit : ''})`
+            `Restored from deleted Chocolate Production (+${m.qty_used} ${mat ? mat.unit : ''})`
           );
         }
       }
 
-      // Remove raw material deduction logs for this chocolate batch
-      db.prepare("DELETE FROM raw_material_logs WHERE notes LIKE ? AND action != 'CHOCOLATE_REVERT'").run(`%${batch.batch_number}%`);
+      // Remove raw material deduction logs for this chocolate production record
+      if (batch.batch_number) {
+        db.prepare("DELETE FROM raw_material_logs WHERE (reference_id = ? OR notes LIKE ?) AND action = 'CHOCOLATE_PRODUCTION'").run(batch.id, `%${batch.batch_number}%`);
+      } else {
+        db.prepare("DELETE FROM raw_material_logs WHERE reference_id = ? AND action = 'CHOCOLATE_PRODUCTION'").run(batch.id);
+      }
 
       // 2. Reduce chocolate stock
       const stockRow = db.prepare("SELECT value FROM app_kv_store WHERE key = 'chocolate_stock_liters'").get();
@@ -4630,14 +4784,13 @@ function deleteChocolateBatch(id) {
       // Log revert
       db.prepare(`
         INSERT INTO chocolate_logs (date, action, liters_change, stock_before, stock_after, reference_id, reference_no, notes)
-        VALUES (date('now'), 'BATCH_REVERT', ?, ?, ?, ?, ?, ?)
+        VALUES (date('now'), 'BATCH_REVERT', ?, ?, ?, ?, NULL, ?)
       `).run(
         -batch.liters_produced,
         currentStock,
         newStock,
         batch.id,
-        batch.batch_number,
-        `Reverted chocolate batch ${batch.batch_number} (-${batch.liters_produced} Liters)`
+        `Reverted chocolate production (-${batch.liters_produced} Liters)`
       );
 
       // 3. Delete chocolate batch
@@ -4772,7 +4925,8 @@ function runProductionBatch(data) {
 
     const unitCost = Number(data.unit_cost) || Number(item.unit_cost) || 0;
     const totalCost = pieces * unitCost;
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
 
     // Generate unique batch number
     const todayStr = date.replace(/-/g, '');
@@ -4899,6 +5053,7 @@ function runProductionBatch(data) {
 }
 
 function getProductionBatches(filters = {}) {
+  if (!filters) filters = {};
   let query = 'SELECT pb.* FROM production_batches pb WHERE 1=1';
   const params = [];
 
@@ -5238,7 +5393,8 @@ function runCartonPacking(data) {
     const cartonCost = Number(data.carton_cost) || carton.carton_cost_price || 0;
     const totalCost = cartonsPacked * cartonCost;
     const cartonSalePrice = Number(data.carton_sale_price) || carton.carton_sale_price || 0;
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
 
     // Batch number with uniqueness loop
     const todayStr = date.replace(/-/g, '');
@@ -5376,6 +5532,7 @@ function runCartonPacking(data) {
 }
 
 function getPackingBatches(filters = {}) {
+  if (!filters) filters = {};
   let query = 'SELECT pb.* FROM packing_batches pb WHERE 1=1';
   const params = [];
 
@@ -5676,7 +5833,8 @@ function loadCarStock(data) {
       return { success: false, error: 'No items selected to load' };
     }
 
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const todayStr = date.replace(/-/g, '');
     let countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
     let dispatchNo = `DISP-${todayStr}-${String(countToday).padStart(3, '0')}`;
@@ -5762,7 +5920,8 @@ function unloadCarStock(data) {
       return { success: false, error: `Cannot unload ${qty} cartons. Vehicle only has ${inv ? inv.cartons_loaded : 0} cartons loaded.` };
     }
 
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const todayStr = date.replace(/-/g, '');
     let countToday = db.prepare('SELECT COUNT(*) as c FROM car_loading_batches WHERE date = ?').get(date).c + 1;
     let unloadNo = `UNLOAD-${todayStr}-${String(countToday).padStart(3, '0')}`;
@@ -5977,7 +6136,8 @@ function saveShopDelivery(data) {
     const shopPhone = data.shop_phone || shop.phone || '';
     const shopAddress = data.shop_address || shop.address || '';
 
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const invoiceNo = (data.invoice_no && String(data.invoice_no).trim() && !String(data.invoice_no).startsWith('INV-20'))
       ? String(data.invoice_no).trim()
       : getNextDeliveryInvoiceNo();
@@ -6343,7 +6503,8 @@ function processShopReturn(data) {
       return { success: false, error: 'Please enter a return quantity greater than 0 for at least one item' };
     }
 
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const todayStr = date.replace(/-/g, '');
     let returnSeq = db.prepare('SELECT COUNT(*) as c FROM shop_returns WHERE date = ?').get(date).c + 1;
     let returnNo = `RET-${todayStr}-${String(returnSeq).padStart(3, '0')}`;
@@ -6562,6 +6723,7 @@ function getShopReturn(id) {
 }
 
 function getShopDeliveries(filters = {}) {
+  if (!filters) filters = {};
   let query = `
     SELECT sd.*, 
            (SELECT COUNT(*) FROM shop_delivery_items sdi WHERE sdi.delivery_id = sd.id) as total_items_count,
@@ -6760,7 +6922,8 @@ function receiveShopPayment(data) {
       return { success: false, error: `Received payment (Rs. ${amount.toLocaleString()}) cannot be more than the balance in salesman's khata (Rs. ${currentBalance.toLocaleString()})` };
     }
 
-    const date = data.date || new Date().toISOString().split('T')[0];
+    const rawDate = data.date || getLocalDateString();
+    const date = String(rawDate).includes('T') ? String(rawDate).replace('T', ' ') : String(rawDate);
     const todayStr = date.replace(/-/g, '');
     const countToday = db.prepare('SELECT COUNT(*) as c FROM shop_payments WHERE date = ?').get(date)?.c || 0;
     const receiptNo = `REC-${todayStr}-${String(countToday + 1).padStart(3, '0')}`;
@@ -6980,8 +7143,10 @@ function getCarSalesReport(carId, fromDate = null, toDate = null) {
   }
 }
 
-function getIcecreamFactorySummary() {
-  const today = new Date().toISOString().split('T')[0];
+function getIcecreamFactorySummary(targetDate) {
+  const today = (targetDate && typeof targetDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(targetDate.trim()))
+    ? targetDate.trim()
+    : getLocalDateString();
 
   // 1. Raw Materials Summary
   const rawStats = db.prepare(`
@@ -7075,7 +7240,7 @@ module.exports = {
   // Stage 4: Cars & Delivery Loading
   getCars, getCar, saveCar, deleteCar, getCarInventory, loadCarStock, unloadCarStock, getCarLoadingBatches, getCarLoadingBatch, updateCarLoadingBatch, deleteCarLoadingBatch,
   // Stage 5: Shop Deliveries, Sales & Returns
-  saveShopDelivery, getNextDeliveryInvoiceNo, getShopDeliveries, getShopDelivery, updateShopDelivery, deleteShopDelivery, receiveShopPayment, updateShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary,
+  saveShopDelivery, getNextDeliveryInvoiceNo, getShopDeliveries, getShopDelivery, updateShopDelivery, deleteShopDelivery, receiveShopPayment, updateShopPayment, getShopLedger, deleteShopPayment, getCarSalesReport, getIcecreamFactorySummary, getLocalDateString,
   processShopReturn, getShopReturns, getShopReturn, deleteShopReturn, recalculateDeliveryTotals, syncShopKhataBalance, reconcileReturnsAndBalances, syncSupplierBalance,
 
   init, getDbPath, getDbPathForBranch, close, backupDatabase, clearAllData,
@@ -7097,5 +7262,6 @@ module.exports = {
   toggleFavorite,
   getFavoriteProducts,
   getUnits, addUnit, updateUnit, deleteUnit,
-  getAllKv, setKv, saveAllKv
+  getAllKv, getKv, setKv, saveAllKv,
+  exportAllData, importAllData
 };

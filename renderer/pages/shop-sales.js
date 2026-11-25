@@ -521,7 +521,7 @@ window.ShopSales = {
 
                 <!-- Invoice Number Field -->
                 <div class="flex items-center gap-1.5 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shadow-2xs">
-                  <span class="text-slate-400 text-[10px] uppercase font-black tracking-wider">INV:</span>
+                  <span class="text-slate-600 text-[10px] uppercase font-black tracking-wider">INV:</span>
                   <span class="text-slate-900 font-black text-xs uppercase tabular-nums font-mono">#${this.nextInvoiceNo || '1'}</span>
                 </div>
 
@@ -561,12 +561,12 @@ window.ShopSales = {
                 </tbody>
               </table>
 
-              <div id="ss-cart-empty-state" class="p-12 text-center flex flex-col items-center justify-center text-slate-400 ${this.items.length > 0 ? 'hidden' : ''}">
+              <div id="ss-cart-empty-state" class="p-12 text-center flex flex-col items-center justify-center text-slate-500 ${this.items.length > 0 ? 'hidden' : ''}">
                 <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 border border-amber-200/80 flex items-center justify-center mb-3 shadow-2xs">
                   <i data-lucide="scan-barcode" class="w-8 h-8"></i>
                 </div>
                 <p class="font-bold text-slate-700 text-sm">No items in cart</p>
-                <p class="text-xs text-slate-400 mt-1 max-w-sm">Type any carton name or scan barcode in the search box above, or press <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 font-mono text-[11px]">F2</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 font-mono text-[11px]">Enter</kbd> to add items.</p>
+                <p class="text-xs text-slate-500 mt-1 max-w-sm font-medium">Type any carton name or scan barcode in the search box above, or press <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 font-mono text-[11px]">F2</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 font-mono text-[11px]">Enter</kbd> to add items.</p>
               </div>
             </div>
 
@@ -1143,7 +1143,7 @@ window.ShopSales = {
           <td class="py-1 px-3 border-r border-slate-200">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="font-black text-slate-900 text-xs truncate max-w-[280px]">${item.carton_name}</span>
-              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.2 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
+              ${item.barcode ? `<span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-300 px-1 py-0.5 rounded" title="Barcode: ${item.barcode}">#${item.barcode}</span>` : ''}
               ${item.pieces_per_carton ? `<span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight font-sans">(${item.pieces_per_carton} pcs/${item.package_type === 'shoper' ? 'shoper' : 'ctn'})</span>` : ''}
               ${(() => {
                 if (stock > 0) {
@@ -1152,9 +1152,9 @@ window.ShopSales = {
                   const badgeText = qtyNum > stock
                     ? `${stock} in car (0 remain, +${qtyNum - stock} factory)`
                     : `${stock} in car (${remain} remain)`;
-                  return `<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded tabular-nums ml-auto sm:ml-0">${badgeText}</span>`;
+                  return `<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded tabular-nums ml-auto sm:ml-0">${badgeText}</span>`;
                 }
-                return `<span class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/60 px-1.5 py-0.2 rounded tabular-nums ml-auto sm:ml-0">Direct Factory</span>`;
+                return `<span class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/60 px-1.5 py-0.5 rounded tabular-nums ml-auto sm:ml-0">Direct Factory</span>`;
               })()}
             </div>
           </td>
@@ -1195,8 +1195,8 @@ window.ShopSales = {
           <td class="py-1 px-2 border-r border-slate-200">
             <div class="flex items-center gap-1 justify-center">
               <div class="flex p-0.5 shrink-0 gap-0.5">
-                <button type="button" onclick="ShopSales.toggleItemDiscountType(${idx}, 'flat')" class="px-1 py-0.2 text-[9px] font-black rounded ${item.discountType === 'flat' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">RS.</button>
-                <button type="button" onclick="ShopSales.toggleItemDiscountType(${idx}, 'percent')" class="px-1 py-0.2 text-[9px] font-black rounded ${item.discountType === 'percent' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">%</button>
+                <button type="button" onclick="ShopSales.toggleItemDiscountType(${idx}, 'flat')" class="px-1 py-0.5 text-[9px] font-black rounded ${item.discountType === 'flat' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">RS.</button>
+                <button type="button" onclick="ShopSales.toggleItemDiscountType(${idx}, 'percent')" class="px-1 py-0.5 text-[9px] font-black rounded ${item.discountType === 'percent' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-100'}">%</button>
               </div>
               <input type="number" 
                      id="cart-discount-input-${idx}"
@@ -1582,15 +1582,15 @@ window.ShopSales = {
             <span class="w-5.5 h-5.5 rounded ${isHighlighted ? 'bg-white/25 text-white border border-white/30' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-black shrink-0 font-mono">${idx + 1}</span>
             <span class="text-xs font-black truncate ${isHighlighted ? 'text-white' : 'text-slate-900'}">${item.carton_name}</span>
             <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider shrink-0 ${isHighlighted ? 'bg-white font-black shadow-xs ' + (isShoper ? 'text-sky-900' : 'text-purple-900') : (isShoper ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-purple-100 text-purple-800 border border-purple-300')}">${isShoper ? 'SHOPER' : 'CARTON'}</span>
-            ${item.barcode ? `<span class="text-[9px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60 border-amber-400/40' : 'text-slate-600 bg-slate-100 border-slate-300'} px-1 py-0.2 rounded border">#${item.barcode}</span>` : ''}
-            ${item.pieces_per_carton ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-400'} shrink-0">(${item.pieces_per_carton} pcs/${unitAbbr})</span>` : ''}
+            ${item.barcode ? `<span class="text-[9px] font-mono font-bold ${isHighlighted ? 'text-amber-100 bg-amber-700/60 border-amber-400/40' : 'text-slate-600 bg-slate-100 border-slate-300'} px-1.5 py-0.5 rounded border">#${item.barcode}</span>` : ''}
+            ${item.pieces_per_carton ? `<span class="text-[10px] ${isHighlighted ? 'text-amber-100 font-bold' : 'text-slate-600 font-semibold'} shrink-0">(${item.pieces_per_carton} pcs/${unitAbbr})</span>` : ''}
           </div>
           <div class="flex items-center gap-3 shrink-0 text-right">
             <div class="text-right">
               <span class="text-xs font-black ${stock > 0 ? (isHighlighted ? 'text-amber-100' : 'text-blue-700') : (isHighlighted ? 'text-slate-200' : 'text-slate-500')} tabular-nums block">
                 ${stock > 0 ? `${stock} in car` : 'Direct Factory'}
               </span>
-              <span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-400'} font-bold block">(In Stock: ${item.factory_carton_stock || 0} ${unitsAbbr})</span>
+              <span class="text-[10px] ${isHighlighted ? 'text-amber-200' : 'text-slate-500'} font-bold block">(In Stock: ${item.factory_carton_stock || 0} ${unitsAbbr})</span>
             </div>
             <span class="text-xs font-black tabular-nums ${isHighlighted ? 'text-white' : 'text-slate-900'} min-w-[65px] text-right">
               Rs. ${price}
@@ -2300,7 +2300,7 @@ window.ShopSales = {
                       <td class="py-2 px-3">
                         <div class="flex items-center gap-1.5">
                           <span class="font-bold text-slate-900">${c.carton_name}</span>
-                          <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider shrink-0 ${c.package_type === 'shoper' ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-purple-100 text-purple-800 border border-purple-300'}">${c.package_type === 'shoper' ? 'SHOPER' : 'CARTON'}</span>
+                          <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shrink-0 ${c.package_type === 'shoper' ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-purple-100 text-purple-800 border border-purple-300'}">${c.package_type === 'shoper' ? 'SHOPER' : 'CARTON'}</span>
                         </div>
                         <div class="text-[10px] text-slate-500 font-mono mt-0.5">
                           ${c.barcode ? `#${c.barcode} • ` : ''}${c.pieces_per_carton} pcs/${c.package_type === 'shoper' ? 'shoper' : 'carton'}
@@ -2386,7 +2386,7 @@ window.ShopSales = {
     try {
       const res = await window.api.loadCarStock({
         car_id: activeCar.id,
-        date: new Date().toISOString().slice(0, 10),
+        date: (window.app && typeof app.getTodayDate === 'function') ? app.getTodayDate() : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
         items: itemsToLoad
       });
 
@@ -2549,7 +2549,7 @@ window.ShopSales = {
     }
 
     const previousBalance = activeShop ? Number(activeShop.amount || 0) : 0;
-    const date = new Date().toISOString().split('T')[0];
+    const date = (window.app && typeof app.getTodayDate === 'function') ? app.getTodayDate() : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
     let invoiceNo;
     if (window.api && window.api.getNextDeliveryInvoiceNo) {
       try {
@@ -3246,7 +3246,7 @@ window.ShopSales = {
       return_destination: this.returnDestination, // 'car' or 'stock'
       adjustment_type: this.returnAdjustmentType, // 'khata' or 'cash'
       reason,
-      date: new Date().toISOString().split('T')[0],
+      date: (window.app && typeof app.getTodayDate === 'function') ? app.getTodayDate() : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
       items: items.map(it => ({
         delivery_item_id: it.id,
         carton_id: it.carton_id,

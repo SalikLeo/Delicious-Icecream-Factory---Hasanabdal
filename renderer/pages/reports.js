@@ -179,7 +179,7 @@ window.Reports = {
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-end gap-3 flex-wrap">
           <div>
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Select Vehicle / Car</label>
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Select Vehicle / Car</label>
             <select id="rpt-car-select" onchange="Reports.onCarChange(this.value)"
                     class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none h-[34px] cursor-pointer">
               <option value="">-- All Delivery Cars --</option>
@@ -192,26 +192,26 @@ window.Reports = {
           </div>
 
           <div>
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Period</label>
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Period</label>
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 h-[34px] items-center shadow-inner">
               <button type="button" onclick="Reports.setPeriod('daily')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'daily' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="Reports.setPeriod('monthly')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'monthly' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="Reports.setPeriod('annual')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'annual' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="Reports.setPeriod('custom')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="Reports.setPeriod('all')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All Time
               </button>
             </div>
@@ -219,17 +219,17 @@ window.Reports = {
 
           ${this.periodType !== 'all' ? `
             <div>
-              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">
                 ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
               ${this.periodType === 'custom' ? `
                 <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
-                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">From</span>
                   <input type="date" id="rpt-cars-start-date" value="${this.startDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('start', this.value)"
                          oninput="Reports.onCustomDateChange('start', this.value)"
                          class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
-                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">To</span>
                   <input type="date" id="rpt-cars-end-date" value="${this.endDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('end', this.value)"
                          oninput="Reports.onCustomDateChange('end', this.value)"
@@ -317,7 +317,7 @@ window.Reports = {
           <table class="w-full text-left text-xs border-collapse border border-slate-200">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+                <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
                 <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
                 <th class="py-2 px-3 border-r border-slate-200">Invoice #</th>
                 <th class="py-2 px-3 border-r border-slate-200">Vehicle &amp; Driver</th>
@@ -332,15 +332,15 @@ window.Reports = {
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${filtered.length > 0 ? filtered.map((d, idx) => `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                  <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 text-[11px] font-bold text-slate-600 border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(d.date, d.created_at)}</td>
                   <td class="py-1.5 px-3 font-mono font-black text-slate-900 border-r border-slate-200">${d.invoice_no}</td>
-                  <td class="py-1.5 px-3 text-slate-800 font-bold border-r border-slate-200 text-xs">${d.car_number}<br><span class="text-[10px] text-slate-400 font-normal leading-tight">${d.driver_name || ''}</span></td>
+                  <td class="py-1.5 px-3 text-slate-800 font-bold border-r border-slate-200 text-xs">${d.car_number}<br><span class="text-[10px] text-slate-500 font-medium leading-tight">${d.driver_name || ''}</span></td>
                   <td class="py-1.5 px-3 font-bold text-slate-900 border-r border-slate-200 text-xs">${d.shop_name}</td>
                   <td class="py-1.5 px-2 text-center font-black text-xs text-blue-700 bg-blue-50/40 border-r border-slate-200">
                     <div>${Math.max(0, (d.total_cartons_delivered || 0) - (d.total_cartons_returned || 0))}</div>
                     ${(d.total_cartons_returned || 0) > 0 ? `
-                      <span class="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5">
+                      <span class="inline-block px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-black mt-0.5">
                         -${d.total_cartons_returned} ret
                       </span>
                     ` : ''}
@@ -586,7 +586,7 @@ window.Reports = {
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-end gap-3 flex-wrap">
           <div>
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Filter Category</label>
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Filter Category</label>
             <select id="rpt-raw-cat-select" onchange="Reports.onRawCategoryChange(this.value)"
                     class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none h-[34px] cursor-pointer">
               <option value="">-- All Categories --</option>
@@ -597,26 +597,26 @@ window.Reports = {
           </div>
 
           <div>
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Period</label>
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Period</label>
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 h-[34px] items-center shadow-inner">
               <button type="button" onclick="Reports.setPeriod('daily')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'daily' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="Reports.setPeriod('monthly')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'monthly' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="Reports.setPeriod('annual')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'annual' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="Reports.setPeriod('custom')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="Reports.setPeriod('all')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All Time
               </button>
             </div>
@@ -624,17 +624,17 @@ window.Reports = {
 
           ${this.periodType !== 'all' ? `
             <div>
-              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">
                 ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
               ${this.periodType === 'custom' ? `
                 <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
-                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">From</span>
                   <input type="date" id="rpt-raw-start-date" value="${this.startDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('start', this.value)"
                          oninput="Reports.onCustomDateChange('start', this.value)"
                          class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
-                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">To</span>
                   <input type="date" id="rpt-raw-end-date" value="${this.endDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('end', this.value)"
                          oninput="Reports.onCustomDateChange('end', this.value)"
@@ -805,7 +805,7 @@ window.Reports = {
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2.5 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+                <th class="py-2.5 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
                 <th class="py-2.5 px-3 border-r border-slate-200">Material Name</th>
                 <th class="py-2.5 px-3 border-r border-slate-200">Category</th>
                 <th class="py-2.5 px-3 text-right border-r border-slate-200">Purchased</th>
@@ -823,7 +823,7 @@ window.Reports = {
                 const use = usageByMaterial[m.id];
                 return `
                   <tr class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-2 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                    <td class="py-2 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                     <td class="py-2 px-3 font-black text-slate-900 text-xs border-r border-slate-200">${m.name}</td>
                     <td class="py-2 px-3 text-slate-500 text-xs border-r border-slate-200">${m.category || 'General'}</td>
                     <td class="py-2 px-3 text-right tabular-nums border-r border-slate-200">
@@ -920,7 +920,7 @@ window.Reports = {
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-end gap-3 flex-wrap">
           <div>
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Filter Carton</label>
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Filter Carton</label>
             <select id="rpt-carton-select" onchange="Reports.onCartonChange(this.value)"
                     class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none h-[34px] cursor-pointer">
               <option value="">-- All Packed Cartons --</option>
@@ -931,26 +931,26 @@ window.Reports = {
           </div>
 
           <div>
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Period</label>
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Period</label>
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 h-[34px] items-center shadow-inner">
               <button type="button" onclick="Reports.setPeriod('daily')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'daily' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="Reports.setPeriod('monthly')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'monthly' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="Reports.setPeriod('annual')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'annual' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="Reports.setPeriod('custom')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="Reports.setPeriod('all')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All Time
               </button>
             </div>
@@ -958,17 +958,17 @@ window.Reports = {
 
           ${this.periodType !== 'all' ? `
             <div>
-              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">
                 ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
               ${this.periodType === 'custom' ? `
                 <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
-                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">From</span>
                   <input type="date" id="rpt-inv-start-date" value="${this.startDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('start', this.value)"
                          oninput="Reports.onCustomDateChange('start', this.value)"
                          class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
-                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">To</span>
                   <input type="date" id="rpt-inv-end-date" value="${this.endDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('end', this.value)"
                          oninput="Reports.onCustomDateChange('end', this.value)"
@@ -1135,7 +1135,7 @@ window.Reports = {
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+                <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
                 <th class="py-2 px-3 border-r border-slate-200">Product / Packaging</th>
                 <th class="py-2 px-2 text-center border-r border-slate-200">Packing Spec</th>
                 <th class="py-2 px-3 text-right border-r border-slate-200">Packed in Period</th>
@@ -1156,11 +1156,11 @@ window.Reports = {
                 const packed = packedByCarton[c.id] || 0;
                 return `
                   <tr class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                    <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                     <td class="py-1.5 px-3 font-black text-slate-900 text-xs border-r border-slate-200">
                       <div class="flex items-center gap-1.5">
                         <span>${c.carton_name}</span>
-                        <span class="px-1.5 py-0.2 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
+                        <span class="px-1.5 py-0.5 rounded ${isShoper ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-purple-50 text-purple-800 border-purple-200'} border text-[9px] font-black uppercase">${isShoper ? 'Shoper' : 'Carton'}</span>
                       </div>
                     </td>
                     <td class="py-1.5 px-2 text-center font-bold ${isShoper ? 'text-sky-700' : 'text-purple-700'} border-r border-slate-200 text-xs">${c.pieces_per_carton} pcs/${unitAbbr}</td>
@@ -1271,26 +1271,26 @@ window.Reports = {
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-end gap-3 flex-wrap">
           <div>
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Financial Period</label>
-            <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[34px] items-center">
+            <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Financial Period</label>
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 h-[34px] items-center shadow-inner">
               <button type="button" onclick="Reports.setPeriod('daily')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'daily' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'daily' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Daily
               </button>
               <button type="button" onclick="Reports.setPeriod('monthly')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'monthly' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'monthly' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Monthly
               </button>
               <button type="button" onclick="Reports.setPeriod('annual')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'annual' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'annual' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Annual
               </button>
               <button type="button" onclick="Reports.setPeriod('custom')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'custom' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'custom' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 Custom Range
               </button>
               <button type="button" onclick="Reports.setPeriod('all')"
-                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer ${this.periodType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'}">
+                      class="px-3 py-1 text-xs font-black rounded-lg cursor-pointer transition-all ${this.periodType === 'all' ? 'bg-white text-slate-950 shadow-xs border border-slate-200/80' : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'}">
                 All Time
               </button>
             </div>
@@ -1298,17 +1298,17 @@ window.Reports = {
 
           ${this.periodType !== 'all' ? `
             <div>
-              <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">
                 ${this.periodType === 'custom' ? 'Date Range' : (this.periodType === 'annual' ? 'Year' : (this.periodType === 'monthly' ? 'Month' : 'Date'))}
               </label>
               ${this.periodType === 'custom' ? `
                 <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-xl h-[34px]">
-                  <span class="text-[10px] font-black uppercase text-slate-400">From</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">From</span>
                   <input type="date" id="rpt-finance-start-date" value="${this.startDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('start', this.value)"
                          oninput="Reports.onCustomDateChange('start', this.value)"
                          class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
-                  <span class="text-[10px] font-black uppercase text-slate-400">To</span>
+                  <span class="text-[10px] font-black uppercase text-slate-600 font-black">To</span>
                   <input type="date" id="rpt-finance-end-date" value="${this.endDate || this.selectedDate}" 
                          onchange="Reports.onCustomDateChange('end', this.value)"
                          oninput="Reports.onCustomDateChange('end', this.value)"
@@ -1398,7 +1398,7 @@ window.Reports = {
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-100/70 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-400 font-black">#</th>
+                <th class="py-2 px-2 text-center w-10 border-r border-slate-200 text-slate-600 font-black">#</th>
                 <th class="py-2 px-3 border-r border-slate-200 whitespace-nowrap min-w-[85px]">Date</th>
                 <th class="py-2 px-3 border-r border-slate-200">Category</th>
                 <th class="py-2 px-3 border-r border-slate-200">Details</th>
@@ -1408,7 +1408,7 @@ window.Reports = {
             <tbody class="divide-y divide-slate-100 font-semibold text-slate-700">
               ${filtExp.length > 0 ? filtExp.map((e, idx) => `
                 <tr class="hover:bg-slate-50/70 transition-colors">
-                  <td class="py-1.5 px-2 text-center text-slate-400 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
+                  <td class="py-1.5 px-2 text-center text-slate-600 font-bold border-r border-slate-200 text-xs">${idx + 1}</td>
                   <td class="py-1.5 px-3 text-slate-600 font-bold border-r border-slate-200 whitespace-nowrap">${app.formatDateTime(e.date, e.created_at)}</td>
                   <td class="py-1.5 px-3 font-black text-slate-800 text-xs border-r border-slate-200">${e.category}</td>
                   <td class="py-1.5 px-3 text-slate-600 text-xs border-r border-slate-200">${e.description || e.notes || 'Expense entry'}</td>

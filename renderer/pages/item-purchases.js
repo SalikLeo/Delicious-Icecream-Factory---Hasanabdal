@@ -162,12 +162,12 @@ window.ItemPurchases = {
           <!-- Period controls -->
           <div class="flex items-center gap-2 shrink-0">
             <label class="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">Period</label>
-            <div class="flex bg-slate-100 p-0.5 rounded-xl gap-0.5">
-              <button id="item-pur-period-day-tab" onclick="ItemPurchases.setPeriodType('day')" class="px-2.5 py-1 text-xs font-black rounded-lg transition-all bg-white shadow-2xs text-slate-900 cursor-pointer">Daily</button>
-              <button id="item-pur-period-month-tab" onclick="ItemPurchases.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Monthly</button>
-              <button id="item-pur-period-year-tab" onclick="ItemPurchases.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Annual</button>
-              <button id="item-pur-period-custom-tab" onclick="ItemPurchases.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Custom Range</button>
-              <button id="item-pur-period-all-tab" onclick="ItemPurchases.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">All</button>
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 shadow-inner gap-0.5">
+              <button id="item-pur-period-day-tab" onclick="ItemPurchases.setPeriodType('day')" class="px-2.5 py-1 text-xs font-black rounded-lg transition-all bg-white shadow-xs border border-slate-200/80 text-slate-950 cursor-pointer">Daily</button>
+              <button id="item-pur-period-month-tab" onclick="ItemPurchases.setPeriodType('month')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Monthly</button>
+              <button id="item-pur-period-year-tab" onclick="ItemPurchases.setPeriodType('year')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Annual</button>
+              <button id="item-pur-period-custom-tab" onclick="ItemPurchases.setPeriodType('custom')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Custom Range</button>
+              <button id="item-pur-period-all-tab" onclick="ItemPurchases.setPeriodType('all')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">All</button>
             </div>
 
             <!-- Daily navigation controls -->
@@ -457,9 +457,9 @@ window.ItemPurchases = {
       const tab = document.getElementById(`item-pur-period-${t}-tab`);
       if (tab) {
         if (t === type) {
-          tab.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all bg-white shadow-2xs text-slate-900 cursor-pointer';
+          tab.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all bg-white shadow-xs border border-slate-200/80 text-slate-950 cursor-pointer';
         } else {
-          tab.className = 'px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
+          tab.className = 'px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer';
         }
       }
     });

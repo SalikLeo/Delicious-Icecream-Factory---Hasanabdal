@@ -93,12 +93,12 @@ window.Companies = {
 
           <!-- Time Period controls -->
           <div class="flex items-center gap-1.5 flex-wrap shrink-0">
-            <div class="flex bg-slate-100 p-0.5 rounded-lg gap-0.5">
-               <button type="button" id="txns-period-day" onclick="Companies.setTxnPeriodType('day')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer">Daily</button>
-               <button type="button" id="txns-period-month" onclick="Companies.setTxnPeriodType('month')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Monthly</button>
-               <button type="button" id="txns-period-year" onclick="Companies.setTxnPeriodType('year')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Annual</button>
-               <button type="button" id="txns-period-custom" onclick="Companies.setTxnPeriodType('custom')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">Custom Range</button>
-               <button type="button" id="txns-period-all" onclick="Companies.setTxnPeriodType('all')" class="px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer">All</button>
+            <div class="flex bg-slate-200/70 p-0.5 rounded-xl border border-slate-300/70 gap-0.5 shadow-inner">
+               <button type="button" id="txns-period-day" onclick="Companies.setTxnPeriodType('day')" class="px-2 py-1 text-[11px] font-black rounded-lg transition-all bg-white shadow-xs border border-slate-200/80 text-slate-950 cursor-pointer">Daily</button>
+               <button type="button" id="txns-period-month" onclick="Companies.setTxnPeriodType('month')" class="px-2 py-1 text-[11px] font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Monthly</button>
+               <button type="button" id="txns-period-year" onclick="Companies.setTxnPeriodType('year')" class="px-2 py-1 text-[11px] font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Annual</button>
+               <button type="button" id="txns-period-custom" onclick="Companies.setTxnPeriodType('custom')" class="px-2 py-1 text-[11px] font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">Custom Range</button>
+               <button type="button" id="txns-period-all" onclick="Companies.setTxnPeriodType('all')" class="px-2 py-1 text-[11px] font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer">All</button>
             </div>
 
             <!-- Daily navigation controls -->
@@ -1925,9 +1925,9 @@ window.Companies = {
       const btn = document.getElementById(`txns-period-${t}`);
       if (btn) {
         if (t === type) {
-          btn.className = 'px-2 py-1 text-[11px] font-black rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer';
+          btn.className = 'px-2 py-1 text-[11px] font-black rounded-lg transition-all bg-white shadow-xs border border-slate-200/80 text-slate-950 cursor-pointer';
         } else {
-          btn.className = 'px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
+          btn.className = 'px-2 py-1 text-[11px] font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer';
         }
       }
     });
@@ -2015,9 +2015,9 @@ window.Companies = {
       const btn = document.getElementById(`comp-period-${t}`);
       if (btn) {
         if (t === type) {
-          btn.className = 'px-2 py-1 text-[11px] font-black rounded-md transition-all bg-white shadow-sm text-slate-800 cursor-pointer';
+          btn.className = 'px-2 py-1 text-[11px] font-black rounded-lg transition-all bg-white shadow-xs border border-slate-200/80 text-slate-950 cursor-pointer';
         } else {
-          btn.className = 'px-2 py-1 text-[11px] font-black rounded-md transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
+          btn.className = 'px-2 py-1 text-[11px] font-bold rounded-lg transition-all text-slate-700 hover:text-slate-950 hover:bg-white/60 cursor-pointer';
         }
       }
     });
@@ -2847,7 +2847,7 @@ window.Companies = {
             <div class="flex justify-between items-center gap-2 mb-0.5">
                 <div class="flex items-center gap-1.5 min-w-0">
                   <span class="text-[11px] font-black text-slate-800 uppercase tracking-tight truncate">${item.item_name} ${item.company_name ? `<span class="text-blue-600 font-bold ml-1">(${item.company_name})</span>` : ''}</span>
-                  ${item.barcode ? `<span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200">#${item.barcode}</span>` : ''}
+                  ${item.barcode ? `<span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1 py-0.5 rounded border border-slate-200">#${item.barcode}</span>` : ''}
                 </div>
                 <div class="flex gap-1.5 items-center shrink-0">
                   <span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded whitespace-nowrap">Rs. ${(item.cost_price || 0).toLocaleString()} / ${itemUnit}</span>

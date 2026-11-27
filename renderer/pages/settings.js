@@ -399,14 +399,9 @@ const Settings = {
                     <input type="checkbox" id="chk-auto-cloud-sync" onchange="Settings.toggleAutoCloudSync(this.checked)" class="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer">
                     <span>Auto-sync to cloud when closing app</span>
                   </label>
-                  <div class="flex items-center gap-2.5">
-                    <button type="button" onclick="Settings.toggleCredentialsModal()" class="text-indigo-600 hover:text-indigo-800 text-xs flex items-center gap-1 font-semibold cursor-pointer">
-                      <i data-lucide="key" class="w-3 h-3"></i> Config
-                    </button>
-                    <button type="button" onclick="Settings.refreshCloudStatus()" class="text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1 cursor-pointer">
-                      <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
-                    </button>
-                  </div>
+                  <button type="button" onclick="Settings.refreshCloudStatus()" class="text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1 cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                  </button>
                 </div>
               </div>
             </div>
@@ -1569,71 +1564,5 @@ const Settings = {
         }
       }
     });
-  },
-
-  async toggleCredentialsModal() {
-    const existing = document.getElementById('modal-supabase-credentials');
-    if (existing) {
-      existing.remove();
-      return;
-    }
-
-    let curUrl = '';
-    try {
-      const status = await window.api.cloudSyncGetStatus();
-      curUrl = status.supabaseUrl || '';
-    } catch (e) {}
-
-    const modal = document.createElement('div');
-    modal.id = 'modal-supabase-credentials';
-    modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[1300] p-4';
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-    modal.innerHTML = `
-      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-        <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-              <i data-lucide="key" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="text-sm font-bold text-slate-800">Supabase Cloud Credentials</h3>
-              <p class="text-[10px] text-slate-500">Configure custom cloud storage endpoint</p>
-            </div>
-          </div>
-          <button type="button" onclick="document.getElementById('modal-supabase-credentials').remove()" class="text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-        <div class="p-5 space-y-3.5">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Supabase Project URL</label>
-            <input type="text" id="cfg-supabase-url" value="${curUrl}" placeholder="https://xyz.supabase.co" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">API Key (Anon or Service Key)</label>
-            <input type="password" id="cfg-supabase-key" placeholder="Leave empty to keep existing key" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono outline-none focus:border-indigo-500">
-          </div>
-          <p class="text-[10px] text-slate-400">By default, the app is pre-configured with the active cloud sync server from the Al-Baari project.</p>
-          <div class="flex justify-end gap-2 pt-2">
-            <button type="button" onclick="document.getElementById('modal-supabase-credentials').remove()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold cursor-pointer">Cancel</button>
-            <button type="button" onclick="Settings.saveSupabaseCredentials()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer">Save Credentials</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    if (window.lucide) lucide.createIcons({ root: modal });
-  },
-
-  async saveSupabaseCredentials() {
-    const url = document.getElementById('cfg-supabase-url')?.value.trim();
-    const key = document.getElementById('cfg-supabase-key')?.value.trim();
-
-    if (window.api && window.api.cloudSyncSetCredentials) {
-      await window.api.cloudSyncSetCredentials(url, key);
-    }
-    document.getElementById('modal-supabase-credentials')?.remove();
-    app.showToast?.('Supabase credentials saved successfully.', 'success');
-    await this.refreshCloudStatus();
   }
 };
